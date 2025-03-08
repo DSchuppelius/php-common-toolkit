@@ -398,3 +398,13 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# phpunit/phpunit
+phpunit.xml
+/.phpunit.cache
+/.phpunit.result.cache
+
+# symfony/framework-bundle
+.env
+/public/bundles/
+/vendor/

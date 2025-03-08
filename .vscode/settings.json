@@ -1,0 +1,8 @@
+{
+    "notebook.defaultFormatter": "zobo.php-intellisense",
+    "editor.defaultFormatter": "bmewburn.vscode-intelephense-client",
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "notebook.formatOnSave.enabled": true,
+    "prettier.documentSelectors": ["*.php"]
+}

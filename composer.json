@@ -1,0 +1,41 @@
+{
+  "name": "dschuppelius/php-common-toolkit",
+  "description": "Project description.",
+  "type": "app",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Daniel Joerg Schuppelius",
+      "email": "info@schuppelius.org"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "CommonToolkit\\": "src/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": "^7.4 || ^8.0",
+    "psr/log": "^3.0@dev",
+    "dschuppelius/php-error-toolkit": "^1.2"
+  },
+
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.3@dev"
+  },
+  "config": {
+    "platform": {
+      "php": "8.2.0"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit"
+  }
+}
