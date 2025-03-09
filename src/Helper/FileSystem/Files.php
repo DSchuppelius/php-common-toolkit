@@ -16,6 +16,14 @@ use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 
 class Files extends HelperAbstract {
 
+    public static function getRealpath(array $files): array {
+        $realPaths = [];
+        foreach ($files as $file) {
+            $realPaths[] = File::getRealpath($file);
+        }
+        return $realPaths;
+    }
+
     public static function exists(array $files): bool {
         foreach ($files as $file) {
             if (!File::exists($file)) {

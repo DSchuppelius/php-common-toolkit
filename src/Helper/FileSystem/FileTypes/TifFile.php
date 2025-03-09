@@ -3,7 +3,7 @@
  * Created on   : Sun Oct 06 2024
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : TifFileHelper.php
+ * Filename     : TifFile.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -27,7 +27,7 @@ class TifFile extends HelperAbstract {
         self::setLogger();
         $mimeType = File::mimeType($file);
 
-        if ($mimeType !== 'image/tiff' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
+        if ($mimeType === 'image/jpeg' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
             $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".jpg", $file);
             File::rename($file, $newFilename);
 

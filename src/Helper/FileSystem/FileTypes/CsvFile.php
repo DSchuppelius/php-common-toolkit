@@ -20,12 +20,12 @@ use Exception;
 class CsvFile extends HelperAbstract {
     protected static array $commonDelimiters = [',', ';', "\t", '|'];
 
-    public static function detectDelimiter(string $file): string {
+    public static function detectDelimiter(string $file, int $maxLines = 10): string {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Die Datei $file ist nicht lesbar oder existiert nicht.");
-            throw new FileNotFoundException("Die Datei $file ist nicht lesbar oder existiert nicht.");
+            self::$logger->error("Die Datei $file existiert nicht oder ist nicht lesbar.");
+            throw new FileNotFoundException("Die Datei $file existiert nicht oder ist nicht lesbar.");
         }
 
         $handle = fopen($file, 'r');
@@ -34,10 +34,10 @@ class CsvFile extends HelperAbstract {
             throw new Exception("Fehler beim Öffnen der Datei: $file");
         }
 
-        $lineCount = 0;
         $delimiterCounts = array_fill_keys(self::$commonDelimiters, 0);
+        $lineCount = 0;
 
-        while (($line = fgets($handle)) !== false && $lineCount < 5) {
+        while (($line = fgets($handle)) !== false && $lineCount < $maxLines) {
             foreach (self::$commonDelimiters as $delimiter) {
                 $delimiterCounts[$delimiter] += substr_count($line, $delimiter);
             }
@@ -74,8 +74,10 @@ class CsvFile extends HelperAbstract {
         $rowCount = 0;
         $columnCount = 0;
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            $rowCount++;
-            $columnCount = max($columnCount, count($row));
+            if (!empty(array_filter($row))) { // Leere Zeilen ignorieren
+                $rowCount++;
+                $columnCount = max($columnCount, count($row));
+            }
         }
         fclose($handle);
 
@@ -102,21 +104,21 @@ class CsvFile extends HelperAbstract {
         }
 
         $columnCount = null;
-        $isWellFormed = true;
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            if (is_null($columnCount)) {
-                $columnCount = count($row);
-            } elseif (count($row) !== $columnCount) {
-                $isWellFormed = false;
-                break;
+            if (!empty(array_filter($row))) {
+                if (is_null($columnCount)) {
+                    $columnCount = count($row);
+                } elseif (count($row) !== $columnCount) {
+                    fclose($handle);
+                    return false;
+                }
             }
         }
         fclose($handle);
-
-        return $isWellFormed;
+        return true;
     }
 
-    public static function isValid(string $file, array $headerPattern, ?string $delimiter = null): bool {
+    public static function isValid(string $file, array $headerPattern, ?string $delimiter = null, bool $welformed = false): bool {
         self::setLogger();
 
         if (!File::exists($file)) {
@@ -139,6 +141,14 @@ class CsvFile extends HelperAbstract {
             throw new Exception("Fehler beim Lesen der Kopfzeile in der CSV-Datei: $file");
         }
 
-        return $header === $headerPattern;
+        // Header-Check
+        $headerValid = empty(array_diff($headerPattern, $header)) && empty(array_diff($header, $headerPattern));
+
+        // Falls zusätzlich `isWellFormed()` geprüft werden soll
+        if ($welformed) {
+            return $headerValid && self::isWellFormed($file, $delimiter);
+        }
+
+        return $headerValid;
     }
 }
