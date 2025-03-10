@@ -42,7 +42,7 @@ abstract class HelperAbstract implements HelperInterface {
         self::setLogger();
 
         $configLoader = self::getConfigLoader();
-        $executable = $configLoader->get("shellExecutables", $commandName, null);
+        $executable = $configLoader->getWithReplaceParams("shellExecutables", $commandName, $params, null);
 
         if (!$executable) {
             self::$logger->error("Keine Konfiguration für '$commandName' gefunden.");
@@ -52,13 +52,7 @@ abstract class HelperAbstract implements HelperInterface {
             return null;
         }
 
-        $escapedPath = escapeshellarg($executable['path']);
-
-        // Argumente mit Platzhaltern ersetzen
-        $arguments = array_map(fn($arg) => str_replace(array_keys($params), array_values($params), $arg), $executable['arguments'] ?? []);
-
-        // Finalen Befehl zusammenbauen und mehrfache Leerzeichen entfernen
-        $finalCommand = $escapedPath . ' ' . implode(' ', $arguments);
+        $finalCommand = escapeshellarg($executable['path']) . ' ' . implode(' ', $executable['arguments'] ?? []);
 
         self::$logger->debug("Kommando generiert für '$commandName': $finalCommand");
 
