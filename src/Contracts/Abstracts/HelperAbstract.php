@@ -74,7 +74,7 @@ abstract class HelperAbstract implements HelperInterface {
         }
 
         if (!self::$configLoader) {
-            self::$configLoader = ConfigLoader::getInstance();
+            self::$configLoader = ConfigLoader::getInstance(self::$logger);
         }
 
         // Erst nach der Initialisierung prüfen, ob die Datei bereits geladen wurde
