@@ -33,7 +33,7 @@ class TifFile extends HelperAbstract {
             $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".jpg", $file);
             File::rename($file, $newFilename);
 
-            $command = self::getConfiguredCommand("convert", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
+            $command = self::getConfiguredCommand("convert", ["[OUTPUT]" => escapeshellarg($newFilename), "[INPUT]" => escapeshellarg($file)]);
 
             if (Shell::executeShellCommand($command)) {
                 self::$logger->info("TIFF-Datei erfolgreich von JPEG repariert: $newFilename");
@@ -57,7 +57,7 @@ class TifFile extends HelperAbstract {
                 File::rename($file, $newFilename);
 
                 self::$logger->notice("Erstelle monochrome Kopie der TIFF-Datei: $newFilename");
-                $command = self::getConfiguredCommand("convert-monochrome", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
+                $command = self::getConfiguredCommand("convert-monochrome", ["[OUTPUT]" => escapeshellarg($newFilename), "[INPUT]" => escapeshellarg($file)]);
 
                 if (Shell::executeShellCommand($command)) {
                     self::$logger->info("TIFF-Datei erfolgreich repariert: $newFilename");
