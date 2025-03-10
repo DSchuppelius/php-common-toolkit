@@ -20,14 +20,14 @@
             "path": "tiff2pdf",
             "required": true,
             "description": "TIFF zu PDF Konverter",
-            "linuxArguments": ["-F", "-n", "-j", "-c common_fileconverter", "-a common_fileconverter", "-o '[OUTPUT]'", "'[INPUT]'", "2>&1"],
+            "linuxArguments": ["-F", "-n", "-j", "-c common_fileconverter", "-a common_fileconverter", "-o [OUTPUT]", "[INPUT]", "2>&1"],
             "windowsArguments": ["-j", "-n", "-c common_fileconverter", "-a common_fileconverter", "-o [OUTPUT]", "[INPUT]", "2>&1"]
         },
         "tiff2pdf-compressed": {
             "path": "tiff2pdf",
             "required": true,
             "description": "TIFF zu PDF Konverter",
-            "linuxArguments": ["-F", "-j", "-c common_fileconverter", "-a common_fileconverter", "-o '[OUTPUT]'", "'[INPUT]'", "2>&1"],
+            "linuxArguments": ["-F", "-j", "-c common_fileconverter", "-a common_fileconverter", "-o [OUTPUT]", "[INPUT]", "2>&1"],
             "windowsArguments": ["-j", "-c common_fileconverter", "-a common_fileconverter", "-o [OUTPUT]", "[INPUT]", "2>&1"]
         },
         "tiffcp": {
