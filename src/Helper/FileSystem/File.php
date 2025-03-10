@@ -20,6 +20,8 @@ use Exception;
 use finfo;
 
 class File extends HelperAbstract implements FileSystemInterface {
+    protected const CONFIG_FILE = __DIR__ . '/../../../config/common_executables.json';
+
     /**
      * Holt den realen Pfad aus einer Pfadangabe und loggt diese, falls der Pfad angepasst wurde.
      */
@@ -79,8 +81,7 @@ class File extends HelperAbstract implements FileSystemInterface {
             self::$logger->error("Datei existiert nicht: $file");
             return $result;
         }
-
-        $command = sprintf('file -b --mime-type -m /usr/share/misc/magic %s', escapeshellarg($file));
+        $command = self::getConfiguredCommand("mimetype", ["[INPUT]" => escapeshellarg($file)]);
         $output = [];
         $success = Shell::executeShellCommand($command, $output);
 

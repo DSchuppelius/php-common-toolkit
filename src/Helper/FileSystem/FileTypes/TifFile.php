@@ -20,6 +20,8 @@ use ERRORToolkit\Exceptions\FileNotFoundException;
 use Exception;
 
 class TifFile extends HelperAbstract {
+    protected const CONFIG_FILE = __DIR__ . '/../../../../config/tiff_executables.json';
+
     private const FILE_EXTENSION_PATTERN = "/\.tif{1,2}$/i";
 
     public static function repair(string $file, bool $forceRepair = false): string {
@@ -31,10 +33,8 @@ class TifFile extends HelperAbstract {
             $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".jpg", $file);
             File::rename($file, $newFilename);
 
-            $command = Shell::getPlatformSpecificCommand(
-                sprintf("convert %s %s", escapeshellarg($newFilename), escapeshellarg($file)),
-                sprintf("magick %s %s", escapeshellarg($newFilename), escapeshellarg($file))
-            );
+            $command = self::getConfiguredCommand("convert", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
+
             if (Shell::executeShellCommand($command)) {
                 self::$logger->info("TIFF-Datei erfolgreich von JPEG repariert: $newFilename");
             } else {
@@ -57,10 +57,8 @@ class TifFile extends HelperAbstract {
                 File::rename($file, $newFilename);
 
                 self::$logger->notice("Erstelle monochrome Kopie der TIFF-Datei: $newFilename");
-                $command = Shell::getPlatformSpecificCommand(
-                    sprintf("convert %s -monochrome %s", escapeshellarg($newFilename), escapeshellarg($file)),
-                    sprintf("magick %s -monochrome %s", escapeshellarg($newFilename), escapeshellarg($file))
-                );
+                $command = self::getConfiguredCommand("convert-monochrome", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
+
                 if (Shell::executeShellCommand($command)) {
                     self::$logger->info("TIFF-Datei erfolgreich repariert: $newFilename");
                 } else {
@@ -105,14 +103,9 @@ class TifFile extends HelperAbstract {
             self::$logger->error("Die Datei existiert bereits: $pdfFile");
             throw new Exception("Die Datei existiert bereits: $pdfFile");
         }
-        $command = Shell::getPlatformSpecificCommand(
-            ($compressed
-                ? "tiff2pdf -F -j -c common_fileconverter -a common_fileconverter -o '$pdfFile' '$tiffFile' 2>&1"
-                : "tiff2pdf -F -n -c common_fileconverter -a common_fileconverter -o '$pdfFile' '$tiffFile' 2>&1"),
-            ($compressed
-                ? "tiff2pdf -j -c common_fileconverter -a common_fileconverter -o \"$pdfFile\" \"$tiffFile\" 2>&1"
-                : "tiff2pdf -n -c common_fileconverter -a common_fileconverter -o \"$pdfFile\" \"$tiffFile\" 2>&1")
-        );
+
+        $commandName = $compressed ? "tiff2pdf-compressed" : "tiff2pdf";
+        $command = self::getConfiguredCommand($commandName, ["[INPUT]" => escapeshellarg($tiffFile), "[OUTPUT]" => escapeshellarg($pdfFile)]);
 
         File::wait4Ready($tiffFile);
         Shell::executeShellCommand($command);
@@ -154,7 +147,8 @@ class TifFile extends HelperAbstract {
             throw new FileNotFoundException("Die Dateien existieren nicht: " . implode(", ", $tiffFiles));
         }
 
-        $command = sprintf("tiffcp %s %s", implode(" ", array_map('escapeshellarg', $tiffFiles)), escapeshellarg($mergedFile));
+        $command = self::getConfiguredCommand("tiffcp", ["[INPUT]" => implode(" ", array_map('escapeshellarg', $tiffFiles)), "[OUTPUT]" => escapeshellarg($mergedFile)]);
+
         Shell::executeShellCommand($command);
 
         self::$logger->info("TIFF-Dateien erfolgreich zusammengeführt: $mergedFile");
@@ -173,7 +167,7 @@ class TifFile extends HelperAbstract {
         }
 
         if (preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
-            $command = sprintf("tiffinfo %s 2>&1", escapeshellarg($file));
+            $command = self::getConfiguredCommand("tiffinfo", ["[INPUT]" => escapeshellarg($file)]);
             $output = [];
 
             if (Shell::executeShellCommand($command, $output)) {

@@ -29,9 +29,9 @@ class Shell extends HelperAbstract {
         // Windows: cmd oder PowerShell
         if (PHP_OS_FAMILY === 'Windows') {
             if ($usePowerShell) {
-                $command = "powershell -ExecutionPolicy Bypass -Command " . escapeshellarg($command);
+                $command = "powershell -ExecutionPolicy Bypass -Command \"$command\"";
             } else {
-                $command = "cmd /c " . escapeshellarg($command);
+                $command = "cmd /c \"$command\"";
             }
         }
 

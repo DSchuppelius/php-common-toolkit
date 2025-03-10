@@ -1,0 +1,19 @@
+{
+    "shellExecutables": {
+        "pdfinfo": {
+            "path": "pdfinfo",
+            "required": true,
+            "description": "Metadaten aus PDF-Datei",
+            "arguments": ["[INPUT]"],
+            "debugArguments": ["[INPUT]"]
+        },
+        "valid-pdf": {
+            "linuxPath": "mutool",
+            "windowsPath": "pdfinfo",
+            "required": true,
+            "description": "PDF-Validierung",
+            "linuxArguments": ["info", "[INPUT]", "2>&1 | grep -i 'error'"],
+            "windowsArguments": ["[INPUT]", "2>&1 | findstr /R \"Syntax.Error\""]
+        }
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "shellExecutables": {
+        "mimetype": {
+            "path": "file",
+            "required": false,
+            "description": "Mimetypes of files",
+            "arguments": ["-b --mime-type -m /usr/share/misc/magic", "[INPUT]"]
+        }
+    }
+}

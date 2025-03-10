@@ -19,6 +19,7 @@ use ERRORToolkit\Exceptions\FileNotFoundException;
 use Exception;
 
 class PdfFile extends HelperAbstract {
+    protected const CONFIG_FILE = __DIR__ . '/../../../../config/pdf_executables.json';
 
     public static function getMetaData(string $file): array {
         self::setLogger();
@@ -28,7 +29,7 @@ class PdfFile extends HelperAbstract {
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
-        $command = sprintf("pdfinfo %s", escapeshellarg($file));
+        $command = self::getConfiguredCommand("pdfinfo", ["[INPUT]" => escapeshellarg($file)]);
         $output = [];
         $resultCode = 0;
 
@@ -82,11 +83,7 @@ class PdfFile extends HelperAbstract {
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
-        $command = Shell::getPlatformSpecificCommand(
-            sprintf("mutool info %s 2>&1 | grep -i 'error'", escapeshellarg($file)),
-            sprintf('pdfinfo %s 2>&1 | findstr /R "Syntax.Error"', escapeshellarg($file))
-        );
-
+        $command = self::getConfiguredCommand("valid-pdf", ["[INPUT]" => escapeshellarg($file)]);
         $output = [];
         $resultCode = 0;
         $executionSuccess = Shell::executeShellCommand($command, $output, $resultCode, false, 1);
