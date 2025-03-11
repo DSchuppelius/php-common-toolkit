@@ -15,7 +15,10 @@ namespace CommonToolkit\Helper\FileSystem;
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
 use CommonToolkit\Helper\Shell;
-use ERRORToolkit\Exceptions\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\FileExistsException;
+use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\FileNotWrittenException;
+use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
 use finfo;
 
@@ -133,7 +136,7 @@ class File extends HelperAbstract implements FileSystemInterface {
             self::$logger->info("Zweiter Versuch, die Datei $sourceFile nach $destinationFile zu kopieren.");
             if (!@copy($sourceFile, $destinationFile)) {
                 self::$logger->error("Fehler beim erneuten Kopieren der Datei von $sourceFile nach $destinationFile");
-                throw new Exception("Fehler beim erneuten Kopieren der Datei von $sourceFile nach $destinationFile");
+                throw new FileNotWrittenException("Fehler beim erneuten Kopieren der Datei von $sourceFile nach $destinationFile");
             }
         }
 
@@ -152,7 +155,7 @@ class File extends HelperAbstract implements FileSystemInterface {
 
         if (file_put_contents($file, $content) === false) {
             self::$logger->error("Fehler beim Erstellen der Datei $file");
-            throw new Exception("Fehler beim Erstellen der Datei $file");
+            throw new FileNotWrittenException("Fehler beim Erstellen der Datei $file");
         }
 
         if (!chmod($file, $permissions)) {
@@ -174,7 +177,7 @@ class File extends HelperAbstract implements FileSystemInterface {
             throw new FileNotFoundException("Die Datei $oldName existiert nicht");
         } elseif (self::exists($newName)) {
             self::$logger->error("Die Datei $newName existiert bereits");
-            throw new Exception("Die Datei $newName existiert bereits");
+            throw new FileExistsException("Die Datei $newName existiert bereits");
         }
 
         if ($newName == basename($newName)) {
@@ -202,7 +205,7 @@ class File extends HelperAbstract implements FileSystemInterface {
             throw new FileNotFoundException("Die Datei $sourceFile existiert nicht");
         } elseif (!self::exists($destinationFolder)) {
             self::$logger->error("Das Zielverzeichnis $destinationFolder existiert nicht");
-            throw new Exception("Das Zielverzeichnis $destinationFolder existiert nicht");
+            throw new FolderNotFoundException("Das Zielverzeichnis $destinationFolder existiert nicht");
         }
 
         if (self::exists($destinationFile)) {
@@ -222,7 +225,7 @@ class File extends HelperAbstract implements FileSystemInterface {
             self::$logger->info("Zweiter Versuch, die Datei $sourceFile nach $destinationFile zu verschieben.");
             if (!@rename($sourceFile, $destinationFile)) {
                 self::$logger->error("Fehler beim erneuten Verschieben der Datei von $sourceFile nach $destinationFile");
-                throw new Exception("Fehler beim erneuten Verschieben der Datei von $sourceFile nach $destinationFile");
+                throw new FileNotWrittenException("Fehler beim erneuten Verschieben der Datei von $sourceFile nach $destinationFile");
             }
         }
 
@@ -287,7 +290,7 @@ class File extends HelperAbstract implements FileSystemInterface {
 
         if (file_put_contents($file, $data) === false) {
             self::$logger->error("Fehler beim Schreiben in die Datei $file");
-            throw new Exception("Fehler beim Schreiben in die Datei $file");
+            throw new FileNotWrittenException("Fehler beim Schreiben in die Datei $file");
         }
 
         self::$logger->info("Daten in Datei gespeichert: $file");

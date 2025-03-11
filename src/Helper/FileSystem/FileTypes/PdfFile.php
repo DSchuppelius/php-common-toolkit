@@ -15,7 +15,7 @@ namespace CommonToolkit\Helper\FileSystem\FileTypes;
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\Shell;
-use ERRORToolkit\Exceptions\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
 
 class PdfFile extends HelperAbstract {

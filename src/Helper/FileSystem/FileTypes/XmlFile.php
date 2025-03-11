@@ -16,7 +16,7 @@ use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
 use Exception;
 use DOMDocument;
-use ERRORToolkit\Exceptions\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 
 class XmlFile extends HelperAbstract {
 

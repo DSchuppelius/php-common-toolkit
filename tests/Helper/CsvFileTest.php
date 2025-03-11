@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use CommonToolkit\Helper\FileSystem\FileTypes\CsvFile;
-use ERRORToolkit\Exceptions\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 
 class CsvFileTest extends TestCase {
     private $testFileComma = __DIR__ . '/../../.samples/comma.csv';

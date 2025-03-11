@@ -16,7 +16,9 @@ use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\FileSystem\Files;
 use CommonToolkit\Helper\Shell;
-use ERRORToolkit\Exceptions\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\FileExistsException;
+use ERRORToolkit\Exceptions\FileSystem\FileInvalidException;
+use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
 
 class TifFile extends HelperAbstract {
@@ -85,13 +87,13 @@ class TifFile extends HelperAbstract {
             throw new FileNotFoundException("Die Datei existiert nicht: $tiffFile");
         } elseif (!is_null($pdfFile) && File::exists($pdfFile)) {
             self::$logger->error("Die Datei existiert bereits: $pdfFile");
-            throw new Exception("Die Datei existiert bereits: $pdfFile");
+            throw new FileExistsException("Die Datei existiert bereits: $pdfFile");
         } elseif (!self::isValid($tiffFile)) {
             try {
                 $tiffFile = self::repair($tiffFile);  // Reparierter Dateiname wird zurückgegeben
             } catch (Exception $e) {
                 self::$logger->error("Die Datei ist nicht gültig: $tiffFile");
-                throw new Exception("Die Datei ist nicht gültig: $tiffFile");
+                throw new FileInvalidException("Die Datei ist nicht gültig: $tiffFile");
             }
         }
 
@@ -101,7 +103,7 @@ class TifFile extends HelperAbstract {
 
         if (File::exists($pdfFile)) {
             self::$logger->error("Die Datei existiert bereits: $pdfFile");
-            throw new Exception("Die Datei existiert bereits: $pdfFile");
+            throw new FileExistsException("Die Datei existiert bereits: $pdfFile");
         }
 
         $commandName = $compressed ? "tiff2pdf-compressed" : "tiff2pdf";
@@ -141,7 +143,7 @@ class TifFile extends HelperAbstract {
 
         if (File::exists($mergedFile)) {
             self::$logger->error("Die Datei existiert bereits: $mergedFile");
-            throw new Exception("Die Datei existiert bereits: $mergedFile");
+            throw new FileExistsException("Die Datei existiert bereits: $mergedFile");
         } elseif (!Files::exists($tiffFiles)) {
             self::$logger->error("Die Dateien existieren nicht: " . implode(", ", $tiffFiles));
             throw new FileNotFoundException("Die Dateien existieren nicht: " . implode(", ", $tiffFiles));

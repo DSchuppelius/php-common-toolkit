@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit;
 
+use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use ReflectionClass;
 use Exception;
 
@@ -19,7 +20,7 @@ class ClassLoader {
      */
     public static function loadClasses(string $directory, string $namespace, string $interface): array {
         if (!is_dir($directory)) {
-            throw new Exception("Das Verzeichnis für Klassen konnte nicht aufgelöst werden: $directory");
+            throw new FolderNotFoundException("Das Verzeichnis für Klassen konnte nicht aufgelöst werden: $directory");
         }
 
         $classes = [];

@@ -14,6 +14,7 @@ namespace CommonToolkit\Helper\FileSystem;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
+use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
 
 class Folder extends HelperAbstract implements FileSystemInterface {
@@ -33,7 +34,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         if (!self::exists($sourceDirectory)) {
             self::$logger->error("Das Verzeichnis $sourceDirectory existiert nicht");
-            throw new Exception("Das Verzeichnis $sourceDirectory existiert nicht");
+            throw new FolderNotFoundException("Das Verzeichnis $sourceDirectory existiert nicht");
         }
 
         if (!self::exists($destinationDirectory)) {
@@ -82,7 +83,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         if (!self::exists($oldName)) {
             self::$logger->error("Das Verzeichnis $oldName existiert nicht");
-            throw new Exception("Das Verzeichnis $oldName existiert nicht");
+            throw new FolderNotFoundException("Das Verzeichnis $oldName existiert nicht");
         }
 
         if (!rename($oldName, $newName)) {
@@ -99,7 +100,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         if (!self::exists($directory)) {
             self::$logger->error("Das Verzeichnis $directory existiert nicht");
-            throw new Exception("Das Verzeichnis $directory existiert nicht");
+            throw new FolderNotFoundException("Das Verzeichnis $directory existiert nicht");
         }
 
         if ($recursive) {
@@ -130,7 +131,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         if (!self::exists($sourceDirectory)) {
             self::$logger->error("Das Verzeichnis $sourceDirectory existiert nicht");
-            throw new Exception("Das Verzeichnis $sourceDirectory existiert nicht");
+            throw new FolderNotFoundException("Das Verzeichnis $sourceDirectory existiert nicht");
         }
 
         if (!rename($sourceDirectory, $destinationDirectory)) {
