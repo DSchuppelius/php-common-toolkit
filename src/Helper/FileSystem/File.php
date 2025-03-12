@@ -54,19 +54,30 @@ class File extends HelperAbstract implements FileSystemInterface {
     public static function mimeType(string $filename): string|false {
         self::setLogger();
 
+        if (!File::exists($filename)) {
+            self::$logger->error("Datei existiert nicht: $filename");
+            return false;
+        }
+
         $result = false;
-        if (function_exists('finfo_open')) {
-            self::$logger->info("Nutze finfo für Erkennung des mime-types: $filename");
+
+        if (class_exists('finfo')) {
+            self::$logger->info("Nutze finfo für Erkennung des MIME-Typs: $filename");
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->file($filename);
         } elseif (function_exists('mime_content_type')) {
-            self::$logger->info("Nutze mime_content_type für Erkennung des mime-types: $filename");
+            self::$logger->info("Nutze mime_content_type für Erkennung des MIME-Typs: $filename");
             $result = @mime_content_type($filename);
         }
 
-        if (false === $result && PHP_OS_FAMILY === 'Linux') {
-            self::$logger->warning("Nutze Shell für Erkennung des mime-types: $filename");
+        if ($result === false && PHP_OS_FAMILY === 'Linux') {
+            self::$logger->warning("Nutze Shell für Erkennung des MIME-Typs: $filename");
             $result = self::mimeTypeByShell($filename);
+        }
+
+        // Falls keine Methode den MIME-Typ bestimmen konnte
+        if ($result === false) {
+            self::$logger->error("Konnte MIME-Typ nicht bestimmen: $filename");
         }
 
         return $result;
