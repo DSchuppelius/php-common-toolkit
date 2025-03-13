@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "001158bac63e2e79e2a6bd7d626dbf80",
+    "content-hash": "249a150be1f6dbd065300a576ae7c77f",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.1.0",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "69dc3bd84ab1ddb56acf67b93ccd8d6b92aef47e"
+                "reference": "bc473d3851868dd0ac305613fd8a5ce788000f29"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/69dc3bd84ab1ddb56acf67b93ccd8d6b92aef47e",
-                "reference": "69dc3bd84ab1ddb56acf67b93ccd8d6b92aef47e",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/bc473d3851868dd0ac305613fd8a5ce788000f29",
+                "reference": "bc473d3851868dd0ac305613fd8a5ce788000f29",
                 "shasum": ""
             },
             "require": {
@@ -46,9 +46,9 @@
             "description": "Ein Toolkit für JSON-basierte Konfigurationsverwaltung",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.1.0"
+                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.2.0"
             },
-            "time": "2025-03-10T19:43:32+00:00"
+            "time": "2025-03-13T11:37:53+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",

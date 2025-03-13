@@ -20,7 +20,7 @@
     "php": "^7.4 || ^8.0",
     "psr/log": "^3.0@dev",
     "dschuppelius/php-error-toolkit": "^1.2",
-    "dschuppelius/php-config-toolkit": "^0.1.0"
+    "dschuppelius/php-config-toolkit": "^0.2.0"
   },
 
   "autoload-dev": {
