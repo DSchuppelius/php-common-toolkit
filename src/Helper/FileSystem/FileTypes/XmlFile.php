@@ -26,8 +26,9 @@ class XmlFile extends HelperAbstract {
      * @throws Exception Falls die Erweiterung nicht installiert ist.
      */
     private static function checkDomExtension(): void {
+        self::setLogger();
+
         if (!extension_loaded('dom')) {
-            self::setLogger();
             self::$logger->error("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
             throw new Exception("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
         }
@@ -40,7 +41,6 @@ class XmlFile extends HelperAbstract {
      * @throws Exception Falls das XML nicht geladen werden kann.
      */
     public static function getMetaData(string $file): array {
-        self::setLogger();
         self::checkDomExtension();
 
         if (!File::exists($file)) {
@@ -70,7 +70,6 @@ class XmlFile extends HelperAbstract {
      * Prüft, ob die XML-Datei wohlgeformt ist.
      */
     public static function isWellFormed(string $file): bool {
-        self::setLogger();
         self::checkDomExtension();
 
         if (!File::exists($file)) {
@@ -94,7 +93,6 @@ class XmlFile extends HelperAbstract {
      * Validiert eine XML-Datei anhand eines XSD-Schemas.
      */
     public static function isValid(string $file, string $xsdSchema): bool {
-        self::setLogger();
         self::checkDomExtension();
 
         if (!File::exists($file)) {

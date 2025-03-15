@@ -39,8 +39,6 @@ abstract class HelperAbstract implements HelperInterface {
 
 
     protected static function getConfiguredCommand(string $commandName, array $params = []): ?string {
-        self::setLogger();
-
         $configLoader = self::getConfigLoader();
         $executable = $configLoader->getWithReplaceParams("shellExecutables", $commandName, $params, null);
 
@@ -63,6 +61,8 @@ abstract class HelperAbstract implements HelperInterface {
      * Initialisiert ConfigLoader, falls noch nicht geschehen
      */
     protected static function getConfigLoader(): ConfigLoader {
+        self::setLogger();
+
         if (empty(static::CONFIG_FILE)) {
             throw new Exception("Fehler: CONFIG_FILE wurde nicht definiert in " . static::class);
         }

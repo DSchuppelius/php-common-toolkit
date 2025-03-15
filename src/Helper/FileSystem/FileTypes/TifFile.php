@@ -27,8 +27,8 @@ class TifFile extends HelperAbstract {
     private const FILE_EXTENSION_PATTERN = "/\.tif{1,2}$/i";
 
     public static function repair(string $file, bool $forceRepair = false): string {
-
         self::setLogger();
+
         $mimeType = File::mimeType($file);
 
         if ($mimeType === 'image/jpeg' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
@@ -82,6 +82,7 @@ class TifFile extends HelperAbstract {
 
     public static function convertToPdf(string $tiffFile, ?string $pdfFile = null, bool $compressed = true, bool $deleteSourceFile = true): void {
         self::setLogger();
+
         if (!File::exists($tiffFile)) {
             self::$logger->error("Die Datei existiert nicht: $tiffFile");
             throw new FileNotFoundException("Die Datei existiert nicht: $tiffFile");

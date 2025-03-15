@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit;
 
+use CommonToolkit\Helper\FileSystem\Folder;
 use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use ReflectionClass;
 use Exception;
@@ -19,12 +20,12 @@ class ClassLoader {
      * @throws Exception Falls das Verzeichnis nicht existiert
      */
     public static function loadClasses(string $directory, string $namespace, string $interface): array {
-        if (!is_dir($directory)) {
+        if (!Folder::exists($directory)) {
             throw new FolderNotFoundException("Das Verzeichnis für Klassen konnte nicht aufgelöst werden: $directory");
         }
 
         $classes = [];
-        $files = scandir($directory);
+        $files = Folder::get($directory);
 
         foreach ($files as $file) {
             if (pathinfo($file, PATHINFO_EXTENSION) !== 'php') {

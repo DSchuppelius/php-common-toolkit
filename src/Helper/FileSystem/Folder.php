@@ -18,17 +18,19 @@ use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
 
 class Folder extends HelperAbstract implements FileSystemInterface {
-
     public static function exists(string $directory): bool {
-        $directory = File::getRealPath($directory);
         self::setLogger();
-        $exists = is_dir($directory);
-        self::$logger->debug("Überprüfung ob Verzeichnis existiert: $directory - " . ($exists ? 'Ja' : 'Nein'));
-        return $exists;
+
+        $result = is_dir($directory);
+
+        if (!$result) {
+            self::$logger->debug("Existenzprüfung des Verzeichnisses: $directory -> false");
+        }
+
+        return $result;
     }
 
     public static function copy(string $sourceDirectory, string $destinationDirectory, bool $recursive = false): void {
-        self::setLogger();
         $sourceDirectory = File::getRealPath($sourceDirectory);
         $destinationDirectory = File::getRealPath($destinationDirectory);
 
@@ -61,12 +63,11 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         self::$logger->info("Verzeichnis kopiert von $sourceDirectory nach $destinationDirectory");
     }
 
-    public static function create(string $directory, int $permissions = 0755): void {
-        self::setLogger();
+    public static function create(string $directory, int $permissions = 0755, bool $recursive = false): void {
         $directory = File::getRealPath($directory);
 
         if (!self::exists($directory)) {
-            if (!mkdir($directory, $permissions, true)) {
+            if (!mkdir($directory, $permissions, $recursive)) {
                 self::$logger->error("Fehler beim Erstellen des Verzeichnisses: $directory");
                 throw new Exception("Fehler beim Erstellen des Verzeichnisses $directory");
             }
@@ -77,7 +78,6 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function rename(string $oldName, string $newName): void {
-        self::setLogger();
         $oldName = File::getRealPath($oldName);
         $newName = File::getRealPath($newName);
 
@@ -95,7 +95,6 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function delete(string $directory, bool $recursive = false): void {
-        self::setLogger();
         $directory = File::getRealPath($directory);
 
         if (!self::exists($directory)) {
@@ -125,7 +124,6 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function move(string $sourceDirectory, string $destinationDirectory): void {
-        self::setLogger();
         $sourceDirectory = File::getRealPath($sourceDirectory);
         $destinationDirectory = File::getRealPath($destinationDirectory);
 

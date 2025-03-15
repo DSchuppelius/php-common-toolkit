@@ -28,6 +28,8 @@ class CsvFile extends HelperAbstract {
             throw new FileNotFoundException("Die Datei $file existiert nicht oder ist nicht lesbar.");
         }
 
+        $file = File::getRealPath($file);
+
         $handle = fopen($file, 'r');
         if (!$handle) {
             self::$logger->error("Fehler beim Öffnen der Datei: $file");
@@ -64,6 +66,8 @@ class CsvFile extends HelperAbstract {
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
+        $file = File::getRealPath($file);
+
         $delimiter = $delimiter ?? self::detectDelimiter($file);
         $handle = fopen($file, 'r');
         if (!$handle) {
@@ -96,6 +100,8 @@ class CsvFile extends HelperAbstract {
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
+        $file = File::getRealPath($file);
+
         $delimiter = $delimiter ?? self::detectDelimiter($file);
         $handle = fopen($file, 'r');
         if (!$handle) {
@@ -125,6 +131,8 @@ class CsvFile extends HelperAbstract {
             self::$logger->error("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
+
+        $file = File::getRealPath($file);
 
         $delimiter = $delimiter ?? self::detectDelimiter($file);
         $handle = fopen($file, 'r');

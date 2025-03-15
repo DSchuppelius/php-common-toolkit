@@ -14,6 +14,7 @@ namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
+use CommonToolkit\Helper\FileSystem\Folder;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
 use ZipArchive;
@@ -24,8 +25,9 @@ class ZipFile extends HelperAbstract {
      * Falls nicht, wird ein Fehler geloggt und eine Exception geworfen.
      */
     private static function checkZipExtension(): void {
+        self::setLogger();
+
         if (!class_exists('ZipArchive')) {
-            self::setLogger();
             self::$logger->error("PHP ZipArchive-Erweiterung fehlt. ZIP-Operationen nicht möglich.");
             throw new Exception("PHP ZipArchive-Erweiterung fehlt. Bitte installiere oder aktiviere die zip-Erweiterung.");
         }
@@ -40,7 +42,6 @@ class ZipFile extends HelperAbstract {
      * @throws Exception Falls das Archiv nicht erstellt werden kann.
      */
     public static function create(array $files, string $destination): bool {
-        self::setLogger();
         self::checkZipExtension();
 
         $destination = File::getRealPath($destination);
@@ -82,7 +83,6 @@ class ZipFile extends HelperAbstract {
      * @throws Exception Falls die Datei nicht extrahiert werden kann.
      */
     public static function extract(string $file, string $destinationFolder, bool $deleteSourceFile = true): void {
-        self::setLogger();
         self::checkZipExtension();
 
         $file = File::getRealPath($file);
@@ -99,7 +99,7 @@ class ZipFile extends HelperAbstract {
             throw new Exception("Fehler beim Öffnen der ZIP-Datei: $file");
         }
 
-        if (!is_dir($destinationFolder) && !mkdir($destinationFolder, 0755, true)) {
+        if (!Folder::exists($destinationFolder) && !Folder::create($destinationFolder, 0755, true)) {
             self::$logger->error("Fehler beim Erstellen des Zielverzeichnisses: $destinationFolder");
             throw new Exception("Fehler beim Erstellen des Zielverzeichnisses: $destinationFolder");
         }
@@ -125,7 +125,6 @@ class ZipFile extends HelperAbstract {
      * @throws FileNotFoundException Falls die Datei nicht existiert.
      */
     public static function isValid(string $file): bool {
-        self::setLogger();
         self::checkZipExtension();
 
         $file = File::getRealPath($file);

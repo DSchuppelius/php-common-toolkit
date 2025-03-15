@@ -29,8 +29,6 @@ class File extends HelperAbstract implements FileSystemInterface {
      * Holt den realen Pfad aus einer Pfadangabe und loggt diese, falls der Pfad angepasst wurde.
      */
     public static function getRealPath(string $file): string {
-        self::setLogger();
-
         if (self::exists($file)) {
             $realPath = realpath($file);
 
@@ -41,7 +39,7 @@ class File extends HelperAbstract implements FileSystemInterface {
 
             // Falls realpath() den Pfad ändert, loggen
             if ($realPath !== $file) {
-                self::$logger->info("Pfad wurde normalisiert: $file -> $realPath");
+                self::$logger->info("Pfad wurde normalisiert: " . self::shortenByCommonPath($file, $realPath) . " -> $realPath");
             }
             return $realPath;
         }
@@ -51,43 +49,39 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
 
-    public static function mimeType(string $filename): string|false {
-        self::setLogger();
-
-        if (!File::exists($filename)) {
-            self::$logger->error("Datei existiert nicht: $filename");
+    public static function mimeType(string $file): string|false {
+        if (!self::exists($file)) {
+            self::$logger->error("Datei existiert nicht: $file");
             return false;
         }
 
+        $file = self::getRealPath($file);
         $result = false;
 
         if (class_exists('finfo')) {
-            self::$logger->info("Nutze finfo für Erkennung des MIME-Typs: $filename");
+            self::$logger->info("Nutze finfo für Erkennung des MIME-Typs: $file");
             $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $result = $finfo->file($filename);
+            $result = $finfo->file($file);
         } elseif (function_exists('mime_content_type')) {
-            self::$logger->info("Nutze mime_content_type für Erkennung des MIME-Typs: $filename");
-            $result = @mime_content_type($filename);
+            self::$logger->info("Nutze mime_content_type für Erkennung des MIME-Typs: $file");
+            $result = @mime_content_type($file);
         }
 
         if ($result === false && PHP_OS_FAMILY === 'Linux') {
-            self::$logger->warning("Nutze Shell für Erkennung des MIME-Typs: $filename");
-            $result = self::mimeTypeByShell($filename);
+            self::$logger->warning("Nutze Shell für Erkennung des MIME-Typs: $file");
+            $result = self::mimeTypeByShell($file);
         }
 
         // Falls keine Methode den MIME-Typ bestimmen konnte
         if ($result === false) {
-            self::$logger->error("Konnte MIME-Typ nicht bestimmen: $filename");
+            self::$logger->error("Konnte MIME-Typ nicht bestimmen: $file");
         }
 
         return $result;
     }
 
     private static function mimeTypeByShell(string $file): string|false {
-        self::setLogger();
-
         $file = self::getRealPath($file);
-
         $result = false;
 
         if (!self::exists($file)) {
@@ -110,17 +104,39 @@ class File extends HelperAbstract implements FileSystemInterface {
         return $result;
     }
 
+    private static function shortenByCommonPath(string $originalPath, string $normalizedPath): string {
+        // Normalisieren für einheitliche Darstellung
+        $originalParts = explode(DIRECTORY_SEPARATOR, $originalPath);
+        $normalizedParts = explode(DIRECTORY_SEPARATOR, $normalizedPath);
+
+        // Finde den gemeinsamen Teil beider Pfade
+        $commonParts = [];
+        foreach ($originalParts as $index => $part) {
+            if (isset($normalizedParts[$index]) && $normalizedParts[$index] === $part) {
+                $commonParts[] = $part;
+            } else {
+                break;
+            }
+        }
+
+        // Entferne den gemeinsamen Teil aus dem ursprünglichen Pfad
+        $relativePath = array_slice($originalParts, count($commonParts));
+
+        // Falls der gekürzte Pfad leer ist, einfach nur ein Punkt anzeigen
+        return empty($relativePath) ? '.' : '...' . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $relativePath);
+    }
+
     public static function exists(string $file): bool {
         self::setLogger();
+        $result = file_exists($file);
+        if (!$result) {
+            self::$logger->debug("Existenzprüfung der Datei: $file -> false");
+        }
 
-        self::$logger->debug("Prüfe Existenz der Datei: $file");
-
-        return file_exists($file);
+        return $result;
     }
 
     public static function copy(string $sourceFile, string $destinationFile, bool $overwrite = true): void {
-        self::setLogger();
-
         $sourceFile = self::getRealPath($sourceFile);
         $destinationFile = self::getRealPath($destinationFile);
 
@@ -154,8 +170,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function create(string $file, int $permissions = 0644, string $content = ''): void {
-        self::setLogger();
-
         $file = self::getRealPath($file);
 
         if (self::exists($file)) {
@@ -177,8 +191,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function rename(string $oldName, string $newName): void {
-        self::setLogger();
-
         $oldName = self::getRealPath($oldName);
         $newName = self::getRealPath($newName);
 
@@ -203,8 +215,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function move(string $sourceFile, string $destinationFolder, ?string $destinationFileName = null, bool $overwrite = true): void {
-        self::setLogger();
-
         $sourceFile = self::getRealPath($sourceFile);
         $destinationFolder = self::getRealPath($destinationFolder);
 
@@ -243,8 +253,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function delete(string $file): void {
-        self::setLogger();
-
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
@@ -261,8 +269,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function size(string $file): int {
-        self::setLogger();
-
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
@@ -274,8 +280,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function read(string $file): string {
-        self::setLogger();
-
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
@@ -294,8 +298,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function write(string $file, string $data): void {
-        self::setLogger();
-
         $file = self::getRealPath($file);
 
         if (file_put_contents($file, $data) === false) {
@@ -307,8 +309,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function isReadable(string $file): bool {
-        self::setLogger();
-
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
@@ -325,8 +325,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function isReady(string $file, bool $logging = true): bool {
-        self::setLogger();
-
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
@@ -345,8 +343,6 @@ class File extends HelperAbstract implements FileSystemInterface {
     }
 
     public static function wait4Ready(string $file, int $timeout = 30): bool {
-        self::setLogger();
-
         $file = self::getRealPath($file);
 
         $start = time();
