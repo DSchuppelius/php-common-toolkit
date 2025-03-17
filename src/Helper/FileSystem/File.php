@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\FileSystem;
 
-use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
 use CommonToolkit\Helper\Shell;
 use ERRORToolkit\Exceptions\FileSystem\FileExistsException;
@@ -22,7 +22,7 @@ use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
 use finfo;
 
-class File extends HelperAbstract implements FileSystemInterface {
+class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     protected const CONFIG_FILE = __DIR__ . '/../../../config/common_executables.json';
 
     /**

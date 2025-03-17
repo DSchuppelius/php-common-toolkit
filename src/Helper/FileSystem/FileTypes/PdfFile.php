@@ -12,13 +12,13 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
-use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\Shell;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
 
-class PdfFile extends HelperAbstract {
+class PdfFile extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../../../config/pdf_executables.json';
 
     public static function getMetaData(string $file): array {

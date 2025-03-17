@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
-use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\FileSystem\Files;
 use CommonToolkit\Helper\Shell;
@@ -21,7 +21,7 @@ use ERRORToolkit\Exceptions\FileSystem\FileInvalidException;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
 
-class TifFile extends HelperAbstract {
+class TifFile extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../../../config/tiff_executables.json';
 
     private const FILE_EXTENSION_PATTERN = "/\.tif{1,2}$/i";
