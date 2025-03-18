@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "249a150be1f6dbd065300a576ae7c77f",
+    "content-hash": "fc96b2fc936e85b61808b6cdf9bf64a6",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
