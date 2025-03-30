@@ -28,7 +28,7 @@ jobs:
       run: composer install --prefer-dist --no-progress --no-interaction
 
     - name: Install tools
-      run: sudo apt update && apt install -y mupdf-tools xpdf imagemagick-6.q16hdri libtiff-tools
+      run: sudo apt update && sudo apt install -y mupdf-tools xpdf imagemagick-6.q16hdri libtiff-tools
 
     - name: Dump Autoload
       run: composer dump-autoload -o
