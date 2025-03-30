@@ -38,9 +38,9 @@ class TifFile extends ConfiguredHelperAbstract {
             $command = self::getConfiguredCommand("convert", ["[OUTPUT]" => escapeshellarg($newFilename), "[INPUT]" => escapeshellarg($file)]);
 
             if (Shell::executeShellCommand($command)) {
-                self::$logger->info("TIFF-Datei erfolgreich von JPEG repariert: $newFilename");
+                self::logInfo("TIFF-Datei erfolgreich von JPEG repariert: $newFilename");
             } else {
-                self::$logger->error("Fehler bei der Reparatur von TIFF nach JPEG: $newFilename");
+                self::logError("Fehler bei der Reparatur von TIFF nach JPEG: $newFilename");
                 throw new Exception("Fehler bei der Reparatur von TIFF nach JPEG: $newFilename");
             }
 
@@ -52,7 +52,7 @@ class TifFile extends ConfiguredHelperAbstract {
             File::rename($file, $newFilename);
             return self::repair($newFilename);
         } elseif ($mimeType === 'image/tiff' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
-            self::$logger->info("Die Datei ist bereits im TIFF-Format: $file");
+            self::logInfo("Die Datei ist bereits im TIFF-Format: $file");
             if ($forceRepair) {
                 self::$logger->notice("Erzwinge Reparatur der TIFF-Datei: $file");
                 $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".original.tif", $file);
@@ -62,9 +62,9 @@ class TifFile extends ConfiguredHelperAbstract {
                 $command = self::getConfiguredCommand("convert-monochrome", ["[OUTPUT]" => escapeshellarg($newFilename), "[INPUT]" => escapeshellarg($file)]);
 
                 if (Shell::executeShellCommand($command)) {
-                    self::$logger->info("TIFF-Datei erfolgreich repariert: $newFilename");
+                    self::logInfo("TIFF-Datei erfolgreich repariert: $newFilename");
                 } else {
-                    self::$logger->error("Fehler bei der Reparatur von TIFF: $newFilename");
+                    self::logError("Fehler bei der Reparatur von TIFF: $newFilename");
                     throw new Exception("Fehler bei der Reparatur von TIFF: $newFilename");
                 }
 
@@ -73,7 +73,7 @@ class TifFile extends ConfiguredHelperAbstract {
                 return $file;
             }
         } else {
-            self::$logger->error("Die Datei ist nicht im TIFF-Format: $file");
+            self::logError("Die Datei ist nicht im TIFF-Format: $file");
             throw new Exception("Die Datei ist nicht im TIFF-Format: $file");
         }
 
@@ -84,16 +84,16 @@ class TifFile extends ConfiguredHelperAbstract {
         self::setLogger();
 
         if (!File::exists($tiffFile)) {
-            self::$logger->error("Die Datei existiert nicht: $tiffFile");
+            self::logError("Die Datei existiert nicht: $tiffFile");
             throw new FileNotFoundException("Die Datei existiert nicht: $tiffFile");
         } elseif (!is_null($pdfFile) && File::exists($pdfFile)) {
-            self::$logger->error("Die Datei existiert bereits: $pdfFile");
+            self::logError("Die Datei existiert bereits: $pdfFile");
             throw new FileExistsException("Die Datei existiert bereits: $pdfFile");
         } elseif (!self::isValid($tiffFile)) {
             try {
                 $tiffFile = self::repair($tiffFile);  // Reparierter Dateiname wird zurückgegeben
             } catch (Exception $e) {
-                self::$logger->error("Die Datei ist nicht gültig: $tiffFile");
+                self::logError("Die Datei ist nicht gültig: $tiffFile");
                 throw new FileInvalidException("Die Datei ist nicht gültig: $tiffFile");
             }
         }
@@ -103,7 +103,7 @@ class TifFile extends ConfiguredHelperAbstract {
         }
 
         if (File::exists($pdfFile)) {
-            self::$logger->error("Die Datei existiert bereits: $pdfFile");
+            self::logError("Die Datei existiert bereits: $pdfFile");
             throw new FileExistsException("Die Datei existiert bereits: $pdfFile");
         }
 
@@ -114,22 +114,22 @@ class TifFile extends ConfiguredHelperAbstract {
         Shell::executeShellCommand($command);
 
         if (PdfFile::isValid($pdfFile)) {
-            self::$logger->info("TIFF-Datei erfolgreich in PDF umgewandelt: $tiffFile");
+            self::logInfo("TIFF-Datei erfolgreich in PDF umgewandelt: $tiffFile");
         } elseif ($compressed) {
-            self::$logger->warning("Probleme bei der Umwandlung von TIFF in PDF: $tiffFile. Versuche erneute Konvertierung ohne Kompression.");
+            self::logWarning("Probleme bei der Umwandlung von TIFF in PDF: $tiffFile. Versuche erneute Konvertierung ohne Kompression.");
             File::delete($pdfFile);
             TifFile::repair($tiffFile, true);
             self::convertToPdf($tiffFile, $pdfFile, false, false);
 
             if (PdfFile::isValid($pdfFile)) {
-                self::$logger->info("TIFF-Datei erfolgreich ohne Kompression in PDF umgewandelt: $tiffFile");
+                self::logInfo("TIFF-Datei erfolgreich ohne Kompression in PDF umgewandelt: $tiffFile");
             } else {
-                self::$logger->error("Erneuter Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
+                self::logError("Erneuter Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
                 File::delete($pdfFile);
                 throw new Exception("Erneuter Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
             }
         } else {
-            self::$logger->error("Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
+            self::logError("Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
             File::delete($pdfFile);
             throw new Exception("Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
         }
@@ -143,10 +143,10 @@ class TifFile extends ConfiguredHelperAbstract {
         self::setLogger();
 
         if (File::exists($mergedFile)) {
-            self::$logger->error("Die Datei existiert bereits: $mergedFile");
+            self::logError("Die Datei existiert bereits: $mergedFile");
             throw new FileExistsException("Die Datei existiert bereits: $mergedFile");
         } elseif (!Files::exists($tiffFiles)) {
-            self::$logger->error("Die Dateien existieren nicht: " . implode(", ", $tiffFiles));
+            self::logError("Die Dateien existieren nicht: " . implode(", ", $tiffFiles));
             throw new FileNotFoundException("Die Dateien existieren nicht: " . implode(", ", $tiffFiles));
         }
 
@@ -154,7 +154,7 @@ class TifFile extends ConfiguredHelperAbstract {
 
         Shell::executeShellCommand($command);
 
-        self::$logger->info("TIFF-Dateien erfolgreich zusammengeführt: $mergedFile");
+        self::logInfo("TIFF-Dateien erfolgreich zusammengeführt: $mergedFile");
 
         if ($deleteSourceFiles) {
             Files::delete($tiffFiles);
@@ -165,7 +165,7 @@ class TifFile extends ConfiguredHelperAbstract {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei existiert nicht: $file");
+            self::logError("Datei existiert nicht: $file");
             throw new FileNotFoundException("Datei existiert nicht: $file");
         }
 
@@ -175,17 +175,17 @@ class TifFile extends ConfiguredHelperAbstract {
 
             if (Shell::executeShellCommand($command, $output)) {
                 if (str_contains(strtolower(implode($output)), "not a tiff")) {
-                    self::$logger->warning("TIFF-Datei ist ungültig: $file");
+                    self::logWarning("TIFF-Datei ist ungültig: $file");
                     return false;
                 }
-                self::$logger->info("TIFF-Datei ist gültig: $file");
+                self::logInfo("TIFF-Datei ist gültig: $file");
                 return true;
             } else {
-                self::$logger->warning("TIFF-Datei ist ungültig: $file");
+                self::logWarning("TIFF-Datei ist ungültig: $file");
                 return false;
             }
         }
-        self::$logger->warning("Datei ist keine TIFF-Datei: $file");
+        self::logWarning("Datei ist keine TIFF-Datei: $file");
         return false;
     }
 }

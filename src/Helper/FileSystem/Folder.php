@@ -24,7 +24,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $result = is_dir($directory);
 
         if (!$result) {
-            self::$logger->debug("Existenzprüfung des Verzeichnisses: $directory -> false");
+            self::logDebug("Existenzprüfung des Verzeichnisses: $directory -> false");
         }
 
         return $result;
@@ -35,7 +35,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $destinationDirectory = File::getRealPath($destinationDirectory);
 
         if (!self::exists($sourceDirectory)) {
-            self::$logger->error("Das Verzeichnis $sourceDirectory existiert nicht");
+            self::logError("Das Verzeichnis $sourceDirectory existiert nicht");
             throw new FolderNotFoundException("Das Verzeichnis $sourceDirectory existiert nicht");
         }
 
@@ -60,7 +60,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             }
         }
 
-        self::$logger->info("Verzeichnis kopiert von $sourceDirectory nach $destinationDirectory");
+        self::logInfo("Verzeichnis kopiert von $sourceDirectory nach $destinationDirectory");
     }
 
     public static function create(string $directory, int $permissions = 0755, bool $recursive = false): void {
@@ -68,12 +68,12 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         if (!self::exists($directory)) {
             if (!mkdir($directory, $permissions, $recursive)) {
-                self::$logger->error("Fehler beim Erstellen des Verzeichnisses: $directory");
+                self::logError("Fehler beim Erstellen des Verzeichnisses: $directory");
                 throw new Exception("Fehler beim Erstellen des Verzeichnisses $directory");
             }
-            self::$logger->debug("Verzeichnis erstellt: $directory mit Berechtigungen $permissions");
+            self::logDebug("Verzeichnis erstellt: $directory mit Berechtigungen $permissions");
         } else {
-            self::$logger->info("Verzeichnis existiert bereits: $directory");
+            self::logInfo("Verzeichnis existiert bereits: $directory");
         }
     }
 
@@ -82,23 +82,23 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $newName = File::getRealPath($newName);
 
         if (!self::exists($oldName)) {
-            self::$logger->error("Das Verzeichnis $oldName existiert nicht");
+            self::logError("Das Verzeichnis $oldName existiert nicht");
             throw new FolderNotFoundException("Das Verzeichnis $oldName existiert nicht");
         }
 
         if (!rename($oldName, $newName)) {
-            self::$logger->error("Fehler beim Umbenennen des Verzeichnisses von $oldName nach $newName");
+            self::logError("Fehler beim Umbenennen des Verzeichnisses von $oldName nach $newName");
             throw new Exception("Fehler beim Umbenennen des Verzeichnisses von $oldName nach $newName");
         }
 
-        self::$logger->info("Verzeichnis umbenannt von $oldName zu $newName");
+        self::logInfo("Verzeichnis umbenannt von $oldName zu $newName");
     }
 
     public static function delete(string $directory, bool $recursive = false): void {
         $directory = File::getRealPath($directory);
 
         if (!self::exists($directory)) {
-            self::$logger->error("Das Verzeichnis $directory existiert nicht");
+            self::logError("Das Verzeichnis $directory existiert nicht");
             throw new FolderNotFoundException("Das Verzeichnis $directory existiert nicht");
         }
 
@@ -110,17 +110,17 @@ class Folder extends HelperAbstract implements FileSystemInterface {
                     self::delete($path, $recursive);
                 } else {
                     unlink($path);
-                    self::$logger->info("Datei gelöscht: $path");
+                    self::logInfo("Datei gelöscht: $path");
                 }
             }
         }
 
         if (!rmdir($directory)) {
-            self::$logger->error("Fehler beim Löschen des Verzeichnisses $directory");
+            self::logError("Fehler beim Löschen des Verzeichnisses $directory");
             throw new Exception("Fehler beim Löschen des Verzeichnisses $directory");
         }
 
-        self::$logger->info("Verzeichnis gelöscht: $directory");
+        self::logInfo("Verzeichnis gelöscht: $directory");
     }
 
     public static function move(string $sourceDirectory, string $destinationDirectory): void {
@@ -128,16 +128,16 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $destinationDirectory = File::getRealPath($destinationDirectory);
 
         if (!self::exists($sourceDirectory)) {
-            self::$logger->error("Das Verzeichnis $sourceDirectory existiert nicht");
+            self::logError("Das Verzeichnis $sourceDirectory existiert nicht");
             throw new FolderNotFoundException("Das Verzeichnis $sourceDirectory existiert nicht");
         }
 
         if (!rename($sourceDirectory, $destinationDirectory)) {
-            self::$logger->error("Fehler beim Verschieben des Verzeichnisses von $sourceDirectory nach $destinationDirectory");
+            self::logError("Fehler beim Verschieben des Verzeichnisses von $sourceDirectory nach $destinationDirectory");
             throw new Exception("Fehler beim Verschieben des Verzeichnisses von $sourceDirectory nach $destinationDirectory");
         }
 
-        self::$logger->info("Verzeichnis verschoben von $sourceDirectory nach $destinationDirectory");
+        self::logInfo("Verzeichnis verschoben von $sourceDirectory nach $destinationDirectory");
     }
 
     public static function get(string $directory, bool $recursive = false): array {

@@ -14,11 +14,11 @@ namespace CommonToolkit\Contracts\Abstracts;
 
 use CommonToolkit\Contracts\Interfaces\HelperInterface;
 use ERRORToolkit\Factories\ConsoleLoggerFactory;
+use ERRORToolkit\Traits\ErrorLog;
 use Psr\Log\LoggerInterface;
 
 abstract class HelperAbstract implements HelperInterface {
-
-    protected static ?LoggerInterface $logger = null;
+    use ErrorLog;
 
     public static function setLogger(?LoggerInterface $logger = null): void {
         if (!is_null($logger)) {

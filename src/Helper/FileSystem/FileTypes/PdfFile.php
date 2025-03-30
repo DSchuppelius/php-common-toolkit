@@ -25,7 +25,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
@@ -36,7 +36,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         Shell::executeShellCommand($command, $output, $resultCode);
 
         if ($resultCode !== 0) {
-            self::$logger->error("Fehler beim Abrufen der PDF-Metadaten für $file.");
+            self::logError("Fehler beim Abrufen der PDF-Metadaten für $file.");
             throw new Exception("Fehler beim Abrufen der PDF-Metadaten für $file");
         }
 
@@ -51,7 +51,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         }
 
         if (empty($metadata)) {
-            self::$logger->warning("Keine Metadaten für Datei $file gefunden.");
+            self::logWarning("Keine Metadaten für Datei $file gefunden.");
         }
 
         return $metadata;
@@ -61,7 +61,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
@@ -79,7 +79,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
@@ -89,14 +89,14 @@ class PdfFile extends ConfiguredHelperAbstract {
         $executionSuccess = Shell::executeShellCommand($command, $output, $resultCode, false, 1);
 
         if (!$executionSuccess) {
-            self::$logger->error("Fehler bei der PDF-Validierung für $file.");
+            self::logError("Fehler bei der PDF-Validierung für $file.");
             return false;
         }
 
         // Wenn die Ausgabe Fehler enthält, ist die PDF ungültig
         foreach ($output as $line) {
             if (stripos($line, 'error') !== false || stripos($line, 'Syntax.Error') !== false) {
-                self::$logger->error("Syntaxfehler in PDF erkannt: $file");
+                self::logError("Syntaxfehler in PDF erkannt: $file");
                 return false;
             }
         }

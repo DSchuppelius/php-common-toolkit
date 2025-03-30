@@ -33,25 +33,25 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $realPath = realpath($file);
 
             if ($realPath === false) {
-                self::$logger->debug("Konnte Pfad nicht auflösen: $file");
+                self::logDebug("Konnte Pfad nicht auflösen: $file");
                 return $file;
             }
 
             // Falls realpath() den Pfad ändert, loggen
             if ($realPath !== $file) {
-                self::$logger->info("Pfad wurde normalisiert: " . self::shortenByCommonPath($file, $realPath) . " -> $realPath");
+                self::logInfo("Pfad wurde normalisiert: " . self::shortenByCommonPath($file, $realPath) . " -> $realPath");
             }
             return $realPath;
         }
 
-        self::$logger->debug("Pfad existiert nicht, unverändert zurückgeben: $file");
+        self::logDebug("Pfad existiert nicht, unverändert zurückgeben: $file");
         return $file;
     }
 
 
     public static function mimeType(string $file): string|false {
         if (!self::exists($file)) {
-            self::$logger->error("Datei existiert nicht: $file");
+            self::logError("Datei existiert nicht: $file");
             return false;
         }
 
@@ -59,22 +59,22 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $result = false;
 
         if (class_exists('finfo')) {
-            self::$logger->info("Nutze finfo für Erkennung des MIME-Typs: $file");
+            self::logInfo("Nutze finfo für Erkennung des MIME-Typs: $file");
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->file($file);
         } elseif (function_exists('mime_content_type')) {
-            self::$logger->info("Nutze mime_content_type für Erkennung des MIME-Typs: $file");
+            self::logInfo("Nutze mime_content_type für Erkennung des MIME-Typs: $file");
             $result = @mime_content_type($file);
         }
 
         if ($result === false && PHP_OS_FAMILY === 'Linux') {
-            self::$logger->warning("Nutze Shell für Erkennung des MIME-Typs: $file");
+            self::logWarning("Nutze Shell für Erkennung des MIME-Typs: $file");
             $result = self::mimeTypeByShell($file);
         }
 
         // Falls keine Methode den MIME-Typ bestimmen konnte
         if ($result === false) {
-            self::$logger->error("Konnte MIME-Typ nicht bestimmen: $file");
+            self::logError("Konnte MIME-Typ nicht bestimmen: $file");
         }
 
         return $result;
@@ -85,7 +85,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $result = false;
 
         if (!self::exists($file)) {
-            self::$logger->error("Datei existiert nicht: $file");
+            self::logError("Datei existiert nicht: $file");
             return $result;
         }
         $command = self::getConfiguredCommand("mimetype", ["[INPUT]" => escapeshellarg($file)]);
@@ -93,13 +93,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $success = Shell::executeShellCommand($command, $output);
 
         if (!$success || empty($output)) {
-            self::$logger->error("Problem bei der Bestimmung des MIME-Typs für $file");
+            self::logError("Problem bei der Bestimmung des MIME-Typs für $file");
             throw new Exception("Problem bei der Bestimmung des MIME-Typs für $file");
         }
 
         if (!empty($output)) {
             $result = trim(implode("\n", $output));
-            self::$logger->info("MIME-Typ für $file: " . $result);
+            self::logInfo("MIME-Typ für $file: " . $result);
         }
         return $result;
     }
@@ -130,7 +130,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::setLogger();
         $result = file_exists($file);
         if (!$result) {
-            self::$logger->debug("Existenzprüfung der Datei: $file -> false");
+            self::logDebug("Existenzprüfung der Datei: $file -> false");
         }
 
         return $result;
@@ -141,53 +141,53 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $destinationFile = self::getRealPath($destinationFile);
 
         if (!self::exists($sourceFile)) {
-            self::$logger->error("Die Datei $sourceFile existiert nicht");
+            self::logError("Die Datei $sourceFile existiert nicht");
             throw new FileNotFoundException("Die Datei $sourceFile existiert nicht");
         }
 
         if (self::exists($destinationFile)) {
             if (!$overwrite) {
-                self::$logger->info("Die Datei $destinationFile existiert bereits und wird nicht überschrieben.");
+                self::logInfo("Die Datei $destinationFile existiert bereits und wird nicht überschrieben.");
                 return;
             }
-            self::$logger->warning("Die Datei $destinationFile existiert bereits und wird überschrieben.");
+            self::logWarning("Die Datei $destinationFile existiert bereits und wird überschrieben.");
         }
 
         if (!@copy($sourceFile, $destinationFile)) {
             if (self::exists($destinationFile) && filesize($destinationFile) === 0) {
                 unlink($destinationFile);
-                self::$logger->warning("0-Byte-Datei $destinationFile nach fehlgeschlagenem Kopieren gelöscht.");
+                self::logWarning("0-Byte-Datei $destinationFile nach fehlgeschlagenem Kopieren gelöscht.");
             }
 
-            self::$logger->info("Zweiter Versuch, die Datei $sourceFile nach $destinationFile zu kopieren.");
+            self::logInfo("Zweiter Versuch, die Datei $sourceFile nach $destinationFile zu kopieren.");
             if (!@copy($sourceFile, $destinationFile)) {
-                self::$logger->error("Fehler beim erneuten Kopieren der Datei von $sourceFile nach $destinationFile");
+                self::logError("Fehler beim erneuten Kopieren der Datei von $sourceFile nach $destinationFile");
                 throw new FileNotWrittenException("Fehler beim erneuten Kopieren der Datei von $sourceFile nach $destinationFile");
             }
         }
 
-        self::$logger->info("Datei von $sourceFile nach $destinationFile kopiert");
+        self::logInfo("Datei von $sourceFile nach $destinationFile kopiert");
     }
 
     public static function create(string $file, int $permissions = 0644, string $content = ''): void {
         $file = self::getRealPath($file);
 
         if (self::exists($file)) {
-            self::$logger->error("Die Datei $file existiert bereits");
+            self::logError("Die Datei $file existiert bereits");
             throw new FileNotFoundException("Die Datei $file existiert bereits");
         }
 
         if (file_put_contents($file, $content) === false) {
-            self::$logger->error("Fehler beim Erstellen der Datei $file");
+            self::logError("Fehler beim Erstellen der Datei $file");
             throw new FileNotWrittenException("Fehler beim Erstellen der Datei $file");
         }
 
         if (!chmod($file, $permissions)) {
-            self::$logger->error("Fehler beim Setzen der Berechtigungen $permissions für die Datei $file");
+            self::logError("Fehler beim Setzen der Berechtigungen $permissions für die Datei $file");
             throw new Exception("Fehler beim Setzen der Berechtigungen für die Datei $file");
         }
 
-        self::$logger->info("Datei erstellt: $file mit Berechtigungen $permissions");
+        self::logInfo("Datei erstellt: $file mit Berechtigungen $permissions");
     }
 
     public static function rename(string $oldName, string $newName): void {
@@ -195,10 +195,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $newName = self::getRealPath($newName);
 
         if (!self::exists($oldName)) {
-            self::$logger->error("Die Datei $oldName existiert nicht");
+            self::logError("Die Datei $oldName existiert nicht");
             throw new FileNotFoundException("Die Datei $oldName existiert nicht");
         } elseif (self::exists($newName)) {
-            self::$logger->error("Die Datei $newName existiert bereits");
+            self::logError("Die Datei $newName existiert bereits");
             throw new FileExistsException("Die Datei $newName existiert bereits");
         }
 
@@ -207,11 +207,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         if (!rename($oldName, $newName)) {
-            self::$logger->error("Fehler beim Umbenennen der Datei von $oldName nach $newName");
+            self::logError("Fehler beim Umbenennen der Datei von $oldName nach $newName");
             throw new Exception("Fehler beim Umbenennen der Datei von $oldName nach $newName");
         }
 
-        self::$logger->debug("Datei umbenannt von $oldName zu $newName");
+        self::logDebug("Datei umbenannt von $oldName zu $newName");
     }
 
     public static function move(string $sourceFile, string $destinationFolder, ?string $destinationFileName = null, bool $overwrite = true): void {
@@ -221,35 +221,35 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $destinationFile = $destinationFolder . DIRECTORY_SEPARATOR . (is_null($destinationFileName) ? basename($sourceFile) : $destinationFileName);
 
         if (!self::exists($sourceFile)) {
-            self::$logger->error("Die Datei $sourceFile existiert nicht");
+            self::logError("Die Datei $sourceFile existiert nicht");
             throw new FileNotFoundException("Die Datei $sourceFile existiert nicht");
         } elseif (!self::exists($destinationFolder)) {
-            self::$logger->error("Das Zielverzeichnis $destinationFolder existiert nicht");
+            self::logError("Das Zielverzeichnis $destinationFolder existiert nicht");
             throw new FolderNotFoundException("Das Zielverzeichnis $destinationFolder existiert nicht");
         }
 
         if (self::exists($destinationFile)) {
             if (!$overwrite) {
-                self::$logger->info("Die Datei $destinationFile existiert bereits und wird nicht überschrieben.");
+                self::logInfo("Die Datei $destinationFile existiert bereits und wird nicht überschrieben.");
                 return;
             }
-            self::$logger->warning("Die Datei $destinationFile existiert bereits und wird überschrieben.");
+            self::logWarning("Die Datei $destinationFile existiert bereits und wird überschrieben.");
         }
 
         if (!@rename($sourceFile, $destinationFile)) {
             if (self::exists($destinationFile) && filesize($destinationFile) === 0) {
                 unlink($destinationFile);
-                self::$logger->warning("0-Byte-Datei $destinationFile nach fehlgeschlagenem Verschieben gelöscht.");
+                self::logWarning("0-Byte-Datei $destinationFile nach fehlgeschlagenem Verschieben gelöscht.");
             }
 
-            self::$logger->info("Zweiter Versuch, die Datei $sourceFile nach $destinationFile zu verschieben.");
+            self::logInfo("Zweiter Versuch, die Datei $sourceFile nach $destinationFile zu verschieben.");
             if (!@rename($sourceFile, $destinationFile)) {
-                self::$logger->error("Fehler beim erneuten Verschieben der Datei von $sourceFile nach $destinationFile");
+                self::logError("Fehler beim erneuten Verschieben der Datei von $sourceFile nach $destinationFile");
                 throw new FileNotWrittenException("Fehler beim erneuten Verschieben der Datei von $sourceFile nach $destinationFile");
             }
         }
 
-        self::$logger->debug("Datei von $sourceFile zu $destinationFile verschoben");
+        self::logDebug("Datei von $sourceFile zu $destinationFile verschoben");
     }
 
     public static function delete(string $file): void {
@@ -261,18 +261,18 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         if (!unlink($file)) {
-            self::$logger->error("Fehler beim Löschen der Datei: $file");
+            self::logError("Fehler beim Löschen der Datei: $file");
             throw new Exception("Fehler beim Löschen der Datei: $file");
         }
 
-        self::$logger->debug("Datei gelöscht: $file");
+        self::logDebug("Datei gelöscht: $file");
     }
 
     public static function size(string $file): int {
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
-            self::$logger->error("Die Datei $file existiert nicht");
+            self::logError("Die Datei $file existiert nicht");
             throw new FileNotFoundException("Die Datei $file existiert nicht");
         }
 
@@ -283,17 +283,17 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
-            self::$logger->error("Die Datei $file existiert nicht");
+            self::logError("Die Datei $file existiert nicht");
             throw new FileNotFoundException("Die Datei $file existiert nicht");
         }
 
         $content = file_get_contents($file);
         if ($content === false) {
-            self::$logger->error("Fehler beim Lesen der Datei $file");
+            self::logError("Fehler beim Lesen der Datei $file");
             throw new Exception("Fehler beim Lesen der Datei $file");
         }
 
-        self::$logger->debug("Datei erfolgreich gelesen: $file");
+        self::logDebug("Datei erfolgreich gelesen: $file");
         return $content;
     }
 
@@ -301,23 +301,23 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::getRealPath($file);
 
         if (file_put_contents($file, $data) === false) {
-            self::$logger->error("Fehler beim Schreiben in die Datei $file");
+            self::logError("Fehler beim Schreiben in die Datei $file");
             throw new FileNotWrittenException("Fehler beim Schreiben in die Datei $file");
         }
 
-        self::$logger->info("Daten in Datei gespeichert: $file");
+        self::logInfo("Daten in Datei gespeichert: $file");
     }
 
     public static function isReadable(string $file): bool {
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
-            self::$logger->error("Die Datei $file existiert nicht");
+            self::logError("Die Datei $file existiert nicht");
             return false;
         }
 
         if (!is_readable($file)) {
-            self::$logger->error("Die Datei $file ist nicht lesbar");
+            self::logError("Die Datei $file ist nicht lesbar");
             return false;
         }
 
@@ -329,7 +329,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         if (!self::exists($file)) {
             if ($logging) {
-                self::$logger->error("Die Datei $file existiert nicht");
+                self::logError("Die Datei $file existiert nicht");
             }
             return false;
         }
@@ -347,20 +347,20 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         $start = time();
         if (!self::exists($file)) {
-            self::$logger->info("Datei $file existiert nicht.");
+            self::logInfo("Datei $file existiert nicht.");
             return false;
         }
 
         while (!self::isReady($file, false)) {
             if (self::exists($file)) {
                 if (time() - $start >= $timeout) {
-                    self::$logger->error("Timeout beim Warten auf die Datei $file");
+                    self::logError("Timeout beim Warten auf die Datei $file");
                     return false;
                 }
 
                 sleep(1);
             } else {
-                self::$logger->info("Datei $file existiert nicht mehr.");
+                self::logInfo("Datei $file existiert nicht mehr.");
                 return false;
             }
         }

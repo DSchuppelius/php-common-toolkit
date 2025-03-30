@@ -22,36 +22,38 @@ class Shell extends HelperAbstract {
 
         // Prüfen, ob exec() erlaubt ist
         if (!function_exists('exec')) {
-            self::$logger->error("exec() ist auf diesem System deaktiviert. Befehl konnte nicht ausgeführt werden: $command");
+            self::logError("exec() ist auf diesem System deaktiviert. Befehl konnte nicht ausgeführt werden: $command");
             throw new Exception("exec() ist deaktiviert. Der Befehl kann nicht ausgeführt werden.");
+        } else if (empty($command)) {
+            self::logError("Es wurde kein Befehl übergeben. Bitte einen gültigen Befehl angeben.");
+            throw new Exception("Es wurde kein Befehl übergeben. Bitte einen gültigen Befehl angeben.");
         }
 
         // Windows: cmd oder PowerShell
-        if (PHP_OS_FAMILY === 'Windows') {
-            if ($usePowerShell) {
-                $command = "powershell -ExecutionPolicy Bypass -Command \"$command\"";
-            } else {
-                $command = "cmd /c \"$command\"";
-            }
+        if ($usePowerShell) {
+            $shell = (PHP_OS_FAMILY === 'Windows') ? 'powershell' : 'pwsh';
+            $command = "$shell -ExecutionPolicy Bypass -Command " . escapeshellarg($command);
+        } elseif (PHP_OS_FAMILY === 'Windows') {
+            $command = "cmd /c \"$command\"";
         }
 
         exec($command, $output, $resultCode);
 
         // Logging für Debug-Zwecke
-        self::$logger->debug("Befehl ausgeführt: $command");
-        self::$logger->debug("Exit-Code: $resultCode");
+        self::logDebug("Befehl ausgeführt: $command");
+        self::logDebug("Exit-Code: $resultCode");
         if (!empty($output)) {
-            self::$logger->debug("Befehlsausgabe: " . implode("\n", $output));
+            self::logDebug("Befehlsausgabe: " . implode("\n", $output));
         }
 
         if ($resultCode !== $expectedResultCode) {
             $errorMessage = "Fehler bei der Ausführung des Kommandos: $command";
 
             if ($throwException) {
-                self::$logger->error($errorMessage);
+                self::logError($errorMessage);
                 throw new Exception($errorMessage . " Ausgabe: " . implode("\n", $output));
             } else {
-                self::$logger->warning("$errorMessage (keine Exception geworfen)");
+                self::logWarning("$errorMessage (keine Exception geworfen)");
                 return false;
             }
         }
@@ -59,10 +61,23 @@ class Shell extends HelperAbstract {
         return true;
     }
 
-    public static function getPlatformSpecificCommand(string $unixCommand, string $windowsCommand, bool $usePowerShell = false): string {
-        if (PHP_OS_FAMILY === 'Windows') {
-            return $usePowerShell ? "powershell -ExecutionPolicy Bypass -Command " . escapeshellarg($windowsCommand) : $windowsCommand;
+    public static function executeShell(string $command, bool $throwException = false, int $expectedResultCode = 0, bool $usePowerShell = false): string {
+        $output = [];
+        $resultCode = 0;
+
+        if (self::executeShellCommand($command, $output, $resultCode, $throwException, $expectedResultCode, $usePowerShell)) {
+            return implode("\n", $output);
         }
-        return $unixCommand;
+
+        return '';
+    }
+
+    public static function getPlatformSpecificCommand(string $unixCommand, string $windowsCommand, bool $usePowerShell = false): string {
+        if ($usePowerShell) {
+            $shell = (PHP_OS_FAMILY === 'Windows') ? 'powershell' : 'pwsh';
+            return "$shell -ExecutionPolicy Bypass -Command " . escapeshellarg(PHP_OS_FAMILY === 'Windows' ? $windowsCommand : $unixCommand);
+        }
+
+        return PHP_OS_FAMILY === 'Windows' ? $windowsCommand : $unixCommand;
     }
 }

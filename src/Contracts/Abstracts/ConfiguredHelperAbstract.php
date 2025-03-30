@@ -25,16 +25,16 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
         $executable = $configLoader->getWithReplaceParams("shellExecutables", $commandName, $params, null);
 
         if (!$executable) {
-            self::$logger->error("Keine Konfiguration für '$commandName' gefunden.");
+            self::logError("Keine Konfiguration für '$commandName' gefunden.");
             return null;
         } elseif (empty($executable['path'])) {
-            self::$logger->error("Kein Pfad für '$commandName' in der Konfiguration gefunden.");
+            self::logError("Kein Pfad für '$commandName' in der Konfiguration gefunden.");
             return null;
         }
 
         $finalCommand = escapeshellarg($executable['path']) . ' ' . implode(' ', $executable['arguments'] ?? []);
 
-        self::$logger->debug("Kommando generiert für '$commandName': $finalCommand");
+        self::logDebug("Kommando generiert für '$commandName': $finalCommand");
 
         return $finalCommand;
     }

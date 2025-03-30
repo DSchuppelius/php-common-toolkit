@@ -24,7 +24,7 @@ class CsvFile extends HelperAbstract {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Die Datei $file existiert nicht oder ist nicht lesbar.");
+            self::logError("Die Datei $file existiert nicht oder ist nicht lesbar.");
             throw new FileNotFoundException("Die Datei $file existiert nicht oder ist nicht lesbar.");
         }
 
@@ -32,7 +32,7 @@ class CsvFile extends HelperAbstract {
 
         $handle = fopen($file, 'r');
         if (!$handle) {
-            self::$logger->error("Fehler beim Öffnen der Datei: $file");
+            self::logError("Fehler beim Öffnen der Datei: $file");
             throw new Exception("Fehler beim Öffnen der Datei: $file");
         }
 
@@ -51,7 +51,7 @@ class CsvFile extends HelperAbstract {
         $detectedDelimiter = key($delimiterCounts);
 
         if ($delimiterCounts[$detectedDelimiter] === 0) {
-            self::$logger->error("Kein geeignetes Trennzeichen in der Datei $file gefunden.");
+            self::logError("Kein geeignetes Trennzeichen in der Datei $file gefunden.");
             throw new Exception("Kein geeignetes Trennzeichen in der Datei $file gefunden.");
         }
 
@@ -62,7 +62,7 @@ class CsvFile extends HelperAbstract {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
@@ -71,7 +71,7 @@ class CsvFile extends HelperAbstract {
         $delimiter = $delimiter ?? self::detectDelimiter($file);
         $handle = fopen($file, 'r');
         if (!$handle) {
-            self::$logger->error("Fehler beim Öffnen der CSV-Datei: $file");
+            self::logError("Fehler beim Öffnen der CSV-Datei: $file");
             throw new Exception("Fehler beim Öffnen der CSV-Datei: $file");
         }
 
@@ -96,7 +96,7 @@ class CsvFile extends HelperAbstract {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
@@ -105,7 +105,7 @@ class CsvFile extends HelperAbstract {
         $delimiter = $delimiter ?? self::detectDelimiter($file);
         $handle = fopen($file, 'r');
         if (!$handle) {
-            self::$logger->error("Fehler beim Öffnen der CSV-Datei: $file");
+            self::logError("Fehler beim Öffnen der CSV-Datei: $file");
             throw new Exception("Fehler beim Öffnen der CSV-Datei: $file");
         }
 
@@ -128,7 +128,7 @@ class CsvFile extends HelperAbstract {
         self::setLogger();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
@@ -137,7 +137,7 @@ class CsvFile extends HelperAbstract {
         $delimiter = $delimiter ?? self::detectDelimiter($file);
         $handle = fopen($file, 'r');
         if (!$handle) {
-            self::$logger->error("Fehler beim Öffnen der CSV-Datei: $file");
+            self::logError("Fehler beim Öffnen der CSV-Datei: $file");
             throw new Exception("Fehler beim Öffnen der CSV-Datei: $file");
         }
 
@@ -145,7 +145,7 @@ class CsvFile extends HelperAbstract {
         fclose($handle);
 
         if ($header === false) {
-            self::$logger->error("Fehler beim Lesen der Kopfzeile in der CSV-Datei: $file");
+            self::logError("Fehler beim Lesen der Kopfzeile in der CSV-Datei: $file");
             throw new Exception("Fehler beim Lesen der Kopfzeile in der CSV-Datei: $file");
         }
 

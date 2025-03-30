@@ -5,6 +5,18 @@
             "required": false,
             "description": "Mimetypes of files",
             "arguments": ["-b --mime-type -m /usr/share/misc/magic", "[INPUT]"]
+        },
+        "java": {
+            "path": "java",
+            "required": true,
+            "description": "Runtime Environment for Java",
+            "arguments": ["-jar [PROGRAM]"]
+        },
+        "java-class": {
+            "path": "java",
+            "required": true,
+            "description": "Runtime Environment for Javaclasses",
+            "arguments": ["-cp [CLASSPATH] [MAINCLASS]", "class [CLASS]"]
         }
     }
 }

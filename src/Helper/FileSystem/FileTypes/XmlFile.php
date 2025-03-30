@@ -29,7 +29,7 @@ class XmlFile extends HelperAbstract {
         self::setLogger();
 
         if (!extension_loaded('dom')) {
-            self::$logger->error("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
+            self::logError("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
             throw new Exception("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
         }
     }
@@ -44,7 +44,7 @@ class XmlFile extends HelperAbstract {
         self::checkDomExtension();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
@@ -73,7 +73,7 @@ class XmlFile extends HelperAbstract {
         self::checkDomExtension();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
@@ -96,12 +96,12 @@ class XmlFile extends HelperAbstract {
         self::checkDomExtension();
 
         if (!File::exists($file)) {
-            self::$logger->error("Datei $file nicht gefunden.");
+            self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
         if (!File::exists($xsdSchema)) {
-            self::$logger->error("XSD-Schema $xsdSchema nicht gefunden.");
+            self::logError("XSD-Schema $xsdSchema nicht gefunden.");
             throw new FileNotFoundException("XSD-Schema $xsdSchema nicht gefunden.");
         }
 
@@ -118,7 +118,7 @@ class XmlFile extends HelperAbstract {
         if (!$isValid) {
             self::logLibxmlErrors("XML-Datei $file entspricht nicht dem XSD-Schema $xsdSchema");
         } else {
-            self::$logger->info("XML-Datei $file entspricht dem XSD-Schema $xsdSchema.");
+            self::logInfo("XML-Datei $file entspricht dem XSD-Schema $xsdSchema.");
         }
 
         libxml_clear_errors();
@@ -131,7 +131,7 @@ class XmlFile extends HelperAbstract {
     private static function logLibxmlErrors(string $errorMessage): void {
         $errors = libxml_get_errors();
         foreach ($errors as $error) {
-            self::$logger->error("$errorMessage - libxml Fehler: " . trim($error->message));
+            self::logError("$errorMessage - libxml Fehler: " . trim($error->message));
         }
     }
 }
