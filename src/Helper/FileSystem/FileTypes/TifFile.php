@@ -54,11 +54,11 @@ class TifFile extends ConfiguredHelperAbstract {
         } elseif ($mimeType === 'image/tiff' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
             self::logInfo("Die Datei ist bereits im TIFF-Format: $file");
             if ($forceRepair) {
-                self::$logger->notice("Erzwinge Reparatur der TIFF-Datei: $file");
+                self::logNotice("Erzwinge Reparatur der TIFF-Datei: $file");
                 $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".original.tif", $file);
                 File::rename($file, $newFilename);
 
-                self::$logger->notice("Erstelle monochrome Kopie der TIFF-Datei: $newFilename");
+                self::logNotice("Erstelle monochrome Kopie der TIFF-Datei: $newFilename");
                 $command = self::getConfiguredCommand("convert-monochrome", ["[OUTPUT]" => escapeshellarg($newFilename), "[INPUT]" => escapeshellarg($file)]);
 
                 if (Shell::executeShellCommand($command)) {

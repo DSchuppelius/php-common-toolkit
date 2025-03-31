@@ -256,7 +256,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::getRealPath($file);
 
         if (!self::exists($file)) {
-            self::$logger->notice("Die zu löschende Datei: $file existiert nicht");
+            self::logNotice("Die zu löschende Datei: $file existiert nicht");
             return;
         }
 
