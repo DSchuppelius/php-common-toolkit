@@ -30,7 +30,7 @@ class Java extends ConfiguredHelperAbstract {
             throw new Exception("Die angegebene JAR-Datei existiert nicht: $path");
         }
 
-        $command = self::getConfiguredCommand("java", ["[PROGRAM]" => $path]);
+        $command = self::getConfiguredCommand("java-program", ["[PROGRAM]" => $path]);
         if (empty($command)) {
             self::logError("JAVA-Ausführung benötigt eine JAVA-Runtime. Bitte installieren Sie eine JAVA-Runtime.");
             throw new Exception("JAVA-Ausführung benötigt eine JAVA-Runtime.");
@@ -51,5 +51,21 @@ class Java extends ConfiguredHelperAbstract {
             throw new Exception("JAVA Klassen-Ausführung benötigt eine JAVA-Runtime.");
         }
         return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)));
+    }
+
+    public static function exists(): bool {
+        self::setLogger();
+
+        // Versuche den Java-Befehl aus der Konfiguration zu ermitteln
+        $command = self::getConfiguredCommand("java") . "-version 2>&1";
+        $output = [];
+
+        if (Shell::executeShellCommand($command, $output)) {
+            self::$logger->debug("Java ist verfügbar: " . implode("\n", $output));
+            return true;
+        }
+
+        self::$logger->warning("Java wurde nicht gefunden oder ist nicht lauffähig.");
+        return false;
     }
 }

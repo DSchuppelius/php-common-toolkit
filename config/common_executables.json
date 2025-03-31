@@ -10,6 +10,12 @@
             "path": "java",
             "required": true,
             "description": "Runtime Environment for Java",
+            "arguments": []
+        },
+        "java-program": {
+            "path": "java",
+            "required": true,
+            "description": "Runtime Environment for Java-Programs",
             "arguments": ["-jar [PROGRAM]"]
         },
         "java-class": {
