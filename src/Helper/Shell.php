@@ -13,55 +13,69 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Entities\Executables\ShellExecutable;
 use Exception;
 
 class Shell extends HelperAbstract {
 
+    /**
+     * Führt einen Shell-Befehl aus und liefert true/false anhand des Exit-Codes.
+     */
     public static function executeShellCommand(string $command, array &$output = [], int &$resultCode = 0, bool $throwException = false, int $expectedResultCode = 0, bool $usePowerShell = false): bool {
         self::setLogger();
 
-        // Prüfen, ob exec() erlaubt ist
+        // Vorabprüfung
         if (!function_exists('exec')) {
-            self::logError("exec() ist auf diesem System deaktiviert. Befehl konnte nicht ausgeführt werden: $command");
-            throw new Exception("exec() ist deaktiviert. Der Befehl kann nicht ausgeführt werden.");
-        } else if (empty($command)) {
-            self::logError("Es wurde kein Befehl übergeben. Bitte einen gültigen Befehl angeben.");
-            throw new Exception("Es wurde kein Befehl übergeben. Bitte einen gültigen Befehl angeben.");
+            $msg = "exec() ist deaktiviert. Der Befehl kann nicht ausgeführt werden.";
+            self::logError("$msg Befehl: $command");
+            throw new Exception($msg);
         }
 
-        // Windows: cmd oder PowerShell
-        if ($usePowerShell) {
-            $shell = (PHP_OS_FAMILY === 'Windows') ? 'powershell' : 'pwsh';
-            $command = "$shell -ExecutionPolicy Bypass -Command " . escapeshellarg($command);
-        } elseif (PHP_OS_FAMILY === 'Windows') {
-            $command = "cmd /c \"$command\"";
+        if (trim($command) === '') {
+            $msg = "Es wurde kein Befehl übergeben. Bitte einen gültigen Befehl angeben.";
+            self::logError($msg);
+            throw new Exception($msg);
         }
 
+        // Plattformabhängige Shell-Vorbereitung
+        $command = self::buildPlatformCommand($command, $usePowerShell);
+
+        // Ausführung
         exec($command, $output, $resultCode);
 
-        // Logging für Debug-Zwecke
+        // Logging
         self::logDebug("Befehl ausgeführt: $command");
         self::logDebug("Exit-Code: $resultCode");
+
         if (!empty($output)) {
             self::logDebug("Befehlsausgabe: " . implode("\n", $output));
         }
 
+        // Fehlerbehandlung
         if ($resultCode !== $expectedResultCode) {
             $errorMessage = "Fehler bei der Ausführung des Kommandos: $command";
 
             if ($throwException) {
                 self::logError($errorMessage);
-                throw new Exception($errorMessage . " Ausgabe: " . implode("\n", $output));
-            } else {
-                self::logWarning("$errorMessage (keine Exception geworfen)");
-                return false;
+                throw new Exception("$errorMessage Ausgabe: " . implode("\n", $output));
             }
+
+            self::logWarning("$errorMessage (keine Exception geworfen)");
+            return false;
         }
 
         return true;
     }
 
-    public static function executeShell(string $command, bool $throwException = false, int $expectedResultCode = 0, bool $usePowerShell = false): string {
+    /**
+     * Führt einen Befehl aus und gibt die Ausgabe als String zurück.
+     */
+    public static function executeShell(
+        string $command,
+        bool $throwException = false,
+        int $expectedResultCode = 0,
+        bool $usePowerShell = false
+    ): string {
         $output = [];
         $resultCode = 0;
 
@@ -72,12 +86,30 @@ class Shell extends HelperAbstract {
         return '';
     }
 
+    /**
+     * Liefert den plattformspezifischen Befehl für eine CMD- oder PowerShell-Ausführung.
+     */
     public static function getPlatformSpecificCommand(string $unixCommand, string $windowsCommand, bool $usePowerShell = false): string {
+        $cmd = PHP_OS_FAMILY === 'Windows' ? $windowsCommand : $unixCommand;
+        return self::buildPlatformCommand($cmd, $usePowerShell);
+    }
+
+    /**
+     * Gibt alle konfigurierten ShellExecutables zurück.
+     */
+    public static function getConfiguredExecutables(): array {
+        return self::getExecutableInstances('shellExecutables', ShellExecutable::class);
+    }
+
+    /**
+     * Bereitet einen plattformspezifischen Befehl (CMD oder PowerShell) vor.
+     */
+    private static function buildPlatformCommand(string $command, bool $usePowerShell = false): string {
         if ($usePowerShell) {
-            $shell = (PHP_OS_FAMILY === 'Windows') ? 'powershell' : 'pwsh';
-            return "$shell -ExecutionPolicy Bypass -Command " . escapeshellarg(PHP_OS_FAMILY === 'Windows' ? $windowsCommand : $unixCommand);
+            $shell = PHP_OS_FAMILY === 'Windows' ? 'powershell' : 'pwsh';
+            return "$shell -ExecutionPolicy Bypass -Command " . escapeshellarg($command);
         }
 
-        return PHP_OS_FAMILY === 'Windows' ? $windowsCommand : $unixCommand;
+        return $command;
     }
 }

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper;
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
+use CommonToolkit\Entities\Executables\JavaExecutable;
 use CommonToolkit\Helper\FileSystem\File;
 use Exception;
 
@@ -67,5 +68,9 @@ class Java extends ConfiguredHelperAbstract {
 
         self::$logger->warning("Java wurde nicht gefunden oder ist nicht lauffähig.");
         return false;
+    }
+
+    public static function getConfiguredExecutables(): array {
+        return self::getExecutableInstances('javaExecutables', JavaExecutable::class);
     }
 }

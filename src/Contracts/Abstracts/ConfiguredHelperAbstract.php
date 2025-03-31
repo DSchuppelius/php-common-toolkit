@@ -20,23 +20,44 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
     protected const CONFIG_FILE = '';
     private static ?ConfigLoader $configLoader = null;
 
-    protected static function getConfiguredCommand(string $commandName, array $params = []): ?string {
-        $configLoader = self::getConfigLoader();
-        $executable = $configLoader->getWithReplaceParams("shellExecutables", $commandName, $params, null);
+    protected static function getConfiguredCommand(string $commandName, array $params = [], string $type = 'shellExecutables'): ?string {
+        $executable = self::getResolvedExecutableConfig($commandName, $params, $type);
 
         if (!$executable) {
-            self::logError("Keine Konfiguration für '$commandName' gefunden.");
+            return null; // Fehler wurde bereits in getResolvedExecutableConfig() geloggt
+        }
+
+        $finalCommand = escapeshellarg($executable['path']) . ' ' . implode(' ', $executable['arguments'] ?? []);
+        self::logDebug("Kommando generiert für '$commandName': $finalCommand");
+
+        return $finalCommand;
+    }
+
+    protected static function getResolvedExecutableConfig(string $commandName, array $params = [], string $type = 'shellExecutables'): ?array {
+        $configLoader = self::getConfigLoader();
+        $executable = $configLoader->getWithReplaceParams($type, $commandName, $params, null);
+
+        if (!$executable) {
+            self::logError("Keine Konfiguration für '$commandName' gefunden in '$type'.");
             return null;
         } elseif (empty($executable['path'])) {
             self::logError("Kein Pfad für '$commandName' in der Konfiguration gefunden.");
             return null;
         }
 
-        $finalCommand = escapeshellarg($executable['path']) . ' ' . implode(' ', $executable['arguments'] ?? []);
+        return $executable;
+    }
 
-        self::logDebug("Kommando generiert für '$commandName': $finalCommand");
+    protected static function getExecutableInstances(string $configKey, string $class): array {
+        $configLoader = self::getConfigLoader();
+        $items = $configLoader->get($configKey);
+        $executables = [];
 
-        return $finalCommand;
+        foreach ($items as $name => $config) {
+            $executables[$name] = new $class($config);
+        }
+
+        return $executables;
     }
 
     /**
