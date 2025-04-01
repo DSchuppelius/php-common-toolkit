@@ -14,6 +14,7 @@ namespace CommonToolkit\Helper\FileSystem;
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
+use CommonToolkit\Helper\PlatformHelper;
 use CommonToolkit\Helper\Shell;
 use ERRORToolkit\Exceptions\FileSystem\FileExistsException;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
@@ -67,7 +68,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $result = @mime_content_type($file);
         }
 
-        if ($result === false && PHP_OS_FAMILY === 'Linux') {
+        if ($result === false && PlatformHelper::isLinux()) {
             self::logWarning("Nutze Shell für Erkennung des MIME-Typs: $file");
             $result = self::mimeTypeByShell($file);
         }
