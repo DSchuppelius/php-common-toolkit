@@ -16,8 +16,8 @@ use CommonToolkit\Contracts\Abstracts\ExecutableAbstract;
 
 class ShellExecutable extends ExecutableAbstract {
     public function execute(array $overrideArgs = []): string {
-        $args = !empty($overrideArgs) ? $overrideArgs : $this->args;
-        $cmd = escapeshellcmd($this->path . ' ' . implode(' ', $args));
+        $args = $this->prepareArguments($overrideArgs);
+        $cmd = escapeshellcmd($this->path) . ' ' . implode(' ', array_map('escapeshellarg', $args));
         return shell_exec($cmd);
     }
 }

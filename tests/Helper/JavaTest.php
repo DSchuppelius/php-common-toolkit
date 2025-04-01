@@ -10,9 +10,11 @@
 
 declare(strict_types=1);
 
+use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Entities\Executables\JavaExecutable;
 use PHPUnit\Framework\TestCase;
 use CommonToolkit\Helper\Java;
+use ConfigToolkit\ConfigLoader;
 
 class JavaTest extends TestCase {
 
@@ -73,5 +75,43 @@ class JavaTest extends TestCase {
         $output = $executable->execute();
         $this->assertIsString($output);
         $this->assertStringContainsStringIgnoringCase('world', $output); // je nach Dummy-JAR
+    }
+
+    public function testJavaExecutableReplacesPlaceholdersCorrectly(): void {
+        if (!Java::exists()) {
+            $this->markTestSkipped('Java ist auf diesem System nicht installiert.');
+        }
+
+        $configFile = __DIR__ . '/../test-configs/executables_config.json';
+
+        if (!file_exists($configFile)) {
+            $this->markTestSkipped('Testkonfigurationsdatei nicht vorhanden.');
+        }
+
+        // Reset ConfigLoader (Singleton) & ConfiguredHelperAbstract::$configLoader
+        ConfigLoader::resetInstance();
+
+        $ref = new ReflectionClass(ConfiguredHelperAbstract::class);
+        $prop = $ref->getProperty('configLoader');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null); // static::$configLoader = null;
+
+        $loader = ConfigLoader::getInstance();
+        $loader->loadConfigFile($configFile, true, true);
+
+        // hole Executable
+        $executables = Java::getConfiguredExecutables();
+
+        $this->assertArrayHasKey('echoTest', $executables);
+        $executable = $executables['echoTest'];
+        $executableReflection = new ReflectionClass($executable);
+        $pathProperty = $executableReflection->getProperty('path');
+        $pathProperty->setAccessible(true);
+        $pathProperty->setValue($executable, realpath(__DIR__ . '/../../.samples/echoargs.jar'));
+
+        $output = $executable->execute(['[INPUT]' => 'Hallo Welt']);
+
+        $this->assertIsString($output);
+        $this->assertStringContainsString('Hallo Welt', $output);
     }
 }

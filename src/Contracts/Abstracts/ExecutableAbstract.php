@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Contracts\Abstracts;
 
+use CommonToolkit\Helper\PlatformHelper;
+
 abstract class ExecutableAbstract {
     protected string $path;
     protected array $args = [];
@@ -26,24 +28,44 @@ abstract class ExecutableAbstract {
     }
 
     protected function normalizeExecutableConfig(array $config): array {
-        $os = strtoupper(PHP_OS_FAMILY);
-        $isWindows = $os === 'WINDOWS';
-
-        $config['path'] = $config['path'] ?? ($isWindows ? ($config['windowsPath'] ?? '') : ($config['linuxPath'] ?? ''));
-
-        if (isset($config['windowsArguments']) || isset($config['linuxArguments'])) {
-            $config['arguments'] = $isWindows
-                ? ($config['windowsArguments'] ?? $config['arguments'] ?? [])
-                : ($config['linuxArguments'] ?? $config['arguments'] ?? []);
-        }
-
-        if (isset($config['windowsDebugArguments']) || isset($config['linuxDebugArguments'])) {
-            $config['debugArguments'] = $isWindows
-                ? ($config['windowsDebugArguments'] ?? $config['debugArguments'] ?? [])
-                : ($config['linuxDebugArguments'] ?? $config['debugArguments'] ?? []);
-        }
+        $config['path'] = $config['path'] ?? $this->resolveOsSpecificValue($config, 'Path');
+        $config['arguments'] = $this->resolveOsSpecificValue($config, 'Arguments', $config['arguments'] ?? []);
+        $config['debugArguments'] = $this->resolveOsSpecificValue($config, 'DebugArguments', $config['debugArguments'] ?? []);
 
         return $config;
+    }
+
+    protected function resolveOsSpecificValue(array $config, string $name, mixed $fallback = null): mixed {
+        $osKey = PlatformHelper::isWindows() ? "windows{$name}" : "linux{$name}";
+        return $config[$osKey] ?? $fallback;
+    }
+
+    protected function prepareArguments(array $overrideArgs = []): array {
+        $baseArgs = $this->args ?? [];
+        $resolvedArgs = [];
+        $usedKeys = [];
+
+        foreach ($baseArgs as $arg) {
+            if (is_string($arg)) {
+                foreach ($overrideArgs as $key => $value) {
+                    if (is_string($key) && str_contains($arg, $key)) {
+                        $arg = str_replace($key, $value, $arg);
+                        $usedKeys[] = $key;
+                    }
+                }
+            }
+            $resolvedArgs[] = $arg;
+        }
+
+        foreach ($overrideArgs as $key => $value) {
+            if (is_int($key)) {
+                $resolvedArgs[] = $value;
+            } elseif (!in_array($key, $usedKeys, true)) {
+                $resolvedArgs[] = $value;
+            }
+        }
+
+        return $resolvedArgs;
     }
 
     abstract public function execute(array $overrideArgs = []): string;

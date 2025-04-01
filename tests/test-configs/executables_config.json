@@ -1,0 +1,40 @@
+{
+    "shellExecutables": {
+        "ping": {
+            "path": "ping",
+            "required": true,
+            "description": "Ping"
+        },
+        "java": {
+            "path": "java",
+            "required": true,
+            "description": "Runtime Environment for Java",
+            "arguments": []
+        },
+        "java-program": {
+            "path": "java",
+            "required": true,
+            "description": "Runtime Environment for Java-Programs",
+            "arguments": ["-jar [PROGRAM]"]
+        },
+        "java-class": {
+            "path": "java",
+            "required": true,
+            "description": "Runtime Environment for Javaclasses",
+            "arguments": ["-cp [CLASSPATH] [MAINCLASS]", "class [CLASS]"]
+        }
+    },
+    "javaExecutables": {
+        "echoTest": {
+            "path": ".samples/dummy.jar",
+            "required": false,
+            "description": "ECHO Test",
+            "arguments": [
+                "ExtractText", "[INPUT]"
+            ],
+            "debugArguments": [
+                "ExtractText", "[INPUT]"
+            ]
+        }
+    }
+}

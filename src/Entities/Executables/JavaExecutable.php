@@ -18,12 +18,10 @@ use Exception;
 
 class JavaExecutable extends ExecutableAbstract {
     public function execute(array $overrideArgs = []): string {
-        $args = !empty($overrideArgs) ? $overrideArgs : $this->args;
-
         if (!Java::exists()) {
             throw new Exception("Java ist auf diesem System nicht verfügbar.");
         }
 
-        return Java::execute($this->path, $args);
+        return Java::execute($this->path, $this->prepareArguments($overrideArgs));
     }
 }
