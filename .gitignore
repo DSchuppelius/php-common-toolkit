@@ -408,3 +408,5 @@ phpunit.xml
 .env
 /public/bundles/
 /vendor/
+
+/data/blz-aktuell-txt-data.txt

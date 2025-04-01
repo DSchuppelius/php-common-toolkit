@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Contracts\Abstracts;
 
-use CommonToolkit\Helper\PlatformHelper;
+use CommonToolkit\Helper\Platform;
 
 abstract class ExecutableAbstract {
     protected string $path;
@@ -36,7 +36,7 @@ abstract class ExecutableAbstract {
     }
 
     protected function resolveOsSpecificValue(array $config, string $name, mixed $fallback = null): mixed {
-        $osKey = PlatformHelper::isWindows() ? "windows{$name}" : "linux{$name}";
+        $osKey = Platform::isWindows() ? "windows{$name}" : "linux{$name}";
         return $config[$osKey] ?? $fallback;
     }
 

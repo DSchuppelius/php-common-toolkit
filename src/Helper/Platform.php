@@ -3,7 +3,7 @@
  * Created on   : Tue Apr 01 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : PlatformHelper.php
+ * Filename     : Platform.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper;
 
-class PlatformHelper {
+class Platform {
     public static function isWindows(): bool {
         return self::getOsName() === 'WINDOWS';
     }

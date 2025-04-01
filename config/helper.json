@@ -1,0 +1,25 @@
+{
+    "Bundesbank": [
+		{
+			"key": "resourceurl",
+			"value": "https://www.bundesbank.de/resource/blob/602632/7065155458dea5dbbb6dcbe744fe0c7d/472B63F073F071307366337C94F8C870/blz-aktuell-txt-data.txt",
+			"type": "text",
+			"description": "URL to the Bundesbank BLZ file",
+			"enabled": true
+		},
+		{
+			"key": "file",
+			"value": "data/blz-aktuell-txt-data.txt",
+			"type": "text",
+			"description": "Path to the local BLZ file",
+			"enabled": true
+		},
+		{
+			"key": "expiry_days",
+            "value": 365,
+			"type": "int",
+			"description": "Password for the Datev API",
+			"enabled": true
+		}
+	]
+}

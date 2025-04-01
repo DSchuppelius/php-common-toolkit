@@ -14,7 +14,7 @@ namespace CommonToolkit\Helper\FileSystem;
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
-use CommonToolkit\Helper\PlatformHelper;
+use CommonToolkit\Helper\Platform;
 use CommonToolkit\Helper\Shell;
 use ERRORToolkit\Exceptions\FileSystem\FileExistsException;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
@@ -63,7 +63,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if ($result !== false) return $result;
         }
 
-        if (PlatformHelper::isLinux()) {
+        if (Platform::isLinux()) {
             self::logWarning("Fallback via Shell für MIME-Typ: $file");
             return self::detectViaShell('mimetype', $file);
         }
@@ -83,7 +83,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if ($result !== false) return $result;
         }
 
-        if (PlatformHelper::isLinux()) {
+        if (Platform::isLinux()) {
             self::logWarning("Fallback via Shell für MIME-Encoding: $file");
             return self::detectViaShell('mime-encoding', $file);
         }

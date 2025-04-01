@@ -90,7 +90,7 @@ class Shell extends HelperAbstract {
      * Liefert den plattformspezifischen Befehl für eine CMD- oder PowerShell-Ausführung.
      */
     public static function getPlatformSpecificCommand(string $unixCommand, string $windowsCommand, bool $usePowerShell = false): string {
-        $cmd = PlatformHelper::isWindows() ? $windowsCommand : $unixCommand;
+        $cmd = Platform::isWindows() ? $windowsCommand : $unixCommand;
         return self::buildPlatformCommand($cmd, $usePowerShell);
     }
 
@@ -106,7 +106,7 @@ class Shell extends HelperAbstract {
      */
     private static function buildPlatformCommand(string $command, bool $usePowerShell = false): string {
         if ($usePowerShell) {
-            $shell = PlatformHelper::isWindows() ? 'powershell' : 'pwsh';
+            $shell = Platform::isWindows() ? 'powershell' : 'pwsh';
             return "$shell -ExecutionPolicy Bypass -Command " . escapeshellarg($command);
         }
 
