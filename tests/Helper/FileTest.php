@@ -33,15 +33,36 @@ class FileTest extends TestCase {
         $this->assertEquals('text/plain', $mimeType);
     }
 
+    public function testMimeEncoding() {
+        $encoding = File::mimeEncoding($this->testFile);
+        $this->assertIsString($encoding);
+        $this->assertNotEmpty($encoding);
+    }
+
+    public function testChardet() {
+        $encoding = File::chardet($this->testFile);
+        $this->assertIsString($encoding);
+        $this->assertNotEmpty($encoding);
+    }
+
     public function testMimeTypeFailure() {
         $invalidFile = '/path/to/nonexistent/file';
-        $this->assertEmpty(File::mimeType($invalidFile));
+        $this->assertFalse(File::mimeType($invalidFile));
+    }
+
+    public function testMimeEncodingFailure() {
+        $invalidFile = '/path/to/nonexistent/file';
+        $this->assertFalse(File::mimeEncoding($invalidFile));
+    }
+
+    public function testChardetFailure() {
+        $invalidFile = '/path/to/nonexistent/file';
+        $this->assertFalse(File::chardet($invalidFile));
     }
 
     public function testFileExistsReturnsTrueForExistingFile() {
         $testFile = tempnam(sys_get_temp_dir(), 'test');
         $this->assertTrue(File::exists($testFile));
-
         unlink($testFile);
     }
 

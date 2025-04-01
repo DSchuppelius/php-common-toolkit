@@ -26,105 +26,88 @@ use finfo;
 class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     protected const CONFIG_FILE = __DIR__ . '/../../../config/common_executables.json';
 
-    /**
-     * Holt den realen Pfad aus einer Pfadangabe und loggt diese, falls der Pfad angepasst wurde.
-     */
-    public static function getRealPath(string $file): string {
-        if (self::exists($file)) {
-            $realPath = realpath($file);
-
-            if ($realPath === false) {
-                self::logDebug("Konnte Pfad nicht auflösen: $file");
-                return $file;
-            }
-
-            // Falls realpath() den Pfad ändert, loggen
-            if ($realPath !== $file) {
-                self::logInfo("Pfad wurde normalisiert: " . self::shortenByCommonPath($file, $realPath) . " -> $realPath");
-            }
-            return $realPath;
-        }
-
-        self::logDebug("Pfad existiert nicht, unverändert zurückgeben: $file");
-        return $file;
-    }
-
-
-    public static function mimeType(string $file): string|false {
+    private static function getRealExistingFile(string $file): string|false {
         if (!self::exists($file)) {
             self::logError("Datei existiert nicht: $file");
             return false;
         }
+        return self::getRealPath($file);
+    }
 
-        $file = self::getRealPath($file);
-        $result = false;
+    private static function detectViaShell(string $commandName, string $file): string|false {
+        $command = self::getConfiguredCommand($commandName, ['[INPUT]' => escapeshellarg($file)]);
+        if (empty($command)) {
+            self::logError("Kein Befehl für $commandName gefunden.");
+            return false;
+        }
+
+        $output = [];
+        if (!Shell::executeShellCommand($command, $output) || empty($output)) {
+            self::logError("Fehler beim $commandName-Aufruf für $file");
+            return false;
+        }
+
+        $result = trim(implode("\n", $output));
+        self::logInfo("$commandName für $file erkannt: $result");
+        return $result;
+    }
+
+    public static function mimeType(string $file): string|false {
+        $file = self::getRealExistingFile($file);
+        if ($file === false) return false;
 
         if (class_exists('finfo')) {
-            self::logInfo("Nutze finfo für Erkennung des MIME-Typs: $file");
+            self::logInfo("Nutze finfo für MIME-Typ: $file");
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->file($file);
-        } elseif (function_exists('mime_content_type')) {
-            self::logInfo("Nutze mime_content_type für Erkennung des MIME-Typs: $file");
-            $result = @mime_content_type($file);
+            if ($result !== false) return $result;
         }
 
-        if ($result === false && PlatformHelper::isLinux()) {
-            self::logWarning("Nutze Shell für Erkennung des MIME-Typs: $file");
-            $result = self::mimeTypeByShell($file);
+        if (PlatformHelper::isLinux()) {
+            self::logWarning("Fallback via Shell für MIME-Typ: $file");
+            return self::detectViaShell('mimetype', $file);
         }
 
-        // Falls keine Methode den MIME-Typ bestimmen konnte
-        if ($result === false) {
-            self::logError("Konnte MIME-Typ nicht bestimmen: $file");
-        }
-
-        return $result;
+        self::logError("MIME-Typ konnte nicht bestimmt werden: $file");
+        return false;
     }
 
-    private static function mimeTypeByShell(string $file): string|false {
-        $file = self::getRealPath($file);
-        $result = false;
+    public static function mimeEncoding(string $file): string|false {
+        $file = self::getRealExistingFile($file);
+        if ($file === false) return false;
 
-        if (!self::exists($file)) {
-            self::logError("Datei existiert nicht: $file");
-            return $result;
-        }
-        $command = self::getConfiguredCommand("mimetype", ["[INPUT]" => escapeshellarg($file)]);
-        $output = [];
-        $success = Shell::executeShellCommand($command, $output);
-
-        if (!$success || empty($output)) {
-            self::logError("Problem bei der Bestimmung des MIME-Typs für $file");
-            throw new Exception("Problem bei der Bestimmung des MIME-Typs für $file");
+        if (class_exists('finfo')) {
+            self::logInfo("Nutze finfo für MIME-Encoding: $file");
+            $finfo = new finfo(FILEINFO_MIME_ENCODING);
+            $result = $finfo->file($file);
+            if ($result !== false) return $result;
         }
 
-        if (!empty($output)) {
-            $result = trim(implode("\n", $output));
-            self::logInfo("MIME-Typ für $file: " . $result);
+        if (PlatformHelper::isLinux()) {
+            self::logWarning("Fallback via Shell für MIME-Encoding: $file");
+            return self::detectViaShell('mime-encoding', $file);
         }
-        return $result;
+
+        self::logError("MIME-Encoding konnte nicht bestimmt werden: $file");
+        return false;
     }
 
-    private static function shortenByCommonPath(string $originalPath, string $normalizedPath): string {
-        // Normalisieren für einheitliche Darstellung
-        $originalParts = explode(DIRECTORY_SEPARATOR, $originalPath);
-        $normalizedParts = explode(DIRECTORY_SEPARATOR, $normalizedPath);
+    public static function chardet(string $file): string|false {
+        $file = self::getRealExistingFile($file);
+        if ($file === false) return false;
 
-        // Finde den gemeinsamen Teil beider Pfade
-        $commonParts = [];
-        foreach ($originalParts as $index => $part) {
-            if (isset($normalizedParts[$index]) && $normalizedParts[$index] === $part) {
-                $commonParts[] = $part;
-            } else {
-                break;
+        $content = file_get_contents($file, false, null, 0, 4096);
+        if ($content !== false) {
+            $encodings = ['UTF-8', 'ISO-8859-1', 'ISO-8859-15', 'Windows-1252', 'ASCII'];
+            $detected = mb_detect_encoding($content, $encodings, true);
+            if ($detected !== false) {
+                self::logInfo("Zeichencodierung via PHP erkannt: $detected für $file");
+                return $detected;
             }
         }
 
-        // Entferne den gemeinsamen Teil aus dem ursprünglichen Pfad
-        $relativePath = array_slice($originalParts, count($commonParts));
-
-        // Falls der gekürzte Pfad leer ist, einfach nur ein Punkt anzeigen
-        return empty($relativePath) ? '.' : '...' . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $relativePath);
+        self::logWarning("Fallback via Shell (chardet/uchardet) für $file");
+        return self::detectViaShell('chardet', $file) ?: self::detectViaShell('uchardet', $file);
     }
 
     public static function exists(string $file): bool {
@@ -133,210 +116,93 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if (!$result) {
             self::logDebug("Existenzprüfung der Datei: $file -> false");
         }
-
         return $result;
     }
 
-    public static function copy(string $sourceFile, string $destinationFile, bool $overwrite = true): void {
-        $sourceFile = self::getRealPath($sourceFile);
-        $destinationFile = self::getRealPath($destinationFile);
-
-        if (!self::exists($sourceFile)) {
-            self::logError("Die Datei $sourceFile existiert nicht");
-            throw new FileNotFoundException("Die Datei $sourceFile existiert nicht");
-        }
-
-        if (self::exists($destinationFile)) {
-            if (!$overwrite) {
-                self::logInfo("Die Datei $destinationFile existiert bereits und wird nicht überschrieben.");
-                return;
-            }
-            self::logWarning("Die Datei $destinationFile existiert bereits und wird überschrieben.");
-        }
-
-        if (!@copy($sourceFile, $destinationFile)) {
-            if (self::exists($destinationFile) && filesize($destinationFile) === 0) {
-                unlink($destinationFile);
-                self::logWarning("0-Byte-Datei $destinationFile nach fehlgeschlagenem Kopieren gelöscht.");
-            }
-
-            self::logInfo("Zweiter Versuch, die Datei $sourceFile nach $destinationFile zu kopieren.");
-            if (!@copy($sourceFile, $destinationFile)) {
-                self::logError("Fehler beim erneuten Kopieren der Datei von $sourceFile nach $destinationFile");
-                throw new FileNotWrittenException("Fehler beim erneuten Kopieren der Datei von $sourceFile nach $destinationFile");
-            }
-        }
-
-        self::logInfo("Datei von $sourceFile nach $destinationFile kopiert");
-    }
-
-    public static function create(string $file, int $permissions = 0644, string $content = ''): void {
-        $file = self::getRealPath($file);
-
+    public static function getRealPath(string $file): string {
         if (self::exists($file)) {
-            self::logError("Die Datei $file existiert bereits");
-            throw new FileNotFoundException("Die Datei $file existiert bereits");
-        }
-
-        if (file_put_contents($file, $content) === false) {
-            self::logError("Fehler beim Erstellen der Datei $file");
-            throw new FileNotWrittenException("Fehler beim Erstellen der Datei $file");
-        }
-
-        if (!chmod($file, $permissions)) {
-            self::logError("Fehler beim Setzen der Berechtigungen $permissions für die Datei $file");
-            throw new Exception("Fehler beim Setzen der Berechtigungen für die Datei $file");
-        }
-
-        self::logInfo("Datei erstellt: $file mit Berechtigungen $permissions");
-    }
-
-    public static function rename(string $oldName, string $newName): void {
-        $oldName = self::getRealPath($oldName);
-        $newName = self::getRealPath($newName);
-
-        if (!self::exists($oldName)) {
-            self::logError("Die Datei $oldName existiert nicht");
-            throw new FileNotFoundException("Die Datei $oldName existiert nicht");
-        } elseif (self::exists($newName)) {
-            self::logError("Die Datei $newName existiert bereits");
-            throw new FileExistsException("Die Datei $newName existiert bereits");
-        }
-
-        if ($newName == basename($newName)) {
-            $newName = dirname($oldName) . DIRECTORY_SEPARATOR . $newName;
-        }
-
-        if (!rename($oldName, $newName)) {
-            self::logError("Fehler beim Umbenennen der Datei von $oldName nach $newName");
-            throw new Exception("Fehler beim Umbenennen der Datei von $oldName nach $newName");
-        }
-
-        self::logDebug("Datei umbenannt von $oldName zu $newName");
-    }
-
-    public static function move(string $sourceFile, string $destinationFolder, ?string $destinationFileName = null, bool $overwrite = true): void {
-        $sourceFile = self::getRealPath($sourceFile);
-        $destinationFolder = self::getRealPath($destinationFolder);
-
-        $destinationFile = $destinationFolder . DIRECTORY_SEPARATOR . (is_null($destinationFileName) ? basename($sourceFile) : $destinationFileName);
-
-        if (!self::exists($sourceFile)) {
-            self::logError("Die Datei $sourceFile existiert nicht");
-            throw new FileNotFoundException("Die Datei $sourceFile existiert nicht");
-        } elseif (!self::exists($destinationFolder)) {
-            self::logError("Das Zielverzeichnis $destinationFolder existiert nicht");
-            throw new FolderNotFoundException("Das Zielverzeichnis $destinationFolder existiert nicht");
-        }
-
-        if (self::exists($destinationFile)) {
-            if (!$overwrite) {
-                self::logInfo("Die Datei $destinationFile existiert bereits und wird nicht überschrieben.");
-                return;
+            $realPath = realpath($file);
+            if ($realPath === false) {
+                self::logDebug("Konnte Pfad nicht auflösen: $file");
+                return $file;
             }
-            self::logWarning("Die Datei $destinationFile existiert bereits und wird überschrieben.");
-        }
-
-        if (!@rename($sourceFile, $destinationFile)) {
-            if (self::exists($destinationFile) && filesize($destinationFile) === 0) {
-                unlink($destinationFile);
-                self::logWarning("0-Byte-Datei $destinationFile nach fehlgeschlagenem Verschieben gelöscht.");
+            if ($realPath !== $file) {
+                self::logInfo("Pfad wurde normalisiert: ... -> $realPath");
             }
-
-            self::logInfo("Zweiter Versuch, die Datei $sourceFile nach $destinationFile zu verschieben.");
-            if (!@rename($sourceFile, $destinationFile)) {
-                self::logError("Fehler beim erneuten Verschieben der Datei von $sourceFile nach $destinationFile");
-                throw new FileNotWrittenException("Fehler beim erneuten Verschieben der Datei von $sourceFile nach $destinationFile");
-            }
+            return $realPath;
         }
-
-        self::logDebug("Datei von $sourceFile zu $destinationFile verschoben");
-    }
-
-    public static function delete(string $file): void {
-        $file = self::getRealPath($file);
-
-        if (!self::exists($file)) {
-            self::logNotice("Die zu löschende Datei: $file existiert nicht");
-            return;
-        }
-
-        if (!unlink($file)) {
-            self::logError("Fehler beim Löschen der Datei: $file");
-            throw new Exception("Fehler beim Löschen der Datei: $file");
-        }
-
-        self::logDebug("Datei gelöscht: $file");
-    }
-
-    public static function size(string $file): int {
-        $file = self::getRealPath($file);
-
-        if (!self::exists($file)) {
-            self::logError("Die Datei $file existiert nicht");
-            throw new FileNotFoundException("Die Datei $file existiert nicht");
-        }
-
-        return filesize($file);
+        self::logDebug("Pfad existiert nicht, unverändert zurückgeben: $file");
+        return $file;
     }
 
     public static function read(string $file): string {
         $file = self::getRealPath($file);
-
         if (!self::exists($file)) {
-            self::logError("Die Datei $file existiert nicht");
-            throw new FileNotFoundException("Die Datei $file existiert nicht");
+            self::logError("Datei nicht gefunden: $file");
+            throw new FileNotFoundException("Datei nicht gefunden: $file");
         }
-
         $content = file_get_contents($file);
         if ($content === false) {
-            self::logError("Fehler beim Lesen der Datei $file");
-            throw new Exception("Fehler beim Lesen der Datei $file");
+            self::logError("Fehler beim Lesen der Datei: $file");
+            throw new Exception("Fehler beim Lesen: $file");
         }
-
         self::logDebug("Datei erfolgreich gelesen: $file");
         return $content;
     }
 
     public static function write(string $file, string $data): void {
         $file = self::getRealPath($file);
-
         if (file_put_contents($file, $data) === false) {
-            self::logError("Fehler beim Schreiben in die Datei $file");
-            throw new FileNotWrittenException("Fehler beim Schreiben in die Datei $file");
+            self::logError("Fehler beim Schreiben in die Datei: $file");
+            throw new FileNotWrittenException("Fehler beim Schreiben in: $file");
         }
+        self::logInfo("Daten erfolgreich in Datei geschrieben: $file");
+    }
 
-        self::logInfo("Daten in Datei gespeichert: $file");
+    public static function delete(string $file): void {
+        $file = self::getRealPath($file);
+        if (!self::exists($file)) {
+            self::logNotice("Datei nicht gefunden, wird nicht gelöscht: $file");
+            return;
+        }
+        if (!unlink($file)) {
+            self::logError("Fehler beim Löschen der Datei: $file");
+            throw new Exception("Fehler beim Löschen: $file");
+        }
+        self::logDebug("Datei gelöscht: $file");
+    }
+
+    public static function size(string $file): int {
+        $file = self::getRealPath($file);
+        if (!self::exists($file)) {
+            self::logError("Datei existiert nicht: $file");
+            throw new FileNotFoundException("Datei nicht gefunden: $file");
+        }
+        return filesize($file);
     }
 
     public static function isReadable(string $file): bool {
         $file = self::getRealPath($file);
-
         if (!self::exists($file)) {
-            self::logError("Die Datei $file existiert nicht");
+            self::logError("Datei existiert nicht: $file");
             return false;
         }
-
         if (!is_readable($file)) {
-            self::logError("Die Datei $file ist nicht lesbar");
+            self::logError("Datei ist nicht lesbar: $file");
             return false;
         }
-
         return true;
     }
 
     public static function isReady(string $file, bool $logging = true): bool {
         $file = self::getRealPath($file);
-
         if (!self::exists($file)) {
-            if ($logging) {
-                self::logError("Die Datei $file existiert nicht");
-            }
+            if ($logging) self::logError("Datei existiert nicht: $file");
             return false;
         }
-
         $handle = @fopen($file, 'r');
         if ($handle === false) {
+            self::logDebug("Datei ist noch nicht bereit zum Lesen: $file");
             return false;
         }
         fclose($handle);
@@ -345,26 +211,114 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     public static function wait4Ready(string $file, int $timeout = 30): bool {
         $file = self::getRealPath($file);
-
         $start = time();
-        if (!self::exists($file)) {
-            self::logInfo("Datei $file existiert nicht.");
-            return false;
-        }
-
         while (!self::isReady($file, false)) {
-            if (self::exists($file)) {
-                if (time() - $start >= $timeout) {
-                    self::logError("Timeout beim Warten auf die Datei $file");
-                    return false;
-                }
-
-                sleep(1);
-            } else {
-                self::logInfo("Datei $file existiert nicht mehr.");
+            if (!self::exists($file)) {
+                self::logWarning("Datei existiert nicht mehr während Wartezeit: $file");
                 return false;
             }
+            if (time() - $start >= $timeout) {
+                self::logError("Timeout beim Warten auf Datei: $file");
+                return false;
+            }
+            sleep(1);
         }
+        self::logDebug("Datei ist bereit: $file");
         return true;
+    }
+
+    public static function copy(string $sourceFile, string $destinationFile, bool $overwrite = true): void {
+        $sourceFile = self::getRealPath($sourceFile);
+        $destinationFile = self::getRealPath($destinationFile);
+
+        if (!self::exists($sourceFile)) {
+            self::logError("Quelldatei existiert nicht: $sourceFile");
+            throw new FileNotFoundException("Datei nicht gefunden: $sourceFile");
+        }
+
+        if (self::exists($destinationFile) && !$overwrite) {
+            self::logInfo("Zieldatei existiert und wird nicht überschrieben: $destinationFile");
+            return;
+        }
+
+        if (!@copy($sourceFile, $destinationFile)) {
+            self::logError("Fehler beim Kopieren von $sourceFile nach $destinationFile");
+            throw new FileNotWrittenException("Fehler beim Kopieren von $sourceFile nach $destinationFile");
+        }
+
+        self::logInfo("Datei erfolgreich kopiert: $sourceFile -> $destinationFile");
+    }
+
+    public static function move(string $sourceFile, string $destinationFolder, ?string $destinationFileName = null, bool $overwrite = true): void {
+        $sourceFile = self::getRealPath($sourceFile);
+        $destinationFolder = self::getRealPath($destinationFolder);
+        $destinationFile = $destinationFolder . DIRECTORY_SEPARATOR . ($destinationFileName ?? basename($sourceFile));
+
+        if (!self::exists($sourceFile)) {
+            self::logError("Quelldatei existiert nicht: $sourceFile");
+            throw new FileNotFoundException("Datei nicht gefunden: $sourceFile");
+        }
+
+        if (!self::exists($destinationFolder)) {
+            self::logError("Zielverzeichnis existiert nicht: $destinationFolder");
+            throw new FolderNotFoundException("Zielordner nicht gefunden: $destinationFolder");
+        }
+
+        if (self::exists($destinationFile) && !$overwrite) {
+            self::logInfo("Zieldatei existiert bereits und wird nicht überschrieben: $destinationFile");
+            return;
+        }
+
+        if (!@rename($sourceFile, $destinationFile)) {
+            self::logError("Fehler beim Verschieben von $sourceFile nach $destinationFile");
+            throw new FileNotWrittenException("Fehler beim Verschieben nach $destinationFile");
+        }
+
+        self::logDebug("Datei verschoben: $sourceFile -> $destinationFile");
+    }
+
+    public static function rename(string $oldName, string $newName): void {
+        $oldName = self::getRealPath($oldName);
+        $newName = self::getRealPath($newName);
+
+        if (!self::exists($oldName)) {
+            self::logError("Datei zum Umbenennen nicht gefunden: $oldName");
+            throw new FileNotFoundException("Die Datei $oldName existiert nicht");
+        }
+
+        if (self::exists($newName)) {
+            self::logError("Zieldatei existiert bereits: $newName");
+            throw new FileExistsException("Die Datei $newName existiert bereits");
+        }
+
+        if ($newName === basename($newName)) {
+            $newName = dirname($oldName) . DIRECTORY_SEPARATOR . $newName;
+        }
+
+        if (!rename($oldName, $newName)) {
+            self::logError("Fehler beim Umbenennen von $oldName nach $newName");
+            throw new FileNotWrittenException("Fehler beim Umbenennen der Datei von $oldName nach $newName");
+        }
+
+        self::logDebug("Datei umbenannt von $oldName zu $newName");
+    }
+
+    public static function create(string $file, int $permissions = 0644, string $content = ''): void {
+        if (self::exists($file)) {
+            self::logError("Datei existiert bereits: $file");
+            throw new FileExistsException("Datei existiert bereits: $file");
+        }
+
+        if (file_put_contents($file, $content) === false) {
+            self::logError("Fehler beim Erstellen der Datei: $file");
+            throw new FileNotWrittenException("Fehler beim Erstellen: $file");
+        }
+
+        if (!chmod($file, $permissions)) {
+            self::logError("Fehler beim Setzen von Rechten ($permissions) für Datei: $file");
+            throw new Exception("Fehler beim Setzen von Rechten für $file");
+        }
+
+        self::logInfo("Datei erstellt: $file mit Rechten $permissions");
     }
 }
