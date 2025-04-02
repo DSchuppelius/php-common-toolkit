@@ -42,12 +42,20 @@ class ShellChardet {
     public static function detect(string $text): string|false {
         self::start();
 
+        if (!is_resource(self::$stdin) || !is_resource(self::$stdout)) {
+            self::logError("ShellChardet: stdin oder stdout ist keine Ressource.");
+            return false;
+        }
+
+        // Wichtig: Zeilenumbruch als Abschluss für chardet
         fwrite(self::$stdin, $text . "\n");
         fflush(self::$stdin);
 
+        // fgets blockiert, wenn keine \n kommt → chardet muss auch liefern
         $result = fgets(self::$stdout);
+
         if ($result === false) {
-            self::logError("Keine Antwort von chardet erhalten.");
+            self::logError("ShellChardet: Keine Antwort von chardet erhalten.");
             return false;
         }
 
