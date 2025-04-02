@@ -66,15 +66,15 @@ class DateHelper {
         return null;
     }
 
-    public static function isDate(string $value, string &$format = ''): bool {
+    public static function isDate(string $value, ?string &$format = null): bool {
         if (strlen($value) < 6) return false;
 
-        if (preg_match('/^(20[0-9]{2})[-/]?(0[1-9]|1[0-2])[-/]?(0[1-9]|[12][0-9]|3[01])$/', $value)) {
+        if (preg_match('#^(20[0-9]{2})[-/]?(0[1-9]|1[0-2])[-/]?(0[1-9]|[12][0-9]|3[01])$#', $value)) {
             $format = 'ISO';
             return true;
         }
 
-        if (preg_match('/^([0-3]?[0-9])[.\-/]{1}([0-3]?[0-9])[.\-/]{1}(?:20)?([0-9]{2})$/', $value)) {
+        if (preg_match('#^([0-3]?[0-9])[.\-/]([0-3]?[0-9])[.\-/](?:20)?([0-9]{2})$#', $value)) {
             $format = 'DE';
             return true;
         }
@@ -122,7 +122,7 @@ class DateHelper {
     }
 
     public static function isWeekend(DateTimeInterface $date): bool {
-        return in_array((int) $date->format('w'), [0, 6], true); // 0 = Sonntag, 6 = Samstag
+        return in_array((int) $date->format('w'), [0, 6], true);
     }
 
     public static function isLeapYear(int $year): bool {
@@ -147,5 +147,68 @@ class DateHelper {
 
     public static function isToday(DateTimeInterface $date): bool {
         return $date->format('Y-m-d') === (new DateTimeImmutable())->format('Y-m-d');
+    }
+
+    public static function germanToIso(string $value): string {
+        $value = trim($value);
+        if (preg_match("/^\d{1,2}\.\d{1,2}\.\d{2}$/", $value)) {
+            $value = preg_replace_callback('/(\d{1,2})\.(\d{1,2})\.(\d{2})$/', function ($matches) {
+                return sprintf('%02d.%02d.20%02d', $matches[1], $matches[2], $matches[3]);
+            }, $value);
+        }
+        if (preg_match("/^(\d{1,2})\\.(\d{1,2})\\.(\d{4})/", $value, $matches)) {
+            return $matches[3] . "-" . $matches[2] . "-" . $matches[1];
+        }
+        return $value;
+    }
+
+    public static function isoToGerman(?string $value, bool $withTime = false): string {
+        if ($value === null || $value === "0000-00-00" || $value === "1970-01-01" || $value === "00:00:00") {
+            return '';
+        }
+        $value = trim($value);
+        if (strlen($value) < 8) return $value;
+
+        if ($withTime || strlen($value) > 10) {
+            if (preg_match("/^\\d{4}-\\d{2}-\\d{2}/", $value)) {
+                return date("d.m.Y H:i", strtotime($value));
+            }
+            return $value;
+        }
+        if (preg_match("/^\\d{2}:\\d{2}:\\d{2}/", $value)) {
+            return date("H:i", strtotime($value));
+        }
+        if (preg_match("/^\\d{4}-\\d{2}-\\d{2}/", $value)) {
+            return date("d.m.Y", strtotime($value));
+        }
+        return $value;
+    }
+
+    public static function addToDate(string $date, int $days = 0, int $months = 0, int $years = 0): string {
+        $timestamp = strtotime($date);
+        $newDate = date('Y-m-d H:i:s', mktime(
+            (int) date('H', $timestamp),
+            (int) date('i', $timestamp),
+            (int) date('s', $timestamp),
+            (int) date('m', $timestamp) + $months,
+            (int) date('d', $timestamp) + $days,
+            (int) date('Y', $timestamp) + $years
+        ));
+        return substr($newDate, 0, strlen($date));
+    }
+
+    public static function diffDetailed(DateTimeInterface $start, DateTimeInterface $end): array {
+        $diff = $start->diff($end);
+        return [
+            'years' => $diff->y,
+            'months' => $diff->m,
+            'days' => $diff->d,
+            'total_days' => $diff->days,
+            'weeks' => intdiv($diff->days, 7),
+        ];
+    }
+
+    public static function isBetween(DateTimeInterface $date, DateTimeInterface $start, DateTimeInterface $end): bool {
+        return $date >= $start && $date <= $end;
     }
 }

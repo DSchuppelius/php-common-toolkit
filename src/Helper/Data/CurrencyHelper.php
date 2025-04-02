@@ -12,11 +12,13 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use ERRORToolkit\Traits\ErrorLog;
 use NumberFormatter;
 use Locale;
 use RuntimeException;
 
 class CurrencyHelper {
+    use ErrorLog;
     /**
      * Formatiert einen Betrag mit Währung nach aktuellem Gebietsschema
      */
@@ -26,6 +28,7 @@ class CurrencyHelper {
         $formatted = $formatter->formatCurrency($amount, $currency);
 
         if ($formatted === false) {
+            self::logError("Fehler bei der Währungsformatierung: " . $formatter->getErrorMessage());
             throw new RuntimeException("Fehler bei der Währungsformatierung: " . $formatter->getErrorMessage());
         }
 
@@ -41,7 +44,8 @@ class CurrencyHelper {
         $parsed = $formatter->parseCurrency($input, $parsedCurrency);
 
         if ($parsed === false || $parsedCurrency !== $currency) {
-            throw new RuntimeException("Ungültiger Währungseingabe: '$input'");
+            self::logError("Fehler beim Währungsparsing: " . $formatter->getErrorMessage());
+            throw new RuntimeException("Ungültige Währungseingabe: '$input'");
         }
 
         return $parsed;
