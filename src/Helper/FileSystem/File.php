@@ -102,12 +102,34 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $detected = mb_detect_encoding($content, $encodings, true);
             if ($detected !== false) {
                 self::logInfo("Zeichencodierung via PHP erkannt: $detected für $file");
+                self::adjustLocaleBasedOnEncoding($detected);
                 return $detected;
             }
         }
 
         self::logWarning("Fallback via Shell (chardet/uchardet) für $file");
-        return self::detectViaShell('chardet', $file) ?: self::detectViaShell('uchardet', $file);
+        $detected = self::detectViaShell('chardet', $file) ?: self::detectViaShell('uchardet', $file);
+
+        if ($detected !== false) {
+            $detected = trim($detected);
+            if ($detected === "ISO-8859-1" || $detected === "MacRoman") {
+                $detected = "ISO-8859-15";
+            } elseif ($detected === "None") {
+                $detected = "UTF-8";
+            }
+            self::adjustLocaleBasedOnEncoding($detected);
+            self::logDebug("Shell-basierte Zeichencodierung erkannt: $detected für $file");
+        }
+
+        return $detected;
+    }
+
+    private static function adjustLocaleBasedOnEncoding(string $encoding): void {
+        if (str_contains($encoding, "UTF") || str_contains($encoding, "utf")) {
+            setlocale(LC_CTYPE, "de_DE.UTF-8");
+        } else {
+            setlocale(LC_CTYPE, 'de_DE@euro', 'de_DE');
+        }
     }
 
     public static function exists(string $file): bool {
@@ -268,7 +290,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             self::logInfo("Zieldatei existiert bereits und wird nicht überschrieben: $destinationFile");
             return;
         } elseif (self::exists($destinationFile) && $overwrite) {
-            self::logInfo("Zieldatei existiert bereits und wird versucht zu überschrieben: $destinationFile");
+            self::logInfo("Zieldatei existiert bereits und wird versucht zu überschreiben: $destinationFile");
         }
 
         if (!@rename($sourceFile, $destinationFile)) {
@@ -325,17 +347,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     public static function isAbsolutePath(string $path): bool {
-        // Linux/macOS: Pfade, die mit / beginnen
         if (DIRECTORY_SEPARATOR === '/' && str_starts_with($path, '/')) {
             return true;
         }
 
-        // Windows: Pfade, die mit Laufwerksbuchstabe + Doppelpunkt + Backslash beginnen (z. B. C:\)
         if (DIRECTORY_SEPARATOR === '\\' && preg_match('/^[a-zA-Z]:\\\\/', $path)) {
             return true;
         }
 
-        // UNC-Pfade (Windows-Netzwerkpfade): \\Server\Share
         if (DIRECTORY_SEPARATOR === '\\' && str_starts_with($path, '\\\\')) {
             return true;
         }

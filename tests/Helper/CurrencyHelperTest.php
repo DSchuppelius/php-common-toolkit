@@ -31,7 +31,10 @@ class CurrencyHelperTest extends TestCase {
 
     public function testEquals(): void {
         $this->assertTrue(CurrencyHelper::equals(100.00, 100.001));
+        $this->assertTrue(CurrencyHelper::equals(100.00, 100.01));
+        $this->assertTrue(CurrencyHelper::equals(100.00, 99.99));
         $this->assertFalse(CurrencyHelper::equals(100.00, 100.05));
+        $this->assertFalse(CurrencyHelper::equals(100.00, 99.95));
     }
 
     public function testIsValid(): void {

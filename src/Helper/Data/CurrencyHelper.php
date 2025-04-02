@@ -74,7 +74,7 @@ class CurrencyHelper {
      * Vergleicht zwei Währungsbeträge mit Toleranz
      */
     public static function equals(float $a, float $b, float $tolerance = 0.01): bool {
-        return abs($a - $b) < $tolerance;
+        return round(abs($a - $b), 10) <= $tolerance;
     }
 
     /**
