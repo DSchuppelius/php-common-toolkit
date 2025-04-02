@@ -12,7 +12,9 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Helper\Shell\ShellChardet;
 use ERRORToolkit\Traits\ErrorLog;
+use Throwable;
 
 class StringHelper {
     use ErrorLog;
@@ -119,5 +121,34 @@ class StringHelper {
 
     public static function removeUtf8Bom(string $input): string {
         return preg_replace('/^\xEF\xBB\xBF/', '', $input) ?? $input;
+    }
+
+    public static function detectEncoding(string $text): string|false {
+        if (trim($text) === '') {
+            self::logDebug("detectEncoding: leerer String übergeben");
+            return false;
+        }
+
+        // Versuch über ShellChardet (sofern chardet installiert)
+        try {
+            $encoding = ShellChardet::detect($text);
+            if ($encoding !== false) {
+                self::logInfo("ShellChardet erkannte: $encoding");
+                return $encoding;
+            }
+            self::logWarning("ShellChardet konnte keine Kodierung erkennen.");
+        } catch (Throwable $e) {
+            self::logWarning("ShellChardet-Ausnahme: " . $e->getMessage());
+        }
+
+        // Fallback auf mb_detect_encoding
+        $fallback = mb_detect_encoding($text, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII'], true);
+        if ($fallback !== false) {
+            self::logInfo("Fallback mit mb_detect_encoding erkannte: $fallback");
+            return $fallback;
+        }
+
+        self::logError("detectEncoding: Keine Kodierung erkannt");
+        return false;
     }
 }

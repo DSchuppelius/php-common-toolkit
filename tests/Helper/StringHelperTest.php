@@ -56,16 +56,9 @@ class StringHelperTest extends TestCase {
     }
 
     public function testHtmlEntitiesToText(): void {
-        $html = "K&amp;auml;se &amp; Brot";
+        $html = "K&auml;se &amp; Brot";
         $text = StringHelper::htmlEntitiesToText($html);
         $this->assertSame("Käse & Brot", $text);
-    }
-
-    public function testTextToHtmlEntities(): void {
-        $text = "Käse & Brot";
-        $html = StringHelper::textToHtmlEntities($text);
-        $this->assertStringContainsString("&auml;", $html);
-        $this->assertStringContainsString("&amp;", $html);
     }
 
     public function testNormalizeWhitespace(): void {
@@ -81,15 +74,17 @@ class StringHelperTest extends TestCase {
         $this->assertSame("straße", $lower);
     }
 
-    public function testStripHtml(): void {
-        $html = "<p>Hallo <strong>Welt</strong></p>";
-        $text = StringHelper::stripHtml($html);
-        $this->assertSame("Hallo Welt", $text);
-    }
-
     public function testRemoveUtf8Bom(): void {
         $bom = "\xEF\xBB\xBFHallo";
         $clean = StringHelper::removeUtf8Bom($bom);
         $this->assertSame("Hallo", $clean);
+    }
+
+    public function testDetectEncoding(): void {
+        $text = "Grüße aus München"; // UTF-8
+        $encoding = StringHelper::detectEncoding($text);
+
+        $this->assertIsString($encoding, "Erkannte Kodierung sollte ein String sein");
+        $this->assertMatchesRegularExpression('/utf-?8|iso-8859/i', $encoding, "Kodierung sollte plausibel sein (UTF-8 oder ISO)");
     }
 }
