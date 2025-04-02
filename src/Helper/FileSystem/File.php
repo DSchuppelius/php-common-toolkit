@@ -267,6 +267,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if (self::exists($destinationFile) && !$overwrite) {
             self::logInfo("Zieldatei existiert bereits und wird nicht überschrieben: $destinationFile");
             return;
+        } elseif (self::exists($destinationFile) && $overwrite) {
+            self::logInfo("Zieldatei existiert bereits und wird versucht zu überschrieben: $destinationFile");
         }
 
         if (!@rename($sourceFile, $destinationFile)) {
@@ -320,5 +322,24 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         self::logInfo("Datei erstellt: $file mit Rechten $permissions");
+    }
+
+    public static function isAbsolutePath(string $path): bool {
+        // Linux/macOS: Pfade, die mit / beginnen
+        if (DIRECTORY_SEPARATOR === '/' && str_starts_with($path, '/')) {
+            return true;
+        }
+
+        // Windows: Pfade, die mit Laufwerksbuchstabe + Doppelpunkt + Backslash beginnen (z. B. C:\)
+        if (DIRECTORY_SEPARATOR === '\\' && preg_match('/^[a-zA-Z]:\\\\/', $path)) {
+            return true;
+        }
+
+        // UNC-Pfade (Windows-Netzwerkpfade): \\Server\Share
+        if (DIRECTORY_SEPARATOR === '\\' && str_starts_with($path, '\\\\')) {
+            return true;
+        }
+
+        return false;
     }
 }

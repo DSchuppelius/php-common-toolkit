@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Helper\FileSystem\File;
+use CommonToolkit\Helper\FileSystem\Folder;
 use ConfigToolkit\ConfigLoader;
 use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
@@ -135,6 +137,13 @@ class BankHelper {
         $path = $configLoader->get('Bundesbank', 'file', 'data/blz-aktuell-txt-data.txt');
         $url = $configLoader->get('Bundesbank', 'resourceurl', '');
         $expiry = $configLoader->get('Bundesbank', 'expiry_days', 365);
+
+        if (!File::isAbsolutePath($path)) {
+            $path = __DIR__ . '/../../../' . $path;
+            if (!Folder::exists(dirname($path))) {
+                Folder::create(dirname($path));
+            }
+        }
 
         if (!file_exists($path) || filemtime($path) < strtotime("-$expiry days")) {
             if (!empty($url)) {

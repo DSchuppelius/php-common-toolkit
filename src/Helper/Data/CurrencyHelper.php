@@ -19,10 +19,20 @@ use RuntimeException;
 
 class CurrencyHelper {
     use ErrorLog;
+
+    private static function ensureNumberFormatterAvailable(): void {
+        if (!class_exists(NumberFormatter::class)) {
+            self::logError("Die PHP Intl-Extension (intl) ist nicht aktiv. NumberFormatter nicht verfügbar.");
+            throw new RuntimeException("Die PHP Intl-Extension (intl) ist nicht aktiviert. Bitte aktiviere sie in deiner php.ini.");
+        }
+    }
+
     /**
      * Formatiert einen Betrag mit Währung nach aktuellem Gebietsschema
      */
     public static function format(float $amount, string $currency = 'EUR', ?string $locale = null): string {
+        self::ensureNumberFormatterAvailable();
+
         $locale ??= Locale::getDefault();
         $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
         $formatted = $formatter->formatCurrency($amount, $currency);
@@ -39,6 +49,8 @@ class CurrencyHelper {
      * Gibt einen Betrag als Float zurück, z. B. aus einem Formularfeld
      */
     public static function parse(string $input, string $currency = 'EUR', ?string $locale = null): float {
+        self::ensureNumberFormatterAvailable();
+
         $locale ??= Locale::getDefault();
         $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
         $parsed = $formatter->parseCurrency($input, $parsedCurrency);

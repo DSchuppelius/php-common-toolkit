@@ -33,6 +33,11 @@ class PdfFile extends ConfiguredHelperAbstract {
         $output = [];
         $resultCode = 0;
 
+        if (empty($command)) {
+            self::logError("pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
+            throw new Exception("pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
+        }
+
         Shell::executeShellCommand($command, $output, $resultCode);
 
         if ($resultCode !== 0) {
@@ -86,9 +91,11 @@ class PdfFile extends ConfiguredHelperAbstract {
         $command = self::getConfiguredCommand("valid-pdf", ["[INPUT]" => escapeshellarg($file)]);
         $output = [];
         $resultCode = 0;
-        $executionSuccess = Shell::executeShellCommand($command, $output, $resultCode, false, 1);
 
-        if (!$executionSuccess) {
+        if (empty($command)) {
+            self::logError("mutool bzw. pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
+            throw new Exception("mutool bzw. pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
+        } elseif (!Shell::executeShellCommand($command, $output, $resultCode, false, 1)) {
             self::logError("Fehler bei der PDF-Validierung für $file.");
             return false;
         }

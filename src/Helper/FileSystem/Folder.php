@@ -157,4 +157,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         return $result;
     }
+
+    public static function isAbsolutePath(string $path): bool {
+        return File::isAbsolutePath($path);
+    }
 }
