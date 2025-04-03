@@ -40,40 +40,41 @@ class ShellChardet {
     }
 
     public static function detect(string $text): string|false {
-        self::start();
+        $descriptorspec = [
+            0 => ["pipe", "r"], // stdin
+            1 => ["pipe", "w"], // stdout
+            2 => ["pipe", "w"], // stderr
+        ];
 
-        if (!is_resource(self::$stdin) || !is_resource(self::$stdout)) {
-            self::logError("ShellChardet: stdin oder stdout ist keine Ressource.");
+        $process = proc_open('chardet -', $descriptorspec, $pipes);
+
+        if (!is_resource($process)) {
+            self::logError("Konnte chardet nicht starten.");
             return false;
         }
 
-        // Wichtig: Zeilenumbruch als Abschluss für chardet
-        fwrite(self::$stdin, $text . "\n");
-        fflush(self::$stdin);
+        fwrite($pipes[0], $text);
+        fclose($pipes[0]); // EOF für chardet signalisieren
 
-        // fgets blockiert, wenn keine \n kommt → chardet muss auch liefern
-        $result = fgets(self::$stdout);
+        $result = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
 
-        if ($result === false) {
-            self::logError("ShellChardet: Keine Antwort von chardet erhalten.");
+        $exitCode = proc_close($process);
+
+        if ($exitCode !== 0 || $result === false) {
+            self::logError("chardet lieferte keinen oder fehlerhaften Output.");
             return false;
         }
 
         $result = trim($result);
 
-        if ($result === 'ISO-8859-1' || $result === 'MacRoman') {
-            $result = 'ISO-8859-15';
-        } elseif ($result === 'None') {
-            $result = 'UTF-8';
-        }
-
-        if (str_contains($result, 'UTF') || str_contains($result, 'utf')) {
-            setlocale(LC_CTYPE, 'de_DE.UTF-8');
-        } else {
-            setlocale(LC_CTYPE, 'de_DE@euro', 'de_DE');
-        }
-
-        return $result;
+        // Deine Nachbearbeitung:
+        return match ($result) {
+            'ISO-8859-1', 'MacRoman' => 'ISO-8859-15',
+            'None' => 'UTF-8',
+            default => $result
+        };
     }
 
     public static function stop(): void {

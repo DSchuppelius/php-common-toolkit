@@ -44,6 +44,8 @@ class BankHelper {
     }
 
     public static function checkIBAN(string $iban): bool {
+        self::requireBcMath();
+
         $iban = strtoupper(str_replace(' ', '', $iban));
         if (!self::isIBAN($iban)) {
             return false;
@@ -79,6 +81,8 @@ class BankHelper {
     }
 
     public static function generateIBAN(string $countryCode, string $accountNumber): string {
+        self::requireBcMath();
+
         $countryCode = strtolower($countryCode);
         $countries = self::countryLengths();
         $chars = self::ibanCharMap();
@@ -193,5 +197,12 @@ class BankHelper {
 
     private static function ibanCharMap(): array {
         return array_combine(range('a', 'z'), range(10, 35));
+    }
+
+    private static function requireBcMath(): void {
+        if (!function_exists('bcmod')) {
+            self::logError("bcmath nicht verfügbar.");
+            throw new \RuntimeException("Die PHP-Erweiterung 'bcmath' ist erforderlich, aber nicht aktiviert.");
+        }
     }
 }
