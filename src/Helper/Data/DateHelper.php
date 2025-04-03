@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Enums\Month;
 use DateInterval;
 use DateTime;
 use DateTimeImmutable;
@@ -210,5 +211,17 @@ class DateHelper {
 
     public static function isBetween(DateTimeInterface $date, DateTimeInterface $start, DateTimeInterface $end): bool {
         return $date >= $start && $date <= $end;
+    }
+
+    public static function getMonth(DateTimeInterface $date): Month {
+        return Month::fromDate($date);
+    }
+
+    public static function getWeekday(DateTimeInterface $date): Weekday {
+        return Weekday::fromDate($date);
+    }
+
+    public static function getLocalizedMonthName(DateTimeInterface $date, string $locale = 'de'): string {
+        return self::getMonth($date)->getName($locale);
     }
 }

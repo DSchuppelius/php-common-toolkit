@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Enums\CurrencyCode;
 use ERRORToolkit\Traits\ErrorLog;
 use NumberFormatter;
 use Locale;
@@ -30,12 +31,13 @@ class CurrencyHelper {
     /**
      * Formatiert einen Betrag mit Währung nach aktuellem Gebietsschema
      */
-    public static function format(float $amount, string $currency = 'EUR', ?string $locale = null): string {
+    public static function format(float $amount, CurrencyCode|string $currency = CurrencyCode::Euro, ?string $locale = null): string {
         self::ensureNumberFormatterAvailable();
 
         $locale ??= Locale::getDefault();
+        $currencyCode = $currency instanceof CurrencyCode ? $currency->value : $currency;
         $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
-        $formatted = $formatter->formatCurrency($amount, $currency);
+        $formatted = $formatter->formatCurrency($amount, $currencyCode);
 
         if ($formatted === false) {
             self::logError("Fehler bei der Währungsformatierung: " . $formatter->getErrorMessage());
@@ -48,14 +50,15 @@ class CurrencyHelper {
     /**
      * Gibt einen Betrag als Float zurück, z. B. aus einem Formularfeld
      */
-    public static function parse(string $input, string $currency = 'EUR', ?string $locale = null): float {
+    public static function parse(string $input, CurrencyCode|string $currency = CurrencyCode::Euro, ?string $locale = null): float {
         self::ensureNumberFormatterAvailable();
 
         $locale ??= Locale::getDefault();
+        $currencyCode = $currency instanceof CurrencyCode ? $currency->value : $currency;
         $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
         $parsed = $formatter->parseCurrency($input, $parsedCurrency);
 
-        if ($parsed === false || $parsedCurrency !== $currency) {
+        if ($parsed === false || $parsedCurrency !== $currencyCode) {
             self::logError("Fehler beim Währungsparsing: " . $formatter->getErrorMessage());
             throw new RuntimeException("Ungültige Währungseingabe: '$input'");
         }

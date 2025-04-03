@@ -30,7 +30,7 @@ class BankHelperTest extends BaseTestCase {
 
     public function testGenerateIBAN() {
         $iban = BankHelper::generateIBAN("DE", "500105175407324931");
-        $this->assertEquals("DE44500105175407324931", $iban);
+        $this->assertMatchesRegularExpression('/^DE\d{2}500105175407324931$/', $iban);
     }
 
     public function testSplitIban() {

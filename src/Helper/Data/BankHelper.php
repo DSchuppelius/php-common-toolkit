@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\FileSystem\Folder;
 use ConfigToolkit\ConfigLoader;
@@ -81,8 +82,13 @@ class BankHelper {
         return $result === '1';
     }
 
-    public static function generateIBAN(string $countryCode, string $accountNumber): string {
+    public static function generateIBAN(CountryCode|string $countryCode, string $accountNumber): string {
         self::requireBcMath();
+
+        // Enum-Instanz in String-Wert umwandeln
+        if ($countryCode instanceof CountryCode) {
+            $countryCode = $countryCode->value;
+        }
 
         $countryCode = strtoupper($countryCode);
         $countries = self::countryLengths();
