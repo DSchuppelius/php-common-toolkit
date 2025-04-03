@@ -11,9 +11,9 @@
 namespace Tests\Helper;
 
 use CommonToolkit\Helper\FileSystem\File;
-use PHPUnit\Framework\TestCase;
+use Tests\Contracts\BaseTestCase;
 
-class FileTest extends TestCase {
+class FileTest extends BaseTestCase {
 
     private $testFile;
 

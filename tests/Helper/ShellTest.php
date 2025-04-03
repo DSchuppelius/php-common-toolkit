@@ -11,10 +11,10 @@
 namespace Tests\Helper;
 
 use CommonToolkit\Helper\Shell;
+use Tests\Contracts\BaseTestCase;
 use Exception;
-use PHPUnit\Framework\TestCase;
 
-class ShellTest extends TestCase {
+class ShellTest extends BaseTestCase {
 
     public function testExecuteShellCommandSuccess() {
         $unixCommand = 'echo "Hello World"';

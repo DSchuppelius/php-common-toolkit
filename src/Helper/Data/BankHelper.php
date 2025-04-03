@@ -17,6 +17,7 @@ use CommonToolkit\Helper\FileSystem\Folder;
 use ConfigToolkit\ConfigLoader;
 use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
+use RuntimeException;
 
 class BankHelper {
     use ErrorLog;
@@ -134,7 +135,6 @@ class BankHelper {
     }
 
     private static function loadBundesbankData(): array {
-        self::setLogger();
         $configLoader = ConfigLoader::getInstance(self::$logger);
         $configLoader->loadConfigFile(__DIR__ . '/../../../config/helper.json');
 
@@ -202,7 +202,7 @@ class BankHelper {
     private static function requireBcMath(): void {
         if (!function_exists('bcmod')) {
             self::logError("bcmath nicht verfügbar.");
-            throw new \RuntimeException("Die PHP-Erweiterung 'bcmath' ist erforderlich, aber nicht aktiviert.");
+            throw new RuntimeException("Die PHP-Erweiterung 'bcmath' ist erforderlich, aber nicht aktiviert.");
         }
     }
 }

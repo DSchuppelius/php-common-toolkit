@@ -64,8 +64,6 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
      * Initialisiert ConfigLoader, falls noch nicht geschehen
      */
     protected static function getConfigLoader(): ConfigLoader {
-        self::setLogger();
-
         if (empty(static::CONFIG_FILE)) {
             throw new Exception("Fehler: CONFIG_FILE wurde nicht definiert in " . static::class);
         }

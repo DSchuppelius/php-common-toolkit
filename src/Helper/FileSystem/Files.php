@@ -72,7 +72,6 @@ class Files extends HelperAbstract {
     }
 
     public static function get(string $directory, bool $recursive = false, array $fileTypes = [], ?string $regexPattern = null, ?string $contains = null): array {
-        self::setLogger();
         $result = [];
         $files = array_diff(scandir($directory), ['.', '..']);
 

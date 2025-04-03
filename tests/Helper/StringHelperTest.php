@@ -13,9 +13,9 @@ declare(strict_types=1);
 namespace Tests\Helper;
 
 use CommonToolkit\Helper\Data\StringHelper;
-use PHPUnit\Framework\TestCase;
+use Tests\Contracts\BaseTestCase;
 
-class StringHelperTest extends TestCase {
+class StringHelperTest extends BaseTestCase {
 
     public function testUtf8ToIso8859_1(): void {
         $utf8 = "Grüße";

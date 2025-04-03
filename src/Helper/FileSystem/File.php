@@ -133,7 +133,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     public static function exists(string $file): bool {
-        self::setLogger();
+
         $result = file_exists($file);
         if (!$result) {
             self::logDebug("Existenzprüfung der Datei: $file -> false");

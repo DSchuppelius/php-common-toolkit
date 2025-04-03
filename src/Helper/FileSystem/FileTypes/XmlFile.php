@@ -26,8 +26,6 @@ class XmlFile extends HelperAbstract {
      * @throws Exception Falls die Erweiterung nicht installiert ist.
      */
     private static function checkDomExtension(): void {
-        self::setLogger();
-
         if (!extension_loaded('dom')) {
             self::logError("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
             throw new Exception("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");

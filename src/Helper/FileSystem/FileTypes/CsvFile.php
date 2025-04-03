@@ -21,8 +21,6 @@ class CsvFile extends HelperAbstract {
     protected static array $commonDelimiters = [',', ';', "\t", '|'];
 
     public static function detectDelimiter(string $file, int $maxLines = 10): string {
-        self::setLogger();
-
         if (!File::exists($file)) {
             self::logError("Die Datei $file existiert nicht oder ist nicht lesbar.");
             throw new FileNotFoundException("Die Datei $file existiert nicht oder ist nicht lesbar.");
@@ -59,8 +57,6 @@ class CsvFile extends HelperAbstract {
     }
 
     public static function getMetaData(string $file, ?string $delimiter = null): array {
-        self::setLogger();
-
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
@@ -93,8 +89,6 @@ class CsvFile extends HelperAbstract {
     }
 
     public static function isWellFormed(string $file, ?string $delimiter = null): bool {
-        self::setLogger();
-
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
@@ -125,8 +119,6 @@ class CsvFile extends HelperAbstract {
     }
 
     public static function isValid(string $file, array $headerPattern, ?string $delimiter = null, bool $welformed = false): bool {
-        self::setLogger();
-
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");

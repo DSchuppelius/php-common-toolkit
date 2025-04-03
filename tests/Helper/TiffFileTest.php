@@ -12,9 +12,9 @@ namespace Tests\Helper;
 
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\FileSystem\FileTypes\TifFile;
-use PHPUnit\Framework\TestCase;
+use Tests\Contracts\BaseTestCase;
 
-class TiffFileTest extends TestCase {
+class TiffFileTest extends BaseTestCase {
 
     private $testFile;
 

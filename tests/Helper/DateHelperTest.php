@@ -10,11 +10,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use CommonToolkit\Helper\Data\DateHelper;
-use CommonToolkit\Enums\Weekday;
+use Tests\Contracts\BaseTestCase;
 
-class DateHelperTest extends TestCase {
+class DateHelperTest extends BaseTestCase {
     public function testGetLastDay(): void {
         $this->assertEquals(31, DateHelper::getLastDay(2024, 1));
         $this->assertEquals(29, DateHelper::getLastDay(2024, 2)); // Schaltjahr

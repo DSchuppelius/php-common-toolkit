@@ -19,8 +19,6 @@ use Exception;
 
 class Folder extends HelperAbstract implements FileSystemInterface {
     public static function exists(string $directory): bool {
-        self::setLogger();
-
         $result = is_dir($directory);
 
         if (!$result) {

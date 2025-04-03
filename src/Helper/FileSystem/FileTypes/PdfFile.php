@@ -22,8 +22,6 @@ class PdfFile extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../../../config/pdf_executables.json';
 
     public static function getMetaData(string $file): array {
-        self::setLogger();
-
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
@@ -63,8 +61,6 @@ class PdfFile extends ConfiguredHelperAbstract {
     }
 
     public static function isEncrypted(string $file): bool {
-        self::setLogger();
-
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
@@ -81,8 +77,6 @@ class PdfFile extends ConfiguredHelperAbstract {
     }
 
     public static function isValid(string $file): bool {
-        self::setLogger();
-
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");

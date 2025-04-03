@@ -1,9 +1,9 @@
 <?php
 
-use PHPUnit\Framework\TestCase;
 use CommonToolkit\Helper\Data\BankHelper;
+use Tests\Contracts\BaseTestCase;
 
-class BankHelperTest extends TestCase {
+class BankHelperTest extends BaseTestCase {
 
     public function testIsBLZ() {
         $this->assertTrue(BankHelper::isBLZ("10000000"));

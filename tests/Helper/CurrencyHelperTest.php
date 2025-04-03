@@ -10,10 +10,10 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use CommonToolkit\Helper\Data\CurrencyHelper;
+use Tests\Contracts\BaseTestCase;
 
-class CurrencyHelperTest extends TestCase {
+class CurrencyHelperTest extends BaseTestCase {
 
     public function testFormat(): void {
         $formatted = CurrencyHelper::format(1234.56, 'EUR', 'de_DE');

@@ -27,8 +27,6 @@ class TifFile extends ConfiguredHelperAbstract {
     private const FILE_EXTENSION_PATTERN = "/\.tif{1,2}$/i";
 
     public static function repair(string $file, bool $forceRepair = false): string {
-        self::setLogger();
-
         $mimeType = File::mimeType($file);
 
         if ($mimeType === 'image/jpeg' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
@@ -91,8 +89,6 @@ class TifFile extends ConfiguredHelperAbstract {
     }
 
     public static function convertToPdf(string $tiffFile, ?string $pdfFile = null, bool $compressed = true, bool $deleteSourceFile = true): void {
-        self::setLogger();
-
         if (!File::exists($tiffFile)) {
             self::logError("Die Datei existiert nicht: $tiffFile");
             throw new FileNotFoundException("Die Datei existiert nicht: $tiffFile");
@@ -155,8 +151,6 @@ class TifFile extends ConfiguredHelperAbstract {
     }
 
     public static function merge(array $tiffFiles, string $mergedFile, bool $deleteSourceFiles = true): void {
-        self::setLogger();
-
         if (File::exists($mergedFile)) {
             self::logError("Die Datei existiert bereits: $mergedFile");
             throw new FileExistsException("Die Datei existiert bereits: $mergedFile");
@@ -182,8 +176,6 @@ class TifFile extends ConfiguredHelperAbstract {
     }
 
     public static function isValid(string $file): bool {
-        self::setLogger();
-
         if (!File::exists($file)) {
             self::logError("Datei existiert nicht: $file");
             throw new FileNotFoundException("Datei existiert nicht: $file");

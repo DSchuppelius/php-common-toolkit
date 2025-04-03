@@ -25,8 +25,6 @@ class ZipFile extends HelperAbstract {
      * Falls nicht, wird ein Fehler geloggt und eine Exception geworfen.
      */
     private static function checkZipExtension(): void {
-        self::setLogger();
-
         if (!class_exists('ZipArchive')) {
             self::logError("PHP ZipArchive-Erweiterung fehlt. ZIP-Operationen nicht möglich.");
             throw new Exception("PHP ZipArchive-Erweiterung fehlt. Bitte installiere oder aktiviere die zip-Erweiterung.");

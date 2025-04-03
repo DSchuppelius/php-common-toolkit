@@ -10,11 +10,11 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
 use CommonToolkit\Helper\FileSystem\FileTypes\CsvFile;
+use Tests\Contracts\BaseTestCase;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 
-class CsvFileTest extends TestCase {
+class CsvFileTest extends BaseTestCase {
     private $testFileComma = __DIR__ . '/../../.samples/comma.csv';
     private $testFileSemicolon = __DIR__ . '/../../.samples/semicolon.csv';
     private $testFileTab = __DIR__ . '/../../.samples/tab.csv';

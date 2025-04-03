@@ -21,8 +21,6 @@ class Java extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../config/common_executables.json';
 
     public static function execute(string $path, array $args = []): string {
-        self::setLogger();
-
         if (empty($path)) {
             self::logError("Für JAVA-Ausführung muss der Pfad zur JAR-Datei gesetzt sein.");
             throw new Exception("Für JAVA-Ausführung muss der Pfad zur JAR-Datei gesetzt sein.");
@@ -40,7 +38,6 @@ class Java extends ConfiguredHelperAbstract {
     }
 
     public static function executeClass(string $classPath, string $mainClass, string $runClass, array $args = []): string {
-        self::setLogger();
         if (empty($classPath) || empty($mainClass) || empty($runClass)) {
             self::logError("Für CLASS-Ausführung müssen classpath, mainClass und runClass gesetzt sein.");
             throw new Exception("Für CLASS-Ausführung müssen classpath, mainClass und runClass gesetzt sein.");
@@ -55,8 +52,6 @@ class Java extends ConfiguredHelperAbstract {
     }
 
     public static function exists(): bool {
-        self::setLogger();
-
         // Versuche den Java-Befehl aus der Konfiguration zu ermitteln
         $command = self::getConfiguredCommand("java") . "-version 2>&1";
         $output = [];

@@ -12,11 +12,11 @@ declare(strict_types=1);
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Entities\Executables\JavaExecutable;
-use PHPUnit\Framework\TestCase;
 use CommonToolkit\Helper\Java;
+use Tests\Contracts\BaseTestCase;
 use ConfigToolkit\ConfigLoader;
 
-class JavaTest extends TestCase {
+class JavaTest extends BaseTestCase {
 
     public function testExecuteThrowsIfPathIsEmpty(): void {
         $this->expectException(Exception::class);

@@ -22,8 +22,6 @@ class Shell extends HelperAbstract {
      * Führt einen Shell-Befehl aus und liefert true/false anhand des Exit-Codes.
      */
     public static function executeShellCommand(string $command, array &$output = [], int &$resultCode = 0, bool $throwException = false, int $expectedResultCode = 0, bool $usePowerShell = false): bool {
-        self::setLogger();
-
         // Vorabprüfung
         if (!function_exists('exec')) {
             $msg = "exec() ist deaktiviert. Der Befehl kann nicht ausgeführt werden.";
