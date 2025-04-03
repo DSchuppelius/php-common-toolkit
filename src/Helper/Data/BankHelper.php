@@ -82,10 +82,14 @@ class BankHelper {
         return $result === '1';
     }
 
+    public static function generateGermanIBAN(string $blz, string $kto): string {
+        $account = $blz . str_pad($kto, 10, '0', STR_PAD_LEFT);
+        return self::generateIBAN('DE', $account);
+    }
+
     public static function generateIBAN(CountryCode|string $countryCode, string $accountNumber): string {
         self::requireBcMath();
 
-        // Enum-Instanz in String-Wert umwandeln
         if ($countryCode instanceof CountryCode) {
             $countryCode = $countryCode->value;
         }
@@ -98,14 +102,21 @@ class BankHelper {
             throw new InvalidArgumentException("Invalid country code: $countryCode");
         }
 
-        $tmp = $accountNumber . $countryCode . '00';
+        $expectedLength = $countries[$countryCode] - 4; // ohne Prüfziffer und Länderkennung
+        if (strlen($accountNumber) !== $expectedLength) {
+            self::logDebug("Die Kontonummer hat nicht die richtige Länge ($expectedLength) für $countryCode. Eingabe: '$accountNumber'");
+            throw new InvalidArgumentException("Ungültige Kontonummer-Länge für $countryCode");
+        }
+
+        $rearranged = $accountNumber . $countryCode . '00';
+
         $converted = '';
-        foreach (str_split($tmp) as $char) {
-            $converted .= is_numeric($char) ? $char : $chars[$char] ?? '';
+        foreach (str_split($rearranged) as $char) {
+            $converted .= is_numeric($char) ? $char : $chars[strtolower($char)] ?? '';
         }
 
         $checksum = 98 - (int) bcmod($converted, '97');
-        return strtoupper($countryCode . str_pad((string)$checksum, 2, '0', STR_PAD_LEFT) . $accountNumber);
+        return $countryCode . str_pad((string)$checksum, 2, '0', STR_PAD_LEFT) . $accountNumber;
     }
 
     public static function bicFromIBAN(string $iban): string {

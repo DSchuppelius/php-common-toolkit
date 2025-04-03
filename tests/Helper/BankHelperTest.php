@@ -29,8 +29,12 @@ class BankHelperTest extends BaseTestCase {
     }
 
     public function testGenerateIBAN() {
-        $iban = BankHelper::generateIBAN("DE", "500105175407324931");
-        $this->assertMatchesRegularExpression('/^DE\d{2}500105175407324931$/', $iban);
+        $iban = BankHelper::generateIBAN("DE", "100500001234567890");
+        $this->assertEquals("DE46100500001234567890", $iban);
+        $ibanGermany = BankHelper::generateGermanIBAN("10050000", "1234567890");
+        $this->assertEquals("DE46100500001234567890", $ibanGermany);
+        $this->assertMatchesRegularExpression('/^DE\d{2}100500001234567890$/', $ibanGermany);
+        $this->assertTrue(BankHelper::checkIBAN($ibanGermany));
     }
 
     public function testSplitIban() {
