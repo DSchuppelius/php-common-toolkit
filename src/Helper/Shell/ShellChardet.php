@@ -108,12 +108,12 @@ class ShellChardet {
 
     private static function normalizeEncoding(string $result): string {
         if (preg_match('/:\s*([a-zA-Z0-9\-\_]+)\s+with\s+confidence/i', $result, $matches)) {
-            $result = $matches[1];
+            $result = strtoupper($matches[1]);
         }
 
-        return match (strtolower($result)) {
-            'iso-8859-1', 'macroman' => 'ISO-8859-15',
-            'none' => 'UTF-8',
+        return match ($result) {
+            'ISO-8859-1', 'MACROMAN' => 'ISO-8859-15',
+            'NONE' => 'UTF-8',
             default => $result
         };
     }
