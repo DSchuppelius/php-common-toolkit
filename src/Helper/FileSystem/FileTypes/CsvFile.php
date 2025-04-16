@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\FileSystem\File;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
@@ -150,5 +151,34 @@ class CsvFile extends HelperAbstract {
         }
 
         return $headerValid;
+    }
+
+    public static function matchRow(string $file, array $columnPatterns, ?string $delimiter = null, string $encoding = 'UTF-8', ?array &$matchingRow = null): bool {
+        if (!File::exists($file)) {
+            self::logError("CSV-Datei nicht gefunden: $file");
+            return false;
+        }
+
+        $file = File::getRealPath($file);
+        $delimiter = $delimiter ?? self::detectDelimiter($file);
+
+        $handle = fopen($file, 'r');
+        if (!$handle) {
+            self::logError("Fehler beim Öffnen der CSV-Datei: $file");
+            return false;
+        }
+
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            if (StringHelper::matchColumns($row, $columnPatterns, $encoding)) {
+                $matchingRow = $row;
+                fclose($handle);
+                self::logInfo("Zeile mit Muster gefunden: " . implode($delimiter, $row));
+                return true;
+            }
+        }
+
+        fclose($handle);
+        self::logDebug("Keine passende Zeile in $file gefunden.");
+        return false;
     }
 }

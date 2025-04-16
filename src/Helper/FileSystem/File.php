@@ -14,6 +14,8 @@ namespace CommonToolkit\Helper\FileSystem;
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
+use CommonToolkit\Enums\SearchMode;
+use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\Platform;
 use CommonToolkit\Helper\Shell;
 use ERRORToolkit\Exceptions\FileSystem\FileExistsException;
@@ -359,6 +361,34 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return true;
         }
 
+        return false;
+    }
+
+    public static function containsKeyword(string $file, array|string $keywords, ?string &$matchingLine = null, SearchMode $mode = SearchMode::CONTAINS, bool $caseSensitive = false): bool {
+        if (!self::isReadable($file)) {
+            self::logError("Datei nicht lesbar oder nicht vorhanden: $file");
+            return false;
+        }
+
+        $handle = fopen($file, 'r');
+        if ($handle === false) {
+            self::logError("Fehler beim Öffnen der Datei: $file");
+            return false;
+        }
+
+        $keywordsString = is_array($keywords) ? implode(', ', $keywords) : $keywords;
+
+        while (($line = fgets($handle)) !== false) {
+            if (StringHelper::containsKeyword($line, $keywords, $mode, $caseSensitive)) {
+                $matchingLine = trim($line);
+                fclose($handle);
+                self::logInfo("Schlüsselwörter [$keywordsString] in Datei gefunden: $matchingLine");
+                return true;
+            }
+        }
+
+        fclose($handle);
+        self::logDebug("Keine Übereinstimmung in Datei: $file");
         return false;
     }
 }

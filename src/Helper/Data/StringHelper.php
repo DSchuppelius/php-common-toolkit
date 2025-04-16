@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Enums\SearchMode;
 use CommonToolkit\Helper\Shell\ShellChardet;
 use ERRORToolkit\Traits\ErrorLog;
 use Throwable;
@@ -150,5 +151,79 @@ class StringHelper {
 
         self::logError("detectEncoding: Keine Kodierung erkannt");
         return false;
+    }
+
+    public static function containsKeyword(string $haystack, array|string $keywords, SearchMode $mode = SearchMode::CONTAINS, bool $caseSensitive = false): bool {
+        if (!is_array($keywords)) {
+            $keywords = [$keywords];
+        }
+
+        foreach ($keywords as $keyword) {
+            if ($keyword === '') continue;
+
+            $h = $caseSensitive ? $haystack : mb_strtolower($haystack);
+            $k = $caseSensitive ? $keyword : mb_strtolower($keyword);
+
+            switch ($mode) {
+                case SearchMode::EXACT:
+                    if (trim($h) === trim($k)) return true;
+                    break;
+                case SearchMode::CONTAINS:
+                    if (str_contains($h, $k)) return true;
+                    break;
+                case SearchMode::STARTS_WITH:
+                    if (str_starts_with($h, $k)) return true;
+                    break;
+                case SearchMode::ENDS_WITH:
+                    if (str_ends_with($h, $k)) return true;
+                    break;
+                case SearchMode::REGEX:
+                    if (@preg_match($k, $haystack) === 1) return true;
+                    break;
+            }
+        }
+
+        return false;
+    }
+
+    public static function matchColumns(?array $row, ?array $patterns, string $encoding = 'UTF-8'): bool {
+        if (!is_array($row) || empty($row)) {
+            self::logDebug("matchColumns erwartet ein Array als erste Zeile.");
+            return false;
+        }
+
+        if (!is_array($patterns) || empty($patterns)) {
+            self::logDebug("matchColumns erwartet ein Array als Muster.");
+            return false;
+        }
+
+        if (implode('', $row) === '') {
+            self::logDebug("Leere Zeile erkannt, kein Vergleich notwendig.");
+            return false;
+        }
+
+        if (count($row) < count($patterns)) {
+            self::logDebug("Spaltenanzahl (" . count($row) . ") kleiner als Musteranzahl (" . count($patterns) . ").");
+            return false;
+        }
+
+        foreach ($row as $index => $cell) {
+            if (!isset($patterns[$index])) break;
+            $pattern = $patterns[$index];
+
+            if ($pattern === '*') continue;
+
+            // Encoding berücksichtigen
+            $cellUtf8 = mb_convert_encoding($cell ?? '', 'UTF-8', $encoding);
+            $patternQuoted = preg_quote($pattern, '/');
+
+            if (!preg_match("/^$patternQuoted/", $cell) && !preg_match("/^$patternQuoted/", $cellUtf8)) {
+                self::logDebug("Muster nicht gefunden: »" . $patternQuoted . "« in Spalte[$index] = »" . $cell . "«");
+                return false;
+            }
+        }
+
+        self::logDebug("Alle Muster erfolgreich in den Spalten gefunden.");
+        return true;
     }
 }
