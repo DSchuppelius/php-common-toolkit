@@ -86,10 +86,10 @@ class CsvFileTest extends BaseTestCase {
     public function testMatchRowWithEncoding() {
         // Datei mit Umlauten oder ISO-8859-1 kodiertem Inhalt wäre hier ideal
         $row = null;
-        $result = CsvFile::matchRow($this->testFileISO, ['*', '*', '30'], ',', 'ISO-8859-1', $row);
+        $result = CsvFile::matchRow($this->testFileISO, ['*', 'Müller', '35'], ',', 'ISO-8859-1', $row);
 
         $this->assertTrue($result);
-        $this->assertEquals('30', end($row));
+        $this->assertEquals('35', end($row));
     }
 
     public function testMatchRowOnEmptyFile() {
