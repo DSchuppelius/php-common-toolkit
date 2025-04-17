@@ -10,6 +10,8 @@
 
 declare(strict_types=1);
 
+use CommonToolkit\Enums\Month;
+use CommonToolkit\Enums\Weekday;
 use CommonToolkit\Helper\Data\DateHelper;
 use Tests\Contracts\BaseTestCase;
 
@@ -29,9 +31,20 @@ class DateHelperTest extends BaseTestCase {
         $format = '';
         $this->assertTrue(DateHelper::isDate("2024-01-01", $format));
         $this->assertEquals("ISO", $format);
+        $this->assertTrue(DateHelper::isDate("20250101", $format));
+        $this->assertEquals("ISO", $format);
         $this->assertTrue(DateHelper::isDate("01.01.2024", $format));
         $this->assertEquals("DE", $format);
+        $this->assertTrue(DateHelper::isDate("12/13/2024", $format));
+        $this->assertEquals("US", $format);
+        $this->assertTrue(DateHelper::isDate("12/12/2024", $format));
+        $this->assertEquals("DE", $format);
         $this->assertFalse(DateHelper::isDate("invalid-date", $format));
+    }
+
+    public function testIsValidDate() {
+        $this->assertTrue(DateHelper::isValidDate('2024-02-29')); // Schaltjahr
+        $this->assertFalse(DateHelper::isValidDate('2024-02-31')); // Ungültiger Tag
     }
 
     public function testFixDate(): void {
@@ -103,5 +116,16 @@ class DateHelperTest extends BaseTestCase {
         $end = new DateTimeImmutable('2024-12-31');
         $this->assertTrue(DateHelper::isBetween(new DateTimeImmutable('2024-06-15'), $start, $end));
         $this->assertFalse(DateHelper::isBetween(new DateTimeImmutable('2023-12-31'), $start, $end));
+    }
+
+    public function testGetMonthAndWeekdayEnums() {
+        $date = new DateTime('2024-04-16');
+        $this->assertEquals(Month::APRIL, DateHelper::getMonth($date));
+        $this->assertEquals(Weekday::TUESDAY, DateHelper::getWeekday($date));
+    }
+
+    public function testGetLocalizedMonthName() {
+        $date = new DateTime('2024-04-16');
+        $this->assertEquals('April', DateHelper::getLocalizedMonthName($date, 'de'));
     }
 }

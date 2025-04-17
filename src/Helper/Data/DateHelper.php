@@ -19,16 +19,23 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use ERRORToolkit\Traits\ErrorLog;
 use CommonToolkit\Enums\Weekday;
+use InvalidArgumentException;
+use Throwable;
 
 class DateHelper {
     use ErrorLog;
+
+    private static function isCleanDateParse(DateTime|false $date): bool {
+        $errors = DateTime::getLastErrors();
+        return $date !== false && ($errors === false || is_array($errors) && ($errors['warning_count'] === 0 && $errors['error_count'] === 0));
+    }
 
     public static function getLastDay(int $year, int $month): int {
         try {
             $date = new DateTime("$year-$month-01");
             $date->modify('last day of this month');
             return (int) $date->format('d');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             self::logError("Fehler in Datumsberechnung für $month/$year: " . $e->getMessage());
             return 0;
         }
@@ -67,20 +74,49 @@ class DateHelper {
         return null;
     }
 
-    public static function isDate(string $value, ?string &$format = null): bool {
-        if (strlen($value) < 6) return false;
+    public static function isDate(string $value, ?string &$format = null, string $preferredFormat = 'DE'): bool {
+        if (strlen($value) < 6 || strlen($value) > 10) return false;
 
-        if (preg_match('#^(20[0-9]{2})[-/]?(0[1-9]|1[0-2])[-/]?(0[1-9]|[12][0-9]|3[01])$#', $value)) {
-            $format = 'ISO';
-            return true;
+        // ISO
+        $cleaned = preg_replace('#[^0-9]#', '', $value);
+        if (strlen($cleaned) === 8) {
+            if (self::isCleanDateParse(DateTime::createFromFormat('Ymd', $cleaned))) {
+                $format = 'ISO';
+                return true;
+            }
         }
 
-        if (preg_match('#^([0-3]?[0-9])[.\-/]([0-3]?[0-9])[.\-/](?:20)?([0-9]{2})$#', $value)) {
-            $format = 'DE';
-            return true;
+        // US vs DE Format: beide potenziell gültig → prüfen
+        $sepNormalized = str_replace(['.', '/'], '-', $value);
+
+        $preferredFormat = strtoupper($preferredFormat) === 'US' ? 'US' : 'DE';
+
+        $tryFormats = $preferredFormat === 'US'
+            ? ['m-d-Y', 'd-m-Y']
+            : ['d-m-Y', 'm-d-Y'];
+
+        foreach ($tryFormats as $try => $fmt) {
+            if (self::isCleanDateParse(DateTime::createFromFormat($fmt, $sepNormalized))) {
+                $format = $try === 0 ? $preferredFormat : ($preferredFormat === 'DE' ? 'US' : 'DE');
+                return true;
+            }
         }
 
         return false;
+    }
+
+    public static function isValidDate(string $value, array $acceptedFormats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y']): bool {
+        return self::getValidDateFormat($value, $acceptedFormats) !== null;
+    }
+
+    public static function getValidDateFormat(string $value, array $acceptedFormats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y']): ?string {
+        foreach ($acceptedFormats as $format) {
+            if (self::isCleanDateParse(DateTime::createFromFormat($format, $value))) {
+                return $format;
+            }
+        }
+
+        return null;
     }
 
     public static function fixDate(string $date): string {
@@ -89,20 +125,17 @@ class DateHelper {
         }
 
         self::logError("Ungültiges Datumsformat: $date");
-        throw new \InvalidArgumentException("Ungültiges Datumsformat: $date");
+        throw new InvalidArgumentException("Ungültiges Datumsformat: $date");
     }
 
     public static function parseFlexible(string $dateString): ?DateTimeImmutable {
-        $formats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y'];
-
-        foreach ($formats as $format) {
+        $format = self::getValidDateFormat($dateString);
+        if ($format !== null) {
             $dt = DateTime::createFromFormat($format, $dateString);
-            if ($dt !== false) {
-                return DateTimeImmutable::createFromMutable($dt);
-            }
+            return DateTimeImmutable::createFromMutable($dt);
         }
 
-        self::logWarning("Kein passendes Format für: $dateString");
+        self::logWarning("Kein gültiges Format gefunden für: $dateString");
         return null;
     }
 
