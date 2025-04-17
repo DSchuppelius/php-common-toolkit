@@ -183,7 +183,7 @@ class CsvFile extends HelperAbstract {
         return true;
     }
 
-    public static function matchRow(string $file, array $columnPatterns, ?string $delimiter = null, string $encoding = 'UTF-8', ?array &$matchingRow = null): bool {
+    public static function matchRow(string $file, array $columnPatterns, ?string $delimiter = null, string $encoding = 'UTF-8', ?array &$matchingRow = null, bool $strict = true): bool {
         try {
             $file = self::resolveFile($file);
         } catch (Throwable $e) {
@@ -194,7 +194,7 @@ class CsvFile extends HelperAbstract {
         $delimiter ??= self::detectDelimiter($file);
 
         foreach (self::readLines($file, $delimiter) as $row) {
-            if (self::matchColumns($row, $columnPatterns, $encoding)) {
+            if (self::matchColumns($row, $columnPatterns, $encoding, $strict)) {
                 $matchingRow = $row;
                 self::logInfo("Zeile mit Muster gefunden: " . implode($delimiter, $row));
                 return true;
