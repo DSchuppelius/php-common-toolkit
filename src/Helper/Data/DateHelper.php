@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Enums\DateFormat;
 use CommonToolkit\Enums\Month;
 use DateInterval;
 use DateTime;
@@ -74,34 +75,58 @@ class DateHelper {
         return null;
     }
 
-    public static function isDate(string $value, ?string &$format = null, string $preferredFormat = 'DE'): bool {
-        if (strlen($value) < 6 || strlen($value) > 10) return false;
+    public static function isDate(string $value, ?DateFormat &$format = null, DateFormat $preferredFormat = DateFormat::DE): bool {
+        $len = strlen($value);
+        if ($len < 6 || $len > 19) return false;
 
-        // ISO
+        // ISO ohne oder mit Uhrzeit
         $cleaned = preg_replace('#[^0-9]#', '', $value);
-        if (strlen($cleaned) === 8) {
-            if (self::isCleanDateParse(DateTime::createFromFormat('Ymd', $cleaned))) {
-                $format = 'ISO';
+        $formatMap = [
+            8  => ['Ymd', DateFormat::ISO],
+            12 => ['YmdHi', DateFormat::ISO],
+            14 => ['YmdHis', DateFormat::ISO],
+        ];
+        if (isset($formatMap[strlen($cleaned)])) {
+            [$fmt, $fmtType] = $formatMap[strlen($cleaned)];
+            if (self::isCleanDateParse(DateTime::createFromFormat($fmt, $cleaned))) {
+                $format = $fmtType;
                 return true;
             }
         }
 
-        // US vs DE Format: beide potenziell gültig → prüfen
+        // Trennzeichen-basierte Formate
         $sepNormalized = str_replace(['.', '/'], '-', $value);
+        if (preg_match('#^(\d{1,2})-(\d{1,2})-(\d{2,4})(.*)?$#', $sepNormalized, $m)) {
+            $a = (int) $m[1];
+            $b = (int) $m[2];
+            $hasTime = str_contains($value, ':');
 
-        $preferredFormat = strtoupper($preferredFormat) === 'US' ? 'US' : 'DE';
+            // Entscheide Format nach Zahlenlogik
+            $isAmbiguous = $a <= 12 && $b <= 12;
+            $detected = null;
 
-        $tryFormats = $preferredFormat === 'US'
-            ? ['m-d-Y', 'd-m-Y']
-            : ['d-m-Y', 'm-d-Y'];
+            if ($a > 12) {
+                $detected = 'd-m-Y';
+                $format = DateFormat::DE;
+            } elseif ($b > 12) {
+                $detected = 'm-d-Y';
+                $format = DateFormat::US;
+            } elseif ($isAmbiguous) {
+                // Fallback auf preferredFormat
+                $format = $preferredFormat;
+                $detected = $preferredFormat === DateFormat::US ? 'm-d-Y' : 'd-m-Y';
+            }
 
-        foreach ($tryFormats as $try => $fmt) {
-            if (self::isCleanDateParse(DateTime::createFromFormat($fmt, $sepNormalized))) {
-                $format = $try === 0 ? $preferredFormat : ($preferredFormat === 'DE' ? 'US' : 'DE');
+            // Zeit prüfen
+            if ($hasTime) {
+                $detected .= substr_count($m[4], ':') === 2 ? ' H:i:s' : ' H:i';
+            }
+
+            if ($detected && self::isCleanDateParse(DateTime::createFromFormat($detected, $sepNormalized))) {
                 return true;
             }
         }
-
+        $format = null;
         return false;
     }
 
@@ -183,39 +208,61 @@ class DateHelper {
         return $date->format('Y-m-d') === (new DateTimeImmutable())->format('Y-m-d');
     }
 
-    public static function germanToIso(string $value): string {
-        $value = trim($value);
-        if (preg_match("/^\d{1,2}\.\d{1,2}\.\d{2}$/", $value)) {
-            $value = preg_replace_callback('/(\d{1,2})\.(\d{1,2})\.(\d{2})$/', function ($matches) {
-                return sprintf('%02d.%02d.20%02d', $matches[1], $matches[2], $matches[3]);
-            }, $value);
-        }
-        if (preg_match("/^(\d{1,2})\\.(\d{1,2})\\.(\d{4})/", $value, $matches)) {
-            return $matches[3] . "-" . $matches[2] . "-" . $matches[1];
-        }
-        return $value;
+    public static function formatDate(string $value, DateFormat $targetFormat, DateFormat $preferredInputFormat = DateFormat::DE, bool $withTime = false): ?string {
+        $dateIso = self::normalizeToIso($value, $preferredInputFormat);
+        if ($dateIso === null) return null;
+
+        $hasTime = str_contains($dateIso, ':');
+        $dt = DateTime::createFromFormat($hasTime ? 'Y-m-d H:i:s' : 'Y-m-d', $dateIso);
+        if (!$dt) return null;
+
+        return match ($targetFormat) {
+            DateFormat::ISO => $dt->format('Y-m-d'),
+            DateFormat::DE  => $dt->format($withTime ? 'd.m.Y H:i' : 'd.m.Y'),
+            DateFormat::US  => $dt->format($withTime ? 'm/d/Y H:i' : 'm/d/Y'),
+            DateFormat::MYSQL_DATETIME => $dt->format('Y-m-d H:i:s'),
+            DateFormat::ISO_DATETIME,
+            DateFormat::ISO8601 => $dt->format('Y-m-d\T' . ($withTime ? 'H:i:s' : '00:00:00')),
+        };
     }
 
-    public static function isoToGerman(?string $value, bool $withTime = false): string {
-        if ($value === null || $value === "0000-00-00" || $value === "1970-01-01" || $value === "00:00:00") {
-            return '';
-        }
-        $value = trim($value);
-        if (strlen($value) < 8) return $value;
+    public static function normalizeToIso(string $value, DateFormat $preferredFormat = DateFormat::DE): ?string {
+        $detectedFormat = null;
 
-        if ($withTime || strlen($value) > 10) {
-            if (preg_match("/^\\d{4}-\\d{2}-\\d{2}/", $value)) {
-                return date("d.m.Y H:i", strtotime($value));
+        if (!self::isDate($value, $detectedFormat, $preferredFormat)) {
+            return null;
+        }
+
+        // ISO direkt zurückgeben (ggf. mit Zeit)
+        $cleaned = preg_replace('#[^0-9]#', '', $value);
+        if ($detectedFormat === DateFormat::ISO && strlen($cleaned) >= 8) {
+            $format = match (strlen($cleaned)) {
+                14 => 'YmdHis',
+                12 => 'YmdHi',
+                8  => 'Ymd',
+                default => null
+            };
+
+            if ($format !== null) {
+                $date = DateTime::createFromFormat($format, $cleaned);
+                return $date?->format(strlen($cleaned) > 8 ? 'Y-m-d H:i:s' : 'Y-m-d');
             }
-            return $value;
         }
-        if (preg_match("/^\\d{2}:\\d{2}:\\d{2}/", $value)) {
-            return date("H:i", strtotime($value));
-        }
-        if (preg_match("/^\\d{4}-\\d{2}-\\d{2}/", $value)) {
-            return date("d.m.Y", strtotime($value));
-        }
-        return $value;
+
+        // DE oder US → passenden Formatstring bestimmen
+        $sepNormalized = str_replace(['.', '/'], '-', $value);
+        $colonCount = substr_count($value, ':');
+        $hasSeconds = $colonCount === 2;
+        $hasTime = $colonCount > 0;
+
+        $formatString = match ($detectedFormat) {
+            DateFormat::DE => $hasTime ? ($hasSeconds ? 'd-m-Y H:i:s' : 'd-m-Y H:i') : 'd-m-Y',
+            DateFormat::US => $hasTime ? ($hasSeconds ? 'm-d-Y H:i:s' : 'm-d-Y H:i') : 'm-d-Y',
+            default => 'Y-m-d',
+        };
+
+        $date = DateTime::createFromFormat($formatString, $sepNormalized);
+        return self::isCleanDateParse($date) ? $date->format($hasTime ? 'Y-m-d H:i:s' : 'Y-m-d') : null;
     }
 
     public static function addToDate(string $date, int $days = 0, int $months = 0, int $years = 0): string {
