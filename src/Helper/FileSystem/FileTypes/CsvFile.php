@@ -266,7 +266,7 @@ class CsvFile extends HelperAbstract {
             $wert = $row[$index] ?? '';
 
             // Optionales Datum
-            if ($symbol === 'D' && trim($wert) === '') {
+            if ($symbol === 'D' && empty(trim($wert))) {
                 continue;
             }
 
