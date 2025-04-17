@@ -98,12 +98,18 @@ class DateHelperTest extends BaseTestCase {
         $this->assertEquals("2024-01-01", DateHelper::formatDate("01.01.2024 01:02", DateFormat::ISO));
         $this->assertEquals("2024-01-01", DateHelper::formatDate("01.01.2024 01:02", DateFormat::ISO, DateFormat::DE, true));
         $this->assertEquals("2024-01-01T01:02:00", DateHelper::formatDate("01.01.2024 01:02", DateFormat::ISO_DATETIME, DateFormat::DE, true));
+        $this->assertEquals("2024-01-01", DateHelper::germanToIso("01.01.2024 01:02:03"));
+        $this->assertFalse(DateHelper::germanToIso("12/13/2024"));
     }
 
     public function testIsoToGerman(): void {
         $this->assertEquals("01.01.2024", DateHelper::formatDate("2024-01-01", DateFormat::DE));
         $this->assertEquals("01.01.2024", DateHelper::formatDate("2024-01-01 01:02", DateFormat::DE));
-        $this->assertEquals("01.01.2024 01:02", DateHelper::formatDate("2024-01-01 01:02", DateFormat::DE, DateFormat::DE, true));
+        $this->assertEquals("01.01.2024 01:02", DateHelper::formatDate("2024-01-01T01:02:03", DateFormat::DE, DateFormat::DE, true));
+        $this->assertEquals("01.01.2024 01:02", DateHelper::isoToGerman("2024-01-01T01:02:03", true));
+        $this->assertEquals("01.01.2024", DateHelper::isoToGerman("2024-01-01T01:02:03", false));
+        $this->assertEquals("01.01.2024 00:00", DateHelper::isoToGerman("2024-01-01", true));
+        $this->assertFalse(DateHelper::isoToGerman("01.02.2024 01:02", true));
     }
 
     public function testAddToDate(): void {

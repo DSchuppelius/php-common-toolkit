@@ -208,12 +208,37 @@ class DateHelper {
         return $date->format('Y-m-d') === (new DateTimeImmutable())->format('Y-m-d');
     }
 
+    public static function germanToIso(string $value): string|false {
+        if (!self::isDate($value, $detectedFormat) || $detectedFormat !== DateFormat::DE) {
+            self::logError("Ungültiges DE-Datum: $value");
+            return false;
+        }
+        return self::formatDate($value, DateFormat::ISO, DateFormat::DE) ?? false;
+    }
+
+    public static function isoToGerman(?string $value, bool $withTime = false): string|false {
+        if ($value === null || in_array($value, ['0000-00-00', '1970-01-01', '00:00:00'], true)) {
+            return false;
+        } elseif (!self::isDate($value, $detectedFormat) || $detectedFormat !== DateFormat::ISO) {
+            self::logError("Ungültiges ISO-Datum: $value");
+            return false;
+        }
+
+        return self::formatDate($value, DateFormat::DE, DateFormat::ISO, $withTime) ?? false;
+    }
+
     public static function formatDate(string $value, DateFormat $targetFormat, DateFormat $preferredInputFormat = DateFormat::DE, bool $withTime = false): ?string {
         $dateIso = self::normalizeToIso($value, $preferredInputFormat);
         if ($dateIso === null) return null;
 
         $hasTime = str_contains($dateIso, ':');
-        $dt = DateTime::createFromFormat($hasTime ? 'Y-m-d H:i:s' : 'Y-m-d', $dateIso);
+
+        // Sicherstellen, dass ein vollständiger Zeitanteil vorliegt
+        $dateTimeString = $hasTime
+            ? $dateIso
+            : ($withTime ? $dateIso . ' 00:00:00' : $dateIso);
+
+        $dt = DateTime::createFromFormat($hasTime || $withTime ? 'Y-m-d H:i:s' : 'Y-m-d', $dateTimeString);
         if (!$dt) return null;
 
         return match ($targetFormat) {
@@ -222,9 +247,10 @@ class DateHelper {
             DateFormat::US  => $dt->format($withTime ? 'm/d/Y H:i' : 'm/d/Y'),
             DateFormat::MYSQL_DATETIME => $dt->format('Y-m-d H:i:s'),
             DateFormat::ISO_DATETIME,
-            DateFormat::ISO8601 => $dt->format('Y-m-d\T' . ($withTime ? 'H:i:s' : '00:00:00')),
+            DateFormat::ISO8601 => $dt->format('Y-m-d\TH:i:s'),
         };
     }
+
 
     public static function normalizeToIso(string $value, DateFormat $preferredFormat = DateFormat::DE): ?string {
         $detectedFormat = null;
