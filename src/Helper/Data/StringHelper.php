@@ -100,10 +100,6 @@ class StringHelper {
         return mb_check_encoding($input, 'ASCII');
     }
 
-    public static function isText(string $input): bool {
-        return !BankHelper::isKTO($input) && !BankHelper::isBLZ($input) && !BankHelper::isIBAN($input) && !BankHelper::isBIC($input) && !DateHelper::isDate($input) && !CurrencyHelper::isCurrency($input);
-    }
-
     public static function htmlEntitiesToText(string $input): string {
         return html_entity_decode($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
@@ -188,46 +184,5 @@ class StringHelper {
         }
 
         return false;
-    }
-
-    public static function matchColumns(?array $row, ?array $patterns, string $encoding = 'UTF-8'): bool {
-        if (!is_array($row) || empty($row)) {
-            self::logDebug("matchColumns erwartet ein Array als erste Zeile.");
-            return false;
-        }
-
-        if (!is_array($patterns) || empty($patterns)) {
-            self::logDebug("matchColumns erwartet ein Array als Muster.");
-            return false;
-        }
-
-        if (implode('', $row) === '') {
-            self::logDebug("Leere Zeile erkannt, kein Vergleich notwendig.");
-            return false;
-        }
-
-        if (count($row) < count($patterns)) {
-            self::logDebug("Spaltenanzahl (" . count($row) . ") kleiner als Musteranzahl (" . count($patterns) . ").");
-            return false;
-        }
-
-        foreach ($row as $index => $cell) {
-            if (!isset($patterns[$index])) break;
-            $pattern = $patterns[$index];
-
-            if ($pattern === '*') continue;
-
-            // Encoding berücksichtigen
-            $cellUtf8 = mb_convert_encoding($cell ?? '', 'UTF-8', $encoding);
-            $patternQuoted = preg_quote($pattern, '/');
-
-            if (!preg_match("/^$patternQuoted/", $cell) && !preg_match("/^$patternQuoted/", $cellUtf8)) {
-                self::logDebug("Muster nicht gefunden: »" . $patternQuoted . "« in Spalte[$index] = »" . $cell . "«");
-                return false;
-            }
-        }
-
-        self::logDebug("Alle Muster erfolgreich in den Spalten gefunden.");
-        return true;
     }
 }
