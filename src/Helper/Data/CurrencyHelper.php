@@ -83,7 +83,7 @@ class CurrencyHelper {
     /**
      * Prüft, ob ein String ein valider Betrag im US- oder DE-Format ist
      */
-    public static function isValid(string $input, string &$format = ''): bool {
+    public static function isCurrency(string $input, ?string &$format = null): bool {
         if ($input === null || trim($input) === '') return false;
         $input = trim($input);
 
@@ -102,6 +102,7 @@ class CurrencyHelper {
             return true;
         }
 
+        $format = null;
         return false;
     }
 

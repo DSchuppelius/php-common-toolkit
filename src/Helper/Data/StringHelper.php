@@ -100,6 +100,10 @@ class StringHelper {
         return mb_check_encoding($input, 'ASCII');
     }
 
+    public static function isText(string $input): bool {
+        return !BankHelper::isKTO($input) && !BankHelper::isBLZ($input) && !BankHelper::isIBAN($input) && !BankHelper::isBIC($input) && !DateHelper::isDate($input) && !CurrencyHelper::isCurrency($input);
+    }
+
     public static function htmlEntitiesToText(string $input): string {
         return html_entity_decode($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
