@@ -13,6 +13,11 @@ class ShellChardet {
     private static $stdout = null;
     private static $stderr = null;
 
+    /**
+     * Startet den chardet-Prozess und öffnet die Pipes.
+     *
+     * @throws RuntimeException Wenn der Prozess nicht gestartet werden kann.
+     */
     public static function start(): void {
         if (self::$process !== null) return;
 
@@ -34,6 +39,9 @@ class ShellChardet {
         self::$stderr = $pipes[2];
     }
 
+    /**
+     * Stoppt den chardet-Prozess und schließt die Pipes.
+     */
     public static function stop(): void {
         if (self::$process !== null) {
             @fclose(self::$stdin);
@@ -48,6 +56,13 @@ class ShellChardet {
         }
     }
 
+    /**
+     * Detects the encoding of the given text using chardet.
+     *
+     * @param string $text The text to detect the encoding for.
+     * @param bool $usePersistent Whether to use a persistent chardet process.
+     * @return string|false The detected encoding or false on failure.
+     */
     public static function detect(string $text, bool $usePersistent = false): string|false {
         if ($usePersistent) {
             return self::detectWithPersistentProcess($text);
@@ -56,6 +71,12 @@ class ShellChardet {
         }
     }
 
+    /**
+     * Detects the encoding of the given text using a temporary chardet process.
+     *
+     * @param string $text The text to detect the encoding for.
+     * @return string|false The detected encoding or false on failure.
+     */
     private static function detectWithTemporaryProcess(string $text): string|false {
         $descriptorspec = [
             0 => ['pipe', 'r'],
@@ -85,6 +106,12 @@ class ShellChardet {
         return self::normalizeEncoding(trim($result));
     }
 
+    /**
+     * Detects the encoding of the given text using a persistent chardet process.
+     *
+     * @param string $text The text to detect the encoding for.
+     * @return string|false The detected encoding or false on failure.
+     */
     private static function detectWithPersistentProcess(string $text): string|false {
         self::start();
 
@@ -106,6 +133,12 @@ class ShellChardet {
         return self::normalizeEncoding(trim($result));
     }
 
+    /**
+     * Normalisiert die Kodierung basierend auf dem Ergebnis von chardet.
+     *
+     * @param string $result
+     * @return string
+     */
     private static function normalizeEncoding(string $result): string {
         if (preg_match('/:\s*([a-zA-Z0-9\-\_]+)\s+with\s+confidence/i', $result, $matches)) {
             $result = strtoupper($matches[1]);

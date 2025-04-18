@@ -24,6 +24,12 @@ use Throwable;
 class CsvFile extends HelperAbstract {
     protected static array $commonDelimiters = [',', ';', "\t", '|'];
 
+    /**
+     * Gibt den Dateipfad zurück, wenn die Datei existiert.
+     *
+     * @param string $file Der Pfad zur CSV-Datei.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert oder nicht lesbar ist.
+     */
     private static function resolveFile(string $file): string {
         if (!File::exists($file)) {
             self::logError("Die CSV-Datei $file existiert nicht oder ist nicht lesbar.");
@@ -32,6 +38,12 @@ class CsvFile extends HelperAbstract {
         return File::getRealPath($file);
     }
 
+    /**
+     * Liest eine CSV-Datei und gibt die Zeilen als Generator zurück.
+     *
+     * @param string $file       Der Pfad zur CSV-Datei.
+     * @param string $delimiter  Das Trennzeichen (Standard: ',').
+     */
     private static function readLines(string $file, string $delimiter): Generator {
         $handle = fopen($file, 'r');
         if (!$handle) {
@@ -47,6 +59,12 @@ class CsvFile extends HelperAbstract {
         fclose($handle);
     }
 
+    /**
+     * Liest eine CSV-Datei und gibt die Zeilen als Generator zurück.
+     *
+     * @param string $file       Der Pfad zur CSV-Datei.
+     * @param string $delimiter  Das Trennzeichen (Standard: ',').
+     */
     public static function detectDelimiter(string $file, int $maxLines = 10): string {
         $file = self::resolveFile($file);
         $handle = fopen($file, 'r');
@@ -77,6 +95,12 @@ class CsvFile extends HelperAbstract {
         return $detectedDelimiter;
     }
 
+    /**
+     * Liest die Metadaten einer CSV-Datei.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     */
     public static function getMetaData(string $file, ?string $delimiter = null): array {
         $file = self::resolveFile($file);
         $delimiter ??= self::detectDelimiter($file);
@@ -99,6 +123,12 @@ class CsvFile extends HelperAbstract {
         ];
     }
 
+    /**
+     * Überprüft, ob die CSV-Datei gut geformt ist.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     */
     public static function isWellFormed(string $file, ?string $delimiter = null): bool {
         try {
             $file = self::resolveFile($file);
@@ -124,6 +154,14 @@ class CsvFile extends HelperAbstract {
         return true;
     }
 
+    /**
+     * Überprüft, ob die CSV-Datei ein gültiges Header-Muster hat.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param array $headerPattern    Das erwartete Header-Muster.
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     * @param bool $wellFormed       Überprüfen, ob die Datei gut geformt ist (Standard: false).
+     */
     public static function isValid(string $file, array $headerPattern, ?string $delimiter = null, bool $wellFormed = false): bool {
         try {
             $file = self::resolveFile($file);
@@ -160,6 +198,16 @@ class CsvFile extends HelperAbstract {
         return true;
     }
 
+    /**
+     * Überprüft die Struktur einer CSV-Datei anhand eines Strukturmusters.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param string $structurePattern Das Strukturmuster (z. B. "dbkti").
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     * @param int|null $expectedColumns Erwartete Spaltenanzahl (optional).
+     * @param bool $checkAllRows      Alle Zeilen überprüfen (Standard: false).
+     * @param bool $strict           Strikte Übereinstimmung (Standard: true).
+     */
     public static function checkStructureFile(string $file, string $structurePattern, ?string $delimiter = null, ?int $expectedColumns = null, bool $checkAllRows = false, bool $strict = true): bool {
         try {
             $file = self::resolveFile($file);
@@ -183,6 +231,16 @@ class CsvFile extends HelperAbstract {
         return true;
     }
 
+    /**
+     * Sucht eine Zeile in einer CSV-Datei, die mit den angegebenen Mustern übereinstimmt.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param array $columnPatterns   Die Muster für die Spalten.
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     * @param string $encoding       Die Zeichenkodierung (Standard: 'UTF-8').
+     * @param array|null $matchingRow Referenz auf das gefundene Array (optional).
+     * @param bool $strict           Strikte Übereinstimmung (Standard: true).
+     */
     public static function matchRow(string $file, array $columnPatterns, ?string $delimiter = null, string $encoding = 'UTF-8', ?array &$matchingRow = null, bool $strict = true): bool {
         try {
             $file = self::resolveFile($file);
@@ -205,6 +263,14 @@ class CsvFile extends HelperAbstract {
         return false;
     }
 
+    /**
+     * Prüft, ob die Spalten einer Zeile mit den angegebenen Mustern übereinstimmen.
+     *
+     * @param array|null $row       Die CSV-Zeile als Array.
+     * @param array|null $patterns  Die Muster für die Spalten.
+     * @param string $encoding      Die Zeichenkodierung (Standard: 'UTF-8').
+     * @param bool $strict         Strikte Übereinstimmung (Standard: true).
+     */
     public static function matchColumns(?array $row, ?array $patterns, string $encoding = 'UTF-8', bool $strict = true): bool {
         if (!is_array($row) || empty($row)) {
             self::logDebug("matchColumns erwartet ein Array als erste Zeile.");

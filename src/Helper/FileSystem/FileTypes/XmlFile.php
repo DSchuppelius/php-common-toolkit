@@ -65,7 +65,10 @@ class XmlFile extends HelperAbstract {
     }
 
     /**
-     * Prüft, ob die XML-Datei wohlgeformt ist.
+     * Prüft, ob eine XML-Datei wohlgeformt ist.
+     *
+     * @param string $file
+     * @return boolean
      */
     public static function isWellFormed(string $file): bool {
         self::checkDomExtension();
@@ -88,7 +91,11 @@ class XmlFile extends HelperAbstract {
     }
 
     /**
-     * Validiert eine XML-Datei anhand eines XSD-Schemas.
+     * Validiert eine XML-Datei gegen ein XSD-Schema.
+     *
+     * @param string $file
+     * @param string $xsdSchema
+     * @return boolean
      */
     public static function isValid(string $file, string $xsdSchema): bool {
         self::checkDomExtension();
@@ -124,7 +131,9 @@ class XmlFile extends HelperAbstract {
     }
 
     /**
-     * Loggt alle Fehler von libxml und gibt sie zurück.
+     * Protokolliert libxml-Fehler.
+     *
+     * @param string $errorMessage
      */
     private static function logLibxmlErrors(string $errorMessage): void {
         $errors = libxml_get_errors();

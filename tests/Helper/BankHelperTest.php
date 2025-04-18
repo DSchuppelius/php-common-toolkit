@@ -50,9 +50,8 @@ class BankHelperTest extends BaseTestCase {
     }
 
     public function testCheckBicReturnsBankname() {
-        $dummyEntry = ["COBADEFFXXX;Commerzbank AG"];
-        $bic = BankHelper::checkBIC("COBADEFF", $dummyEntry);
-        $this->assertStringContainsString("Commerzbank", $bic);
+        $bic = BankHelper::checkBIC("COBADEFF");
+        $this->assertStringContainsString("COMMERZBANK", $bic);
     }
 
     public function testIsBIC() {

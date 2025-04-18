@@ -28,6 +28,13 @@ use finfo;
 class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     protected const CONFIG_FILE = __DIR__ . '/../../../config/common_executables.json';
 
+    /**
+     * Gibt den konfigurierten Shell-Befehl zurück.
+     *
+     * @param string $commandName Der Name des Befehls.
+     * @param array $params Die Parameter für den Befehl.
+     * @return string|null Der konfigurierte Befehl oder null, wenn nicht gefunden.
+     */
     private static function getRealExistingFile(string $file): string|false {
         if (!self::exists($file)) {
             self::logError("Datei existiert nicht: $file");
@@ -36,6 +43,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return self::getRealPath($file);
     }
 
+    /**
+     * Führt einen Shell-Befehl aus, um beispielsweise den MIME-Typ oder die Zeichencodierung zu erkennen.
+     *
+     * @param string $commandName Der Name des Befehls (z.B. 'mimetype', 'chardet').
+     * @param string $file Der Pfad zur Datei.
+     * @return string|false Der erkannte Typ oder false bei Fehler.
+     */
     private static function detectViaShell(string $commandName, string $file): string|false {
         $command = self::getConfiguredCommand($commandName, ['[INPUT]' => escapeshellarg($file)]);
         if (empty($command)) {
@@ -54,6 +68,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return $result;
     }
 
+    /**
+     * Bestimmt den MIME-Typ einer Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return string|false Der erkannte MIME-Typ oder false bei Fehler.
+     */
     public static function mimeType(string $file): string|false {
         $file = self::getRealExistingFile($file);
         if ($file === false) return false;
@@ -74,6 +94,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return false;
     }
 
+    /**
+     * Bestimmt die MIME-Encoding einer Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return string|false Die erkannte MIME-Encoding oder false bei Fehler.
+     */
     public static function mimeEncoding(string $file): string|false {
         $file = self::getRealExistingFile($file);
         if ($file === false) return false;
@@ -94,6 +120,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return false;
     }
 
+    /**
+     * Bestimmt die Zeichencodierung einer Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return string|false Die erkannte Zeichencodierung oder false bei Fehler.
+     */
     public static function chardet(string $file): string|false {
         $file = self::getRealExistingFile($file);
         if ($file === false) return false;
@@ -126,6 +158,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return $detected;
     }
 
+    /**
+     * Passt die Locale-Einstellung basierend auf der Zeichencodierung an.
+     *
+     * @param string $encoding Die erkannte Zeichencodierung.
+     */
     private static function adjustLocaleBasedOnEncoding(string $encoding): void {
         if (str_contains($encoding, "UTF") || str_contains($encoding, "utf")) {
             setlocale(LC_CTYPE, "de_DE.UTF-8");
@@ -134,8 +171,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
     }
 
+    /**
+     * Überprüft, ob die Datei existiert.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return bool True, wenn die Datei existiert, andernfalls false.
+     */
     public static function exists(string $file): bool {
-
         $result = file_exists($file);
         if (!$result) {
             self::logDebug("Existenzprüfung der Datei: $file -> false");
@@ -143,6 +185,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return $result;
     }
 
+    /**
+     * Gibt den realen Pfad der Datei zurück.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return string Der reale Pfad der Datei.
+     */
     public static function getRealPath(string $file): string {
         if (self::exists($file)) {
             $realPath = realpath($file);
@@ -159,6 +207,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return $file;
     }
 
+    /**
+     * Liest den Inhalt der angegebenen Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return string Der Inhalt der Datei.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     * @throws Exception Wenn ein Fehler beim Lesen auftritt.
+     */
     public static function read(string $file): string {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
@@ -174,6 +230,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return $content;
     }
 
+    /**
+     * Schreibt Daten in die angegebene Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param string $data Die zu schreibenden Daten.
+     * @throws FileNotWrittenException Wenn die Datei nicht geschrieben werden kann.
+     */
     public static function write(string $file, string $data): void {
         $file = self::getRealPath($file);
         if (file_put_contents($file, $data) === false) {
@@ -183,6 +246,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::logInfo("Daten erfolgreich in Datei geschrieben: $file");
     }
 
+    /**
+     * Löscht die angegebene Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @throws Exception Wenn die Datei nicht gelöscht werden kann.
+     */
     public static function delete(string $file): void {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
@@ -196,6 +265,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::logDebug("Datei gelöscht: $file");
     }
 
+    /**
+     * Gibt die Größe der Datei in Bytes zurück.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return int Die Größe der Datei in Bytes.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     */
     public static function size(string $file): int {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
@@ -205,6 +281,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return filesize($file);
     }
 
+    /**
+     * Überprüft, ob die Datei lesbar ist.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return bool True, wenn die Datei lesbar ist, andernfalls false.
+     */
     public static function isReadable(string $file): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
@@ -218,6 +300,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return true;
     }
 
+    /**
+     * Überprüft, ob die Datei bereit ist, gelesen zu werden.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param bool $logging Ob Protokollierung aktiviert ist (Standard: true).
+     * @return bool True, wenn die Datei bereit ist, andernfalls false.
+     */
     public static function isReady(string $file, bool $logging = true): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
@@ -233,6 +322,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return true;
     }
 
+    /**
+     * Wartet, bis die Datei bereit ist.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param int $timeout Die maximale Wartezeit in Sekunden (Standard: 30).
+     * @return bool True, wenn die Datei bereit ist, andernfalls false.
+     */
     public static function wait4Ready(string $file, int $timeout = 30): bool {
         $file = self::getRealPath($file);
         $start = time();
@@ -251,6 +347,15 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return true;
     }
 
+    /**
+     * Kopiert eine Datei in einen anderen Ordner.
+     *
+     * @param string $sourceFile Der Pfad zur Quelldatei.
+     * @param string $destinationFile Der Zielpfad.
+     * @param bool $overwrite Ob die Zieldatei überschrieben werden soll (Standard: true).
+     * @throws FileNotFoundException Wenn die Quelldatei nicht gefunden wird.
+     * @throws FileNotWrittenException Wenn die Datei nicht kopiert werden kann.
+     */
     public static function copy(string $sourceFile, string $destinationFile, bool $overwrite = true): void {
         $sourceFile = self::getRealPath($sourceFile);
         $destinationFile = self::getRealPath($destinationFile);
@@ -273,6 +378,17 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::logInfo("Datei erfolgreich kopiert: $sourceFile -> $destinationFile");
     }
 
+    /**
+     * Verschiebt eine Datei in einen anderen Ordner.
+     *
+     * @param string $sourceFile Der Pfad zur Quelldatei.
+     * @param string $destinationFolder Der Zielordner.
+     * @param string|null $destinationFileName Der Name der Zieldatei (optional).
+     * @param bool $overwrite Ob die Zieldatei überschrieben werden soll (Standard: true).
+     * @throws FileNotFoundException Wenn die Quelldatei nicht gefunden wird.
+     * @throws FolderNotFoundException Wenn das Zielverzeichnis nicht gefunden wird.
+     * @throws FileNotWrittenException Wenn die Datei nicht verschoben werden kann.
+     */
     public static function move(string $sourceFile, string $destinationFolder, ?string $destinationFileName = null, bool $overwrite = true): void {
         $sourceFile = self::getRealPath($sourceFile);
         $destinationFolder = self::getRealPath($destinationFolder);
@@ -303,6 +419,15 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::logDebug("Datei verschoben: $sourceFile -> $destinationFile");
     }
 
+    /**
+     * Benennt eine Datei um.
+     *
+     * @param string $oldName Der alte Name der Datei.
+     * @param string $newName Der neue Name der Datei.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     * @throws FileExistsException Wenn die Zieldatei bereits existiert.
+     * @throws FileNotWrittenException Wenn die Datei nicht umbenannt werden kann.
+     */
     public static function rename(string $oldName, string $newName): void {
         $oldName = self::getRealPath($oldName);
         $newName = self::getRealPath($newName);
@@ -329,6 +454,16 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::logDebug("Datei umbenannt von $oldName zu $newName");
     }
 
+    /**
+     * Erstellt eine Datei mit dem angegebenen Inhalt und den Berechtigungen.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param int $permissions Die Berechtigungen für die Datei (Standard: 0644).
+     * @param string $content Der Inhalt der Datei (Standard: leer).
+     * @throws FileExistsException Wenn die Datei bereits existiert.
+     * @throws FileNotWrittenException Wenn die Datei nicht geschrieben werden kann.
+     * @throws Exception Wenn ein Fehler beim Setzen der Berechtigungen auftritt.
+     */
     public static function create(string $file, int $permissions = 0644, string $content = ''): void {
         if (self::exists($file)) {
             self::logError("Datei existiert bereits: $file");
@@ -348,6 +483,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::logInfo("Datei erstellt: $file mit Rechten $permissions");
     }
 
+    /**
+     * Überprüft, ob der angegebene Pfad ein absoluter Pfad ist.
+     *
+     * @param string $path Der zu überprüfende Pfad.
+     * @return bool True, wenn der Pfad absolut ist, andernfalls false.
+     */
     public static function isAbsolutePath(string $path): bool {
         if (DIRECTORY_SEPARATOR === '/' && str_starts_with($path, '/')) {
             return true;
@@ -364,6 +505,16 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         return false;
     }
 
+    /**
+     * Überprüft, ob die Datei ein bestimmtes Schlüsselwort bzw. eine Liste von Schlüsselwörtern enthält.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param array|string $keywords Die Schlüsselwörter, nach denen gesucht werden soll.
+     * @param string|null $matchingLine Die Zeile, die das Schlüsselwort enthält (optional).
+     * @param SearchMode $mode Der Suchmodus (Standard: CONTAINS).
+     * @param bool $caseSensitive Ob die Suche Groß-/Kleinschreibung beachten soll (Standard: false).
+     * @return bool True, wenn das Schlüsselwort gefunden wurde, andernfalls false.
+     */
     public static function containsKeyword(string $file, array|string $keywords, ?string &$matchingLine = null, SearchMode $mode = SearchMode::CONTAINS, bool $caseSensitive = false): bool {
         if (!self::isReadable($file)) {
             self::logError("Datei nicht lesbar oder nicht vorhanden: $file");

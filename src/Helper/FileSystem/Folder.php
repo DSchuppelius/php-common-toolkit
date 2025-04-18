@@ -18,6 +18,12 @@ use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
 
 class Folder extends HelperAbstract implements FileSystemInterface {
+    /**
+     * Überprüft, ob ein Verzeichnis existiert.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @return bool True, wenn das Verzeichnis existiert, andernfalls false.
+     */
     public static function exists(string $directory): bool {
         $result = is_dir($directory);
 
@@ -28,6 +34,15 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         return $result;
     }
 
+    /**
+     * Kopiert ein Verzeichnis und dessen Inhalt in ein anderes Verzeichnis.
+     *
+     * @param string $sourceDirectory Das Quellverzeichnis.
+     * @param string $destinationDirectory Das Zielverzeichnis.
+     * @param bool $recursive Ob rekursiv kopiert werden soll (Standard: false).
+     * @throws FolderNotFoundException Wenn das Quellverzeichnis nicht existiert.
+     * @throws Exception Wenn ein Fehler beim Kopieren auftritt.
+     */
     public static function copy(string $sourceDirectory, string $destinationDirectory, bool $recursive = false): void {
         $sourceDirectory = File::getRealPath($sourceDirectory);
         $destinationDirectory = File::getRealPath($destinationDirectory);
@@ -61,6 +76,14 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         self::logInfo("Verzeichnis kopiert von $sourceDirectory nach $destinationDirectory");
     }
 
+    /**
+     * Erstellt ein Verzeichnis mit den angegebenen Berechtigungen.
+     *
+     * @param string $directory Der Pfad des zu erstellenden Verzeichnisses.
+     * @param int $permissions Die Berechtigungen für das Verzeichnis (Standard: 0755).
+     * @param bool $recursive Ob rekursiv erstellt werden soll (Standard: false).
+     * @throws Exception Wenn ein Fehler beim Erstellen des Verzeichnisses auftritt.
+     */
     public static function create(string $directory, int $permissions = 0755, bool $recursive = false): void {
         $directory = File::getRealPath($directory);
 
@@ -75,6 +98,14 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         }
     }
 
+    /**
+     * Benennt ein Verzeichnis um.
+     *
+     * @param string $oldName Der alte Name des Verzeichnisses.
+     * @param string $newName Der neue Name des Verzeichnisses.
+     * @throws FolderNotFoundException Wenn das alte Verzeichnis nicht existiert.
+     * @throws Exception Wenn ein Fehler beim Umbenennen auftritt.
+     */
     public static function rename(string $oldName, string $newName): void {
         $oldName = File::getRealPath($oldName);
         $newName = File::getRealPath($newName);
@@ -92,6 +123,14 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         self::logInfo("Verzeichnis umbenannt von $oldName zu $newName");
     }
 
+    /**
+     * Löscht ein Verzeichnis und alle darin enthaltenen Dateien und Unterverzeichnisse.
+     *
+     * @param string $directory Das zu löschende Verzeichnis.
+     * @param bool $recursive Ob rekursiv gelöscht werden soll.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     * @throws Exception Wenn ein Fehler beim Löschen auftritt.
+     */
     public static function delete(string $directory, bool $recursive = false): void {
         $directory = File::getRealPath($directory);
 
@@ -121,6 +160,14 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         self::logInfo("Verzeichnis gelöscht: $directory");
     }
 
+    /**
+     * Verschiebt ein Verzeichnis von einem Ort zu einem anderen.
+     *
+     * @param string $sourceDirectory Das Quellverzeichnis.
+     * @param string $destinationDirectory Das Zielverzeichnis.
+     * @throws FolderNotFoundException Wenn das Quellverzeichnis nicht existiert.
+     * @throws Exception Wenn ein Fehler beim Verschieben auftritt.
+     */
     public static function move(string $sourceDirectory, string $destinationDirectory): void {
         $sourceDirectory = File::getRealPath($sourceDirectory);
         $destinationDirectory = File::getRealPath($destinationDirectory);
@@ -138,6 +185,13 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         self::logInfo("Verzeichnis verschoben von $sourceDirectory nach $destinationDirectory");
     }
 
+    /**
+     * Gibt alle Unterverzeichnisse eines Verzeichnisses zurück.
+     *
+     * @param string $directory Das Verzeichnis, in dem nach Unterverzeichnissen gesucht werden soll.
+     * @param bool $recursive Ob rekursiv in Unterverzeichnissen gesucht werden soll.
+     * @return array Ein Array mit den gefundenen Unterverzeichnissen.
+     */
     public static function get(string $directory, bool $recursive = false): array {
         $directory = File::getRealPath($directory);
         $result = [];
@@ -156,6 +210,12 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         return $result;
     }
 
+    /**
+     * Überprüft, ob der angegebene Pfad ein absoluter Pfad ist.
+     *
+     * @param string $path Der zu überprüfende Pfad.
+     * @return bool True, wenn der Pfad absolut ist, andernfalls false.
+     */
     public static function isAbsolutePath(string $path): bool {
         return File::isAbsolutePath($path);
     }

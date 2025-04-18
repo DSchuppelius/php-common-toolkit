@@ -23,28 +23,64 @@ use RuntimeException;
 class BankHelper {
     use ErrorLog;
 
+    /**
+     * Überprüft die Bankleitzahl (BLZ) auf Gültigkeit.
+     *
+     * @param string|null $value Die Bankleitzahl.
+     * @return bool True, wenn die BLZ gültig ist, andernfalls false.
+     */
     public static function isBLZ(?string $value): bool {
         return $value !== null && preg_match("/^[0-9]{8}\$/", $value) === 1;
     }
 
+    /**
+     * Überprüft die Kontonummer auf Gültigkeit.
+     *
+     * @param string|null $value Die Kontonummer.
+     * @return bool True, wenn die Kontonummer gültig ist, andernfalls false.
+     */
     public static function isKTO(?string $value): bool {
         return $value !== null && preg_match("/^[0-9]{10}\$/", $value) === 1;
     }
 
+    /**
+     * Überprüft die IBAN auf Gültigkeit.
+     *
+     * @param string|null $value Die IBAN.
+     * @return bool True, wenn die IBAN gültig ist, andernfalls false.
+     */
     public static function isIBAN(?string $value): bool {
         if ($value === null || preg_match("/X{5,}/", $value)) return false;
         $value = str_replace(' ', '', $value);
         return preg_match("/^[A-Z]{2}[A-Z0-9]{14,33}\$/", $value) === 1;
     }
 
+    /**
+     * Überprüft, ob die IBAN anonymisiert ist.
+     *
+     * @param string|null $value Die IBAN.
+     * @return bool True, wenn die IBAN anonymisiert ist, andernfalls false.
+     */
     public static function isIBANAnon(?string $value): bool {
         return $value !== null && preg_match("/^[A-Z]{2}XX[0-9]{11}XXXX[0-9]{3}\$/", $value) === 1;
     }
 
+    /**
+     * Überprüft die BIC auf Gültigkeit.
+     *
+     * @param string|null $value Die BIC.
+     * @return bool True, wenn die BIC gültig ist, andernfalls false.
+     */
     public static function isBIC(?string $value): bool {
         return $value !== null && preg_match("/^[A-Z]{6}[2-9A-Z][0-9A-NP-Z]([A-Z0-9]{3}|x{3})?\$/", $value) === 1;
     }
 
+    /**
+     * Überprüft die IBAN auf Gültigkeit.
+     *
+     * @param string $iban Die IBAN.
+     * @return bool True, wenn die IBAN gültig ist, andernfalls false.
+     */
     public static function checkIBAN(string $iban): bool {
         self::requireBcMath();
 
@@ -82,11 +118,25 @@ class BankHelper {
         return $result === '1';
     }
 
+    /**
+     * Generiert eine IBAN für Deutschland basierend auf BLZ und KTO.
+     *
+     * @param string $blz Die Bankleitzahl (BLZ).
+     * @param string $kto Die Kontonummer (KTO).
+     * @return string Die generierte IBAN.
+     */
     public static function generateGermanIBAN(string $blz, string $kto): string {
         $account = $blz . str_pad($kto, 10, '0', STR_PAD_LEFT);
         return self::generateIBAN('DE', $account);
     }
 
+    /**
+     * Generiert eine IBAN für ein bestimmtes Land und eine Kontonummer.
+     *
+     * @param CountryCode|string $countryCode Der Ländercode (z.B. 'DE' für Deutschland).
+     * @param string $accountNumber Die Kontonummer.
+     * @return string Die generierte IBAN.
+     */
     public static function generateIBAN(CountryCode|string $countryCode, string $accountNumber): string {
         self::requireBcMath();
 
@@ -119,9 +169,15 @@ class BankHelper {
         return $countryCode . str_pad((string)$checksum, 2, '0', STR_PAD_LEFT) . $accountNumber;
     }
 
+    /**
+     * Gibt die BIC aus einer IBAN zurück.
+     *
+     * @param string $iban Die IBAN.
+     * @return string Die BIC oder ein leerer String, wenn keine BIC gefunden wurde.
+     */
     public static function bicFromIBAN(string $iban): string {
         $blz = substr($iban, 4, 8);
-        $data = self::loadBundesbankData();
+        $data = self::loadBundesbankBLZData();
         foreach ($data as $entry) {
             if (substr($entry, 0, 8) === $blz) {
                 return trim(substr($entry, 139, 11));
@@ -130,18 +186,31 @@ class BankHelper {
         return '';
     }
 
-    public static function checkBIC(string $bic, array $bicList): string {
+    /**
+     * Überprüft die BIC und gibt die BIC inkl. Banknamen zurück.
+     *
+     * @param string $bic Die BIC.
+     * @return string|false Der Bankname oder false bei ungültiger BIC.
+     */
+    public static function checkBIC(string $bic): string|false {
         $bic = strtoupper(substr(trim($bic), 0, 8));
-        foreach ($bicList as $entry) {
+        $data = self::loadBundesbankBICData();
+        foreach ($data as $entry) {
             $fields = explode(";", $entry);
             if (strtoupper(substr($fields[0], 0, 8)) === $bic) {
                 return $bic . "XXX " . $fields[1];
             }
         }
-        return '';
+        return false;
     }
 
-    public static function splitIBAN(?string $iban): false|array {
+    /**
+     * Gibt die BLZ und KTO aus einer IBAN zurück.
+     *
+     * @param string|null $iban Die IBAN.
+     * @return false|array Ein Array mit 'BLZ' und 'KTO' oder false bei ungültiger IBAN.
+     */
+    public static function splitIBAN(?string $iban): array|false {
         if ($iban === null || strlen($iban) < 22) {
             return false;
         }
@@ -151,7 +220,12 @@ class BankHelper {
         ];
     }
 
-    private static function loadBundesbankData(): array {
+    /**
+     * Lädt die aktuelle BLZ-Liste von der Deutschen Bundesbank.
+     *
+     * @return array
+     */
+    private static function loadBundesbankBLZData(): array {
         $configLoader = ConfigLoader::getInstance(self::$logger);
         $configLoader->loadConfigFile(__DIR__ . '/../../../config/helper.json');
 
@@ -159,6 +233,34 @@ class BankHelper {
         $url = $configLoader->get('Bundesbank', 'resourceurl', '');
         $expiry = $configLoader->get('Bundesbank', 'expiry_days', 365);
 
+        return self::loadDataFile($path, $url, $expiry);
+    }
+
+    /**
+     * Lädt die aktuelle BIC-Liste von der Deutschen Bundesbank.
+     *
+     * @return array
+     */
+    private static function loadBundesbankBICData(): array {
+        $configLoader = ConfigLoader::getInstance(self::$logger);
+        $configLoader->loadConfigFile(__DIR__ . '/../../../config/helper.json');
+
+        $path = $configLoader->get('Zahlungsdienstleister', 'file', 'data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv');
+        $url = $configLoader->get('Zahlungsdienstleister', 'resourceurl', '');
+        $expiry = $configLoader->get('Zahlungsdienstleister', 'expiry_days', 365);
+
+        return self::loadDataFile($path, $url, $expiry);
+    }
+
+    /**
+     * Lädt eine Datei von einer URL oder vom lokalen Dateisystem.
+     *
+     * @param string $path Der Pfad zur Datei.
+     * @param string|null $url Die URL, von der die Datei geladen werden soll.
+     * @param int $expiry Die Anzahl der Tage, nach denen die Datei als abgelaufen betrachtet wird.
+     * @return array Der Inhalt der Datei als Array von Zeilen.
+     */
+    private static function loadDataFile(string $path, ?string $url = null, int $expiry = 365): array {
         if (!File::isAbsolutePath($path)) {
             $path = __DIR__ . '/../../../' . $path;
             if (!Folder::exists(dirname($path))) {
@@ -175,6 +277,11 @@ class BankHelper {
         return file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     }
 
+    /**
+     * Gibt die Länge der IBAN für verschiedene Länder zurück.
+     *
+     * @return array
+     */
     private static function countryLengths(): array {
         return [
             'AL' => 28, // Albanien
@@ -247,6 +354,11 @@ class BankHelper {
         ];
     }
 
+    /**
+     * Gibt eine Zuordnung von Buchstaben zu Zahlen zurück, die für die IBAN-Prüfziffernberechnung verwendet wird.
+     *
+     * @return array
+     */
     private static function ibanCharMap(): array {
         return array_combine(range('a', 'z'), range(10, 35));
     }

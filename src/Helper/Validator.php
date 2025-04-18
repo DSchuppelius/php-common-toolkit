@@ -19,6 +19,9 @@ use CommonToolkit\Helper\Data\BankHelper;
 class Validator {
     /**
      * Prüft, ob der Wert ein gültiges Datum ist.
+     *
+     * @param string $value
+     * @return boolean
      */
     public static function isDate(string $value): bool {
         return DateHelper::isValidDate($value);
@@ -26,6 +29,9 @@ class Validator {
 
     /**
      * Prüft, ob der Wert ein gültiger Betrag ist.
+     *
+     * @param string $value
+     * @return boolean
      */
     public static function isAmount(string $value): bool {
         $format = '';
@@ -33,7 +39,10 @@ class Validator {
     }
 
     /**
-     * Prüft, ob der Wert eine gültige IBAN ist.
+     * Prüft, ob der Wert eine IBAN ist.
+     *
+     * @param string $value
+     * @return boolean
      */
     public static function isIBAN(string $value): bool {
         return self::isMaskedIBAN($value) || self::isRealIBAN($value);
@@ -41,26 +50,41 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine maskierte IBAN ist.
+     *
+     * @param string $value
+     * @return boolean
      */
     public static function isMaskedIBAN(string $value): bool {
         // z. B. DE4430020900XXXXXX123
         return BankHelper::isIBANAnon($value);
     }
 
+    /**
+     * Prüft, ob der Wert eine echte IBAN ist.
+     *
+     * @param string $value
+     * @return boolean
+     */
     public static function isRealIBAN(string $value): bool {
         // z. B. DE44300209001234567890
         return BankHelper::isIBAN($value);
     }
 
     /**
-     * Prüft, ob der Wert eine BIC ist.
+     * Prüft, ob der Wert eine gültige BIC ist.
+     *
+     * @param string $value
+     * @return boolean
      */
     public static function isBIC(string $value): bool {
         return BankHelper::isBIC($value);
     }
 
     /**
-     * Prüft, ob der Wert eine Bankleitzahl ist.
+     * Prüft, ob der Wert ein Bankleitzahl ist.
+     *
+     * @param string $value
+     * @return boolean
      */
     public static function isBankCode(string $value): bool {
         return BankHelper::isBLZ($value);
@@ -68,20 +92,30 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine Kontonummer ist.
+     *
+     * @param string $value
+     * @return boolean
      */
     public static function isAccountNumber(string $value): bool {
         return BankHelper::isKTO($value);
     }
 
     /**
-     * Prüft, ob der String als einfacher Text interpretiert werden kann.
+     * Prüft, ob der Wert ein Text ist.
+     *
+     * @param string $value
+     * @return boolean
      */
     public static function isText(string $value): bool {
         return !self::isAccountNumber($value) && !self::isBankCode($value) && !self::isIBAN($value) && !self::isBIC($value) && !self::isAmount($value) && !self::isDate($value);
     }
 
     /**
-     * Generischer Dispatcher für symbolische Prüfungen.
+     * Validiert den Wert basierend auf dem Symbol.
+     *
+     * @param string $symbol Das Symbol, das den Typ angibt.
+     * @param string $value Der zu validierende Wert.
+     * @return bool True, wenn der Wert gültig ist, andernfalls false.
      */
     public static function validateBySymbol(string $symbol, string $value): bool {
         return match ($symbol) {

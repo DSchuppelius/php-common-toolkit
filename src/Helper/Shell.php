@@ -18,8 +18,18 @@ use Exception;
 
 class Shell extends HelperAbstract {
 
+
     /**
-     * Führt einen Shell-Befehl aus und liefert true/false anhand des Exit-Codes.
+     * Führt einen Shell-Befehl aus und gibt den Exit-Code zurück.
+     *
+     * @param string $command Der auszuführende Befehl.
+     * @param array $output Referenz auf ein Array, in dem die Ausgabe des Befehls gespeichert wird.
+     * @param int $resultCode Referenz auf eine Variable, in der der Exit-Code gespeichert wird.
+     * @param bool $throwException Ob eine Exception geworfen werden soll, wenn der Befehl fehlschlägt.
+     * @param int $expectedResultCode Der erwartete Exit-Code des Befehls.
+     * @param bool $usePowerShell Ob PowerShell verwendet werden soll (Windows).
+     * @return bool True, wenn der Befehl erfolgreich war, andernfalls false.
+     * @throws Exception Wenn der Befehl nicht ausgeführt werden kann.
      */
     public static function executeShellCommand(string $command, array &$output = [], int &$resultCode = 0, bool $throwException = false, int $expectedResultCode = 0, bool $usePowerShell = false): bool {
         // Vorabprüfung
@@ -66,7 +76,13 @@ class Shell extends HelperAbstract {
     }
 
     /**
-     * Führt einen Befehl aus und gibt die Ausgabe als String zurück.
+     * Führt einen Shell-Befehl aus und gibt die Ausgabe zurück.
+     *
+     * @param string $command Der auszuführende Befehl.
+     * @param bool $throwException Ob eine Exception geworfen werden soll, wenn der Befehl fehlschlägt.
+     * @param int $expectedResultCode Der erwartete Exit-Code des Befehls.
+     * @param bool $usePowerShell Ob PowerShell verwendet werden soll (Windows).
+     * @return string Die Ausgabe des Befehls.
      */
     public static function executeShell(
         string $command,
@@ -85,7 +101,12 @@ class Shell extends HelperAbstract {
     }
 
     /**
-     * Liefert den plattformspezifischen Befehl für eine CMD- oder PowerShell-Ausführung.
+     * Gibt den plattformspezifischen Befehl zurück.
+     *
+     * @param string $unixCommand
+     * @param string $windowsCommand
+     * @param boolean $usePowerShell
+     * @return string
      */
     public static function getPlatformSpecificCommand(string $unixCommand, string $windowsCommand, bool $usePowerShell = false): string {
         $cmd = Platform::isWindows() ? $windowsCommand : $unixCommand;
@@ -93,14 +114,20 @@ class Shell extends HelperAbstract {
     }
 
     /**
-     * Gibt alle konfigurierten ShellExecutables zurück.
+     * Gibt die konfigurierten Shell-Executables zurück.
+     *
+     * @return array
      */
     public static function getConfiguredExecutables(): array {
         return self::getExecutableInstances('shellExecutables', ShellExecutable::class);
     }
 
     /**
-     * Bereitet einen plattformspezifischen Befehl (CMD oder PowerShell) vor.
+     * Baut den plattformspezifischen Befehl auf.
+     *
+     * @param string $command
+     * @param boolean $usePowerShell
+     * @return string
      */
     private static function buildPlatformCommand(string $command, bool $usePowerShell = false): string {
         if ($usePowerShell) {

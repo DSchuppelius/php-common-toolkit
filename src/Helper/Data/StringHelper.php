@@ -21,8 +21,10 @@ class StringHelper {
     use ErrorLog;
 
     /**
-     * Wandelt UTF-8 nach ISO-8859-1 (Latin1) um, ersetzt nicht darstellbare Zeichen mit '?'
-     * Nutzt iconv als bevorzugten Weg, fallback auf eigene Implementierung
+     * Konvertiert einen UTF-8-String in ISO-8859-1.
+     *
+     * @param string $string Der zu konvertierende String.
+     * @return string Der konvertierte String.
      */
     public static function utf8ToIso8859_1(string $string): string {
         $converted = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $string);
@@ -56,6 +58,15 @@ class StringHelper {
         return $result;
     }
 
+    /**
+     * Konvertiert einen String von einer Kodierung in eine andere.
+     *
+     * @param string|null $text Der zu konvertierende Text.
+     * @param string $from Die Quellkodierung (Standard: 'UTF-8').
+     * @param string $to Die Zielkodierung (Standard: '437').
+     * @param bool $translit Optional: Transliterierung aktivieren (Standard: false).
+     * @return string Der konvertierte Text.
+     */
     public static function convertEncoding(?string $text, string $from = 'UTF-8', string $to = '437', bool $translit = false): string {
         if ($text === null || trim($text) === '') return '';
         if ($from === '') return $text;
@@ -82,48 +93,116 @@ class StringHelper {
         return $converted;
     }
 
+    /**
+     * Entfernt nicht druckbare Zeichen aus einem String.
+     *
+     * @param string $input Der zu bereinigende String.
+     * @return string Der bereinigte String ohne nicht druckbare Zeichen.
+     */
     public static function sanitizePrintable(string $input): string {
         return preg_replace('/[[:^print:]]/', ' ', $input) ?? '';
     }
 
+    /**
+     * Entfernt nicht-ASCII-Zeichen aus einem String.
+     *
+     * @param string $input Der zu bereinigende String.
+     * @return string Der bereinigte String ohne nicht-ASCII-Zeichen.
+     */
     public static function removeNonAscii(string $input): string {
         return preg_replace('/[\x80-\xFF]/', '', $input) ?? '';
     }
 
+    /**
+     * Kürzt einen Text auf eine maximale Länge und fügt ein Suffix hinzu.
+     *
+     * @param string $text Der zu kürzende Text.
+     * @param int $maxLength Die maximale Länge des Textes.
+     * @param string $suffix Das Suffix, das hinzugefügt wird (Standard: '...').
+     * @return string Der gekürzte Text.
+     */
     public static function truncate(string $text, int $maxLength, string $suffix = '...'): string {
         return mb_strlen($text) > $maxLength
             ? mb_substr($text, 0, $maxLength - mb_strlen($suffix)) . $suffix
             : $text;
     }
 
+    /**
+     * Überprüft, ob ein String ASCII-Zeichen enthält.
+     *
+     * @param string $input Der zu überprüfende String.
+     * @return bool True, wenn der String nur ASCII-Zeichen enthält, sonst false.
+     */
     public static function isAscii(string $input): bool {
         return mb_check_encoding($input, 'ASCII');
     }
 
+    /**
+     * Konvertiert HTML-Entities in einen Text (UTF-8).
+     *
+     * @param string $input Der zu konvertierende Text.
+     * @return string Der konvertierte Text ohne HTML-Entities.
+     */
     public static function htmlEntitiesToText(string $input): string {
         return html_entity_decode($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
+    /**
+     * Konvertiert einen Text in HTML-Entities (UTF-8).
+     *
+     * @param string $input Der zu konvertierende Text.
+     * @return string Der konvertierte Text mit HTML-Entities.
+     */
     public static function textToHtmlEntities(string $input): string {
         return htmlentities($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
+    /**
+     * Normalisiert Whitespace in einem String.
+     *
+     * @param string $input Der zu normalisierende String.
+     * @return string Der normalisierte String.
+     */
     public static function normalizeWhitespace(string $input): string {
         return preg_replace('/\s+/', ' ', trim($input)) ?? '';
     }
 
+    /**
+     * Konvertiert einen String in Kleinbuchstaben (UTF-8).
+     *
+     * @param string $input Der zu konvertierende String.
+     * @return string Der konvertierte String in Kleinbuchstaben.
+     */
     public static function toLower(string $input): string {
         return mb_strtolower($input, 'UTF-8');
     }
 
+    /**
+     * Konvertiert einen String in Großbuchstaben (UTF-8).
+     *
+     * @param string $input Der zu konvertierende String.
+     * @return string Der konvertierte String in Großbuchstaben.
+     */
     public static function toUpper(string $input): string {
         return mb_strtoupper($input, 'UTF-8');
     }
 
+    /**
+     * Entfernt den UTF-8 BOM (Byte Order Mark) aus einem String.
+     *
+     * @param string $input Der zu bereinigende String.
+     * @return string Der bereinigte String.
+     */
     public static function removeUtf8Bom(string $input): string {
         return preg_replace('/^\xEF\xBB\xBF/', '', $input) ?? $input;
     }
 
+    /**
+     * Ermittelt die Zeichenkodierung eines Strings.
+     *
+     * @param string $text Der zu überprüfende Text.
+     * @return string|false Die erkannte Kodierung oder false, wenn keine erkannt wurde.
+     */
     public static function detectEncoding(string $text): string|false {
         if (trim($text) === '') {
             self::logDebug("detectEncoding: leerer String übergeben");
@@ -153,6 +232,15 @@ class StringHelper {
         return false;
     }
 
+    /**
+     * Überprüft, ob ein String ein bestimmtes Schlüsselwort enthält.
+     *
+     * @param string $haystack Der zu durchsuchende String.
+     * @param array|string $keywords Ein Array oder ein einzelner String mit den Schlüsselwörtern.
+     * @param SearchMode $mode Der Suchmodus (EXACT, CONTAINS, STARTS_WITH, ENDS_WITH, REGEX).
+     * @param bool $caseSensitive Optional: Groß-/Kleinschreibung beachten (Standard: false).
+     * @return bool True, wenn eines der Schlüsselwörter gefunden wurde, sonst false.
+     */
     public static function containsKeyword(string $haystack, array|string $keywords, SearchMode $mode = SearchMode::CONTAINS, bool $caseSensitive = false): bool {
         if (!is_array($keywords)) {
             $keywords = [$keywords];
@@ -184,5 +272,50 @@ class StringHelper {
         }
 
         return false;
+    }
+
+    /**
+     * Entfernt unerwünschte Zeichenketten aus einem String und trimmt den Rest auf die angegebenen Trim-Zeichen.
+     *
+     * @param string $input
+     * @param array $unwanted
+     * @param string $trimChars
+     * @return void
+     */
+    public static function cleanFromList(string $input, array $unwanted, string $trimChars = " ;,"): string {
+        foreach ($unwanted as $needle) {
+            $input = str_replace($needle, '', $input);
+        }
+
+        return trim($input, $trimChars);
+    }
+
+    /**
+     * Zerlegt einen Text in gleichmäßige Blöcke, z. B. für SEPA-Verwendungszwecke.
+     *
+     * @param string|null $text        Der zu zerlegende Text.
+     * @param int         $blockLength Maximale Länge pro Block (Standard: 27).
+     * @param int         $maxBlocks   Maximale Anzahl Blöcke (Standard: 14).
+     * @param string      $padChar     Zeichen zum Auffüllen, wenn kürzer (Standard: Leerzeichen).
+     * @param bool        $normalize   Optional: mehrfache Leerzeichen zusammenfassen.
+     * @return string[]   Ein Array mit genau `$maxBlocks` Einträgen.
+     */
+    public static function splitFixedWidth(?string $text, int $blockLength = 27, int $maxBlocks = 14, string $padChar = ' ', bool $normalize = true): array {
+        if ($text === null || trim($text) === '') {
+            return array_fill(0, $maxBlocks, '');
+        }
+
+        if ($normalize) {
+            $text = self::normalizeWhitespace($text);
+        }
+
+        $blocks = [];
+        while (strlen($text) > 0 && count($blocks) < $maxBlocks) {
+            $chunk = substr(str_pad($text, $blockLength, $padChar), 0, $blockLength);
+            $blocks[] = $chunk;
+            $text = substr($text, $blockLength);
+        }
+
+        return array_pad($blocks, $maxBlocks, '');
     }
 }
