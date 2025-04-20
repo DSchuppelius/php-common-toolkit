@@ -366,7 +366,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         if (self::exists($destinationFile) && !$overwrite) {
-            self::logInfo("Zieldatei existiert und wird nicht überschrieben: $destinationFile");
+            self::logWarning("Zieldatei existiert und wird nicht überschrieben: $destinationFile");
             return;
         }
 
@@ -405,10 +405,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         if (self::exists($destinationFile) && !$overwrite) {
-            self::logInfo("Zieldatei existiert bereits und wird nicht überschrieben: $destinationFile");
+            self::logWarning("Zieldatei existiert bereits und wird nicht überschrieben: $destinationFile");
             return;
         } elseif (self::exists($destinationFile) && $overwrite) {
-            self::logInfo("Zieldatei existiert bereits und wird versucht zu überschreiben: $destinationFile");
+            self::logWarning("Zieldatei existiert bereits und wird versucht zu überschreiben: $destinationFile");
         }
 
         if (!@rename($sourceFile, $destinationFile)) {
