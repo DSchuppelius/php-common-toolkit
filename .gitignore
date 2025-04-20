@@ -410,3 +410,4 @@ phpunit.xml
 /vendor/
 
 /data/blz-aktuell-txt-data.txt
+/data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv

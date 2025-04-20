@@ -21,6 +21,14 @@ use Exception;
 class PdfFile extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../../../config/pdf_executables.json';
 
+    /**
+     * Gibt die Metadaten einer PDF-Datei zurück.
+     *
+     * @param string $file Der Pfad zur PDF-Datei.
+     * @return array Ein Array mit den Metadaten der PDF-Datei.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     * @throws Exception Wenn ein Fehler beim Abrufen der Metadaten auftritt.
+     */
     public static function getMetaData(string $file): array {
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
@@ -60,6 +68,14 @@ class PdfFile extends ConfiguredHelperAbstract {
         return $metadata;
     }
 
+    /**
+     * Überprüft, ob die PDF-Datei verschlüsselt ist.
+     *
+     * @param string $file Der Pfad zur PDF-Datei.
+     * @return bool True, wenn die PDF-Datei verschlüsselt ist, andernfalls false.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     * @throws Exception Wenn ein Fehler bei der Überprüfung auftritt.
+     */
     public static function isEncrypted(string $file): bool {
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
@@ -76,6 +92,14 @@ class PdfFile extends ConfiguredHelperAbstract {
         return false;
     }
 
+    /**
+     * Überprüft, ob die PDF-Datei gültig ist.
+     *
+     * @param string $file Der Pfad zur PDF-Datei.
+     * @return bool True, wenn die PDF-Datei gültig ist, andernfalls false.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     * @throws Exception Wenn ein Fehler bei der Validierung auftritt.
+     */
     public static function isValid(string $file): bool {
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");

@@ -27,6 +27,12 @@ abstract class ExecutableAbstract {
         $this->debugArgs = $config['debugArguments'] ?? [];
     }
 
+    /**
+     * Normalisiert die Konfiguration des Executables.
+     *
+     * @param array $config
+     * @return array
+     */
     protected function normalizeExecutableConfig(array $config): array {
         $config['path'] = $config['path'] ?? $this->resolveOsSpecificValue($config, 'Path');
         $config['arguments'] = $this->resolveOsSpecificValue($config, 'Arguments', $config['arguments'] ?? []);
@@ -35,11 +41,25 @@ abstract class ExecutableAbstract {
         return $config;
     }
 
+    /**
+     * Löst den spezifischen Wert für das Betriebssystem auf.
+     *
+     * @param array $config
+     * @param string $name
+     * @param mixed $fallback
+     * @return mixed
+     */
     protected function resolveOsSpecificValue(array $config, string $name, mixed $fallback = null): mixed {
         $osKey = Platform::isWindows() ? "windows{$name}" : "linux{$name}";
         return $config[$osKey] ?? $fallback;
     }
 
+    /**
+     * Bereitet die Argumente für den Aufruf des Executables vor.
+     *
+     * @param array $overrideArgs
+     * @return array
+     */
     protected function prepareArguments(array $overrideArgs = []): array {
         $baseArgs = $this->args ?? [];
         $resolvedArgs = [];

@@ -21,6 +21,11 @@ use RuntimeException;
 class CurrencyHelper {
     use ErrorLog;
 
+    /**
+     * Überprüft, ob die PHP Intl-Extension verfügbar ist
+     *
+     * @throws RuntimeException
+     */
     private static function ensureNumberFormatterAvailable(): void {
         if (!class_exists(NumberFormatter::class)) {
             self::logError("Die PHP Intl-Extension (intl) ist nicht aktiv. NumberFormatter nicht verfügbar.");
@@ -30,6 +35,11 @@ class CurrencyHelper {
 
     /**
      * Formatiert einen Betrag mit Währung nach aktuellem Gebietsschema
+     *
+     * @param float $amount
+     * @param CurrencyCode|string $currency
+     * @param string|null $locale
+     * @return string
      */
     public static function format(float $amount, CurrencyCode|string $currency = CurrencyCode::Euro, ?string $locale = null): string {
         self::ensureNumberFormatterAvailable();
@@ -48,7 +58,12 @@ class CurrencyHelper {
     }
 
     /**
-     * Gibt einen Betrag als Float zurück, z. B. aus einem Formularfeld
+     * Parst einen Betrag mit Währung nach aktuellem Gebietsschema
+     *
+     * @param string $input
+     * @param CurrencyCode|string $currency
+     * @param string|null $locale
+     * @return float
      */
     public static function parse(string $input, CurrencyCode|string $currency = CurrencyCode::Euro, ?string $locale = null): float {
         self::ensureNumberFormatterAvailable();
@@ -67,23 +82,37 @@ class CurrencyHelper {
     }
 
     /**
-     * Rundet den Betrag kaufmännisch auf zwei Stellen
+     * Rundet einen Betrag auf die angegebene Anzahl von Dezimalstellen
+     *
+     * @param float $amount
+     * @param int $precision
+     * @return float
      */
     public static function round(float $amount, int $precision = 2): float {
         return round($amount, $precision);
     }
 
     /**
-     * Vergleicht zwei Währungsbeträge mit Toleranz
+     * Vergleicht zwei Beträge mit einer Toleranz
+     *
+     * @param float $a
+     * @param float $b
+     * @param float $tolerance
+     * @return bool
      */
     public static function equals(float $a, float $b, float $tolerance = 0.01): bool {
         return round(abs($a - $b), 10) <= $tolerance;
     }
 
+
     /**
-     * Prüft, ob ein String ein valider Betrag im US- oder DE-Format ist
+     * Überprüft, ob der Betrag im US- oder DE-Format vorliegt
+     *
+     * @param string $input
+     * @param string|null $format
+     * @return bool
      */
-    public static function isValid(string $input, string &$format = ''): bool {
+    public static function isCurrency(string $input, ?string &$format = null): bool {
         if ($input === null || trim($input) === '') return false;
         $input = trim($input);
 
@@ -102,11 +131,15 @@ class CurrencyHelper {
             return true;
         }
 
+        $format = null;
         return false;
     }
 
     /**
      * Wandelt einen Betrag vom US-Format ins DE-Format um
+     *
+     * @param string|null $amount
+     * @return string
      */
     public static function usToDe(?string $amount): string {
         if ($amount === null || $amount === '') return '';
@@ -134,6 +167,9 @@ class CurrencyHelper {
 
     /**
      * Wandelt einen Betrag vom DE-Format ins US-Format um
+     *
+     * @param string|null $amount
+     * @return string
      */
     public static function deToUs(?string $amount): string {
         if ($amount === null || $amount === '') return '';

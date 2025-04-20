@@ -37,15 +37,15 @@ class CurrencyHelperTest extends BaseTestCase {
         $this->assertFalse(CurrencyHelper::equals(100.00, 99.95));
     }
 
-    public function testIsValid(): void {
+    public function testIsCurrency(): void {
         $format = '';
-        $this->assertTrue(CurrencyHelper::isValid("1.234,56", $format));
+        $this->assertTrue(CurrencyHelper::isCurrency("1.234,56", $format));
         $this->assertEquals("DE", $format);
 
-        $this->assertTrue(CurrencyHelper::isValid("1,234.56", $format));
+        $this->assertTrue(CurrencyHelper::isCurrency("1,234.56", $format));
         $this->assertEquals("US", $format);
 
-        $this->assertFalse(CurrencyHelper::isValid("abc123", $format));
+        $this->assertFalse(CurrencyHelper::isCurrency("abc123", $format));
     }
 
     public function testUsToDe(): void {

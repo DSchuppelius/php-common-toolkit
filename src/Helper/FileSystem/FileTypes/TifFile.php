@@ -26,6 +26,14 @@ class TifFile extends ConfiguredHelperAbstract {
 
     private const FILE_EXTENSION_PATTERN = "/\.tif{1,2}$/i";
 
+    /**
+     * Repariert eine TIFF-Datei, indem sie in ein JPEG-Bild konvertiert wird.
+     *
+     * @param string $file Der Pfad zur TIFF-Datei.
+     * @param bool $forceRepair Gibt an, ob die Reparatur erzwungen werden soll.
+     * @return string Der reparierte Dateiname.
+     * @throws Exception Wenn ein Fehler bei der Reparatur auftritt.
+     */
     public static function repair(string $file, bool $forceRepair = false): string {
         $mimeType = File::mimeType($file);
 
@@ -88,6 +96,18 @@ class TifFile extends ConfiguredHelperAbstract {
         return $file;
     }
 
+    /**
+     * Konvertiert eine TIFF-Datei in eine PDF-Datei.
+     *
+     * @param string $tiffFile Der Pfad zur TIFF-Datei.
+     * @param string|null $pdfFile Der Pfad zur Ausgabedatei (optional).
+     * @param bool $compressed Gibt an, ob die PDF-Datei komprimiert werden soll.
+     * @param bool $deleteSourceFile Gibt an, ob die Quell-TIFF-Datei gelöscht werden soll.
+     * @throws FileExistsException Wenn die Ausgabedatei bereits existiert.
+     * @throws FileNotFoundException Wenn die Quell-TIFF-Datei nicht gefunden wird.
+     * @throws FileInvalidException Wenn die Quell-TIFF-Datei ungültig ist.
+     * @throws Exception Wenn ein Fehler bei der Konvertierung auftritt.
+     */
     public static function convertToPdf(string $tiffFile, ?string $pdfFile = null, bool $compressed = true, bool $deleteSourceFile = true): void {
         if (!File::exists($tiffFile)) {
             self::logError("Die Datei existiert nicht: $tiffFile");
@@ -150,6 +170,16 @@ class TifFile extends ConfiguredHelperAbstract {
         }
     }
 
+    /**
+     * Führt mehrere TIFF-Dateien zu einer einzigen zusammen.
+     *
+     * @param array $tiffFiles Die Pfade zu den TIFF-Dateien, die zusammengeführt werden sollen.
+     * @param string $mergedFile Der Pfad zur Ausgabedatei.
+     * @param bool $deleteSourceFiles Gibt an, ob die Quell-TIFF-Dateien nach dem Zusammenführen gelöscht werden sollen.
+     * @throws FileExistsException Wenn die Ausgabedatei bereits existiert.
+     * @throws FileNotFoundException Wenn eine der Quell-TIFF-Dateien nicht gefunden wird.
+     * @throws Exception Wenn ein Fehler beim Zusammenführen auftritt.
+     */
     public static function merge(array $tiffFiles, string $mergedFile, bool $deleteSourceFiles = true): void {
         if (File::exists($mergedFile)) {
             self::logError("Die Datei existiert bereits: $mergedFile");
@@ -175,6 +205,14 @@ class TifFile extends ConfiguredHelperAbstract {
         }
     }
 
+    /**
+     * Überprüft, ob die TIFF-Datei gültig ist.
+     *
+     * @param string $file Der Pfad zur TIFF-Datei.
+     * @return bool True, wenn die TIFF-Datei gültig ist, andernfalls false.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     * @throws Exception Wenn ein Fehler bei der Validierung auftritt.
+     */
     public static function isValid(string $file): bool {
         if (!File::exists($file)) {
             self::logError("Datei existiert nicht: $file");

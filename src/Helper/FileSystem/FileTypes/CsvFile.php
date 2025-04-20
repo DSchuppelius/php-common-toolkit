@@ -14,20 +14,59 @@ namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
+use CommonToolkit\Helper\Validation\Validator;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
+use Generator;
+use RuntimeException;
+use Throwable;
 
 class CsvFile extends HelperAbstract {
     protected static array $commonDelimiters = [',', ';', "\t", '|'];
 
-    public static function detectDelimiter(string $file, int $maxLines = 10): string {
+    /**
+     * Gibt den Dateipfad zurück, wenn die Datei existiert.
+     *
+     * @param string $file Der Pfad zur CSV-Datei.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert oder nicht lesbar ist.
+     */
+    private static function resolveFile(string $file): string {
         if (!File::exists($file)) {
-            self::logError("Die Datei $file existiert nicht oder ist nicht lesbar.");
-            throw new FileNotFoundException("Die Datei $file existiert nicht oder ist nicht lesbar.");
+            self::logError("Die CSV-Datei $file existiert nicht oder ist nicht lesbar.");
+            throw new FileNotFoundException("Die CSV-Datei $file existiert nicht oder ist nicht lesbar.");
+        }
+        return File::getRealPath($file);
+    }
+
+    /**
+     * Liest eine CSV-Datei und gibt die Zeilen als Generator zurück.
+     *
+     * @param string $file       Der Pfad zur CSV-Datei.
+     * @param string $delimiter  Das Trennzeichen (Standard: ',').
+     */
+    private static function readLines(string $file, string $delimiter): Generator {
+        $handle = fopen($file, 'r');
+        if (!$handle) {
+            throw new RuntimeException("CSV-Datei konnte nicht geöffnet werden: $file");
         }
 
-        $file = File::getRealPath($file);
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            if (!empty(array_filter($row))) {
+                yield $row;
+            }
+        }
 
+        fclose($handle);
+    }
+
+    /**
+     * Liest eine CSV-Datei und gibt die Zeilen als Generator zurück.
+     *
+     * @param string $file       Der Pfad zur CSV-Datei.
+     * @param string $delimiter  Das Trennzeichen (Standard: ',').
+     */
+    public static function detectDelimiter(string $file, int $maxLines = 10): string {
+        $file = self::resolveFile($file);
         $handle = fopen($file, 'r');
         if (!$handle) {
             self::logError("Fehler beim Öffnen der Datei: $file");
@@ -56,99 +95,254 @@ class CsvFile extends HelperAbstract {
         return $detectedDelimiter;
     }
 
+    /**
+     * Liest die Metadaten einer CSV-Datei.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     */
     public static function getMetaData(string $file, ?string $delimiter = null): array {
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
-        }
-
-        $file = File::getRealPath($file);
-
-        $delimiter = $delimiter ?? self::detectDelimiter($file);
-        $handle = fopen($file, 'r');
-        if (!$handle) {
-            self::logError("Fehler beim Öffnen der CSV-Datei: $file");
-            throw new Exception("Fehler beim Öffnen der CSV-Datei: $file");
-        }
+        $file = self::resolveFile($file);
+        $delimiter ??= self::detectDelimiter($file);
+        $lines = self::readLines($file, $delimiter);
 
         $rowCount = 0;
         $columnCount = 0;
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            if (!empty(array_filter($row))) { // Leere Zeilen ignorieren
+
+        foreach ($lines as $row) {
+            if (!empty(array_filter($row))) {
                 $rowCount++;
                 $columnCount = max($columnCount, count($row));
             }
         }
-        fclose($handle);
 
         return [
-            'RowCount' => $rowCount,
+            'RowCount'    => $rowCount,
             'ColumnCount' => $columnCount,
-            'Delimiter' => $delimiter
+            'Delimiter'   => $delimiter
         ];
     }
 
+    /**
+     * Überprüft, ob die CSV-Datei gut geformt ist.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     */
     public static function isWellFormed(string $file, ?string $delimiter = null): bool {
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
+        try {
+            $file = self::resolveFile($file);
+        } catch (Throwable $e) {
+            self::logInfo("CSV-Datei nicht gefunden oder ungültig: " . $e->getMessage());
+            return false;
         }
 
-        $file = File::getRealPath($file);
-
-        $delimiter = $delimiter ?? self::detectDelimiter($file);
-        $handle = fopen($file, 'r');
-        if (!$handle) {
-            self::logError("Fehler beim Öffnen der CSV-Datei: $file");
-            throw new Exception("Fehler beim Öffnen der CSV-Datei: $file");
-        }
+        $delimiter ??= self::detectDelimiter($file);
+        $lines = self::readLines($file, $delimiter);
 
         $columnCount = null;
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            if (!empty(array_filter($row))) {
-                if (is_null($columnCount)) {
-                    $columnCount = count($row);
-                } elseif (count($row) !== $columnCount) {
-                    fclose($handle);
+        foreach ($lines as $index => $row) {
+            $rowLength = count($row);
+            if ($columnCount === null) {
+                $columnCount = $rowLength;
+            } elseif ($rowLength !== $columnCount) {
+                self::logDebug("Fehlerhafte Zeile $index: Spaltenanzahl $rowLength stimmt nicht mit Header ($columnCount) überein.");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Überprüft, ob die CSV-Datei ein gültiges Header-Muster hat.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param array $headerPattern    Das erwartete Header-Muster.
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     * @param bool $wellFormed       Überprüfen, ob die Datei gut geformt ist (Standard: false).
+     */
+    public static function isValid(string $file, array $headerPattern, ?string $delimiter = null, bool $wellFormed = false): bool {
+        try {
+            $file = self::resolveFile($file);
+        } catch (Throwable $e) {
+            self::logInfo("CSV-Datei nicht gefunden oder ungültig: " . $e->getMessage());
+            return false;
+        }
+
+        $delimiter ??= self::detectDelimiter($file);
+
+        $lines = self::readLines($file, $delimiter);
+        $header = $lines->current();
+
+        if ($header === false) {
+            self::logInfo("Header konnte nicht gelesen werden: $file");
+            return false;
+        }
+
+        $headerValid = empty(array_diff($headerPattern, $header)) && empty(array_diff($header, $headerPattern));
+        if (!$headerValid) {
+            self::logDebug("Header stimmt nicht überein. Erwartet: " . implode(',', $headerPattern) . " / Gefunden: " . implode(',', $header));
+            return false;
+        }
+
+        if ($wellFormed) {
+            foreach ($lines as $index => $row) {
+                if (count($row) !== count($header)) {
+                    self::logDebug("Zeile $index hat nicht die gleiche Anzahl Spalten wie der Header.");
                     return false;
                 }
             }
         }
-        fclose($handle);
+
         return true;
     }
 
-    public static function isValid(string $file, array $headerPattern, ?string $delimiter = null, bool $welformed = false): bool {
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
+    /**
+     * Überprüft die Struktur einer CSV-Datei anhand eines Strukturmusters.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param string $structurePattern Das Strukturmuster (z. B. "dbkti").
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     * @param int|null $expectedColumns Erwartete Spaltenanzahl (optional).
+     * @param bool $checkAllRows      Alle Zeilen überprüfen (Standard: false).
+     * @param bool $strict           Strikte Übereinstimmung (Standard: true).
+     */
+    public static function checkStructureFile(string $file, string $structurePattern, ?string $delimiter = null, ?int $expectedColumns = null, bool $checkAllRows = false, bool $strict = true): bool {
+        try {
+            $file = self::resolveFile($file);
+        } catch (Throwable $e) {
+            self::logInfo("Fehler beim Öffnen der Datei: " . $e->getMessage());
+            return false;
         }
 
-        $file = File::getRealPath($file);
+        $delimiter ??= self::detectDelimiter($file);
 
-        $delimiter = $delimiter ?? self::detectDelimiter($file);
-        $handle = fopen($file, 'r');
-        if (!$handle) {
-            self::logError("Fehler beim Öffnen der CSV-Datei: $file");
-            throw new Exception("Fehler beim Öffnen der CSV-Datei: $file");
+        foreach (self::readLines($file, $delimiter) as $row) {
+            if (!self::checkStructure($row, $structurePattern, $expectedColumns, $strict)) {
+                self::logDebug("Strukturprüfung fehlgeschlagen bei Zeile: " . implode($delimiter, $row));
+                return false;
+            }
+
+            if (!$checkAllRows) break;
         }
 
-        $header = fgetcsv($handle, 0, $delimiter);
-        fclose($handle);
+        self::logInfo("CSV-Datei entspricht dem Strukturmuster: $structurePattern");
+        return true;
+    }
 
-        if ($header === false) {
-            self::logError("Fehler beim Lesen der Kopfzeile in der CSV-Datei: $file");
-            throw new Exception("Fehler beim Lesen der Kopfzeile in der CSV-Datei: $file");
+    /**
+     * Sucht eine Zeile in einer CSV-Datei, die mit den angegebenen Mustern übereinstimmt.
+     *
+     * @param string $file            Der Pfad zur CSV-Datei.
+     * @param array $columnPatterns   Die Muster für die Spalten.
+     * @param string|null $delimiter  Das Trennzeichen (optional).
+     * @param string $encoding       Die Zeichenkodierung (Standard: 'UTF-8').
+     * @param array|null $matchingRow Referenz auf das gefundene Array (optional).
+     * @param bool $strict           Strikte Übereinstimmung (Standard: true).
+     */
+    public static function matchRow(string $file, array $columnPatterns, ?string $delimiter = null, string $encoding = 'UTF-8', ?array &$matchingRow = null, bool $strict = true): bool {
+        try {
+            $file = self::resolveFile($file);
+        } catch (Throwable $e) {
+            self::logInfo("Fehler beim Öffnen der Datei: " . $e->getMessage());
+            return false;
         }
 
-        // Header-Check
-        $headerValid = empty(array_diff($headerPattern, $header)) && empty(array_diff($header, $headerPattern));
+        $delimiter ??= self::detectDelimiter($file);
 
-        // Falls zusätzlich `isWellFormed()` geprüft werden soll
-        if ($welformed) {
-            return $headerValid && self::isWellFormed($file, $delimiter);
+        foreach (self::readLines($file, $delimiter) as $row) {
+            if (self::matchColumns($row, $columnPatterns, $encoding, $strict)) {
+                $matchingRow = $row;
+                self::logInfo("Zeile mit Muster gefunden: " . implode($delimiter, $row));
+                return true;
+            }
         }
 
-        return $headerValid;
+        self::logDebug("Keine passende Zeile in $file gefunden.");
+        return false;
+    }
+
+    /**
+     * Prüft, ob die Spalten einer Zeile mit den angegebenen Mustern übereinstimmen.
+     *
+     * @param array|null $row       Die CSV-Zeile als Array.
+     * @param array|null $patterns  Die Muster für die Spalten.
+     * @param string $encoding      Die Zeichenkodierung (Standard: 'UTF-8').
+     * @param bool $strict         Strikte Übereinstimmung (Standard: true).
+     */
+    public static function matchColumns(?array $row, ?array $patterns, string $encoding = 'UTF-8', bool $strict = true): bool {
+        if (!is_array($row) || empty($row)) {
+            self::logDebug("matchColumns erwartet ein Array als erste Zeile.");
+            return false;
+        } elseif (!is_array($patterns) || empty($patterns)) {
+            self::logDebug("matchColumns erwartet ein Array als Muster.");
+            return false;
+        } elseif (implode('', $row) === '') {
+            self::logDebug("Leere Zeile erkannt, kein Vergleich notwendig.");
+            return false;
+        } elseif ($strict && count($row) != count($patterns)) {
+            self::logDebug("Spaltenanzahl (" . count($row) . ") enstpricht nicht der Musteranzahl (" . count($patterns) . ").");
+            return false;
+        } elseif (!$strict && count($row) < count($patterns)) {
+            self::logDebug("Spaltenanzahl (" . count($row) . ") ist kleiner als die Musteranzahl (" . count($patterns) . ").");
+            return false;
+        }
+
+        foreach ($row as $index => $cell) {
+            if (!isset($patterns[$index])) break;
+            $pattern = $patterns[$index];
+
+            if ($pattern === '*') continue;
+
+            // Encoding berücksichtigen
+            $cellUtf8 = mb_convert_encoding($cell ?? '', 'UTF-8', $encoding);
+            $patternQuoted = preg_quote($pattern, '/');
+
+            if (!preg_match("/^$patternQuoted/", $cell) && !preg_match("/^$patternQuoted/", $cellUtf8)) {
+                self::logDebug("Muster nicht gefunden: »" . $patternQuoted . "« in Spalte[$index] = »" . $cell . "«");
+                return false;
+            }
+        }
+
+        self::logDebug("Alle Muster erfolgreich in den Spalten gefunden.");
+        return true;
+    }
+
+    /**
+     * Prüft eine CSV-Zeile gegen ein Strukturmuster.
+     *
+     * @param array $row   Die CSV-Zeile als Array.
+     * @param string $patterns Ein Strukturmuster (z. B. "dbkti").
+     * @param int $columns   Erwartete Spaltenanzahl (optional).
+     */
+    public static function checkStructure(array $row, string $patterns, ?int $columns = null, bool $strict = true): bool {
+        if (!is_null($columns) && count($row) !== $columns) {
+            self::logDebug("Strukturprüfung fehlgeschlagen: erwartet $columns Spalten, erhalten: " . count($row));
+            return false;
+        } elseif ($strict && count($row) != strlen($patterns)) {
+            self::logDebug("Strukturprüfung fehlgeschlagen: erwartet " . strlen($patterns) . " Spalten, erhalten: " . count($row));
+            return false;
+        } elseif (!$strict && count($row) < strlen($patterns)) {
+            self::logDebug("Strukturprüfung fehlgeschlagen: erwartet mindestens " . strlen($patterns) . " Spalten, erhalten: " . count($row));
+            return false;
+        }
+
+        foreach (str_split($patterns) as $index => $symbol) {
+            $wert = $row[$index] ?? '';
+
+            // Optionales Datum
+            if ($symbol === 'D' && empty(trim($wert))) {
+                continue;
+            }
+
+            if (!Validator::validateBySymbol($symbol, $wert)) {
+                self::logDebug("Spalte $index entspricht nicht dem erwarteten Musterzeichen '$symbol' – Wert: '$wert'");
+                return false;
+            }
+        }
+
+        self::logDebug("Strukturprüfung erfolgreich für Muster: '$patterns'");
+        return true;
     }
 }

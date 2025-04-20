@@ -20,6 +20,7 @@ class CsvFileTest extends BaseTestCase {
     private $testFileTab = __DIR__ . '/../../.samples/tab.csv';
     private $testFileEmpty = __DIR__ . '/../../.samples/empty.csv';
     private $testFileMalformed = __DIR__ . '/../../.samples/malformed.csv';
+    private $testFileISO = __DIR__ . '/../../.samples/iso.csv';
 
     public function testDetectDelimiter() {
         $this->assertEquals(',', CsvFile::detectDelimiter($this->testFileComma));
@@ -63,5 +64,48 @@ class CsvFileTest extends BaseTestCase {
     public function testEmptyFile() {
         $this->expectException(Exception::class);
         CsvFile::detectDelimiter($this->testFileEmpty);
+    }
+
+    public function testMatchRowSuccess() {
+        $row = null;
+        $result = CsvFile::matchRow($this->testFileComma, ['1', '*', '*'], ',', 'UTF-8', $row);
+
+        $this->assertTrue($result);
+        $this->assertIsArray($row);
+        $this->assertEquals('1', $row[0]);
+    }
+
+    public function testMatchRowNoMatch() {
+        $row = null;
+        $result = CsvFile::matchRow($this->testFileComma, ['NichtVorhanden', '*', '*'], ',', 'UTF-8', $row);
+
+        $this->assertFalse($result);
+        $this->assertNull($row);
+    }
+
+    public function testMatchRowWithEncoding() {
+        // Datei mit Umlauten oder ISO-8859-1 kodiertem Inhalt wäre hier ideal
+        $row = null;
+        $result = CsvFile::matchRow($this->testFileISO, ['*', 'Müller', '35'], ',', 'ISO-8859-1', $row);
+
+        $this->assertTrue($result);
+        $this->assertEquals('35', end($row));
+    }
+
+    public function testMatchRowOnEmptyFile() {
+        $row = null;
+        $result = CsvFile::matchRow($this->testFileEmpty, ['*', '*', '*'], ',', 'UTF-8', $row);
+
+        $this->assertFalse($result);
+        $this->assertNull($row);
+    }
+
+    public function testMatchRowWithWrongPatternLength() {
+        $row = null;
+        // Test mit zu vielen Mustern
+        $result = CsvFile::matchRow($this->testFileComma, ['*', '*', '*', '*'], ',', 'UTF-8', $row);
+
+        $this->assertFalse($result);
+        $this->assertNull($row);
     }
 }

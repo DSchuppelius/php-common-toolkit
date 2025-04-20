@@ -18,7 +18,28 @@
 			"key": "expiry_days",
             "value": 365,
 			"type": "int",
-			"description": "Password for the Datev API",
+			"enabled": true
+		}
+	],
+	"Zahlungsdienstleister": [
+		{
+			"key": "resourceurl",
+			"value": "https://bundesbank.de/scl-directory",
+			"type": "text",
+			"description": "URL to the Bundesbank BIC file",
+			"enabled": true
+		},
+		{
+			"key": "file",
+			"value": "data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv",
+			"type": "text",
+			"description": "Path to the local BIC file",
+			"enabled": true
+		},
+		{
+			"key": "expiry_days",
+			"value": 365,
+			"type": "int",
 			"enabled": true
 		}
 	]

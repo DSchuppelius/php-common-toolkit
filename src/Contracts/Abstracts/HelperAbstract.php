@@ -20,6 +20,11 @@ use Psr\Log\LoggerInterface;
 abstract class HelperAbstract implements HelperInterface {
     use ErrorLog;
 
+    /**
+     * Setzt den Logger für die Klasse.
+     *
+     * @param LoggerInterface|null $logger
+     */
     public static function setLogger(?LoggerInterface $logger = null): void {
         if (!is_null($logger)) {
             self::$logger = $logger;
@@ -28,6 +33,12 @@ abstract class HelperAbstract implements HelperInterface {
         }
     }
 
+    /**
+     * Bereinigt den Dateinamen, um problematische Zeichen zu entfernen.
+     *
+     * @param string $filename
+     * @return string
+     */
     public static function sanitize(string $filename): string {
         // Escape problematische Zeichen für Shell-Befehle (Windows & Linux)
         return preg_replace('/([ \'"()\[\]{}!$`])/', '\\\$1', $filename);
