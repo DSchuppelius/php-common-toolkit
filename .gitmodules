@@ -1,0 +1,4 @@
+[submodule "installscript"]
+	path = installscript
+	url = https://github.com/DSchuppelius/install-dependencies
+	branch = main
