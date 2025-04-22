@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # 1 – Composer‑Abhängigkeiten (bestehend)
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # 2 – Git‑Submodule‑Zeiger
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "submodule"
+    open-pull-requests-limit: 5 
