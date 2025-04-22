@@ -34,7 +34,7 @@
             "path": "chardet",
             "required": false,
             "description": "Character Set Detector",
-            "package": "python-chardet",
+            "package": "python3-chardet",
             "arguments": [
                 "--minimal [INPUT]"
             ]
