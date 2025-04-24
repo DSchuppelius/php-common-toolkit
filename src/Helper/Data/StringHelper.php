@@ -201,6 +201,64 @@ class StringHelper {
     }
 
     /**
+     * Entfernt den UTF-16 BOM (Byte Order Mark - Big Endian) aus einem String.
+     *
+     * @param string $input Der zu bereinigende String.
+     * @return string Der bereinigte String.
+     */
+    public static function removeUtf16BomBE(string $input): string {
+        return preg_replace('/^\xFE\xFF/', '', $input) ?? $input;
+    }
+
+    /**
+     * Entfernt den UTF-16 BOM (Byte Order Mark - Little Endian) aus einem String.
+     *
+     * @param string $input Der zu bereinigende String.
+     * @return string Der bereinigte String.
+     */
+    public static function removeUtf16BomLE(string $input): string {
+        return preg_replace('/^\xFF\xFE/', '', $input) ?? $input;
+    }
+
+    /**
+     * Entfernt den UTF-32 BOM (Byte Order Mark - Big Endian) aus einem String.
+     *
+     * @param string $input Der zu bereinigende String.
+     * @return string Der bereinigte String.
+     */
+    public static function removeUtf32BomBE(string $input): string {
+        return preg_replace('/^\x00\x00\xFE\xFF/', '', $input) ?? $input;
+    }
+
+    /**
+     * Entfernt den UTF-32 BOM (Byte Order Mark - Little Endian) aus einem String.
+     *
+     * @param string $input Der zu bereinigende String.
+     * @return string Der bereinigte String.
+     */
+    public static function removeUtf32BomLE(string $input): string {
+        return preg_replace('/^\xFF\xFE\x00\x00/', '', $input) ?? $input;
+    }
+
+    /**
+     * Entfernt den BOM (Byte Order Mark) aus einem String.
+     *
+     * @param string $input Der zu bereinigende String.
+     * @return string Der bereinigte String.
+     */
+    public static function removeBom(string $input): string {
+        return self::removeUtf8Bom(
+            self::removeUtf16BomBE(
+                self::removeUtf16BomLE(
+                    self::removeUtf32BomBE(
+                        self::removeUtf32BomLE($input)
+                    )
+                )
+            )
+        );
+    }
+
+    /**
      * Ermittelt die Zeichenkodierung eines Strings.
      *
      * @param string $text Der zu überprüfende Text.
