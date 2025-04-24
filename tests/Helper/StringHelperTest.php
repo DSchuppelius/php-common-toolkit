@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Tests\Helper;
 
+use CommonToolkit\Enums\CaseType;
 use CommonToolkit\Helper\Data\StringHelper;
 use Tests\Contracts\BaseTestCase;
 
@@ -86,5 +87,33 @@ class StringHelperTest extends BaseTestCase {
 
         $this->assertIsString($encoding, "Erkannte Kodierung sollte ein String sein");
         $this->assertMatchesRegularExpression('/utf-?8|iso-8859/i', $encoding, "Kodierung sollte plausibel sein (UTF-8 oder ISO)");
+    }
+
+    public function testIsCaseWithExtras(): void {
+        $tests = [
+            ['text' => "hallo welt\n\t\\mit käse.", 'case' => CaseType::LOWER, 'expected' => true],
+            ['text' => "HALLO WELT MIT KÄSE.", 'case' => CaseType::UPPER, 'expected' => true],
+            ['text' => "halloWeltMitKäse", 'case' => CaseType::CAMEL, 'expected' => true],
+            ['text' => "HalloWelt", 'case' => CaseType::CAMEL, 'expected' => false],
+            ['text' => "HalloWelt", 'case' => CaseType::LOOSE_CAMEL, 'expected' => true],
+            ['text' => "Hallo Welt Mit Käse.", 'case' => CaseType::TITLE, 'expected' => true],
+            ['text' => "nichtTitleCase", 'case' => CaseType::TITLE, 'expected' => false],
+            ['text' => "camelCaseWith\$Sonderzeichen", 'case' => CaseType::CAMEL, 'expected' => false],
+        ];
+
+        foreach ($tests as $test) {
+            $result = StringHelper::isCaseWithExtras($test['text'], $test['case']);
+            $this->assertSame(
+                $test['expected'],
+                $result,
+                sprintf(
+                    "Fehlgeschlagen bei '%s' mit CaseType::%s – erwartet %s, erhalten %s",
+                    $test['text'],
+                    $test['case']->name,
+                    $test['expected'] ? 'true' : 'false',
+                    $result ? 'true' : 'false'
+                )
+            );
+        }
     }
 }

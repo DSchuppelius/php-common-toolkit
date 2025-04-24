@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Enums\CaseType;
 use CommonToolkit\Enums\SearchMode;
 use CommonToolkit\Helper\Shell\ShellChardet;
 use ERRORToolkit\Traits\ErrorLog;
@@ -19,6 +20,8 @@ use Throwable;
 
 class StringHelper {
     use ErrorLog;
+
+    public const REGEX_ALLOWED_EXTRAS = ' .,:;!?()"„“«»‚‘’“”€$£¥+=*%&@#<>|^~{}—–…·\-\[\]\/\'' . "\t\\\\";
 
     /**
      * Konvertiert einen UTF-8-String in ISO-8859-1.
@@ -317,5 +320,48 @@ class StringHelper {
         }
 
         return array_pad($blocks, $maxBlocks, '');
+    }
+
+    public static function isCaseWithExtras(string $text, CaseType $case): bool {
+        $lower = 'a-zäöüß';
+        $upper = 'A-ZÄÖÜẞ';
+
+        $lines = preg_split('/\r\n|\r|\n/u', $text);
+        if ($lines === false) return false;
+
+        foreach ($lines as $line) {
+            $result = match ($case) {
+                CaseType::LOWER => preg_match("/^[$lower" . self::REGEX_ALLOWED_EXTRAS . "]+$/u", $line) === 1,
+                CaseType::UPPER => preg_match("/^[$upper" . self::REGEX_ALLOWED_EXTRAS . "]+$/u", $line) === 1,
+                CaseType::CAMEL => self::isCamelCaseWithExtras($line),
+                CaseType::TITLE => self::isTitleCase($line),
+                CaseType::LOOSE_CAMEL => self::isLooseCamelCase($line),
+            };
+
+            if (!$result) return false;
+        }
+
+        return true;
+    }
+
+    private static function isCamelCaseWithExtras(string $text): bool {
+        return preg_match("/^[a-zäöüß]+(?:[A-ZÄÖÜẞ][a-zäöüß]+)+(?:[" . self::REGEX_ALLOWED_EXTRAS . "]*)$/u", $text) === 1;
+    }
+
+    private static function isLooseCamelCase(string $text): bool {
+        return preg_match("/^[a-zA-ZäöüÄÖÜß]+(?:[A-ZÄÖÜẞ][a-zäöüß]+)*(?:[" . self::REGEX_ALLOWED_EXTRAS . "]*)$/u", $text) === 1;
+    }
+
+    private static function isTitleCase(string $text): bool {
+        $words = preg_split('/\s+/', trim($text));
+        if (!$words) return false;
+
+        foreach ($words as $word) {
+            if (!preg_match("/^[A-ZÄÖÜ][a-zäöüß]*(?:[" . self::REGEX_ALLOWED_EXTRAS . "])?$/u", $word)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
