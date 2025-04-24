@@ -91,7 +91,7 @@ class StringHelperTest extends BaseTestCase {
 
     public function testIsCaseWithExtras(): void {
         $tests = [
-            ['text' => "hallo welt\n\t\\mit käse.", 'case' => CaseType::LOWER, 'expected' => true],
+            ['text' => "hallo welt\n\t\\mit käse.\n", 'case' => CaseType::LOWER, 'expected' => true],
             ['text' => "HALLO WELT MIT KÄSE.", 'case' => CaseType::UPPER, 'expected' => true],
             ['text' => "halloWeltMitKäse", 'case' => CaseType::CAMEL, 'expected' => true],
             ['text' => "HalloWelt", 'case' => CaseType::CAMEL, 'expected' => false],

@@ -329,6 +329,8 @@ class StringHelper {
         $lines = preg_split('/\r\n|\r|\n/u', $text);
         if ($lines === false) return false;
 
+        $lines = array_filter($lines, fn($line) => trim($line) !== '');
+
         foreach ($lines as $line) {
             $result = match ($case) {
                 CaseType::LOWER => preg_match("/^[$lower" . self::REGEX_ALLOWED_EXTRAS . "]+$/u", $line) === 1,
