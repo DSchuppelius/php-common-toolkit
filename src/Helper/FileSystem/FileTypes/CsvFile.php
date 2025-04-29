@@ -23,6 +23,8 @@ use Throwable;
 
 class CsvFile extends HelperAbstract {
     protected static array $commonDelimiters = [',', ';', "\t", '|'];
+    protected static string $defaultEnclosure = '"';
+    protected static string $defaultEscape = '\\';
 
     /**
      * Gibt den Dateipfad zurück, wenn die Datei existiert.
@@ -50,7 +52,7 @@ class CsvFile extends HelperAbstract {
             throw new RuntimeException("CSV-Datei konnte nicht geöffnet werden: $file");
         }
 
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+        while (($row = fgetcsv($handle, 0, $delimiter, self::$defaultEnclosure, self::$defaultEscape)) !== false) {
             if (!empty(array_filter($row))) {
                 yield $row;
             }
