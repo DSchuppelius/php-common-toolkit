@@ -3,6 +3,7 @@
         "convert": {
             "linuxPath": "convert",
             "windowsPath": "magick",
+            "package": "imagemagick",
             "required": true,
             "description": "IMagick Konverter",
             "arguments": ["[OUTPUT]", "[INPUT]"],
@@ -11,6 +12,7 @@
         "convert-monochrome": {
             "linuxPath": "convert",
             "windowsPath": "magick",
+            "package": "imagemagick",
             "required": true,
             "description": "IMagick Konverter",
             "arguments": ["[OUTPUT]", "-monochrome", "[INPUT]"],
@@ -19,6 +21,7 @@
         "tiff2pdf": {
             "path": "tiff2pdf",
             "required": true,
+            "package": "libtiff-tools",
             "description": "TIFF zu PDF Konverter",
             "linuxArguments": ["-F", "-n", "-j", "-c common_fileconverter", "-a common_fileconverter", "-o [OUTPUT]", "[INPUT]", "2>&1"],
             "windowsArguments": ["-j", "-n", "-c common_fileconverter", "-a common_fileconverter", "-o [OUTPUT]", "[INPUT]", "2>&1"]
@@ -26,6 +29,7 @@
         "tiff2pdf-compressed": {
             "path": "tiff2pdf",
             "required": true,
+            "package": "libtiff-tools",
             "description": "TIFF zu PDF Konverter",
             "linuxArguments": ["-F", "-j", "-c common_fileconverter", "-a common_fileconverter", "-o [OUTPUT]", "[INPUT]", "2>&1"],
             "windowsArguments": ["-j", "-c common_fileconverter", "-a common_fileconverter", "-o [OUTPUT]", "[INPUT]", "2>&1"]
@@ -33,12 +37,14 @@
         "tiffcp": {
             "path": "tiffcp",
             "required": true,
+            "package": "libtiff-tools",
             "description": "TIFF zu PDF Konverter",
             "arguments": ["[INPUT]", "[OUTPUT]"]
         },
         "tiffinfo": {
             "path": "tiffinfo",
             "required": true,
+            "package": "libtiff-tools",
             "description": "TIFF-Validierung",
             "arguments": ["[INPUT]", "2>&1"]
         }

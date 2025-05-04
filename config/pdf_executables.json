@@ -3,6 +3,7 @@
         "pdfinfo": {
             "path": "pdfinfo",
             "required": true,
+            "package": "poppler-utils",
             "description": "Metadaten aus PDF-Datei",
             "arguments": ["[INPUT]"],
             "debugArguments": ["[INPUT]"]
@@ -10,6 +11,7 @@
         "valid-pdf": {
             "linuxPath": "mutool",
             "windowsPath": "pdfinfo",
+            "package": "mupdf-tools",
             "required": true,
             "description": "PDF-Validierung",
             "linuxArguments": ["info", "[INPUT]", "2>&1 | grep -i 'error'"],
