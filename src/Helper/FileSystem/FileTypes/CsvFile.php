@@ -347,4 +347,26 @@ class CsvFile extends HelperAbstract {
         self::logDebug("Strukturprüfung erfolgreich für Muster: '$patterns'");
         return true;
     }
+
+    /**
+     * Gibt die Anzahl der Datenzeilen in der CSV-Datei zurück.
+     *
+     * @param string $file Der Pfad zur CSV-Datei.
+     * @param string|null $delimiter Das Trennzeichen (optional).
+     * @param bool $hasHeader Gibt an, ob die Datei eine Header-Zeile enthält (Standard: true).
+     * @return int Anzahl der Datenzeilen.
+     */
+    public static function countDataRows(string $file, ?string $delimiter = null, bool $hasHeader = true): int {
+        try {
+            $meta = self::getMetaData($file, $delimiter);
+            $rowCount = $meta['RowCount'];
+            $dataRows = $hasHeader ? max(0, $rowCount - 1) : $rowCount;
+
+            self::logInfo("Anzahl der Datenzeilen in $file: $dataRows (Header: " . ($hasHeader ? "ja" : "nein") . ")");
+            return $dataRows;
+        } catch (Throwable $e) {
+            self::logError("Fehler beim Ermitteln der Datenzeilen: " . $e->getMessage());
+            return 0;
+        }
+    }
 }

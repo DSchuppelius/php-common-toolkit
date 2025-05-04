@@ -108,4 +108,19 @@ class CsvFileTest extends BaseTestCase {
         $this->assertFalse($result);
         $this->assertNull($row);
     }
+
+    public function testCountDataRowsWithHeader() {
+        $count = CsvFile::countDataRows($this->testFileComma, ',', true);
+        $this->assertEquals(2, $count); // 3 Zeilen - 1 Header = 2 Datenzeilen
+    }
+
+    public function testCountDataRowsWithoutHeader() {
+        $count = CsvFile::countDataRows($this->testFileComma, ',', false);
+        $this->assertEquals(3, $count); // alle Zeilen zählen
+    }
+
+    public function testCountDataRowsEmptyFile() {
+        $count = CsvFile::countDataRows($this->testFileEmpty, ',', true);
+        $this->assertEquals(0, $count); // keine Datenzeilen
+    }
 }

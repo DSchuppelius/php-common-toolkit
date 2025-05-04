@@ -70,4 +70,86 @@ class FileTest extends BaseTestCase {
         $nonExistingFile = '/path/to/non/existing/file.txt';
         $this->assertFalse(File::exists($nonExistingFile));
     }
+
+    public function testReadReturnsContent() {
+        $content = File::read($this->testFile);
+        $this->assertEquals('This is a test file.', $content);
+    }
+
+    public function testWriteOverwritesFile() {
+        File::write($this->testFile, 'Updated content');
+        $this->assertEquals('Updated content', file_get_contents($this->testFile));
+    }
+
+    public function testDeleteRemovesFile() {
+        File::delete($this->testFile);
+        $this->assertFileDoesNotExist($this->testFile);
+    }
+
+    public function testSizeReturnsCorrectFileSize() {
+        $size = File::size($this->testFile);
+        $this->assertEquals(strlen('This is a test file.'), $size);
+    }
+
+    public function testIsReadableReturnsTrue() {
+        $this->assertTrue(File::isReadable($this->testFile));
+    }
+
+    public function testIsReadyReturnsTrue() {
+        $this->assertTrue(File::isReady($this->testFile));
+    }
+
+    public function testWait4ReadyReturnsTrueImmediately() {
+        $this->assertTrue(File::wait4Ready($this->testFile));
+    }
+
+    public function testCreateNewFile() {
+        $newFile = sys_get_temp_dir() . '/created_test_file.txt';
+        File::create($newFile, 0644, 'Hello world');
+        $this->assertFileExists($newFile);
+        $this->assertEquals('Hello world', file_get_contents($newFile));
+        unlink($newFile);
+    }
+
+    public function testRenameFile() {
+        $newName = $this->testFile . '_renamed';
+        File::rename($this->testFile, $newName);
+        $this->assertFileExists($newName);
+        $this->assertFileDoesNotExist($this->testFile);
+        unlink($newName);
+    }
+
+    public function testCopyFile() {
+        $copyTarget = $this->testFile . '_copy';
+        File::copy($this->testFile, $copyTarget);
+        $this->assertFileExists($copyTarget);
+        $this->assertEquals(file_get_contents($this->testFile), file_get_contents($copyTarget));
+        unlink($copyTarget);
+    }
+
+    public function testMoveFile() {
+        $moveTarget = $this->testFile . '_moved';
+        File::move($this->testFile, sys_get_temp_dir(), basename($moveTarget));
+        $this->assertFileExists($moveTarget);
+        $this->assertFileDoesNotExist($this->testFile);
+        unlink($moveTarget);
+    }
+
+    public function testContainsKeywordFindsMatch() {
+        $this->assertTrue(File::containsKeyword($this->testFile, 'test'));
+    }
+
+    public function testContainsKeywordReturnsFalseOnNoMatch() {
+        $this->assertFalse(File::containsKeyword($this->testFile, 'xyz123'));
+    }
+
+    public function testLineCount() {
+        file_put_contents($this->testFile, "line1\nline2\nline3\n");
+        $this->assertEquals(4, File::lineCount($this->testFile));
+    }
+
+    public function testCharCount() {
+        file_put_contents($this->testFile, "abc123");
+        $this->assertEquals(6, File::charCount($this->testFile));
+    }
 }

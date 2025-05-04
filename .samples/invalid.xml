@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kunden>
+    <kunde>
+        <id>1</id>
+        <name>Max Mustermann</name>
+        <alter>35</alter>
+    <!-- <kunde> fehlt schließender Tag -->
+</kunden>

@@ -141,4 +141,53 @@ class XmlFile extends HelperAbstract {
             self::logError("$errorMessage - libxml Fehler: " . trim($error->message));
         }
     }
+
+    /**
+     * Zählt die Anzahl der Datensätze in einer XML-Datei.
+     *
+     * @param string $file Der Pfad zur XML-Datei.
+     * @param string|null $elementName Der zu zählende Elementname (optional).
+     *                                 Wird keiner angegeben, werden alle Kindelemente des Root gezählt.
+     * @return int Anzahl der gefundenen Elemente.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     * @throws Exception Wenn die XML-Datei nicht geladen werden kann.
+     */
+    public static function countRecords(string $file, ?string $elementName = null): int {
+        self::checkDomExtension();
+
+        if (!File::exists($file)) {
+            self::logError("Datei $file nicht gefunden.");
+            throw new FileNotFoundException("Datei $file nicht gefunden.");
+        }
+
+        $xml = new DOMDocument();
+        libxml_use_internal_errors(true);
+
+        if (!$xml->load($file)) {
+            self::logLibxmlErrors("Fehler beim Laden der XML-Datei: $file");
+            throw new Exception("Fehler beim Laden der XML-Datei: $file");
+        }
+
+        $root = $xml->documentElement;
+        if (!$root) {
+            self::logError("Kein Root-Element gefunden in $file");
+            return 0;
+        }
+
+        if ($elementName !== null) {
+            $count = $root->getElementsByTagName($elementName)->length;
+            self::logInfo("XML-Datei $file enthält $count <$elementName>-Element(e).");
+        } else {
+            $count = 0;
+            foreach ($root->childNodes as $node) {
+                if ($node->nodeType === XML_ELEMENT_NODE) {
+                    $count++;
+                }
+            }
+            self::logInfo("XML-Datei $file enthält $count direkte Kindelement(e) unter <$root->tagName>.");
+        }
+
+        libxml_clear_errors();
+        return $count;
+    }
 }

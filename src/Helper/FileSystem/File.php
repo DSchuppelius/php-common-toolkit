@@ -542,4 +542,58 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::logDebug("Keine Übereinstimmung in Datei: $file");
         return false;
     }
+
+    /**
+     * Ermittelt die Anzahl der Textzeilen in einer Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return int Die Anzahl der Zeilen.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     */
+    public static function lineCount(string $file, bool $skipEmpty = false): int {
+        $file = self::getRealPath($file);
+        if (!self::isReadable($file)) {
+            throw new FileNotFoundException("Datei nicht lesbar: $file");
+        }
+
+        $lines = 0;
+        $handle = fopen($file, "r");
+        if ($handle === false) {
+            self::logError("Fehler beim Öffnen der Datei für Zeilenzählung: $file");
+            throw new FileNotFoundException("Fehler beim Öffnen: $file");
+        }
+
+        while (!feof($handle)) {
+            $line = fgets($handle);
+            if ($skipEmpty && trim($line) === '') continue;
+            $lines++;
+        }
+        fclose($handle);
+        self::logInfo("Anzahl der Zeilen in $file: $lines");
+        return $lines;
+    }
+
+    /**
+     * Ermittelt die Anzahl der Zeichen (Bytes) in einer Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return int Die Anzahl der Zeichen (Bytes).
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     */
+    public static function charCount(string $file, string $encoding = "UTF-8"): int {
+        $file = self::getRealPath($file);
+        if (!self::isReadable($file)) {
+            throw new FileNotFoundException("Datei nicht lesbar: $file");
+        }
+
+        $content = file_get_contents($file);
+        if ($content === false) {
+            self::logError("Fehler beim Lesen der Datei zur Zeichenzählung: $file");
+            throw new FileNotFoundException("Fehler beim Lesen: $file");
+        }
+
+        $length = mb_strlen($content, $encoding);
+        self::logInfo("Anzahl der Zeichen in $file: $length");
+        return $length;
+    }
 }
