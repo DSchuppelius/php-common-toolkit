@@ -161,13 +161,23 @@ class StringHelper {
     }
 
     /**
-     * Normalisiert Whitespace in einem String.
+     * Normalisiert Whitespace in einem String. Zeilenumbrüche und mehrere Leerzeichen werden durch ein einzelnes Leerzeichen ersetzt.
      *
      * @param string $input Der zu normalisierende String.
      * @return string Der normalisierte String.
      */
     public static function normalizeWhitespace(string $input): string {
         return preg_replace('/\s+/', ' ', trim($input)) ?? '';
+    }
+
+    /**
+     * Normalisiert Whitespace in einem String. Mehrere Leerzeichen oder Tabs werden durch ein einzelnes Leerzeichen ersetzt. Zeilenumbrüche bleiben erhalten.
+     *
+     * @param string $input Der zu normalisierende String.
+     * @return string Der normalisierte String.
+     */
+    public static function normalizeInlineWhitespace(string $input): string {
+        return preg_replace('/[ \t]{2,}/u', ' ', $input) ?? '';
     }
 
     /**
