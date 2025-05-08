@@ -10,6 +10,8 @@
 
 declare(strict_types=1);
 
+use CommonToolkit\Entities\Banking\Mt940\Mt940Document;
+use CommonToolkit\Entities\Banking\Mt940\Mt940Transaction;
 use CommonToolkit\Helper\FileSystem\FileTypes\Mt940File;
 use Tests\Contracts\BaseTestCase;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
@@ -38,6 +40,13 @@ class Mt940FileTest extends BaseTestCase {
         $this->assertEquals(2, $count); // 2 Buchungen mit :61:
     }
 
+    public function testCountTransactionsMatchesGetTransactions() {
+        $expected = Mt940File::getTransactions($this->testValidFile);
+        $count = Mt940File::countTransactions($this->testValidFile);
+
+        $this->assertEquals(count($expected), $count);
+    }
+
     public function testEmptyFileThrowsException() {
         $blocks = Mt940File::getBlocks($this->testEmptyFile);
         $this->assertIsArray($blocks);
@@ -47,5 +56,28 @@ class Mt940FileTest extends BaseTestCase {
     public function testFileNotFoundThrowsException() {
         $this->expectException(FileNotFoundException::class);
         Mt940File::getBlocks('/nicht/vorhanden.mt940');
+    }
+
+    public function testGetDocumentsReturnsArrayOfMt940Document() {
+        $documents = Mt940File::getDocuments($this->testValidFile);
+
+        $this->assertIsArray($documents);
+        $this->assertNotEmpty($documents);
+
+        foreach ($documents as $doc) {
+            $this->assertInstanceOf(Mt940Document::class, $doc);
+            $this->assertNotEmpty($doc->getTransactions());
+        }
+    }
+
+    public function testGetTransactionsReturnsArrayOfTransactions() {
+        $transactions = Mt940File::getTransactions($this->testValidFile);
+
+        $this->assertIsArray($transactions);
+        $this->assertCount(2, $transactions); // wie in countTransactions
+
+        foreach ($transactions as $txn) {
+            $this->assertInstanceOf(Mt940Transaction::class, $txn);
+        }
     }
 }

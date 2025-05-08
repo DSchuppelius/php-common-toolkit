@@ -11,25 +11,28 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use CommonToolkit\Entities\Banking\Mt940Transaction;
+use CommonToolkit\Entities\Banking\Mt940\Mt940Transaction;
+use CommonToolkit\Enums\CreditDebit;
+use CommonToolkit\Enums\CurrencyCode;
 
 class Mt940TransactionTest extends TestCase {
 
     public function testGetterMethodsReturnCorrectValues(): void {
         $transaction = new Mt940Transaction(
-            date: '240501',
+            date: DateTimeImmutable::createFromFormat('ymd', '240501'),
+            valutaDate: null,
             amount: 1234.56,
-            debitCredit: 'C',
-            currency: 'EUR',
+            creditDebit: CreditDebit::CREDIT,
+            currency: CurrencyCode::Euro,
             transactionCode: 'NTRF',
             reference: 'ABC123XYZ',
             purpose: 'Testzahlung'
         );
 
-        $this->assertEquals('240501', $transaction->getDate());
+        $this->assertEquals('240501', $transaction->getDate()->format('ymd'));
         $this->assertEquals(1234.56, $transaction->getAmount());
-        $this->assertEquals('C', $transaction->getDebitCredit());
-        $this->assertEquals('EUR', $transaction->getCurrency());
+        $this->assertEquals('C', $transaction->getCreditDebit()->toMt940Code());
+        $this->assertEquals('EUR', $transaction->getCurrency()->value);
         $this->assertEquals('NTRF', $transaction->getTransactionCode());
         $this->assertEquals('ABC123XYZ', $transaction->getReference());
         $this->assertEquals('Testzahlung', $transaction->getPurpose());
@@ -37,10 +40,11 @@ class Mt940TransactionTest extends TestCase {
 
     public function testFormattedAmountReturnsString(): void {
         $transaction = new Mt940Transaction(
-            date: '240501',
+            date: DateTimeImmutable::createFromFormat('ymd', '240501'),
+            valutaDate: null,
             amount: 1234.56,
-            debitCredit: 'D',
-            currency: 'EUR',
+            creditDebit: CreditDebit::DEBIT,
+            currency: CurrencyCode::Euro,
             transactionCode: 'NTRF',
             reference: 'ABC123XYZ',
             purpose: null
@@ -52,8 +56,9 @@ class Mt940TransactionTest extends TestCase {
     }
 
     public function testIsDebitAndCredit(): void {
-        $credit = new Mt940Transaction('240501', 100, 'C', 'EUR', 'NTRF', 'REF', 'raw', null);
-        $debit  = new Mt940Transaction('240501', 50,  'D', 'EUR', 'NTRF', 'REF', 'raw', null);
+        $date = DateTimeImmutable::createFromFormat('ymd', '240501');
+        $credit = new Mt940Transaction($date, null, 100, CreditDebit::CREDIT, CurrencyCode::Euro, 'NTRF', 'REF', 'raw', null);
+        $debit  = new Mt940Transaction($date, null, 50,  CreditDebit::DEBIT, CurrencyCode::Euro, 'NTRF', 'REF', 'raw', null);
 
         $this->assertTrue($credit->isCredit());
         $this->assertFalse($credit->isDebit());
@@ -63,19 +68,22 @@ class Mt940TransactionTest extends TestCase {
     }
 
     public function testGetSign(): void {
-        $credit = new Mt940Transaction('240501', 100, 'C', 'EUR', 'NTRF', 'REF', 'raw', null);
-        $debit  = new Mt940Transaction('240501', 100, 'D', 'EUR', 'NTRF', 'REF', 'raw', null);
+        $credit = new Mt940Transaction('240501', '0525', 100, CreditDebit::CREDIT, CurrencyCode::Euro, 'NTRF', 'REF', 'raw', null);
+        $debit  = new Mt940Transaction('240501', '0526', 100, CreditDebit::DEBIT, CurrencyCode::Euro, 'NTRF', 'REF', 'raw', null);
 
         $this->assertEquals('+', $credit->getSign());
         $this->assertEquals('-', $debit->getSign());
+        $this->assertEquals('240501', $credit->getDate()->format('ymd'));
+        $this->assertEquals('240525', $credit->getValutaDate()->format('ymd'));
     }
 
     public function testToMt940LinesGeneratesCorrectFormat(): void {
         $transaction = new Mt940Transaction(
-            date: '240501',
+            date: DateTimeImmutable::createFromFormat('ymd', '240501'),
+            valutaDate: null,
             amount: 1234.56,
-            debitCredit: 'C',
-            currency: 'EUR',
+            creditDebit: CreditDebit::CREDIT,
+            currency: CurrencyCode::Euro,
             transactionCode: 'NTRF',
             reference: 'ABC123XYZ',
             purpose: 'SEPA Überweisung Max Mustermann GmbH für Rechnung 123456 vom 01.05.2024'

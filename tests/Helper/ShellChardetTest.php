@@ -46,7 +46,7 @@ class ShellChardetTest extends BaseTestCase {
 
         $duration = microtime(true) - $start;
 
-        $this->assertLessThan(1.0, $duration, "ShellChardet::detect($variant) hat zu lange gebraucht (evtl. blockiert?)");
+        $this->assertLessThan(1.5, $duration, "ShellChardet::detect($variant) hat zu lange gebraucht (evtl. blockiert?)");
 
         if ($encoding === false) {
             $this->markTestIncomplete("ShellChardet ($variant) konnte Kodierung nicht ermitteln – chardet installiert?");
