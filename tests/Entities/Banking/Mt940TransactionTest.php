@@ -10,12 +10,17 @@
 
 declare(strict_types=1);
 
+use CommonToolkit\Entities\Banking\Mt940\Mt940Reference;
 use PHPUnit\Framework\TestCase;
 use CommonToolkit\Entities\Banking\Mt940\Mt940Transaction;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 
 class Mt940TransactionTest extends TestCase {
+
+    private function createReference(): Mt940Reference {
+        return new Mt940Reference('NTRF', 'ABC123XYZ');
+    }
 
     public function testGetterMethodsReturnCorrectValues(): void {
         $transaction = new Mt940Transaction(
@@ -24,8 +29,7 @@ class Mt940TransactionTest extends TestCase {
             amount: 1234.56,
             creditDebit: CreditDebit::CREDIT,
             currency: CurrencyCode::Euro,
-            transactionCode: 'NTRF',
-            reference: 'ABC123XYZ',
+            reference: $this->createReference(),
             purpose: 'Testzahlung'
         );
 
@@ -33,8 +37,8 @@ class Mt940TransactionTest extends TestCase {
         $this->assertEquals(1234.56, $transaction->getAmount());
         $this->assertEquals('C', $transaction->getCreditDebit()->toMt940Code());
         $this->assertEquals('EUR', $transaction->getCurrency()->value);
-        $this->assertEquals('NTRF', $transaction->getTransactionCode());
-        $this->assertEquals('ABC123XYZ', $transaction->getReference());
+        $this->assertEquals('NTRF', $transaction->getReference()->getTransactionCode());
+        $this->assertEquals('ABC123XYZ', $transaction->getReference()->getReference());
         $this->assertEquals('Testzahlung', $transaction->getPurpose());
     }
 
@@ -45,8 +49,7 @@ class Mt940TransactionTest extends TestCase {
             amount: 1234.56,
             creditDebit: CreditDebit::DEBIT,
             currency: CurrencyCode::Euro,
-            transactionCode: 'NTRF',
-            reference: 'ABC123XYZ',
+            reference: $this->createReference(),
             purpose: null
         );
 
@@ -57,8 +60,10 @@ class Mt940TransactionTest extends TestCase {
 
     public function testIsDebitAndCredit(): void {
         $date = DateTimeImmutable::createFromFormat('ymd', '240501');
-        $credit = new Mt940Transaction($date, null, 100, CreditDebit::CREDIT, CurrencyCode::Euro, 'NTRF', 'REF', 'raw', null);
-        $debit  = new Mt940Transaction($date, null, 50,  CreditDebit::DEBIT, CurrencyCode::Euro, 'NTRF', 'REF', 'raw', null);
+        $reference = $this->createReference();
+
+        $credit = new Mt940Transaction($date, null, 100, CreditDebit::CREDIT, CurrencyCode::Euro, $reference, 'raw');
+        $debit  = new Mt940Transaction($date, null, 50,  CreditDebit::DEBIT, CurrencyCode::Euro, $reference, 'raw');
 
         $this->assertTrue($credit->isCredit());
         $this->assertFalse($credit->isDebit());
@@ -68,8 +73,10 @@ class Mt940TransactionTest extends TestCase {
     }
 
     public function testGetSign(): void {
-        $credit = new Mt940Transaction('240501', '0525', 100, CreditDebit::CREDIT, CurrencyCode::Euro, 'NTRF', 'REF', 'raw', null);
-        $debit  = new Mt940Transaction('240501', '0526', 100, CreditDebit::DEBIT, CurrencyCode::Euro, 'NTRF', 'REF', 'raw', null);
+        $reference = $this->createReference();
+
+        $credit = new Mt940Transaction('240501', '0525', 100, CreditDebit::CREDIT, CurrencyCode::Euro, $reference, 'raw');
+        $debit  = new Mt940Transaction('240501', '0526', 100, CreditDebit::DEBIT, CurrencyCode::Euro, $reference, 'raw');
 
         $this->assertEquals('+', $credit->getSign());
         $this->assertEquals('-', $debit->getSign());
@@ -78,18 +85,18 @@ class Mt940TransactionTest extends TestCase {
     }
 
     public function testToMt940LinesGeneratesCorrectFormat(): void {
+        $reference = new Mt940Reference('NTRF', 'ABC123XYZ');
         $transaction = new Mt940Transaction(
             date: DateTimeImmutable::createFromFormat('ymd', '240501'),
             valutaDate: null,
             amount: 1234.56,
             creditDebit: CreditDebit::CREDIT,
             currency: CurrencyCode::Euro,
-            transactionCode: 'NTRF',
-            reference: 'ABC123XYZ',
+            reference: $reference,
             purpose: 'SEPA Überweisung Max Mustermann GmbH für Rechnung 123456 vom 01.05.2024'
         );
 
-        $lines = $transaction->toMt940Lines();
+        $lines = explode("\r\n", trim((string)$transaction));
 
         // Erste Zeile muss mit :61: beginnen
         $this->assertStringStartsWith(':61:', $lines[0]);
@@ -102,12 +109,8 @@ class Mt940TransactionTest extends TestCase {
             $this->assertMatchesRegularExpression('/^\?2\d/', $lines[$i]);
         }
 
-        $lines = $transaction->toMt940Lines();
-
         // Purpose extrahieren und normalisieren
-        $purposeLines = array_slice($lines, 1); // Zeile 0 ist :61:
-
-        // Entferne :86: und ?xx
+        $purposeLines = array_slice($lines, 1);
         $plainPurpose = preg_replace('/^:86:/', '', array_shift($purposeLines));
         $plainPurpose .= implode('', array_map(fn($l) => preg_replace('/^\?\d{2}/', '', $l), $purposeLines));
 

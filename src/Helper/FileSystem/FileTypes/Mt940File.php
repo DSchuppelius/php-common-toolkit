@@ -16,6 +16,7 @@ use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\Banking\Mt940\Mt940Document;
 use CommonToolkit\Entities\Banking\Mt940\Mt940Transaction;
 use CommonToolkit\Helper\FileSystem\File;
+use CommonToolkit\Parsers\Mt940DocumentParser;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Throwable;
 
@@ -50,7 +51,7 @@ class Mt940File extends HelperAbstract {
         $documents = [];
         foreach (self::getBlocks($file) as $block) {
             try {
-                $documents[] = new Mt940Document($block);
+                $documents[] = Mt940DocumentParser::parse($block);
             } catch (Throwable $e) {
                 self::logError("Fehler beim Parsen eines MT940-Blocks: " . $e->getMessage());
             }

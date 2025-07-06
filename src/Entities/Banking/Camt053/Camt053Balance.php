@@ -1,35 +1,46 @@
 <?php
 /*
- * Created on   : Thu May 08 2025
+ * Created on   : Thu May 09 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : Mt940Balance.php
+ * Filename     : Camt053Balance.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
 
 declare(strict_types=1);
 
-namespace CommonToolkit\Entities\Banking\Mt940;
+namespace CommonToolkit\Entities\Banking\Camt053;
 
 use CommonToolkit\Contracts\Interfaces\Banking\BalanceInterface;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use DateTimeImmutable;
-use RuntimeException;
+use InvalidArgumentException;
 
-class Mt940Balance implements BalanceInterface {
+class Camt053Balance implements BalanceInterface {
     private CreditDebit $creditDebit;
     private DateTimeImmutable $date;
     private CurrencyCode $currency;
     private float $amount;
 
-    public function __construct(CreditDebit $creditDebit, DateTimeImmutable|string $date, CurrencyCode $currency, float $amount) {
+    public function __construct(
+        CreditDebit $creditDebit,
+        DateTimeImmutable|string $date,
+        CurrencyCode|string $currency,
+        float $amount
+    ) {
         $this->creditDebit = $creditDebit;
+
         $this->date = $date instanceof DateTimeImmutable
             ? $date
-            : (DateTimeImmutable::createFromFormat('ymd', $date) ?: throw new RuntimeException("Ungültiges Datum: $date"));
-        $this->currency = $currency;
+            : new DateTimeImmutable($date);
+
+        $this->currency = $currency instanceof CurrencyCode
+            ? $currency
+            : CurrencyCode::tryFrom(strtoupper($currency))
+            ?? throw new InvalidArgumentException("Ungültige Währung: $currency");
+
         $this->amount = round($amount, 2);
     }
 
@@ -59,11 +70,11 @@ class Mt940Balance implements BalanceInterface {
 
     public function __toString(): string {
         return sprintf(
-            '%s%s%s%s',
-            $this->creditDebit->toMt940Code(),
-            $this->date->format('ymd'),
-            $this->currency->value,
-            number_format($this->amount, 2, ',', '')
+            '[%s] %s %.2f %s',
+            $this->creditDebit->name,
+            $this->date->format('Y-m-d'),
+            $this->amount,
+            $this->currency->value
         );
     }
 }

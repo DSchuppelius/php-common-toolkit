@@ -16,6 +16,7 @@ use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Helper\Data\CurrencyHelper;
 use DateTimeImmutable;
+use RuntimeException;
 
 class Mt940Transaction {
     private DateTimeImmutable $date;
@@ -23,23 +24,22 @@ class Mt940Transaction {
     private float $amount;
     private CreditDebit $creditDebit;
     private CurrencyCode $currency;
-    private string $transactionCode;
-    private string $reference;
+    private Mt940Reference $reference;
     private ?string $purpose;
 
-    public function __construct(DateTimeImmutable|string $date,  DateTimeImmutable|string|null $valutaDate, float $amount, CreditDebit $creditDebit, CurrencyCode $currency, string $transactionCode, string $reference, ?string $purpose = null) {
+    public function __construct(DateTimeImmutable|string $date,  DateTimeImmutable|string|null $valutaDate, float $amount, CreditDebit $creditDebit, CurrencyCode $currency, Mt940Reference $reference, ?string $purpose = null) {
         $this->date = $date instanceof DateTimeImmutable
             ? $date
-            : DateTimeImmutable::createFromFormat('ymd', $date);
+            : (DateTimeImmutable::createFromFormat('ymd', $date) ?: throw new RuntimeException("Ungültiges Datum: $date"));
         $this->valutaDate = match (true) {
             $valutaDate instanceof DateTimeImmutable => $valutaDate,
-            is_string($valutaDate) => DateTimeImmutable::createFromFormat('Ymd', $this->date->format('Y') . $valutaDate),
+            is_string($valutaDate) => (DateTimeImmutable::createFromFormat('Ymd', $this->date->format('Y') . $valutaDate)
+                ?: throw new RuntimeException("Ungültiges Valutadatum: $valutaDate")),
             default => null
         };
         $this->amount = $amount;
         $this->creditDebit = $creditDebit;
         $this->currency = $currency;
-        $this->transactionCode = $transactionCode;
         $this->reference = $reference;
         $this->purpose = $purpose;
     }
@@ -64,11 +64,7 @@ class Mt940Transaction {
         return $this->currency;
     }
 
-    public function getTransactionCode(): string {
-        return $this->transactionCode;
-    }
-
-    public function getReference(): string {
+    public function getReference(): Mt940Reference {
         return $this->reference;
     }
 
@@ -89,28 +85,20 @@ class Mt940Transaction {
     }
 
     public function getSign(): string {
-        return $this->isDebit() ? '-' : '+';
+        return $this->creditDebit->getSymbol();
     }
 
-    public function toMt940Lines(): array {
-        $lines = [];
-
+    private function toMt940Lines(): array {
         $amountStr = CurrencyHelper::usToDe((string) $this->amount);
         $dateStr = $this->date->format('ymd');
         $valutaStr = $this->valutaDate ? $this->valutaDate->format('md') : '';
         $direction = $this->creditDebit->toMt940Code();
 
-        $lines[] = sprintf(
-            ':61:%s%s%s%s%s',
-            $dateStr,
-            $valutaStr,
-            $direction,
-            $amountStr,
-            $this->transactionCode . $this->reference
-        );
+        $lines = [
+            sprintf(':61:%s%s%s%s%s', $dateStr, $valutaStr, $direction, $amountStr, (string)$this->reference),
+        ];
 
         $segments = str_split($this->purpose ?? '', 27);
-
         $first = array_shift($segments);
         $lines[] = ':86:' . ($first ?? '');
 
@@ -120,5 +108,9 @@ class Mt940Transaction {
         }
 
         return $lines;
+    }
+
+    public function __toString(): string {
+        return implode("\r\n", $this->toMt940Lines()) . "\r\n";
     }
 }

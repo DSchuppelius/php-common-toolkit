@@ -44,6 +44,10 @@ class Camt053Document {
         }
     }
 
+    public function addTransaction(Camt053Transaction $transaction): void {
+        $this->transactions[] = $transaction;
+    }
+
     public function getStatementId(): string {
         return $this->statementId;
     }
@@ -67,11 +71,19 @@ class Camt053Document {
         return $this->transactions;
     }
 
-    public function addTransaction(Camt053Transaction $transaction): void {
-        $this->transactions[] = $transaction;
-    }
-
     public function countTransactions(): int {
         return count($this->transactions);
+    }
+
+    public function withTransaction(Camt053Transaction $transaction): self {
+        $clone = clone $this;
+        $clone->transactions[] = $transaction;
+        return $clone;
+    }
+
+    public function withTransactions(array $transactions): self {
+        $clone = clone $this;
+        $clone->transactions = [...$clone->transactions, ...$transactions];
+        return $clone;
     }
 }
