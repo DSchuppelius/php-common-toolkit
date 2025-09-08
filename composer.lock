@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.2.11",
+            "version": "v0.2.14",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "f7c70cd07f0b58af56d9f9a08bb51e3504143058"
+                "reference": "0c7ae5bc9ff45e7e856d225b251d1525c43208ed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/f7c70cd07f0b58af56d9f9a08bb51e3504143058",
-                "reference": "f7c70cd07f0b58af56d9f9a08bb51e3504143058",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/0c7ae5bc9ff45e7e856d225b251d1525c43208ed",
+                "reference": "0c7ae5bc9ff45e7e856d225b251d1525c43208ed",
                 "shasum": ""
             },
             "require": {
@@ -47,9 +47,9 @@
             "description": "Ein Toolkit für JSON-basierte Konfigurationsverwaltung",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.2.11"
+                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.2.14"
             },
-            "time": "2025-04-01T13:07:52+00:00"
+            "time": "2025-08-27T12:07:44+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
@@ -1847,8 +1847,8 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "psr/log": 20,
-        "phpunit/phpunit": 20
+        "phpunit/phpunit": 20,
+        "psr/log": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
@@ -1857,7 +1857,7 @@
         "ext-bcmath": "*",
         "ext-intl": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.2.0"
     },
