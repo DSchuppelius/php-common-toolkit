@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\Validation\Validator;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
@@ -346,6 +347,37 @@ class CsvFile extends HelperAbstract {
 
         self::logDebug("Strukturprüfung erfolgreich für Muster: '$patterns'");
         return true;
+    }
+
+    /**
+     * Erkennt, ob die CSV-Zeilen überwiegend mit mehrfach gesetztem Enclosure formatiert sind.
+     *
+     * @param string $file        Pfad zur CSV-Datei.
+     * @param string|null $delimiter  Trennzeichen (optional, Standard: auto-detect).
+     * @param int $maxLines       Anzahl der zu prüfenden Zeilen (Standard: 5).
+     * @param int $enclosureRepeat Wie oft das Enclosure wiederholt wird (Standard: 2 für doppelt).
+     * @return bool
+     */
+    public static function hasRepeatedEnclosureColumns(
+        string $file,
+        ?string $delimiter = null,
+        int $maxLines = 5,
+        int $enclosureRepeat = 2
+    ): bool {
+        $file = self::resolveFile($file);
+        $delimiter ??= self::detectDelimiter($file);
+
+        $checked = 0;
+        $hits = 0;
+
+        foreach (File::readLines($file, true, $maxLines) as $line) {
+            $checked++;
+            if (StringHelper::hasRepeatedEnclosure($line, $delimiter, self::$defaultEnclosure, $enclosureRepeat)) {
+                $hits++;
+            }
+        }
+
+        return $checked > 0 && $hits >= ($checked / 2);
     }
 
     /**

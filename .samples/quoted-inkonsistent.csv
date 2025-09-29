@@ -1,0 +1,3 @@
+"Kundennummer,""Datum"",""UUID"",""Nr."",""Email"",""Ereignisname"",""Grund"",""Anmerkung"",""Einnahme"",""Ausgabe"",""Steuersatz"",""Steuerbetrag"",""Guthaben"",""Erwarteter Betrag"",""Differenz"",""Währung""";
+"KDC2ASKF,""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000,00"",""2000,00"",""0,00"",""EUR""";
+"KDC2ASKF,""21.12.2024 17:55:08"",""b4ebd951-71dc-4da9-b1f7-b230e62fe09d"",""46"",""ich@irgendwo.com"",""Bargeldauszahlung"",""Überweisung an Bank oder Safe"","""","""",""-349,09"","""","""",""2000,00"","""","""",""EUR""";

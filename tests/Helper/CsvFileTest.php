@@ -21,6 +21,9 @@ class CsvFileTest extends BaseTestCase {
     private $testFileEmpty = __DIR__ . '/../../.samples/empty.csv';
     private $testFileMalformed = __DIR__ . '/../../.samples/malformed.csv';
     private $testFileISO = __DIR__ . '/../../.samples/iso.csv';
+    private $testFileQuoted = __DIR__ . '/../../.samples/quoted.csv';
+    private $testFileDoubleQuoted = __DIR__ . '/../../.samples/doublequoted.csv';
+    private $testFileInconsistentQuoted = __DIR__ . '/../../.samples/quoted-inkonsistent.csv';
 
     public function testDetectDelimiter() {
         $this->assertEquals(',', CsvFile::detectDelimiter($this->testFileComma));
@@ -98,6 +101,22 @@ class CsvFileTest extends BaseTestCase {
 
         $this->assertFalse($result);
         $this->assertNull($row);
+    }
+
+    public function testQuotedCsvFile() {
+        $row = null;
+        $result = CsvFile::matchRow($this->testFileQuoted, ['*', '*', '*', '46', '*', 'Bargeldauszahlung', '*', '*', '*', '-349,09', '*', '*', '2000,00', '*', '*', 'EUR'], null, 'UTF-8', $row);
+
+        $this->assertTrue($result);
+        $this->assertIsArray($row);
+        $this->assertEquals('46', $row[3]);
+        $this->assertEquals('-349,09', $row[9]);
+    }
+
+    public function testHasDoubleQuotedFields() {
+        $this->assertTrue(CsvFile::hasRepeatedEnclosureColumns($this->testFileDoubleQuoted));
+        $this->assertFalse(CsvFile::hasRepeatedEnclosureColumns($this->testFileInconsistentQuoted));
+        $this->assertFalse(CsvFile::hasRepeatedEnclosureColumns($this->testFileComma));
     }
 
     public function testMatchRowWithWrongPatternLength() {

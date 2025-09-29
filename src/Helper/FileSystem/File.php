@@ -24,6 +24,7 @@ use ERRORToolkit\Exceptions\FileSystem\FileNotWrittenException;
 use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
 use finfo;
+use Generator;
 
 class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     protected const CONFIG_FILE = __DIR__ . '/../../../config/common_executables.json';
@@ -228,6 +229,43 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
         self::logDebug("Datei erfolgreich gelesen: $file");
         return $content;
+    }
+
+    /**
+     * Liefert die Zeilen einer Textdatei als Generator zurück.
+     *
+     * @param string $file        Pfad zur Datei.
+     * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
+     * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @return \Generator<string>
+     * @throws FileNotFoundException
+     */
+    public static function readLines(string $file, bool $skipEmpty = false, ?int $maxLines = null): Generator {
+        $file = self::getRealPath($file);
+        if (!self::isReadable($file)) {
+            throw new FileNotFoundException("Datei nicht lesbar: $file");
+        }
+
+        $handle = fopen($file, 'r');
+        if ($handle === false) {
+            self::logError("Fehler beim Öffnen der Datei für readLines: $file");
+            throw new FileNotFoundException("Fehler beim Öffnen: $file");
+        }
+
+        $count = 0;
+        while (($line = fgets($handle)) !== false) {
+            if ($skipEmpty && trim($line) === '') {
+                continue;
+            }
+            yield rtrim($line, "\r\n");
+
+            $count++;
+            if ($maxLines !== null && $count >= $maxLines) {
+                break;
+            }
+        }
+
+        fclose($handle);
     }
 
     /**
