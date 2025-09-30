@@ -437,100 +437,148 @@ class StringHelper {
     }
 
     /**
+     * Löscht eine optionale Start- und/oder Endzeichenkette aus einer Zeile.
+     *
+     * @param string $line
+     * @param string|null $start
+     * @param string|null $end
+     * @return string
+     */
+    public static function stripStartEnd(string $line, ?string $start = null, ?string $end = null): string {
+        $result = trim($line);
+
+        if (!empty($start) && str_starts_with($result, $start)) {
+            $result = substr($result, strlen($start));
+        }
+        if (!empty($end) && str_ends_with($result, $end)) {
+            $result = substr($result, 0, -strlen($end));
+        }
+        return $result;
+    }
+
+    /**
+     * Kernparser: gibt Felder + Metadaten zurück.
+     *
+     * @return array{fields: array<int,string>, enclosed: int, total: int}
+     * @throws RuntimeException
+     */
+    private static function parseLine(string $line, string $delimiter, string $enclosure, int $enclosureRepeat, ?string $started, ?string $closed): array {
+        $n = strlen($line);
+        if ($n === 0) return ['fields' => [], 'enclosed' => 0, 'total' => 0];
+
+        $delLen = strlen($delimiter);
+        if ($delLen === 0) throw new RuntimeException("Delimiter darf nicht leer sein");
+
+        $i = 0;
+        $fields = [];
+        $total = 0;
+        $enclosed = 0;
+
+        $countRun = static function (string $str, int $pos, string $enc): int {
+            $k = 0;
+            $len = strlen($str);
+            while ($pos + $k < $len && $str[$pos + $k] === $enc) $k++;
+            return $k;
+        };
+
+        while ($i < $n) {
+            $buf = '';
+            $fieldEnclosed = false;
+
+            if ($line[$i] === $enclosure) {
+                $openRun = $countRun($line, $i, $enclosure);
+                if ($openRun >= $enclosureRepeat) {
+                    $fieldEnclosed = true;
+                    $i += $openRun;
+                    while (true) {
+                        if ($i >= $n) throw new RuntimeException("Unvollständig geschlossene Enclosure-Sequenz");
+
+                        if ($openRun === 1) {
+                            if ($line[$i] === $enclosure) {
+                                if ($i + 1 < $n && $line[$i + 1] === $enclosure) {
+                                    $buf .= $enclosure;
+                                    $i += 2;
+                                    continue;
+                                }
+                                $i++;
+                                break;
+                            }
+                            $buf .= $line[$i++];
+                            continue;
+                        }
+
+                        if ($line[$i] === $enclosure) {
+                            $run = $countRun($line, $i, $enclosure);
+                            if ($run >= $openRun) {
+                                $i += $openRun;
+                                if ($run > $openRun) {
+                                    $buf .= str_repeat($enclosure, $run - $openRun);
+                                }
+                                break;
+                            }
+                            $buf .= str_repeat($enclosure, $run);
+                            $i += $run;
+                            continue;
+                        }
+
+                        $buf .= $line[$i++];
+                    }
+                }
+            }
+
+            if (!$fieldEnclosed) {
+                while ($i < $n) {
+                    if ($delLen && $i + $delLen <= $n && substr($line, $i, $delLen) === $delimiter) break;
+                    if ($line[$i] === $enclosure) throw new RuntimeException("Quote außerhalb Enclosure gefunden");
+                    $buf .= $line[$i++];
+                }
+                $buf = trim($buf);
+            }
+
+            $fields[] = $buf;
+            $total++;
+            if ($fieldEnclosed) $enclosed++;
+
+            if ($i < $n) {
+                if ($delLen && $i + $delLen <= $n && substr($line, $i, $delLen) === $delimiter) {
+                    $i += $delLen;
+                    continue;
+                }
+                throw new RuntimeException("Unerwartetes Zeichen nach Feld bei Index $i");
+            }
+        }
+
+        return ['fields' => $fields, 'enclosed' => $enclosed, 'total' => $total];
+    }
+
+    /**
      * Prüft, ob eine Zeile ausschließlich aus Feldern besteht,
      * die mit N-fachem Enclosure umschlossen sind und per Delimiter getrennt werden.
+     *
+     * @param string $line            Eingabezeile
+     * @param string $delimiter       Spaltentrennzeichen (z. B. "," oder ";")
+     * @param string $enclosure       Enclosure-Zeichen (z. B. '"')
+     * @param int    $enclosureRepeat Anzahl der zu erwartenden Wiederholungen
+     * @param bool   $strict          Wenn true, müssen alle Felder enclosed sein, sonst reicht eines
+     * @param ?string $started        Optionales Startzeichen der Zeile
+     * @param ?string $closed         Optionales Endzeichen der Zeile
+     * @return bool                   True, wenn die Zeile der Struktur entspricht, sonst false
      */
     public static function hasRepeatedEnclosure(string $line, string $delimiter = ';', string $enclosure = '"', int $enclosureRepeat = 1, bool $strict = true, ?string $started = null, ?string $closed = null): bool {
-        $s = trim($line);
+        $s = self::stripStartEnd($line, $started, $closed);
 
-        if ($started !== null && str_starts_with($s, $started)) {
-            $s = substr($s, strlen($started));
-        }
-        if ($closed !== null && str_ends_with($s, $closed)) {
-            $s = substr($s, 0, -strlen($closed));
-        }
-
-        // repeat=0: keine Quotes erlaubt, mind. ein Delimiter
         if ($enclosureRepeat === 0) {
             return !str_contains($s, $enclosure) && substr_count($s, $delimiter) >= 1;
         }
 
-        $n = strlen($s);
-        if ($n === 0) return false;
-
-        $delLen = strlen($delimiter);
-        if ($delLen === 0) return false;
-
-        $encRun = str_repeat($enclosure, $enclosureRepeat);
-        $i = 0;
-        $fields = 0;
-        $enclosed = 0;
-
-        while ($i < $n) {
-            $fieldEnclosed = false;
-
-            // Feldstart
-            if ($i + $enclosureRepeat <= $n && substr($s, $i, $enclosureRepeat) === $encRun) {
-                $fieldEnclosed = true;
-                $i += $enclosureRepeat;
-
-                // Inhalt bis schließende Enclosure-Sequenz
-                while (true) {
-                    if ($i >= $n) return false; // ungeschlossen
-
-                    // repeat=1: "" als Escape
-                    if ($enclosureRepeat === 1 && $s[$i] === $enclosure) {
-                        if ($i + 1 < $n && $s[$i + 1] === $enclosure) {
-                            $i += 2; // escaped "
-                            continue;
-                        }
-                        // schließendes "
-                        $i += 1;
-                        break;
-                    }
-
-                    // repeat>1: exakte Schließsequenz
-                    if (
-                        $enclosureRepeat > 1 &&
-                        $i + $enclosureRepeat <= $n &&
-                        substr($s, $i, $enclosureRepeat) === $encRun
-                    ) {
-                        $i += $enclosureRepeat;
-                        break;
-                    }
-
-                    $i++;
-                }
-            } else {
-                // Unquoted Feld: bis Delimiter; Quotes im Rohtext sind invalid
-                while (true) {
-                    if ($i >= $n) break;
-                    if ($delLen && $i + $delLen <= $n && substr($s, $i, $delLen) === $delimiter) {
-                        break;
-                    }
-                    if ($s[$i] === $enclosure) return false; // Quote außerhalb Enclosure
-                    $i++;
-                }
-            }
-
-            $fields++;
-            if ($fieldEnclosed) $enclosed++;
-
-            // Nach Feld: Entweder Ende oder Delimiter
-            if ($i < $n) {
-                if ($delLen && $i + $delLen <= $n && substr($s, $i, $delLen) === $delimiter) {
-                    $i += $delLen;
-                    // wenn direkt Delimiter am Ende → kein weiteres Feld => bleibt fields<2 → false unten
-                    continue;
-                }
-                // Unerwartetes Zeichen nach Feld (z. B. ']')
-                return false;
-            }
+        try {
+            $result = self::parseLine($s, $delimiter, $enclosure, $enclosureRepeat, $started, $closed);
+        } catch (RuntimeException) {
+            return false;
         }
 
-        if ($fields < 2) return false;
-
-        return $strict ? ($enclosed === $fields) : ($enclosed > 0);
+        if ($result['total'] < 2) return false;
+        return $strict ? ($result['enclosed'] === $result['total']) : ($result['enclosed'] > 0);
     }
 
     /**
@@ -544,123 +592,11 @@ class StringHelper {
      * @param ?string     $started          Optionales Startzeichen der Zeile
      * @param ?string     $closed           Optionales Endzeichen der Zeile
      * @return array<string>                Array der Felder
-     * @throws \RuntimeException            Wenn die Struktur inkonsistent ist
+     * @throws RuntimeException            Wenn die Struktur inkonsistent ist
      */
-    public static function extractRepeatedEnclosureFields(
-        string $line,
-        string $delimiter = ';',
-        string $enclosure = '"',
-        int $enclosureRepeat = 1,
-        ?string $started = null,
-        ?string $closed = null
-    ): array {
-        $s = rtrim($line, "\r\n");
+    public static function extractFields(string $line, string $delimiter = ';', string $enclosure = '"', ?string $started = null, ?string $closed = null): array {
+        $s = self::stripStartEnd($line, $started, $closed);
 
-        if ($started !== null && str_starts_with($s, $started)) {
-            $s = substr($s, strlen($started));
-        }
-        if ($closed !== null) {
-            $len = strlen($closed);
-            if ($len > 0 && substr($s, -$len) === $closed) {
-                $s = substr($s, 0, -$len);
-            }
-        }
-
-        $n = strlen($s);
-        if ($n === 0) return [];
-
-        $delLen = strlen($delimiter);
-        if ($delLen === 0) throw new \RuntimeException("Delimiter darf nicht leer sein");
-
-        $i = 0;
-        $fields = [];
-
-        // helper: count consecutive enclosure chars starting at $pos
-        $countRun = static function (string $str, int $pos, string $enc) use ($n): int {
-            $k = 0;
-            while ($pos + $k < strlen($str) && $str[$pos + $k] === $enc) $k++;
-            return $k;
-        };
-
-        while ($i < $n) {
-            $buf = '';
-
-            if ($s[$i] === $enclosure) {
-                // dynamische Öffnung: echte Runlänge erkennen (>=1)
-                $openRun = $countRun($s, $i, $enclosure);
-                if ($openRun < 1) throw new \RuntimeException("Interner Parserfehler");
-                // Mindestanforderung beachten, aber größer zulassen
-                if ($openRun < $enclosureRepeat) {
-                    // kein valider Start → unquoted Feld
-                    goto UNQUOTED_FIELD;
-                }
-                $i += $openRun;
-
-                while (true) {
-                    if ($i >= $n) throw new \RuntimeException("Unvollständig geschlossene Enclosure-Sequenz");
-
-                    if ($openRun === 1) {
-                        // Standard CSV: "" → escaped "
-                        if ($s[$i] === $enclosure) {
-                            if ($i + 1 < $n && $s[$i + 1] === $enclosure) {
-                                $buf .= $enclosure;
-                                $i += 2;
-                                continue;
-                            }
-                            // schließendes "
-                            $i += 1;
-                            break;
-                        }
-                        $buf .= $s[$i++];
-                        continue;
-                    }
-
-                    // openRun > 1: schließe nur bei exakt gleicher Runlänge
-                    if ($s[$i] === $enclosure) {
-                        $run = $countRun($s, $i, $enclosure);
-                        if ($run >= $openRun) {
-                            // schließe mit exakt openRun Quotes, Rest-Quotes sind Inhalt
-                            $i += $openRun;
-                            if ($run > $openRun) {
-                                $buf .= str_repeat($enclosure, $run - $openRun);
-                            }
-                            break;
-                        } else {
-                            // kürzere Runlänge gilt als Inhalt
-                            $buf .= str_repeat($enclosure, $run);
-                            $i += $run;
-                            continue;
-                        }
-                    }
-
-                    $buf .= $s[$i++];
-                }
-            } else {
-                UNQUOTED_FIELD:
-                // Unquoted Feld: bis Delimiter
-                while (true) {
-                    if ($i >= $n) break;
-                    if ($delLen && $i + $delLen <= $n && substr($s, $i, $delLen) === $delimiter) {
-                        break;
-                    }
-                    if ($s[$i] === $enclosure) throw new \RuntimeException("Quote außerhalb Enclosure gefunden");
-                    $buf .= $s[$i++];
-                }
-                $buf = trim($buf);
-            }
-
-            $fields[] = $buf;
-
-            // Nach Feld: entweder Ende oder genau ein Delimiter
-            if ($i < $n) {
-                if ($delLen && $i + $delLen <= $n && substr($s, $i, $delLen) === $delimiter) {
-                    $i += $delLen;
-                    continue;
-                }
-                throw new \RuntimeException("Unerwartetes Zeichen nach Feld bei Index $i");
-            }
-        }
-
-        return $fields;
+        return self::parseLine($s, $delimiter, $enclosure, 1, $started, $closed)['fields'];
     }
 }

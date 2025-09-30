@@ -125,6 +125,7 @@ class StringHelperTest extends BaseTestCase {
             ['line' => '"Feld1","Feld2",Feld3', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 2, 'expected' => false],
             ['line' => '"Feld1";"Feld2";"Feld3"', 'delimiter' => ';', 'enclosure' => '"', 'repeat' => 1, 'expected' => true],
             ['line' => 'Feld1;Feld2;Feld3', 'delimiter' => ';', 'enclosure' => '"', 'repeat' => 0, 'expected' => true],
+            ['line' => 'Feld1;Feld2;Feld3', 'delimiter' => ';', 'enclosure' => '"', 'repeat' => 1, 'expected' => false],
             ['line' => '"Feld1";"Feld2";"Feld3"', 'delimiter' => ';', 'enclosure' => '"', 'repeat' => 0, 'expected' => false],
             ['line' => '"Feld1","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 3, 'expected' => false],
             ['line' => 'Feld1,Feld2,Feld3', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'expected' => false],
@@ -140,7 +141,7 @@ class StringHelperTest extends BaseTestCase {
             ['line' => '"Feld1,"2000,00","3000,00"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
             ['line' => '"Feld1,"2000,00",3000,00";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
             ['line' => '"Feld1,2000,00,"3000,00"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
-            ['line' => '"Feld1,"2000,00,3000,00"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => false],
+            ['line' => '"Feld1,"2000,00,3000,00"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
             ['line' => '"Feld1,Feld2","Feld3"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => false],
 
         ];
@@ -169,35 +170,36 @@ class StringHelperTest extends BaseTestCase {
                 'line'     => '"Feld1","Feld2","Feld3"',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'repeat'   => 1,
                 'expected' => ['Feld1', 'Feld2', 'Feld3']
             ],
             [
                 'line'     => '""Feld1"",""Feld2"",""Feld3""',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'repeat'   => 2,
                 'expected' => ['Feld1', 'Feld2', 'Feld3']
             ],
             [
                 'line'     => '"""Feld1""","""Feld2""","""Feld3"""',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'repeat'   => 3,
                 'expected' => ['Feld1', 'Feld2', 'Feld3']
             ],
             [
                 'line'     => '"Feld1";"Feld2";"Feld3"',
                 'delimiter' => ';',
                 'enclosure' => '"',
-                'repeat'   => 1,
+                'expected' => ['Feld1', 'Feld2', 'Feld3']
+            ],
+            [
+                'line'     => 'Feld1;Feld2;Feld3',
+                'delimiter' => ';',
+                'enclosure' => '"',
                 'expected' => ['Feld1', 'Feld2', 'Feld3']
             ],
             [
                 'line'     => '""KDC2ASKF"",""21.12.2024 17:55:41"",""2000,00"";',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'repeat'   => 2,
                 'closed'   => ';',
                 'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', '2000,00']
             ],
@@ -205,20 +207,27 @@ class StringHelperTest extends BaseTestCase {
                 'line'     => '"Feld1,""2000,00"",3000,00";',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'repeat'   => 1,
                 'strict'   => false,
                 'started'  => '"',
                 'closed'   => '";',
                 'expected' => ['Feld1', '2000,00', '3000', '00']
             ],
+            [
+                'line'     => '"Feld1,"2000,00,3000,00"";',
+                'delimiter' => ',',
+                'enclosure' => '"',
+                'strict'   => false,
+                'started'  => '"',
+                'closed'   => '";',
+                'expected' => ['Feld1', '2000,00,3000,00']
+            ],
         ];
 
         foreach ($tests as $test) {
-            $result = StringHelper::extractRepeatedEnclosureFields(
+            $result = StringHelper::extractFields(
                 $test['line'],
                 $test['delimiter'],
                 $test['enclosure'],
-                $test['repeat'],
                 $test['started'] ?? null,
                 $test['closed'] ?? null
             );
@@ -227,11 +236,10 @@ class StringHelperTest extends BaseTestCase {
                 $test['expected'],
                 $result,
                 sprintf(
-                    "Fehlgeschlagen bei Zeile '%s' mit Delimiter '%s', Enclosure '%s', Repeat %d – erwartet %s, erhalten %s",
+                    "Fehlgeschlagen bei Zeile '%s' mit Delimiter '%s', Enclosure '%s' – erwartet %s, erhalten %s",
                     $test['line'],
                     $test['delimiter'],
                     $test['enclosure'],
-                    $test['repeat'],
                     json_encode($test['expected']),
                     json_encode($result)
                 )
