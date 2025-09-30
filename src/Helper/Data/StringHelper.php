@@ -462,7 +462,7 @@ class StringHelper {
      * @return array{fields: array<int,string>, enclosed: int, total: int}
      * @throws RuntimeException
      */
-    private static function parseLine(string $line, string $delimiter, string $enclosure, int $enclosureRepeat, ?string $started, ?string $closed): array {
+    private static function parseLine(string $line, string $delimiter, string $enclosure, int $enclosureRepeat = 1): array {
         $n = strlen($line);
         if ($n === 0) return ['fields' => [], 'enclosed' => 0, 'total' => 0];
 
@@ -572,7 +572,7 @@ class StringHelper {
         }
 
         try {
-            $result = self::parseLine($s, $delimiter, $enclosure, $enclosureRepeat, $started, $closed);
+            $result = self::parseLine($s, $delimiter, $enclosure, $enclosureRepeat);
         } catch (RuntimeException) {
             return false;
         }
@@ -597,6 +597,6 @@ class StringHelper {
     public static function extractFields(string $line, string $delimiter = ';', string $enclosure = '"', ?string $started = null, ?string $closed = null): array {
         $s = self::stripStartEnd($line, $started, $closed);
 
-        return self::parseLine($s, $delimiter, $enclosure, 1, $started, $closed)['fields'];
+        return self::parseLine($s, $delimiter, $enclosure)['fields'];
     }
 }
