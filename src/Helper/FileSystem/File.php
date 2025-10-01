@@ -269,6 +269,19 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Liest die Zeilen einer Textdatei als Array zurück.
+     *
+     * @param string $file        Pfad zur Datei.
+     * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
+     * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @return string[] Array mit den Zeilen der Datei.
+     * @throws FileNotFoundException
+     */
+    public static function readLinesAsArray(string $file, bool $skipEmpty = false, ?int $maxLines = null): array {
+        return iterator_to_array(self::readLines($file, $skipEmpty, $maxLines), false);
+    }
+
+    /**
      * Schreibt Daten in die angegebene Datei.
      *
      * @param string $file Der Pfad zur Datei.
@@ -670,16 +683,26 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Überprüft, ob die Datei eine bestimmte Erweiterung hat.
      *
      * @param string $file
-     * @param array|string $extensions
+     * @param array|string $extensions  Endung(en), optional mit führendem Punkt
      * @param bool $caseSensitive
      * @return bool
      */
     public static function isExtension(string $file, array|string $extensions, bool $caseSensitive = false): bool {
-        $fileExt = self::extension($file);
+        // aktuelle Endung der Datei ermitteln
+        $fileExt = ltrim(self::extension($file), '.');
+
+        // Eingaben normalisieren → Punkt vorne entfernen
+        if (is_array($extensions)) {
+            $extensions = array_map(fn($ext) => ltrim($ext, '.'), $extensions);
+        } else {
+            $extensions = ltrim($extensions, '.');
+        }
+
         if (!$caseSensitive) {
-            $fileExt = strtolower($fileExt);
+            $fileExt    = strtolower($fileExt);
             $extensions = is_array($extensions) ? array_map('strtolower', $extensions) : strtolower($extensions);
         }
+
         if (is_array($extensions)) {
             return in_array($fileExt, $extensions, true);
         }
