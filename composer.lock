@@ -53,16 +53,16 @@
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v1.3.2",
+            "version": "v1.3.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "d9d19b86905c82c34b5d1bafb41e3af517390a2b"
+                "reference": "b30db885c2e635daaf2bb9052f6fa6185e12e834"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/d9d19b86905c82c34b5d1bafb41e3af517390a2b",
-                "reference": "d9d19b86905c82c34b5d1bafb41e3af517390a2b",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/b30db885c2e635daaf2bb9052f6fa6185e12e834",
+                "reference": "b30db885c2e635daaf2bb9052f6fa6185e12e834",
                 "shasum": ""
             },
             "require": {
@@ -91,9 +91,9 @@
             "description": "Reused codes for my api php sdks",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v1.3.2"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v1.3.3"
             },
-            "time": "2025-04-25T09:15:11+00:00"
+            "time": "2025-10-01T10:52:50+00:00"
         },
         {
             "name": "psr/log",
@@ -1919,8 +1919,8 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "psr/log": 20,
-        "phpunit/phpunit": 20
+        "phpunit/phpunit": 20,
+        "psr/log": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
@@ -1929,7 +1929,7 @@
         "ext-bcmath": "*",
         "ext-intl": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.2.0"
     },
