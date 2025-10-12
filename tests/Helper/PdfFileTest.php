@@ -53,6 +53,15 @@ final class PdfFileTest extends BaseTestCase {
         $this->assertFileExists($outputEnc);
         $this->assertTrue(PdfFile::isEncrypted($outputEnc));
 
+        $this->expectException(InvalidPasswordException::class);
+        $meta = PdfFile::getMetaData($outputEnc, '1234');
+
+        $meta = PdfFile::getMetaData($outputEnc, '');
+        $this->assertIsArray($meta);
+
+        $meta = PdfFile::getMetaData($outputEnc);
+        $this->assertIsArray($meta);
+
         $this->assertTrue(PdfFile::decrypt($outputEnc, $outputDec));
         $this->assertFileExists($outputDec);
         $this->assertFalse(PdfFile::isEncrypted($outputDec));
