@@ -31,10 +31,7 @@ class PdfFile extends ConfiguredHelperAbstract {
      * @throws Exception Wenn ein Fehler beim Abrufen der Metadaten auftritt.
      */
     public static function getMetaData(string $file, ?string $password = null): array {
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
-        }
+        $file = self::resolveFile($file);
 
         $args = [
             "[INPUT]" => escapeshellarg($file),
@@ -93,10 +90,7 @@ class PdfFile extends ConfiguredHelperAbstract {
      * @throws Exception Wenn ein Fehler bei der Überprüfung auftritt.
      */
     public static function isEncrypted(string $file): bool {
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
-        }
+        $file = self::resolveFile($file);
 
         // Standardprüfung über pdfinfo-Metadaten
         try {
@@ -147,10 +141,7 @@ class PdfFile extends ConfiguredHelperAbstract {
      * @throws Exception Wenn ein Fehler bei der Validierung auftritt.
      */
     public static function isValid(string $file): bool {
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
-        }
+        $file = self::resolveFile($file);
 
         $command = self::getConfiguredCommand("valid-pdf", ["[INPUT]" => escapeshellarg($file)]);
         $output = [];
@@ -186,10 +177,7 @@ class PdfFile extends ConfiguredHelperAbstract {
      * @throws Exception
      */
     public static function decrypt(string $inputFile, string $outputFile, ?string $password = null): bool {
-        if (!File::exists($inputFile)) {
-            self::logError("Datei $inputFile nicht gefunden.");
-            throw new FileNotFoundException("Datei $inputFile nicht gefunden.");
-        }
+        $inputFile = self::resolveFile($inputFile);
 
         $command = self::getConfiguredCommand(
             "pdf-decrypt",
@@ -227,17 +215,8 @@ class PdfFile extends ConfiguredHelperAbstract {
      * @throws FileNotFoundException
      * @throws Exception
      */
-    public static function encrypt(
-        string $inputFile,
-        string $outputFile,
-        ?string $userPass = null,
-        ?string $ownerPass = null,
-        ?string $permissions = null
-    ): bool {
-        if (!File::exists($inputFile)) {
-            self::logError("Datei $inputFile nicht gefunden.");
-            throw new FileNotFoundException("Datei $inputFile nicht gefunden.");
-        }
+    public static function encrypt(string $inputFile, string $outputFile, ?string $userPass = null, ?string $ownerPass = null, ?string $permissions = null): bool {
+        $inputFile = self::resolveFile($inputFile);
 
         $params = [
             "[INPUT]"  => escapeshellarg($inputFile),

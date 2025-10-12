@@ -35,6 +35,7 @@ class TifFile extends ConfiguredHelperAbstract {
      * @throws Exception Wenn ein Fehler bei der Reparatur auftritt.
      */
     public static function repair(string $file, bool $forceRepair = false): string {
+        $file = self::resolveFile($file);
         $mimeType = File::mimeType($file);
 
         if ($mimeType === 'image/jpeg' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
@@ -109,10 +110,9 @@ class TifFile extends ConfiguredHelperAbstract {
      * @throws Exception Wenn ein Fehler bei der Konvertierung auftritt.
      */
     public static function convertToPdf(string $tiffFile, ?string $pdfFile = null, bool $compressed = true, bool $deleteSourceFile = true): void {
-        if (!File::exists($tiffFile)) {
-            self::logError("Die Datei existiert nicht: $tiffFile");
-            throw new FileNotFoundException("Die Datei existiert nicht: $tiffFile");
-        } elseif (!is_null($pdfFile) && File::exists($pdfFile)) {
+        $tiffFile = self::resolveFile($tiffFile);
+
+        if (!is_null($pdfFile) && File::exists($pdfFile)) {
             self::logError("Die Datei existiert bereits: $pdfFile");
             throw new FileExistsException("Die Datei existiert bereits: $pdfFile");
         } elseif (!self::isValid($tiffFile)) {
@@ -214,10 +214,7 @@ class TifFile extends ConfiguredHelperAbstract {
      * @throws Exception Wenn ein Fehler bei der Validierung auftritt.
      */
     public static function isValid(string $file): bool {
-        if (!File::exists($file)) {
-            self::logError("Datei existiert nicht: $file");
-            throw new FileNotFoundException("Datei existiert nicht: $file");
-        }
+        $file = self::resolveFile($file);
 
         if (preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
             $command = self::getConfiguredCommand("tiffinfo", ["[INPUT]" => escapeshellarg($file)]);

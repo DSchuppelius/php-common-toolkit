@@ -37,11 +37,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @return string|null Der konfigurierte Befehl oder null, wenn nicht gefunden.
      */
     private static function getRealExistingFile(string $file): string|false {
-        if (!self::exists($file)) {
-            self::logError("Datei existiert nicht: $file");
+        try {
+            $file = self::resolveFile($file);
+        } catch (FileNotFoundException) {
             return false;
         }
-        return self::getRealPath($file);
+        return $file;
     }
 
     /**

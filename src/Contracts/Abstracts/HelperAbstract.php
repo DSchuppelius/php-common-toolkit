@@ -13,12 +13,28 @@ declare(strict_types=1);
 namespace CommonToolkit\Contracts\Abstracts;
 
 use CommonToolkit\Contracts\Interfaces\HelperInterface;
+use CommonToolkit\Helper\FileSystem\File;
+use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use ERRORToolkit\Factories\ConsoleLoggerFactory;
 use ERRORToolkit\Traits\ErrorLog;
 use Psr\Log\LoggerInterface;
 
 abstract class HelperAbstract implements HelperInterface {
     use ErrorLog;
+
+    /**
+     * Gibt den Dateipfad zurück, wenn die Datei existiert.
+     *
+     * @param string $file Der Pfad zur CSV-Datei.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert oder nicht lesbar ist.
+     */
+    protected static function resolveFile(string $file): string {
+        if (!File::exists($file)) {
+            self::logError("Die Datei $file existiert nicht oder ist nicht lesbar.");
+            throw new FileNotFoundException("Die Datei $file existiert nicht oder ist nicht lesbar.");
+        }
+        return File::getRealPath($file);
+    }
 
     /**
      * Setzt den Logger für die Klasse.

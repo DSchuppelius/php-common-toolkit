@@ -28,20 +28,6 @@ class CsvFile extends HelperAbstract {
     protected static string $defaultEscape = '\\';
 
     /**
-     * Gibt den Dateipfad zurück, wenn die Datei existiert.
-     *
-     * @param string $file Der Pfad zur CSV-Datei.
-     * @throws FileNotFoundException Wenn die Datei nicht existiert oder nicht lesbar ist.
-     */
-    private static function resolveFile(string $file): string {
-        if (!File::exists($file)) {
-            self::logError("Die CSV-Datei $file existiert nicht oder ist nicht lesbar.");
-            throw new FileNotFoundException("Die CSV-Datei $file existiert nicht oder ist nicht lesbar.");
-        }
-        return File::getRealPath($file);
-    }
-
-    /**
      * Liest eine CSV-Datei und gibt die Zeilen als Generator zurück.
      *
      * @param string $file       Der Pfad zur CSV-Datei.
