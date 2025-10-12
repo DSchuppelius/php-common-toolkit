@@ -269,6 +269,19 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Liest die Zeilen einer Textdatei als Array zurück.
+     *
+     * @param string $file        Pfad zur Datei.
+     * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
+     * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @return string[] Array mit den Zeilen der Datei.
+     * @throws FileNotFoundException
+     */
+    public static function readLinesAsArray(string $file, bool $skipEmpty = false, ?int $maxLines = null): array {
+        return iterator_to_array(self::readLines($file, $skipEmpty, $maxLines), false);
+    }
+
+    /**
      * Schreibt Daten in die angegebene Datei.
      *
      * @param string $file Der Pfad zur Datei.
@@ -633,5 +646,130 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $length = mb_strlen($content, $encoding);
         self::logInfo("Anzahl der Zeichen in $file: $length");
         return $length;
+    }
+
+    /**
+     * Gibt die Dateierweiterung zurück.
+     *
+     * @param string $file
+     * @return string
+     */
+    public static function extension(string $file): string {
+        return pathinfo($file, PATHINFO_EXTENSION);
+    }
+
+    /**
+     * Gibt den Dateinamen zurück.
+     *
+     * @param string $file
+     * @param bool $withExtension
+     * @return string
+     */
+    public static function filename(string $file, bool $withExtension = true): string {
+        return $withExtension ? basename($file) : pathinfo($file, PATHINFO_FILENAME);
+    }
+
+    /**
+     * Gibt das Verzeichnis der Datei zurück.
+     *
+     * @param string $file
+     * @return string
+     */
+    public static function directory(string $file): string {
+        return dirname($file);
+    }
+
+    /**
+     * Überprüft, ob die Datei eine bestimmte Erweiterung hat.
+     *
+     * @param string $file
+     * @param array|string $extensions  Endung(en), optional mit führendem Punkt
+     * @param bool $caseSensitive
+     * @return bool
+     */
+    public static function isExtension(string $file, array|string $extensions, bool $caseSensitive = false): bool {
+        // aktuelle Endung der Datei ermitteln
+        $fileExt = ltrim(self::extension($file), '.');
+
+        // Eingaben normalisieren → Punkt vorne entfernen
+        if (is_array($extensions)) {
+            $extensions = array_map(fn($ext) => ltrim($ext, '.'), $extensions);
+        } else {
+            $extensions = ltrim($extensions, '.');
+        }
+
+        if (!$caseSensitive) {
+            $fileExt    = strtolower($fileExt);
+            $extensions = is_array($extensions) ? array_map('strtolower', $extensions) : strtolower($extensions);
+        }
+
+        if (is_array($extensions)) {
+            return in_array($fileExt, $extensions, true);
+        }
+        return $fileExt === $extensions;
+    }
+
+    /**
+     * Ändert die Dateierweiterung.
+     *
+     * @param string $file
+     * @param string $newExtension
+     * @return string
+     */
+    public static function changeExtension(string $file, string $newExtension): string {
+        $dir = self::directory($file);
+        $filename = self::filename($file, false);
+        return $dir . DIRECTORY_SEPARATOR . $filename . '.' . ltrim($newExtension, '.');
+    }
+
+    /**
+     * Fügt einen Anhang an den Dateinamen an.
+     *
+     * @param string $file
+     * @param string $appendix
+     * @return string
+     */
+    public static function appendToFilename(string $file, string $appendix): string {
+        $dir = self::directory($file);
+        $filename = self::filename($file, false);
+        $extension = self::extension($file);
+        return $dir . DIRECTORY_SEPARATOR . $filename . $appendix . ($extension ? '.' . $extension : '');
+    }
+
+    /**
+     * Fügt einen Präfix an den Dateinamen an.
+     *
+     * @param string $file
+     * @param string $prefix
+     * @return string
+     */
+    public static function prependToFilename(string $file, string $prefix): string {
+        $dir = self::directory($file);
+        $filename = self::filename($file, false);
+        $extension = self::extension($file);
+        return $dir . DIRECTORY_SEPARATOR . $prefix . $filename . ($extension ? '.' . $extension : '');
+    }
+
+    /**
+     * Überprüft, ob die Datei einen bestimmten MIME-Typ hat.
+     *
+     * @param string $file
+     * @param array|string $mimeTypes
+     * @param bool $caseSensitive
+     * @return bool
+     */
+    public static function isMimeType(string $file, array|string $mimeTypes, bool $caseSensitive = false): bool {
+        $fileMimeType = self::mimeType($file);
+        if ($fileMimeType === false) {
+            return false;
+        }
+        if (!$caseSensitive) {
+            $fileMimeType = strtolower($fileMimeType);
+            $mimeTypes = is_array($mimeTypes) ? array_map('strtolower', $mimeTypes) : strtolower($mimeTypes);
+        }
+        if (is_array($mimeTypes)) {
+            return in_array($fileMimeType, $mimeTypes, true);
+        }
+        return $fileMimeType === $mimeTypes;
     }
 }
