@@ -16,6 +16,7 @@ use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\Shell;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use ERRORToolkit\Exceptions\InvalidPasswordException;
 use Exception;
 
 class PdfFile extends ConfiguredHelperAbstract {
@@ -29,13 +30,18 @@ class PdfFile extends ConfiguredHelperAbstract {
      * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
      * @throws Exception Wenn ein Fehler beim Abrufen der Metadaten auftritt.
      */
-    public static function getMetaData(string $file): array {
+    public static function getMetaData(string $file, ?string $password = null): array {
         if (!File::exists($file)) {
             self::logError("Datei $file nicht gefunden.");
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
-        $command = self::getConfiguredCommand("pdfinfo", ["[INPUT]" => escapeshellarg($file)]);
+        $args = [
+            "[INPUT]" => escapeshellarg($file),
+            "[PASSWORD]" => $password ? "-opw " . escapeshellarg($password) : ""
+        ];
+
+        $command = self::getConfiguredCommand("pdfinfo", $args);
         $output = [];
         $resultCode = 0;
 
@@ -47,12 +53,11 @@ class PdfFile extends ConfiguredHelperAbstract {
         Shell::executeShellCommand($command, $output, $resultCode);
 
         if ($resultCode !== 0) {
-            // Prüfe auf Passwortfehler oder Syntaxprobleme
             foreach ($output as $line) {
                 $lower = strtolower($line);
                 if (str_contains($lower, 'incorrect password')) {
-                    self::logError("Passwortgeschützte PDF-Datei: $file");
-                    throw new Exception("Command Line Error: Incorrect password");
+                    self::logError("Falsches Passwort für PDF-Datei: $file");
+                    throw new InvalidPasswordException("Command Line Error: Incorrect password");
                 }
                 if (str_contains($lower, 'syntax error') || str_contains($lower, 'error')) {
                     self::logError("Fehlerhafte PDF-Struktur: $file");
@@ -78,6 +83,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         return $metadata;
     }
 
+
     /**
      * Überprüft, ob die PDF-Datei verschlüsselt ist.
      *
@@ -99,12 +105,10 @@ class PdfFile extends ConfiguredHelperAbstract {
                 $encryptedValue = strtolower($metadata['Encrypted']);
                 return str_contains($encryptedValue, 'yes');
             }
+        } catch (InvalidPasswordException $e) {
+            return true;
         } catch (Exception $e) {
-            // pdfinfo liefert "Incorrect password" → gilt als verschlüsselt
-            if (stripos($e->getMessage(), 'Incorrect password') !== false) {
-                return true;
-            }
-            throw $e; // andere Fehler weiterreichen
+            throw $e;
         }
 
         // Fallback über qpdf --check (Konfiguration)

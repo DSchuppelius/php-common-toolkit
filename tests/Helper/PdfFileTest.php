@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 use CommonToolkit\Helper\FileSystem\FileTypes\PdfFile;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use ERRORToolkit\Exceptions\InvalidPasswordException;
 use Tests\Contracts\BaseTestCase;
 
 final class PdfFileTest extends BaseTestCase {
@@ -63,6 +64,11 @@ final class PdfFileTest extends BaseTestCase {
 
         $this->assertTrue(PdfFile::encrypt($this->testFile, $outputEnc, '1234'));
         $this->assertTrue(PdfFile::isEncrypted($outputEnc));
+        $meta = PdfFile::getMetaData($outputEnc, '1234');
+        $this->assertIsArray($meta);
+
+        $this->expectException(InvalidPasswordException::class);
+        $meta = PdfFile::getMetaData($outputEnc);
 
         $this->assertTrue(PdfFile::decrypt($outputEnc, $outputDec, '1234'));
         $this->assertFalse(PdfFile::isEncrypted($outputDec));

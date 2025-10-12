@@ -5,8 +5,8 @@
             "required": true,
             "package": "poppler-utils",
             "description": "Metadaten aus PDF-Datei",
-            "arguments": ["[INPUT]", "2>&1"],
-            "debugArguments": ["[INPUT]", "2>&1"]
+            "arguments": ["[PASSWORD]", "[INPUT]", "2>&1"],
+            "debugArguments": ["[PASSWORD]", "[INPUT]", "2>&1"]
         },
         "valid-pdf": {
             "linuxPath": "mutool",
