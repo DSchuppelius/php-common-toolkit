@@ -36,6 +36,16 @@
             "linuxArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"],
             "windowsArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"],
             "debugArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"]
+        },
+        "pdf-check": {
+            "linuxPath": "qpdf",
+            "windowsPath": "qpdf.exe",
+            "package": "qpdf",
+            "required": false,
+            "description": "Prüft PDF auf Struktur- und Verschlüsselungsstatus",
+            "linuxArguments": ["--check", "[INPUT]"],
+            "windowsArguments": ["--check", "[INPUT]"],
+            "debugArguments": ["--check", "[INPUT]"]
         }
     }
 }

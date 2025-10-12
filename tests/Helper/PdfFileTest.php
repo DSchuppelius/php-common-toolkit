@@ -50,9 +50,11 @@ final class PdfFileTest extends BaseTestCase {
 
         $this->assertTrue(PdfFile::encrypt($this->testFile, $outputEnc));
         $this->assertFileExists($outputEnc);
+        $this->assertTrue(PdfFile::isEncrypted($outputEnc));
 
         $this->assertTrue(PdfFile::decrypt($outputEnc, $outputDec));
         $this->assertFileExists($outputDec);
+        $this->assertFalse(PdfFile::isEncrypted($outputDec));
     }
 
     public function testEncryptAndDecryptWithPassword(): void {
@@ -60,7 +62,10 @@ final class PdfFileTest extends BaseTestCase {
         $outputDec = $this->outputDir . '/dec_pw.pdf';
 
         $this->assertTrue(PdfFile::encrypt($this->testFile, $outputEnc, '1234'));
+        $this->assertTrue(PdfFile::isEncrypted($outputEnc));
+
         $this->assertTrue(PdfFile::decrypt($outputEnc, $outputDec, '1234'));
+        $this->assertFalse(PdfFile::isEncrypted($outputDec));
         $this->assertFileExists($outputDec);
     }
 

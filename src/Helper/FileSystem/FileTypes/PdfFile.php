@@ -47,17 +47,27 @@ class PdfFile extends ConfiguredHelperAbstract {
         Shell::executeShellCommand($command, $output, $resultCode);
 
         if ($resultCode !== 0) {
-            self::logError("Fehler beim Abrufen der PDF-Metadaten für $file.");
+            // Prüfe auf Passwortfehler oder Syntaxprobleme
+            foreach ($output as $line) {
+                $lower = strtolower($line);
+                if (str_contains($lower, 'incorrect password')) {
+                    self::logError("Passwortgeschützte PDF-Datei: $file");
+                    throw new Exception("Command Line Error: Incorrect password");
+                }
+                if (str_contains($lower, 'syntax error') || str_contains($lower, 'error')) {
+                    self::logError("Fehlerhafte PDF-Struktur: $file");
+                    throw new Exception("Fehler beim Lesen der PDF-Metadaten: $line");
+                }
+            }
+            self::logError("Fehler beim Abrufen der PDF-Metadaten für $file. (Exit-Code: $resultCode).");
             throw new Exception("Fehler beim Abrufen der PDF-Metadaten für $file");
         }
 
         $metadata = [];
         foreach ($output as $line) {
             if (strpos($line, ':') !== false) {
-                $parts = explode(':', $line, 2);
-                if (count($parts) === 2) {
-                    $metadata[trim($parts[0])] = trim($parts[1]);
-                }
+                [$key, $value] = explode(':', $line, 2);
+                $metadata[trim($key)] = trim($value);
             }
         }
 
@@ -82,11 +92,43 @@ class PdfFile extends ConfiguredHelperAbstract {
             throw new FileNotFoundException("Datei $file nicht gefunden.");
         }
 
-        $metadata = self::getMetaData($file);
+        // Standardprüfung über pdfinfo-Metadaten
+        try {
+            $metadata = self::getMetaData($file);
+            if (isset($metadata['Encrypted'])) {
+                $encryptedValue = strtolower($metadata['Encrypted']);
+                return str_contains($encryptedValue, 'yes');
+            }
+        } catch (Exception $e) {
+            // pdfinfo liefert "Incorrect password" → gilt als verschlüsselt
+            if (stripos($e->getMessage(), 'Incorrect password') !== false) {
+                return true;
+            }
+            throw $e; // andere Fehler weiterreichen
+        }
 
-        if (isset($metadata['Encrypted'])) {
-            $encryptedValue = strtolower($metadata['Encrypted']);
-            return strpos($encryptedValue, 'yes') !== false;
+        // Fallback über qpdf --check (Konfiguration)
+        $command = self::getConfiguredCommand("pdf-check", ["[INPUT]" => escapeshellarg($file)]);
+        if (empty($command)) {
+            self::logWarning("pdf-check nicht konfiguriert, keine Fallback-Prüfung möglich.");
+            return false;
+        }
+
+        $output = [];
+        $resultCode = 0;
+        Shell::executeShellCommand($command, $output, $resultCode);
+
+        foreach ($output as $line) {
+            $lower = strtolower($line);
+
+            // Nur positive Befunde akzeptieren
+            if (
+                str_contains($lower, 'encrypted') &&
+                !str_contains($lower, 'not encrypted') &&
+                !str_contains($lower, 'unencrypted')
+            ) {
+                return true;
+            }
         }
 
         return false;
