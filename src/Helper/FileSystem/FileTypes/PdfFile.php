@@ -128,4 +128,92 @@ class PdfFile extends ConfiguredHelperAbstract {
 
         return true;
     }
+
+    /**
+     * Entschlüsselt eine verschlüsselte PDF-Datei.
+     *
+     * @param string $inputFile  Pfad zur verschlüsselten PDF-Datei.
+     * @param string $outputFile Pfad zur entschlüsselten Zieldatei.
+     * @param string|null $password Passwort zum Entschlüsseln.
+     * @return bool True, wenn erfolgreich.
+     * @throws FileNotFoundException
+     * @throws Exception
+     */
+    public static function decrypt(string $inputFile, string $outputFile, ?string $password = null): bool {
+        if (!File::exists($inputFile)) {
+            self::logError("Datei $inputFile nicht gefunden.");
+            throw new FileNotFoundException("Datei $inputFile nicht gefunden.");
+        }
+
+        $command = self::getConfiguredCommand(
+            "pdf-decrypt",
+            [
+                "[INPUT]"  => escapeshellarg($inputFile),
+                "[OUTPUT]" => escapeshellarg($outputFile),
+                "[PASS]" => escapeshellarg($password ?? '')
+            ]
+        );
+
+        if (empty($command)) {
+            self::logError("pdf-decrypt wurde nicht konfiguriert oder ist nicht installiert.");
+            throw new Exception("pdf-decrypt wurde nicht konfiguriert oder ist nicht installiert.");
+        }
+
+        $output = [];
+        $resultCode = 0;
+        if (!Shell::executeShellCommand($command, $output, $resultCode)) {
+            self::logError("Fehler beim Entschlüsseln der PDF-Datei $inputFile.");
+            return false;
+        }
+
+        return File::exists($outputFile);
+    }
+
+    /**
+     * Verschlüsselt eine PDF-Datei mit Passwortschutz.
+     *
+     * @param string $inputFile  Pfad zur Quell-PDF-Datei.
+     * @param string $outputFile Pfad zur verschlüsselten Zieldatei.
+     * @param string|null $userPass   Benutzerpasswort.
+     * @param string|null $ownerPass Optionales Besitzerpasswort.
+     * @param string|null $permissions z. B. '--allow=print,copy'
+     * @return bool True, wenn erfolgreich.
+     * @throws FileNotFoundException
+     * @throws Exception
+     */
+    public static function encrypt(
+        string $inputFile,
+        string $outputFile,
+        ?string $userPass = null,
+        ?string $ownerPass = null,
+        ?string $permissions = null
+    ): bool {
+        if (!File::exists($inputFile)) {
+            self::logError("Datei $inputFile nicht gefunden.");
+            throw new FileNotFoundException("Datei $inputFile nicht gefunden.");
+        }
+
+        $params = [
+            "[INPUT]"  => escapeshellarg($inputFile),
+            "[OUTPUT]" => escapeshellarg($outputFile),
+            "[UPASS]" => escapeshellarg($userPass ?? ''),
+            "[OPASS]" => escapeshellarg($ownerPass ?? $userPass ?? ''),
+            "[PERM]"   => trim((string)($permissions ?? ''))
+        ];
+
+        $command = self::getConfiguredCommand("pdf-encrypt", $params);
+        if (empty($command)) {
+            self::logError("pdf-encrypt wurde nicht konfiguriert oder ist nicht installiert.");
+            throw new Exception("pdf-encrypt wurde nicht konfiguriert oder ist nicht installiert.");
+        }
+
+        $output = [];
+        $resultCode = 0;
+        if (!Shell::executeShellCommand($command, $output, $resultCode)) {
+            self::logError("Fehler beim Verschlüsseln der PDF-Datei $inputFile.");
+            return false;
+        }
+
+        return File::exists($outputFile);
+    }
 }

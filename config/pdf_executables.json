@@ -16,6 +16,26 @@
             "description": "PDF-Validierung",
             "linuxArguments": ["info", "[INPUT]", "2>&1 | grep -i 'error'"],
             "windowsArguments": ["[INPUT]", "2>&1 | findstr /R \"Syntax.Error\""]
+        },
+        "pdf-decrypt": {
+            "linuxPath": "qpdf",
+            "windowsPath": "qpdf.exe",
+            "package": "qpdf",
+            "required": false,
+            "description": "Entschlüsselt eine geschützte PDF-Datei",
+            "linuxArguments": ["--password=[PASS]", "--decrypt", "[INPUT]", "[OUTPUT]"],
+            "windowsArguments": ["--password=[PASS]", "--decrypt", "[INPUT]", "[OUTPUT]"],
+            "debugArguments": ["--password=[PASS]", "--decrypt", "[INPUT]", "[OUTPUT]"]
+        },
+        "pdf-encrypt": {
+            "linuxPath": "qpdf",
+            "windowsPath": "qpdf.exe",
+            "package": "qpdf",
+            "required": false,
+            "description": "Verschlüsselt eine PDF-Datei mit Passwortschutz",
+            "linuxArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"],
+            "windowsArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"],
+            "debugArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"]
         }
     }
 }
