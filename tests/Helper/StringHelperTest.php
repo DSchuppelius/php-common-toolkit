@@ -119,8 +119,16 @@ class StringHelperTest extends BaseTestCase {
 
     public function testHasRepeatedEnclosure(): void {
         $tests = [
+            ['line' => '"Feld1",,"Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'expected' => false],
+            ['line' => '"Feld1","Feld2",', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'expected' => true],
+            ['line' => '"Feld1","Feld2",', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'expected' => false],
+            ['line' => ',"Feld2",', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'expected' => false],
+            ['line' => ',"Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'expected' => false],
+            ['line' => '"Feld1","Feld2",""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'expected' => true],
+            ['line' => '"","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'expected' => true],
             ['line' => '"Feld1","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'expected' => true],
             ['line' => '""Feld1"",""Feld2"",""Feld3""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 2, 'expected' => true],
+            ['line' => '""Feld1"","""",""Feld3""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 2, 'expected' => true],
             ['line' => '"""Feld1""","""Feld2""","""Feld3"""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 3, 'expected' => true],
             ['line' => '"Feld1","Feld2",Feld3', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 2, 'expected' => false],
             ['line' => '"Feld1";"Feld2";"Feld3"', 'delimiter' => ';', 'enclosure' => '"', 'repeat' => 1, 'expected' => true],
@@ -138,11 +146,13 @@ class StringHelperTest extends BaseTestCase {
             ['line' => '["Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'started' => '[', 'closed' => null, 'expected' => false],
             ['line' => '"Feld1,"Feld2","Feld3""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'started' => '"', 'closed' => '"', 'expected' => false],
             ['line' => '"Feld1,"Feld2","Feld3"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
+            ['line' => '","Feld2","Feld3"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
             ['line' => '"Feld1,"2000,00","3000,00"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
             ['line' => '"Feld1,"2000,00",3000,00";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
             ['line' => '"Feld1,2000,00,"3000,00"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
             ['line' => '"Feld1,"2000,00,3000,00"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => true],
             ['line' => '"Feld1,Feld2","Feld3"";', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 1, 'strict' => false, 'started' => '"', 'closed' => '";', 'expected' => false],
+            // ['line' => '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000,00"",""2000,00"",""0,00"",""EUR""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 2, 'strict' => true, 'expected' => true],
 
         ];
 
@@ -164,8 +174,72 @@ class StringHelperTest extends BaseTestCase {
         }
     }
 
+    public function testParseCSVMultiLine(): void {
+        $csv = <<<CSV
+            06-08-2019,"650,01","Gutschrift
+            PAYPAL EUROPE SARL ET CIE SCA
+            22-24 BOULEVARD ROY
+            PP.8902.PP ABBUCHUNG
+            VOM PAYPAL-KONTO
+            AWV-MELDEPFLICHT BEACHTEN
+            HOTLINE BUNDESBANK: (0800) 1234-111
+            YYW4BMJ2AT6YUREA PP.8902.PP PAYPAL",""
+            CSV;
+        $csv1 = <<<CSV
+            06-08-2019,"650,01",Gutschrift
+            PAYPAL EUROPE SARL ET CIE SCA
+            22-24 BOULEVARD ROY
+            PP.8902.PP ABBUCHUNG
+            VOM PAYPAL-KONTO
+            AWV-MELDEPFLICHT BEACHTEN
+            HOTLINE BUNDESBANK: (0800) 1234-111
+            YYW4BMJ2AT6YUREA PP.8902.PP PAYPAL,""
+            CSV;
+
+        $result = StringHelper::extractFields($csv, ',', '"', null, null, "\n");
+        $result1 = StringHelper::extractFields($csv1, ',', '"');
+
+        $this->assertIsArray($result);
+        $this->assertCount(4, $result);
+
+        $this->assertIsArray($result1);
+        $this->assertCount(4, $result1);
+
+        $this->assertSame($result, $result1);
+    }
+
     public function testExtractRepeatedEnclosureFields(): void {
         $tests = [
+            [
+                'line'     => '"Feld1","Feld2",""',
+                'delimiter' => ',',
+                'enclosure' => '"',
+                'expected' => ['Feld1', 'Feld2', '']
+            ],
+            [
+                'line'     => '"Feld1","Feld2",',
+                'delimiter' => ',',
+                'enclosure' => '"',
+                'expected' => ['Feld1', 'Feld2', '']
+            ],
+            [
+                'line'     => ',"Feld2",',
+                'delimiter' => ',',
+                'enclosure' => '"',
+                'expected' => ['', 'Feld2', '']
+            ],
+            [
+                'line'     => '"Feld1",,""',
+                'delimiter' => ',',
+                'enclosure' => '"',
+                'expected' => ['Feld1', '', '']
+            ],
+            [
+                'line'     => '"Feld1","Feld2","","rr"',
+                'delimiter' => ',',
+                'enclosure' => '"',
+                'expected' => ['Feld1', 'Feld2', '', 'rr']
+            ],
             [
                 'line'     => '"Feld1","Feld2","Feld3"',
                 'delimiter' => ',',

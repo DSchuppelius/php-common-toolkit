@@ -344,12 +344,7 @@ class CsvFile extends HelperAbstract {
      * @param int $enclosureRepeat Wie oft das Enclosure wiederholt wird (Standard: 2 für doppelt).
      * @return bool
      */
-    public static function hasRepeatedEnclosureColumns(
-        string $file,
-        ?string $delimiter = null,
-        int $maxLines = 5,
-        int $enclosureRepeat = 2
-    ): bool {
+    public static function hasRepeatedEnclosureColumns(string $file, ?string $delimiter = null, int $maxLines = 5, int $enclosureRepeat = 2): bool {
         $file = self::resolveFile($file);
         $delimiter ??= self::detectDelimiter($file);
 
