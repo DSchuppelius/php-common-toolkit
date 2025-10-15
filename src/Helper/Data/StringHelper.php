@@ -16,7 +16,6 @@ use CommonToolkit\Enums\CaseType;
 use CommonToolkit\Enums\SearchMode;
 use CommonToolkit\Helper\Shell\ShellChardet;
 use ERRORToolkit\Traits\ErrorLog;
-use RuntimeException;
 use Throwable;
 
 class StringHelper {
@@ -422,27 +421,6 @@ class StringHelper {
         return true;
     }
 
-    private static function isCamelCaseWithExtras(string $text): bool {
-        return preg_match("/^[a-zäöüß]+(?:[A-ZÄÖÜẞ][a-zäöüß]+)+(?:[" . self::REGEX_ALLOWED_EXTRAS . "]*)$/u", $text) === 1;
-    }
-
-    private static function isLooseCamelCase(string $text): bool {
-        return preg_match("/^[a-zA-ZäöüÄÖÜß]+(?:[A-ZÄÖÜẞ][a-zäöüß]+)*(?:[" . self::REGEX_ALLOWED_EXTRAS . "]*)$/u", $text) === 1;
-    }
-
-    private static function isTitleCase(string $text): bool {
-        $words = preg_split('/\s+/', trim($text));
-        if (!$words) return false;
-
-        foreach ($words as $word) {
-            if (!preg_match("/^[A-ZÄÖÜ][a-zäöüß]*(?:[" . self::REGEX_ALLOWED_EXTRAS . "])?$/u", $word)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     /**
      * Löscht eine optionale Start- und/oder Endzeichenkette aus einer Zeile.
      *
@@ -463,245 +441,24 @@ class StringHelper {
         return $result;
     }
 
-    /**
-     * Kernparser auf Regex-Basis: Felder + Metadaten.
-     * - Auto-Repeat: öffnende Quote-Länge ($enclosure wiederholt) definiert die schließende.
-     * - Unescape nur bei einfachem Enclosure: "" -> "
-     * - Schließen muss vor Delimiter oder Zeilenende stattfinden.
-     * 
-     * @param string $line            Eingabe-Zeile
-     * @param string $delimiter       Spaltentrennzeichen (z. B. "," oder ";")
-     * @param string $enclosure       Enclosure-Zeichen (z. B. '"')
-     * @param int    $enclosureRepeat Anzahl der Wiederholungen des Enclosure-Zeichens für Quote-Run (Standard: 1)
-     * @param bool   $withMeta       Optional: Metadaten pro Feld zurückgeben
-     *
-     * @return array{
-     *   fields: array<int,string>,
-     *   enclosed: int,
-     *   total: int,
-     *   meta?: array<int,array{quoted:bool,openRun:int}>
-     * }
-     * @throws RuntimeException
-     */
-    private static function parseCSVLine(string $line, string $delimiter, string $enclosure, int $enclosureRepeat = 1, bool $withMeta = false): array {
-        if ($delimiter === '') throw new RuntimeException("Delimiter darf nicht leer sein");
-        $line = (string)$line;
-        $n = strlen($line);
-        if ($n === 0) return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
-
-        $dl  = preg_quote($delimiter, '/');
-        $enc = preg_quote($enclosure, '/');
-
-        // Quoted: führende Quote-Run (Gruppe1), Inhalt (Gruppe2), gleiche Run als Closing, dann Delimiter|EOL
-        $reQuoted   = '/^\s*(' . $enc . '+)(.*?)\1(?:' . $dl . '|$)/s';
-        // Unquoted: bis Delimiter|EOL, darf weder Enclosure noch Delimiter enthalten
-        $reUnquoted = '/^\s*([^' . $enc . preg_quote($delimiter, '/') . ']*)(?:' . $dl . '|$)/';
-
-        $fields = [];
-        $meta   = [];
-        $total = 0;
-        $enclosed = 0;
-
-        $rest = $line;
-        while ($rest !== '') {
-            if (preg_match($reQuoted, $rest, $m)) {
-                $openRunLen = strlen($m[1]);
-                if ($openRunLen < $enclosureRepeat) {
-                    throw new RuntimeException("Quote-Run kürzer als enclosureRepeat");
-                }
-                $content = $m[2];
-                // Unescape nur bei einfachem Enclosure: "" -> "
-                if ($openRunLen === 1 && $enclosure !== '') {
-                    $content = str_replace($enclosure . $enclosure, $enclosure, $content);
-                }
-
-                $fields[] = $content;
-                $total++;
-                $enclosed++;
-                if ($withMeta) $meta[] = ['quoted' => true, 'openRun' => $openRunLen];
-
-                $rest = substr($rest, strlen($m[0]));
-                continue;
-            }
-
-            if (preg_match($reUnquoted, $rest, $m)) {
-                $val = trim($m[1]);
-                $fields[] = $val;
-                $total++;
-                if ($withMeta) $meta[] = ['quoted' => false, 'openRun' => 0];
-
-                $rest = substr($rest, strlen($m[0]));
-                continue;
-            }
-
-            // Nichts passt → Fehlerposition schätzen
-            $pos = $n - strlen($rest);
-            throw new RuntimeException("Unerwartetes Zeichen nach Feld bei Index $pos");
-        }
-
-        $out = ['fields' => $fields, 'enclosed' => $enclosed, 'total' => $total];
-        if ($withMeta) $out['meta'] = $meta;
-        return $out;
+    private static function isCamelCaseWithExtras(string $text): bool {
+        return preg_match("/^[a-zäöüß]+(?:[A-ZÄÖÜẞ][a-zäöüß]+)+(?:[" . self::REGEX_ALLOWED_EXTRAS . "]*)$/u", $text) === 1;
     }
 
-    /**
-     * Wrapper für CSV mit optionalem Newline-Ersatz in gequoteten Feldern.
-     *
-     * @param string      $csv
-     * @param string      $delimiter
-     * @param string      $enclosure
-     * @param string|null $nlReplacement  Ersatz für \r,\n,\r\n in gequoteten Feldern.
-     *                                    null = nicht ersetzen (Default: ' ').
-     * @return array{fields:array<int,string>,enclosed:int,total:int}
-     */
-    private static function parseCSVMultiLine(string $lines, string $delimiter = ',', string $enclosure = '"', ?string $nlReplacement = ' '): array {
-        // Mit Meta parsen
-        $parsed = self::parseCSVLine($lines, $delimiter, $enclosure, 1, true);
+    private static function isLooseCamelCase(string $text): bool {
+        return preg_match("/^[a-zA-ZäöüÄÖÜß]+(?:[A-ZÄÖÜẞ][a-zäöüß]+)*(?:[" . self::REGEX_ALLOWED_EXTRAS . "]*)$/u", $text) === 1;
+    }
 
-        if ($nlReplacement === null) {
-            return [
-                'fields'   => $parsed['fields'],
-                'enclosed' => $parsed['enclosed'],
-                'total'    => $parsed['total'],
-            ];
-        }
+    private static function isTitleCase(string $text): bool {
+        $words = preg_split('/\s+/', trim($text));
+        if (!$words) return false;
 
-        $fields = $parsed['fields'];
-        $meta   = $parsed['meta'] ?? [];
-        $nlRe   = "/\r\n|\r|\n/u";
-
-        foreach ($fields as $i => $val) {
-            if (!empty($meta[$i]['quoted']) && $val !== '') {
-                $fields[$i] = preg_replace($nlRe, $nlReplacement, $val) ?? $val;
+        foreach ($words as $word) {
+            if (!preg_match("/^[A-ZÄÖÜ][a-zäöüß]*(?:[" . self::REGEX_ALLOWED_EXTRAS . "])?$/u", $word)) {
+                return false;
             }
         }
 
-        return [
-            'fields'   => $fields,
-            'enclosed' => $parsed['enclosed'],
-            'total'    => $parsed['total'],
-        ];
-    }
-
-
-    /**
-     * Prüft, ob eine Zeile ausschließlich aus Feldern besteht,
-     * die mit N-fachem Enclosure umschlossen sind und per Delimiter getrennt werden.
-     *
-     * @param string $line            Eingabezeile
-     * @param string $delimiter       Spaltentrennzeichen (z. B. "," oder ";")
-     * @param string $enclosure       Enclosure-Zeichen (z. B. '"')
-     * @param int    $enclosureRepeat Anzahl der zu erwartenden Wiederholungen
-     * @param bool   $strict          Wenn true, müssen alle Felder enclosed sein, sonst reicht eines
-     * @param ?string $started        Optionales Startzeichen der Zeile
-     * @param ?string $closed         Optionales Endzeichen der Zeile
-     * @return bool                   True, wenn die Zeile der Struktur entspricht, sonst false
-     */
-    public static function hasRepeatedEnclosure(string $line, string $delimiter = ';', string $enclosure = '"', int $repeat = 1, bool $strict = true, ?string $started = null, ?string $closed = null): bool {
-        $s = self::stripStartEnd($line, $started, $closed);
-        $s = trim($s);
-
-        // leere Zeile oder endet mit Delimiter → false
-        if (empty($s) || ($strict && !empty($delimiter) && str_ends_with($s, $delimiter))) return false;
-
-        // repeat==0: keine Quotes erlaubt, mind. ein Delimiter, kein trailing Delimiter
-        if ($repeat === 0) {
-            if (str_contains($s, $enclosure)) return false;
-            if (str_ends_with($s, $delimiter)) return false;
-            return substr_count($s, $delimiter) >= 1;
-        }
-
-        try {
-            // parse, tolerant, mit Meta
-            $parsed = self::parseCSVLine($s, $delimiter, $enclosure, 1, true);
-        } catch (RuntimeException) {
-            return false;
-        }
-
-        $total = $parsed['total'] ?? 0;
-        if ($total < 2) return false;
-
-        /** @var array<int,array{quoted:bool,openRun:int}> $meta */
-        $meta = $parsed['meta'] ?? [];
-        $quotedCount = 0;
-
-        foreach ($meta as $m) {
-            if ($m['quoted']) {
-                $quotedCount++;
-                // alle gequoteten Felder müssen exakt 'repeat' Quotes nutzen
-                if ($m['openRun'] !== $repeat) return false;
-            } else {
-                // ungequotete Felder nur erlaubt, wenn strict=false
-                if ($strict) return false;
-            }
-        }
-
-        // strict: alle Felder gequotet und korrekt
-        // non-strict: mindestens ein gequotetes Feld und alle gequoteten korrekt
-        return $strict ? ($quotedCount === $total) : ($quotedCount > 0);
-    }
-
-
-    /**
-     * Prüft, ob eine CSV-Zeile Felder mit Zeilenumbrüchen enthält.
-     *
-     * @param string $csv                 Eingabe-CSV-Zeile
-     * @param string $delimiter           Spaltentrennzeichen (z. B. "," oder ";")
-     * @param string $enclosure           Enclosure-Zeichen (z. B. '"')
-     * @param bool   $allowWithoutQuotes  Optional: erkenne Multiline auch ohne Quotes (unsicher)
-     * @return bool                       True, wenn Multiline-Felder erkannt wurden, sonst false
-     */
-    public static function hasMultilineFields(string $csv, string $delimiter = ',', string $enclosure = '"', bool $allowWithoutQuotes = false): bool {
-        // Prüfe auf Multiline innerhalb von Enclosures
-        $pattern = sprintf(
-            '/(?:^|%2$s)%1$s(?:(?!%1$s).)*\R(?:(?!%1$s).)*%1$s(?:%2$s|$)/su',
-            preg_quote($enclosure, '/'),
-            preg_quote($delimiter, '/')
-        );
-
-        if (preg_match($pattern, $csv)) {
-            return true;
-        }
-
-        // Optional: erkenne Multiline auch ohne Quotes (unsicher)
-        if ($allowWithoutQuotes && str_contains($csv, "\n")) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Extrahiert Felder aus einer CSV-ähnlichen Zeile, die mit wiederholten Enclosures
-     * und einem Delimiter strukturiert ist.
-     *
-     * @param string      $line             Eingabezeile
-     * @param string      $delimiter        Spaltentrennzeichen (z. B. "," oder ";")
-     * @param string      $enclosure        Enclosure-Zeichen (z. B. '"')
-     * @param int         $enclosureRepeat  Anzahl der zu erwartenden Wiederholungen
-     * @param ?string     $started          Optionales Startzeichen der Zeile
-     * @param ?string     $closed           Optionales Endzeichen der Zeile
-     * @return array<string>                Array der Felder
-     * @throws RuntimeException            Wenn die Struktur inkonsistent ist
-     */
-    public static function extractFields(array|string $lines, string $delimiter = ';', string $enclosure = '"', ?string $started = null, ?string $closed = null, string $multiLineReplacement = " "): array {
-        $raw = is_array($lines) ? implode("\n", $lines) : (string)$lines;
-        $s = self::stripStartEnd($raw, $started, $closed);
-
-        if (self::hasMultilineFields($s, $delimiter, $enclosure)) {
-            $parsed = self::parseCSVMultiLine($s, $delimiter, $enclosure, $multiLineReplacement);
-            $fields = $parsed['fields'];
-        } else {
-            $parsed  = self::parseCSVLine($s, $delimiter, $enclosure); // Regex-Parser
-            $fields  = $parsed['fields'] ?? [];
-        }
-
-        // Wenn nach optionalem Whitespace ein Delimiter am Ende steht → leeres Feld anhängen
-        $trimEnd = rtrim($s);
-        if (!empty($delimiter) && !empty($trimEnd) && str_ends_with($trimEnd, $delimiter)) {
-            $fields[] = '';
-        }
-
-        return $fields;
+        return true;
     }
 }
