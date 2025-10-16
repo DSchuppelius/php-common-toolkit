@@ -20,46 +20,65 @@ class CSVStringHelper extends StringHelper {
         $s = self::stripStartEnd($line, $started, $closed);
         if ($s === '' || $enclosure === '') return 0;
 
-        $len = strlen($s);
         $dl  = preg_quote($delimiter, '/');
         $enc = preg_quote($enclosure, '/');
-        $ceilHalf = static fn(int $n): int => max(1, intdiv($n + 1, 2));
 
-        if ($strict) {
-            if ($s[0] !== $enclosure) return 0;
+        // --- Phase 1: Leere Felder ---
+        $reEmpty = '/(?:(?<=^)|(?<=' . $dl . '))\s*(?:' . $enc . '{0,}|' . $enc . '{2,})\s*(?=(?:' . $dl . '|$))/';
+        preg_match_all($reEmpty, $s, $emptyMatches, PREG_OFFSET_CAPTURE);
 
-            // Anzahl konsekutiver Enclosures am Zeilenanfang
-            $q = 0;
-            while ($q < $len && $s[$q] === $enclosure) $q++;
-
-            // optionales Whitespace
-            $i = $q;
-            while ($i < $len && ($s[$i] === ' ' || $s[$i] === "\t")) $i++;
-
-            // Leeres erstes Feld → Sonderabbildung
-            if ($i >= $len || $s[$i] === $delimiter) {
-                if ($q === 2) return 0;          // "" → 0
-                return $ceilHalf($q);             // z.B. """ → 2, """" → 2, """"" → 3
-            }
-
-            // Nicht-leer
-            return $q;
+        $emptyRuns = [];
+        foreach ($emptyMatches[0] as $match) {
+            $count = substr_count($match[0], $enclosure);
+            $emptyRuns[] = ($count % 2 === 0) ? intdiv($count, 2) : intdiv($count - 1, 2);
+            $s = preg_replace('/' . preg_quote($match[0], '/') . '/', '', $s, 1);
         }
 
-        // Non-strict: nur Runs an Feldanfängen, leere Felder mit ceilHalf(n) abbilden
-        if (!preg_match_all('/(?:^|' . $dl . ')\s*(' . $enc . '+)/', $s, $m, PREG_OFFSET_CAPTURE)) {
+        // --- Phase 2: Nicht-leere gequotete Felder ---
+        $reQuoted = '/(?<=^|' . $dl . ')(?:' . $enc . '{1,})([^' . $enc . ']+?)(?:' . $enc . '{1,})(?=' . $dl . '|$)/s';
+        preg_match_all($reQuoted, $s, $quotedMatches, PREG_SET_ORDER);
+
+        $quotedRuns = [];
+        foreach ($quotedMatches as $match) {
+            $count = substr_count($match[0], $enclosure);
+            $quotedRuns[] = ($count % 2 === 0) ? intdiv($count, 2) : intdiv($count - 1, 2);
+            $s = preg_replace('/' . preg_quote($match[0], '/') . '/', '', $s, 1);
+        }
+
+        // --- Phase 3: Nicht-gequotete Felder ---
+        $unQuoted = '/(?<=^|' . $dl . ')[^' . $enc . $dl . '\s][^' . $dl . ']*?(?=' . $dl . '|$)/';
+        preg_match_all($unQuoted, $s, $unquotedMatches, PREG_SET_ORDER);
+
+        $unquotedRuns = [];
+        foreach ($unquotedMatches as $match) {
+            $field = $match[0] ?? '';
+            if ($field === '') continue;
+
+            // Kein Enclosure → Run 0
+            $unquotedRuns[] = 0;
+        }
+
+        // --- Phase 4: Kombination & Entscheidung ---
+        $allRuns = array_merge($emptyRuns, $quotedRuns, $unquotedRuns);
+        $allRuns = array_values(array_filter($allRuns, fn($v) => $v >= 0));
+
+        if (empty($allRuns)) {
             return 0;
         }
 
-        $best = 0;
-        foreach ($m[1] as [$runStr, $pos]) {
-            $q = strlen($runStr);
-            $j = $pos + $q;
-            while ($j < $len && ($s[$j] === ' ' || $s[$j] === "\t")) $j++;
-            $val = ($j >= $len || $s[$j] === $delimiter) ? $ceilHalf($q) : $q;
-            if ($val > $best) $best = $val;
+        // Nur Runs > 0 berücksichtigen
+        $positive = array_filter($allRuns, fn($v) => $v > 0);
+        if (empty($positive)) {
+            return 0;
         }
-        return $best;
+
+        if ($strict) {
+            // Strict: kleinster positiver Run
+            return min($allRuns);
+        }
+
+        // Non-strict: größter positiver Run
+        return max($positive);
     }
 
 
@@ -94,7 +113,10 @@ class CSVStringHelper extends StringHelper {
             array_unshift($values, '');
         }
 
-        return array_values(array_unique($values));
+        $result = array_values(array_unique($values));
+        usort($result, fn($a, $b) => strlen($b) <=> strlen($a));
+
+        return $result;
     }
 
     private static function normalizeRepeatedEnclosures(string $line, string $delimiter = ',', string $enclosure = '"'): string {
@@ -105,72 +127,59 @@ class CSVStringHelper extends StringHelper {
         $max = self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, null, null, false);
         if ($max < 2) return $line;
 
-        // 1) Leere Felder
-        for ($r = $max; $r >= 2; $r--) {
-            $qq = str_repeat($enclosure, $r) . str_repeat($enclosure, $r);
-            $line = str_replace($delimiter . $qq . $delimiter, $delimiter . $E2 . $delimiter, $line);
-            $line = str_replace($qq . $delimiter, $E2 . $delimiter, $line);
-            $line = str_replace($delimiter . $qq, $delimiter . $E2, $line);
-            if ($line === $qq) $line = $E2;
+        $with = self::genEmptyValuesFromCSVString($line, $delimiter, $enclosure, null, null, true);
+
+        // 1) Leere Felder an Feldgrenzen auf doppeltes $enclosure normalisieren
+        foreach ($with as $v) {
+            if ($v === $delimiter . $delimiter) continue;
+            if (str_contains($line, $v)) $line = str_replace($v, $delimiter . $E2 . $delimiter, $line);
         }
 
-        // 2) Nicht-leere Runs an Feldgrenzen auf einfaches $enclosure reduzieren
-        for ($r = $max; $r >= 2; $r--) {
-            $qr = str_repeat($enclosure, $r);
-            $line = str_replace($delimiter . $qr, $delimiter . $enclosure, $line);
-            $line = str_replace($qr . $delimiter, $enclosure . $delimiter, $line);
-        }
-
-        // 3) Aufräumen
-        $line = str_replace($delimiter . $E2, $delimiter . $enclosure, $line); // ,E2 -> ,"
-        $line = str_replace($E2 . $delimiter, $enclosure . $delimiter, $line); // E2, -> ",
-        $line = str_replace($delimiter . $enclosure . $delimiter, $delimiter . $delimiter, $line); // ',",' -> ',,'
-
-        // 4) Start/Ende: Mehrfach-Quotes -> ein $enclosure
+        // Nicht-leere Felder an Feldgrenzen auf einfaches $enclosure reduzieren
         for ($r = $max; $r >= 2; $r--) {
             $qq = str_repeat($enclosure, $r);
+            $line = str_replace($delimiter . $qq, $delimiter . $enclosure, $line);
+            $line = str_replace($qq . $delimiter, $enclosure . $delimiter, $line);
+
             if (str_starts_with($line, $qq)) $line = substr_replace($line, $enclosure, 0, strlen($qq));
             if (str_ends_with($line,   $qq)) $line = substr_replace($line, $enclosure, -strlen($qq));
         }
 
-        // 5) Finale Kanten
-        $line = str_replace($delimiter . $E2 . $delimiter, $delimiter . $delimiter, $line); // ,E2, -> ,,
-        $line = str_replace($delimiter . $enclosure . $delimiter, $delimiter . $delimiter, $line); // ',",' -> ',,'
-
+        while (true) {
+            $newLine = str_replace($delimiter . $enclosure . $delimiter, $delimiter . $delimiter, $line); // ',",' -> ',,'
+            if ($newLine === $line) break;
+            $line = $newLine;
+        }
         return $line;
     }
 
-
-    private static function parseCSVLine(
-        string $line,
-        string $delimiter,
-        string $enclosure,
-        int $enclosureRepeat = 1,
-        bool $withMeta = false
-    ): array {
-        if ($delimiter === '') throw new RuntimeException("Delimiter darf nicht leer sein");
+    private static function parseCSVLine(string $line, string $delimiter, string $enclosure, int $enclosureRepeat = 1, bool $withMeta = false): array {
+        if ($delimiter === '') throw new RuntimeException('Delimiter darf nicht leer sein');
+        $line = (string)$line;
         if ($line === '') return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
 
-        // Kein Enclosure → simpler Split
-        if ($enclosure === '') {
-            $parts = explode($delimiter, $line);
-            $parts = array_map(static fn($v) => trim($v), $parts);
-            $out = ['fields' => $parts, 'enclosed' => 0, 'total' => count($parts)];
-            if ($withMeta) $out['meta'] = array_fill(0, count($parts), ['quoted' => false, 'openRun' => 0]);
-            return $out;
+        // Mehrfach-Quotes glätten
+        $norm = self::normalizeRepeatedEnclosures($line, $delimiter, $enclosure);
+
+        // CSV parsen
+        $fields = str_getcsv($norm, $delimiter, $enclosure, "\\");
+
+        $total    = count($fields);
+        $enclosed = 0;
+        $meta     = [];
+
+        if ($withMeta) {
+            foreach ($fields as $f) {
+                $quoted = ($enclosure !== '' && strlen($f) && ($f !== trim($f, $enclosure)));
+                // Näherung: gezählt wird über Heuristik; str_getcsv entfernt Quotes.
+                $meta[] = ['quoted' => $quoted, 'openRun' => $quoted ? 1 : 0];
+                if ($quoted) $enclosed++;
+            }
         }
 
-        // Nur normalisieren, wenn wirklich Wiederhol-Quotes vorkommen
-        $s = $line;
-        if (self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, null, null, false) >= 2) {
-            $s = self::normalizeRepeatedEnclosures($s, $delimiter, $enclosure);
-        }
-
-        // WICHTIG: Escape deaktivieren, sonst mischt \ als Escape ins Parsing
-        // PHP: escape-Parameter mit "\0" (NUL) „deaktivieren“
-        $fields = str_getcsv($s, $delimiter, $enclosure, "\0") ?? [];
-
-        return ['fields' => $fields, 'enclosed' => 0, 'total' => count($fields)];
+        $out = ['fields' => $fields, 'enclosed' => $enclosed, 'total' => $total];
+        if ($withMeta) $out['meta'] = $meta;
+        return $out;
     }
 
 
@@ -215,63 +224,29 @@ class CSVStringHelper extends StringHelper {
     }
 
 
-    /**
-     * Prüft, ob eine Zeile ausschließlich aus Feldern besteht,
-     * die mit N-fachem Enclosure umschlossen sind und per Delimiter getrennt werden.
-     *
-     * @param string $line            Eingabezeile
-     * @param string $delimiter       Spaltentrennzeichen (z. B. "," oder ";")
-     * @param string $enclosure       Enclosure-Zeichen (z. B. '"')
-     * @param int    $enclosureRepeat Anzahl der zu erwartenden Wiederholungen
-     * @param bool   $strict          Wenn true, müssen alle Felder enclosed sein, sonst reicht eines
-     * @param ?string $started        Optionales Startzeichen der Zeile
-     * @param ?string $closed         Optionales Endzeichen der Zeile
-     * @return bool                   True, wenn die Zeile der Struktur entspricht, sonst false
-     */
-    public static function hasRepeatedEnclosure(string $line, string $delimiter = ';', string $enclosure = '"', int $repeat = 1, bool $strict = true, ?string $started = null, ?string $closed = null): bool {
+    public static function hasRepeatedEnclosure(string $line, string $delimiter = ',', string $enclosure = '"', int $repeat = 1, bool $strict = true, ?string $started = null, ?string $closed = null): bool {
         $s = self::stripStartEnd($line, $started, $closed);
-        $s = self::normalizeRepeatedEnclosures($s, $delimiter, $enclosure);
-
-        // leere Zeile oder endet mit Delimiter → false
-        if (empty($s) || ($strict && !empty($delimiter) && str_ends_with($s, $delimiter))) return false;
+        if ($s === '' || $enclosure === '') return false;
 
         // repeat==0: keine Quotes erlaubt, mind. ein Delimiter, kein trailing Delimiter
         if ($repeat === 0) {
-            if (str_contains($s, $enclosure)) return false;
-            if (str_ends_with($s, $delimiter)) return false;
-            return substr_count($s, $delimiter) >= 1;
+            return !str_contains($s, $enclosure)
+                && substr_count($s, $delimiter) >= 1;
         }
 
-        try {
-            // parse, tolerant, mit Meta
-            $parsed = self::parseCSVLine($s, $delimiter, $enclosure, 1, true);
-        } catch (RuntimeException) {
-            return false;
+        $strictRun = self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, $started, $closed, true);
+        $looseRun  = self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, $started, $closed, false);
+
+        if ($looseRun === 0 && $strictRun === 0) return false; // keine Quotes gefunden
+
+        if ($strict) {
+            // alle Felder gleich gequotet: gleicher Run überall und exakt == repeat
+            return ($strictRun === $repeat) && ($looseRun === $repeat);
         }
 
-        $total = $parsed['total'] ?? 0;
-        if ($total < 2) return false;
-
-        /** @var array<int,array{quoted:bool,openRun:int}> $meta */
-        $meta = $parsed['meta'] ?? [];
-        $quotedCount = 0;
-
-        foreach ($meta as $m) {
-            if ($m['quoted']) {
-                $quotedCount++;
-                // alle gequoteten Felder müssen exakt 'repeat' Quotes nutzen
-                if ($m['openRun'] !== $repeat) return false;
-            } else {
-                // ungequotete Felder nur erlaubt, wenn strict=false
-                if ($strict) return false;
-            }
-        }
-
-        // strict: alle Felder gequotet und korrekt
-        // non-strict: mindestens ein gequotetes Feld und alle gequoteten korrekt
-        return $strict ? ($quotedCount === $total) : ($quotedCount > 0);
+        // non-strict: irgendwo mind. repeat-fach gequotet
+        return $looseRun >= $repeat;
     }
-
 
     /**
      * Prüft, ob eine CSV-Zeile Felder mit Zeilenumbrüchen enthält.
