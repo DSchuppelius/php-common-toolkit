@@ -14,6 +14,7 @@ namespace CommonToolkit\Helper\Data\StringHelper;
 
 use CommonToolkit\Helper\Data\StringHelper;
 use RuntimeException;
+use Throwable;
 
 class CSVStringHelper extends StringHelper {
     public static function detectCSVEnclosureRepeat(string $line, string $enclosure = '"', string $delimiter = ',', ?string $started = null, ?string $closed = null, bool $strict = true): int {
@@ -122,8 +123,6 @@ class CSVStringHelper extends StringHelper {
     private static function normalizeRepeatedEnclosures(string $line, string $delimiter = ',', string $enclosure = '"'): string {
         if ($line === '' || $enclosure === '') return $line;
 
-        $E2 = $enclosure . $enclosure;
-
         $max = self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, null, null, false);
         if ($max < 2) return $line;
 
@@ -132,7 +131,13 @@ class CSVStringHelper extends StringHelper {
         // 1) Leere Felder an Feldgrenzen auf doppeltes $enclosure normalisieren
         foreach ($with as $v) {
             if ($v === $delimiter . $delimiter) continue;
-            if (str_contains($line, $v)) $line = str_replace($v, $delimiter . $E2 . $delimiter, $line);
+            if (str_contains($line, $v)) {
+                while (true) {
+                    $newLine = str_replace($v, $delimiter . $delimiter, $line);
+                    if ($newLine === $line) break;
+                    $line = $newLine;
+                }
+            }
         }
 
         // Nicht-leere Felder an Feldgrenzen auf einfaches $enclosure reduzieren
@@ -145,15 +150,10 @@ class CSVStringHelper extends StringHelper {
             if (str_ends_with($line,   $qq)) $line = substr_replace($line, $enclosure, -strlen($qq));
         }
 
-        while (true) {
-            $newLine = str_replace($delimiter . $enclosure . $delimiter, $delimiter . $delimiter, $line); // ',",' -> ',,'
-            if ($newLine === $line) break;
-            $line = $newLine;
-        }
         return $line;
     }
 
-    private static function parseCSVLine(string $line, string $delimiter, string $enclosure, int $enclosureRepeat = 1, bool $withMeta = false): array {
+    private static function parseCSVLine(string $line, string $delimiter, string $enclosure, bool $withMeta = false): array {
         if ($delimiter === '') throw new RuntimeException('Delimiter darf nicht leer sein');
         $line = (string)$line;
         if ($line === '') return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
@@ -196,7 +196,7 @@ class CSVStringHelper extends StringHelper {
      */
     private static function parseCSVMultiLine(string $lines, string $delimiter = ',', string $enclosure = '"', ?string $nlReplacement = ' '): array {
         // Mit Meta parsen
-        $parsed = self::parseCSVLine($lines, $delimiter, $enclosure, 1, true);
+        $parsed = self::parseCSVLine($lines, $delimiter, $enclosure, true);
 
         if ($nlReplacement === null) {
             return [
@@ -237,6 +237,10 @@ class CSVStringHelper extends StringHelper {
         $strictRun = self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, $started, $closed, true);
         $looseRun  = self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, $started, $closed, false);
 
+        if (!self::canParseCompleteCSVLine($s, $delimiter, $enclosure, $started, $closed)) {
+            return false; // ungültige CSV-Struktur
+        }
+
         if ($looseRun === 0 && $strictRun === 0) return false; // keine Quotes gefunden
 
         if ($strict) {
@@ -247,6 +251,47 @@ class CSVStringHelper extends StringHelper {
         // non-strict: irgendwo mind. repeat-fach gequotet
         return $looseRun >= $repeat;
     }
+
+    public static function canParseCompleteCSVLine(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null): bool {
+        $s = self::stripStartEnd($line, $started, $closed);
+
+        if (self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, null, null, false) >= 2) {
+            $s = self::normalizeRepeatedEnclosures($s, $delimiter, $enclosure);
+        }
+
+        if (self::hasOutsideCharacters($s, $delimiter, $enclosure)) return false;
+
+        try {
+            $parsed = self::parseCSVLine($s, $delimiter, $enclosure);
+        } catch (Throwable) {
+            return false;
+        }
+
+        return is_array($parsed['fields']);
+    }
+
+    public static function hasOutsideCharacters(string $line, string $delimiter = ',', string $enclosure = '"'): bool {
+        $enc = preg_quote($enclosure, '/');
+        $dl  = preg_quote($delimiter, '/');
+
+        // --- 1️⃣ Zeichen direkt vor einem Quote, das kein Delimiter oder Whitespace ist (z. B. [ oder a" )
+        if (preg_match('/(?<!^)[^' . $dl . '\s]' . $enc . '/', $line)) {
+            return true;
+        }
+
+        // --- 2️⃣ Zeichen direkt nach einem Quote, das kein Delimiter, kein Whitespace und kein Zeilenende ist (z. B. "]" oder "x")
+        if (preg_match('/' . $enc . '(?!' . $enc . ')[^' . $dl . '\s$]/', $line)) {
+            return true;
+        }
+
+        // --- 3️⃣ Whitespace vor erstem oder nach letztem Quote (z. B. ' "Feld1"' oder '"Feld3" ')
+        if (preg_match('/^\s*' . $enc . '|' . $enc . '\s*$/', $line) && trim($line) !== $line) {
+            return true;
+        }
+
+        return false;
+    }
+
 
     /**
      * Prüft, ob eine CSV-Zeile Felder mit Zeilenumbrüchen enthält.

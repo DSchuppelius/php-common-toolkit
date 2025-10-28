@@ -66,6 +66,40 @@ class CSVStringHelperTest extends BaseTestCase {
         }
     }
 
+    public function testHasOutsideCharacters(): void {
+        $tests = [
+            ['line' => 'Feld1,Feld2,Feld3', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
+            ['line' => '"Feld1",Feld2,Feld3', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
+            ['line' => '["Feld1",Feld2,Feld3', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
+            ['line' => 'Feld1,Feld2,"Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
+            ['line' => 'Feld1,Feld2,"Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
+            ['line' => 'Feld1,"Feld2",Feld3', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
+            ['line' => '"Feld1","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
+            ['line' => ' "Feld1","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
+            ['line' => '"Feld1","Feld2","Feld3" ', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
+            ['line' => '["Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
+            ['line' => '"Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
+            ['line' => '["Feld1","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
+            ['line' => '  "Feld1","Feld2","Feld3"  ', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
+        ];
+
+        foreach ($tests as $test) {
+            $result = CSVStringHelper::hasOutsideCharacters($test['line'], $test['delimiter'], $test['enclosure']);
+            $this->assertSame(
+                $test['expected'],
+                $result,
+                sprintf(
+                    "Fehlgeschlagen bei '%s' mit Delimiter '%s', Enclosure '%s' – erwartet %s, erhalten %s",
+                    $test['line'],
+                    $test['delimiter'],
+                    $test['enclosure'],
+                    $test['expected'] ? 'true' : 'false',
+                    $result ? 'true' : 'false'
+                )
+            );
+        }
+    }
+
     public function testHasRepeatedEnclosure(): void {
         $tests = [
             ['line' => '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000,00"",""2000,00"",""0,00"",""EUR""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 2, 'strict' => true, 'expected' => true],
