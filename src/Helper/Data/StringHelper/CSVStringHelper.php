@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data\StringHelper;
 
+use CommonToolkit\Entities\Common\CSV\CSVLine;
 use CommonToolkit\Helper\Data\StringHelper;
 use RuntimeException;
 use Throwable;
@@ -19,67 +20,18 @@ use Throwable;
 class CSVStringHelper extends StringHelper {
     public static function detectCSVEnclosureRepeat(string $line, string $enclosure = '"', string $delimiter = ',', ?string $started = null, ?string $closed = null, bool $strict = true): int {
         $s = self::stripStartEnd($line, $started, $closed);
-        if ($s === '' || $enclosure === '') return 0;
+        if (empty($s)) return 0;
 
-        $dl  = preg_quote($delimiter, '/');
-        $enc = preg_quote($enclosure, '/');
+        $csvLine = CSVLine::fromString($s, $delimiter, $enclosure);
+        $fields = $csvLine->getFields();
 
-        // --- Phase 1: Leere Felder ---
-        $reEmpty = '/(?:(?<=^)|(?<=' . $dl . '))\s*(?:' . $enc . '{0,}|' . $enc . '{2,})\s*(?=(?:' . $dl . '|$))/';
-        preg_match_all($reEmpty, $s, $emptyMatches, PREG_OFFSET_CAPTURE);
+        $repeats = [];
 
-        $emptyRuns = [];
-        foreach ($emptyMatches[0] as $match) {
-            $count = substr_count($match[0], $enclosure);
-            $emptyRuns[] = ($count % 2 === 0) ? intdiv($count, 2) : intdiv($count - 1, 2);
-            $s = preg_replace('/' . preg_quote($match[0], '/') . '/', '', $s, 1);
+        foreach ($fields as $field) {
+            $repeats[] = $field->getEnclosureRepeat();
         }
 
-        // --- Phase 2: Nicht-leere gequotete Felder ---
-        $reQuoted = '/(?<=^|' . $dl . ')(?:' . $enc . '{1,})([^' . $enc . ']+?)(?:' . $enc . '{1,})(?=' . $dl . '|$)/s';
-        preg_match_all($reQuoted, $s, $quotedMatches, PREG_SET_ORDER);
-
-        $quotedRuns = [];
-        foreach ($quotedMatches as $match) {
-            $count = substr_count($match[0], $enclosure);
-            $quotedRuns[] = ($count % 2 === 0) ? intdiv($count, 2) : intdiv($count - 1, 2);
-            $s = preg_replace('/' . preg_quote($match[0], '/') . '/', '', $s, 1);
-        }
-
-        // --- Phase 3: Nicht-gequotete Felder ---
-        $unQuoted = '/(?<=^|' . $dl . ')[^' . $enc . $dl . '\s][^' . $dl . ']*?(?=' . $dl . '|$)/';
-        preg_match_all($unQuoted, $s, $unquotedMatches, PREG_SET_ORDER);
-
-        $unquotedRuns = [];
-        foreach ($unquotedMatches as $match) {
-            $field = $match[0] ?? '';
-            if ($field === '') continue;
-
-            // Kein Enclosure → Run 0
-            $unquotedRuns[] = 0;
-        }
-
-        // --- Phase 4: Kombination & Entscheidung ---
-        $allRuns = array_merge($emptyRuns, $quotedRuns, $unquotedRuns);
-        $allRuns = array_values(array_filter($allRuns, fn($v) => $v >= 0));
-
-        if (empty($allRuns)) {
-            return 0;
-        }
-
-        // Nur Runs > 0 berücksichtigen
-        $positive = array_filter($allRuns, fn($v) => $v > 0);
-        if (empty($positive)) {
-            return 0;
-        }
-
-        if ($strict) {
-            // Strict: kleinster positiver Run
-            return min($allRuns);
-        }
-
-        // Non-strict: größter positiver Run
-        return max($positive);
+        return $strict ? min($repeats) : max($repeats);
     }
 
 
@@ -153,35 +105,44 @@ class CSVStringHelper extends StringHelper {
         return $line;
     }
 
+    /**
+     * Parst eine CSV-Zeile in Felder.
+     *
+     * @param string $line
+     * @param string $delimiter
+     * @param string $enclosure
+     * @param bool   $withMeta
+     * @return array{fields:array<int,string>,enclosed:int,total:int,meta?:array<int,array{quoted:bool,repeat:int,raw:string}>}
+     * @throws RuntimeException
+     */
     private static function parseCSVLine(string $line, string $delimiter, string $enclosure, bool $withMeta = false): array {
         if ($delimiter === '') throw new RuntimeException('Delimiter darf nicht leer sein');
-        $line = (string)$line;
-        if ($line === '') return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
-
-        // Mehrfach-Quotes glätten
-        $norm = self::normalizeRepeatedEnclosures($line, $delimiter, $enclosure);
-
-        // CSV parsen
-        $fields = str_getcsv($norm, $delimiter, $enclosure, "\\");
-
-        $total    = count($fields);
-        $enclosed = 0;
-        $meta     = [];
-
-        if ($withMeta) {
-            foreach ($fields as $f) {
-                $quoted = ($enclosure !== '' && strlen($f) && ($f !== trim($f, $enclosure)));
-                // Näherung: gezählt wird über Heuristik; str_getcsv entfernt Quotes.
-                $meta[] = ['quoted' => $quoted, 'openRun' => $quoted ? 1 : 0];
-                if ($quoted) $enclosed++;
-            }
+        if (empty(trim($line))) {
+            return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
         }
 
-        $out = ['fields' => $fields, 'enclosed' => $enclosed, 'total' => $total];
+        $fields = CSVLine::fromString($line, $delimiter, $enclosure)->getFields();
+        $meta   = [];
+
+        foreach ($fields as $field) {
+            $meta[] = [
+                'quoted'   => $field->isQuoted(),
+                'repeat'   => $field->getEnclosureRepeat(),
+                'raw'      => $field->getRaw(),
+            ];
+        }
+
+        $enclosed = count(array_filter($fields, fn($f) => $f->isQuoted()));
+
+        $out = [
+            'fields'   => array_map(fn($f) => $f->getValue(), $fields),
+            'enclosed' => $enclosed,
+            'total'    => count($fields),
+        ];
         if ($withMeta) $out['meta'] = $meta;
+
         return $out;
     }
-
 
 
     /**
@@ -226,72 +187,63 @@ class CSVStringHelper extends StringHelper {
 
     public static function hasRepeatedEnclosure(string $line, string $delimiter = ',', string $enclosure = '"', int $repeat = 1, bool $strict = true, ?string $started = null, ?string $closed = null): bool {
         $s = self::stripStartEnd($line, $started, $closed);
-        if ($s === '' || $enclosure === '') return false;
+        if ($s === '' || $enclosure === '') {
+            return false;
+        }
 
-        // repeat==0: keine Quotes erlaubt, mind. ein Delimiter, kein trailing Delimiter
+        // --- Keine Quotes erlaubt ---
         if ($repeat === 0) {
             return !str_contains($s, $enclosure)
                 && substr_count($s, $delimiter) >= 1;
         }
 
-        $strictRun = self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, $started, $closed, true);
-        $looseRun  = self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, $started, $closed, false);
-
-        if (!self::canParseCompleteCSVLine($s, $delimiter, $enclosure, $started, $closed)) {
-            return false; // ungültige CSV-Struktur
+        try {
+            $csvLine = CSVLine::fromString($s, $delimiter, $enclosure);
+        } catch (Throwable) {
+            return false; // Ungültige CSV-Struktur
         }
 
-        if ($looseRun === 0 && $strictRun === 0) return false; // keine Quotes gefunden
+        // --- Range aus CSVLine übernehmen ---
+        [$minRepeat, $maxRepeat] = $csvLine->getEnclosureRepeatRange(true);
+        $quotedCount = $csvLine->countQuotedFields();
+
+        if ($quotedCount === 0) {
+            return false; // keine gequoteten Felder vorhanden
+        }
 
         if ($strict) {
-            // alle Felder gleich gequotet: gleicher Run überall und exakt == repeat
-            return ($strictRun === $repeat) && ($looseRun === $repeat);
+            // alle Felder gleich gequotet
+            return $minRepeat === $repeat && $maxRepeat === $repeat;
         }
 
-        // non-strict: irgendwo mind. repeat-fach gequotet
-        return $looseRun >= $repeat;
+        // non-strict: mind. ein Feld mit entsprechendem oder höherem Repeat
+        return $maxRepeat >= $repeat;
     }
 
     public static function canParseCompleteCSVLine(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null): bool {
-        $s = self::stripStartEnd($line, $started, $closed);
-
-        if (self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, null, null, false) >= 2) {
-            $s = self::normalizeRepeatedEnclosures($s, $delimiter, $enclosure);
-        }
-
-        if (self::hasOutsideCharacters($s, $delimiter, $enclosure)) return false;
+        // Start/End entfernen, aber originalen Vergleich sichern
+        $trimmed = self::stripStartEnd($line, $started, $closed);
+        if (empty($trimmed)) return false;
 
         try {
-            $parsed = self::parseCSVLine($s, $delimiter, $enclosure);
+            // Versuch, die Zeile über CSVLine zu parsen
+            $csvLine = CSVLine::fromString($trimmed, $delimiter, $enclosure);
+            $rebuilt = $csvLine->toString($delimiter, $enclosure);
+
+            // Wenn gleich → valide CSV-Struktur
+            if ($trimmed === $rebuilt) {
+                return true;
+            }
+
+            // Falls normalisierte Variante (z. B. durch doppelte Quotes) übereinstimmt
+            $normalizedInput2  = self::normalizeRepeatedEnclosures($trimmed, $delimiter, $enclosure);
+            $normalizedRebuilt2 = self::normalizeRepeatedEnclosures($rebuilt, $delimiter, $enclosure);
+
+            return $normalizedInput2 === $normalizedRebuilt2;
         } catch (Throwable) {
             return false;
         }
-
-        return is_array($parsed['fields']);
     }
-
-    public static function hasOutsideCharacters(string $line, string $delimiter = ',', string $enclosure = '"'): bool {
-        $enc = preg_quote($enclosure, '/');
-        $dl  = preg_quote($delimiter, '/');
-
-        // --- 1️⃣ Zeichen direkt vor einem Quote, das kein Delimiter oder Whitespace ist (z. B. [ oder a" )
-        if (preg_match('/(?<!^)[^' . $dl . '\s]' . $enc . '/', $line)) {
-            return true;
-        }
-
-        // --- 2️⃣ Zeichen direkt nach einem Quote, das kein Delimiter, kein Whitespace und kein Zeilenende ist (z. B. "]" oder "x")
-        if (preg_match('/' . $enc . '(?!' . $enc . ')[^' . $dl . '\s$]/', $line)) {
-            return true;
-        }
-
-        // --- 3️⃣ Whitespace vor erstem oder nach letztem Quote (z. B. ' "Feld1"' oder '"Feld3" ')
-        if (preg_match('/^\s*' . $enc . '|' . $enc . '\s*$/', $line) && trim($line) !== $line) {
-            return true;
-        }
-
-        return false;
-    }
-
 
     /**
      * Prüft, ob eine CSV-Zeile Felder mit Zeilenumbrüchen enthält.

@@ -12,6 +12,8 @@ namespace Tests\CommonToolkit\Entities\Common\CSV;
 use CommonToolkit\Entities\Common\CSV\CSVLine;
 use CommonToolkit\Entities\Common\CSV\CSVField;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use Throwable;
 
 class CSVLineTest extends TestCase {
     public function testSimpleQuotedFields(): void {
@@ -39,26 +41,56 @@ class CSVLineTest extends TestCase {
         $this->assertSame('"A",B,"C"', $line->toString());
     }
 
+    public function testThrowsOrHandlesInvalidQuotes(): void {
+        $tests = [
+            '"A","B","C',
+            'A","B","C"',
+            '"A,"B","C"',
+            '"A","B",C"',
+            '"A",B",C',
+            '"A","B,C',
+            '"A",B"C"',
+        ];
+
+        foreach ($tests as $t) {
+            $rebuilt = null;
+            try {
+                $line = CSVLine::fromString($t, ',', '"');
+                $rebuilt = $line->toString(',', '"');
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('ungültig', strtolower($e->getMessage()));
+            } catch (Throwable $e) {
+                $this->assertTrue(true);
+            }
+            $this->assertNotSame($t, $rebuilt, sprintf("Ungültige Zeile wurde fälschlich akzeptiert: %s", $t));
+        }
+    }
+
     public function testEnclosureRepeatDetection(): void {
         $tests = [
-            ['line' => '""A"",""""B"""","C"',             'expected_strict' => 1, 'expected_non_strict' => 4],
-            ['line' => '"A","B","C"',                     'expected_strict' => 1, 'expected_non_strict' => 1],
-            ['line' => 'A,B,C',                           'expected_strict' => 0, 'expected_non_strict' => 0],
+            ['line' => ',',                               'expected_strict' => 0, 'expected_non_strict' => 0],
             ['line' => ',""',                             'expected_strict' => 0, 'expected_non_strict' => 1],
+            ['line' => '"",',                             'expected_strict' => 0, 'expected_non_strict' => 1],
             ['line' => ',""""',                           'expected_strict' => 0, 'expected_non_strict' => 2],
-            ['line' => '"abc",""def""',                   'expected_strict' => 1, 'expected_non_strict' => 2],
+            ['line' => '"""",',                           'expected_strict' => 0, 'expected_non_strict' => 2],
+            ['line' => 'A,B,C',                           'expected_strict' => 0, 'expected_non_strict' => 0],
             ['line' => '""abc""',                         'expected_strict' => 2, 'expected_non_strict' => 2],
+            ['line' => '"A","B","C"',                     'expected_strict' => 1, 'expected_non_strict' => 1],
+            ['line' => '"",,""20,00""',                   'expected_strict' => 0, 'expected_non_strict' => 2],
+            ['line' => '"abc",""def""',                   'expected_strict' => 1, 'expected_non_strict' => 2],
             ['line' => '"""","""abc"""',                  'expected_strict' => 2, 'expected_non_strict' => 3],
+            ['line' => '"""""",""""abc"""',               'expected_strict' => 3, 'expected_non_strict' => 3],
+            ['line' => '""A"",""""B"""","C"',             'expected_strict' => 1, 'expected_non_strict' => 4],
             ['line' => '"""0,00""","""abc"""',            'expected_strict' => 3, 'expected_non_strict' => 3],
             ['line' => ',"""0,00""","""abc"""',           'expected_strict' => 0, 'expected_non_strict' => 3],
             ['line' => ',,"""0,00""",,"""abc"""',         'expected_strict' => 0, 'expected_non_strict' => 3],
             ['line' => '"""","""0,00""","""abc"""',       'expected_strict' => 2, 'expected_non_strict' => 3],
             ['line' => '"""""","""0,00""","""abc"""',     'expected_strict' => 3, 'expected_non_strict' => 3],
+            ['line' => '"""""","""""","""""","""""""',    'expected_strict' => 3, 'expected_non_strict' => 3],
             ['line' => '"""""","""0,00""","","""abc"""',  'expected_strict' => 1, 'expected_non_strict' => 3],
             ['line' => '"""""","""0,00""","","""abc"""',  'expected_strict' => 1, 'expected_non_strict' => 3],
             ['line' => ',,"""0,00""","","""","""abc"""',  'expected_strict' => 0, 'expected_non_strict' => 3],
             ['line' => ',"""""","","""","""""",""""""",', 'expected_strict' => 0, 'expected_non_strict' => 3],
-            ['line' => '"""""","""""","""""","""""""',    'expected_strict' => 3, 'expected_non_strict' => 3],
         ];
 
         foreach ($tests as $test) {
@@ -98,6 +130,24 @@ class CSVLineTest extends TestCase {
         }
     }
 
+    public function testLongStrings(): void {
+        $longValues = [
+            '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000,00"",""2000,00"",""0,00"",""EUR""',
+            '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000"",""2000"",""0"",""EUR""'
+        ];
+
+        foreach ($longValues as $longValue) {
+            $line = CSVLine::fromString($longValue);
+            $fields = $line->getFields();
+
+            $this->assertEquals(16, $line->countFields());
+            $this->assertSame('KDC2ASKF', $fields[0]->getValue());
+            $this->assertSame('21.12.2024 17:55:41', $fields[1]->getValue());
+            $this->assertSame('c832c84d-4940-484d-a7fb-4bc98cff6a88', $fields[2]->getValue());
+            $this->assertSame($longValue, $line->toString());
+        }
+    }
+
     public function testEmptyAndWhitespaceFields(): void {
         $line = CSVLine::fromString('"A",,"C"');
         $fields = $line->getFields();
@@ -113,7 +163,7 @@ class CSVLineTest extends TestCase {
         $fields = $line->getFields();
 
         $this->assertSame('A "quoted" text', $fields[0]->getValue());
-        $this->assertSame('"A ""quoted"" text","B"', $line->toString());
+        $this->assertSame('"A "quoted" text","B"', $line->toString());
     }
 
     public function testRawFieldPreserved(): void {

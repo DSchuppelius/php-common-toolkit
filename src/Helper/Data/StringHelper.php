@@ -432,11 +432,14 @@ class StringHelper {
     public static function stripStartEnd(string $line, ?string $start = null, ?string $end = null): string {
         $result = trim($line);
 
-        if (!empty($start) && str_starts_with($result, $start)) {
-            $result = substr($result, strlen($start));
-        }
-        if (!empty($end) && str_ends_with($result, $end)) {
-            $result = substr($result, 0, -strlen($end));
+        if (!empty($result)) {
+            if (!empty($start) && str_starts_with($result, $start)) {
+                $result = substr($result, strlen($start));
+            }
+            if (!empty($end) && str_ends_with($result, $end)) {
+                $result = substr($result, 0, -strlen($end));
+            }
+            $result = trim($result);
         }
         return $result;
     }

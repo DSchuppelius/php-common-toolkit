@@ -30,6 +30,7 @@ class CSVStringHelperTest extends BaseTestCase {
             ['line' => ',"""",,',                     'expected_strict' => 0, 'expected_non_strict' => 2],
             ['line' => ',"",""""',                    'expected_strict' => 0, 'expected_non_strict' => 2],
             ['line' => '"",,""""',                    'expected_strict' => 0, 'expected_non_strict' => 2],
+            ['line' => '"""",""""',                   'expected_strict' => 2, 'expected_non_strict' => 2],
             ['line' => '"",,""20,00""',               'expected_strict' => 0, 'expected_non_strict' => 2],
             ['line' => '"",,""20,00"","""2000,00"""', 'expected_strict' => 0, 'expected_non_strict' => 3],
             ['line' => '"abc","def"',                 'expected_strict' => 1, 'expected_non_strict' => 1],
@@ -66,36 +67,55 @@ class CSVStringHelperTest extends BaseTestCase {
         }
     }
 
-    public function testHasOutsideCharacters(): void {
+    public function testValidLinesShouldReturnTrue(): void {
         $tests = [
-            ['line' => 'Feld1,Feld2,Feld3', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
-            ['line' => '"Feld1",Feld2,Feld3', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
-            ['line' => '["Feld1",Feld2,Feld3', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
-            ['line' => 'Feld1,Feld2,"Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
-            ['line' => 'Feld1,Feld2,"Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
-            ['line' => 'Feld1,"Feld2",Feld3', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
-            ['line' => '"Feld1","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'expected' => false],
-            ['line' => ' "Feld1","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
-            ['line' => '"Feld1","Feld2","Feld3" ', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
-            ['line' => '["Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
-            ['line' => '"Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
-            ['line' => '["Feld1","Feld2","Feld3"', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
-            ['line' => '  "Feld1","Feld2","Feld3"  ', 'delimiter' => ',', 'enclosure' => '"', 'expected' => true],
+            ['line' => '"A","B","C"', 'delimiter' => ','],
+            ['line' => '"A";"B";"C"', 'delimiter' => ';'],
+            ['line' => '""A"","""B""","C"', 'delimiter' => ','],  // Mehrfache Enclosures
+            ['line' => '"A,1","B,2","C,3"', 'delimiter' => ','],  // Kommas in Quotes
+            ['line' => '"","B","C"', 'delimiter' => ','],         // Leeres Feld
+            ['line' => '""KDC2ASKF"","""Datum"""', 'delimiter' => ','],
+            ['line' => '"A ""quoted"" text","B","C"', 'delimiter' => ','], // Escaped Quotes
         ];
 
-        foreach ($tests as $test) {
-            $result = CSVStringHelper::hasOutsideCharacters($test['line'], $test['delimiter'], $test['enclosure']);
-            $this->assertSame(
-                $test['expected'],
-                $result,
-                sprintf(
-                    "Fehlgeschlagen bei '%s' mit Delimiter '%s', Enclosure '%s' – erwartet %s, erhalten %s",
-                    $test['line'],
-                    $test['delimiter'],
-                    $test['enclosure'],
-                    $test['expected'] ? 'true' : 'false',
-                    $result ? 'true' : 'false'
-                )
+        foreach ($tests as $t) {
+            $this->assertTrue(
+                CSVStringHelper::canParseCompleteCSVLine($t['line'], $t['delimiter'], '"'),
+                sprintf("Zeile sollte gültig sein, war es aber nicht: %s", $t['line'])
+            );
+        }
+    }
+
+    public function testInvalidLinesShouldReturnFalse(): void {
+        $tests = [
+            '"A","B","C',
+            '"A",B"C"',
+            'A","B","C"',
+            '1","2","3"',
+            '1,0","2","3"',
+            'A,B,"C',
+            '"A","B","C"]',
+            '"A,"B","C"',
+        ];
+
+        foreach ($tests as $line) {
+            $this->assertFalse(
+                CSVStringHelper::canParseCompleteCSVLine($line, ',', '"'),
+                sprintf("Zeile sollte ungültig sein, war aber gültig: %s", $line)
+            );
+        }
+    }
+
+    public function testInvalidLinesShouldReturnTrue(): void {
+        $tests = [
+            ['line' => '"Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'closed' => ']'],
+            ['line' => '["Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'started' => '[', 'closed' => ']'],
+        ];
+
+        foreach ($tests as $line) {
+            $this->assertTrue(
+                CSVStringHelper::canParseCompleteCSVLine($line['line'], $line['delimiter'], $line['enclosure'], $line['started'] ?? null, $line['closed'] ?? null),
+                sprintf("Zeile sollte gültig sein, war aber ungültig: %s", $line['line'])
             );
         }
     }

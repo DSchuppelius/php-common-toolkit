@@ -10,9 +10,11 @@
 
 namespace CommonToolkit\Entities\Common\CSV;
 
+use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
 class CSVLine {
+    use ErrorLog;
     public const DEFAULT_DELIMITER = ',';
 
     /** @var CSVField[] */
@@ -32,45 +34,73 @@ class CSVLine {
         string $enclosure = CSVField::DEFAULT_ENCLOSURE
     ): self {
         if ($delimiter === '') {
+            self::logError('CSV delimiter darf nicht leer sein');
             throw new RuntimeException('CSV delimiter darf nicht leer sein');
         }
 
         $fields = [];
         $current = '';
         $inQuotes = false;
-        $quoteCount = 0;
-        $length = strlen($line);
+        $quoteRun = 0;
+        $len = strlen($line);
 
-        for ($i = 0; $i < $length; $i++) {
+        for ($i = 0; $i < $len; $i++) {
             $char = $line[$i];
+            $next = $line[$i + 1] ?? '';
+            $prev = $i > 0 ? $line[$i - 1] : '';
 
+            $current .= $char;
+
+            // --- Quote-Start / -End Erkennung ---
             if ($char === $enclosure) {
-                $quoteCount++;
-                $current .= $char;
+                $quoteRun++;
 
-                // Prüfe, ob dieser Quote-Runs geschlossen ist
-                $next = $line[$i + 1] ?? '';
-                if ($next !== $enclosure) {
-                    // ungerade Anzahl => Wechsel zwischen inside/outside
-                    if ($quoteCount % 2 !== 0) {
-                        $inQuotes = !$inQuotes;
-                    }
-                    $quoteCount = 0;
+                // Start eines Quoted-Felds → wenn nicht inQuotes und davor Delimiter oder Zeilenanfang
+                if (!$inQuotes && ($prev === '' || $prev === $delimiter)) {
+                    $inQuotes = true;
+                    $quoteRun = 1;
+                    continue;
                 }
-                continue;
+
+                // Quote-Ende → wenn inQuotes und nächstes Zeichen ist Delimiter oder Zeilenende
+                if ($inQuotes && ($next === $delimiter || $next === '' || $next === "\r" || $next === "\n")) {
+                    $inQuotes = false;
+                    $quoteRun = 0;
+                    continue;
+                }
             }
 
+            // --- Ungültiges Quote mitten im unquoted Feld ---
+            if (!$inQuotes && $char === $enclosure && ($prev !== $delimiter && $prev !== '')) {
+                $message = sprintf('Ungültige CSV-Zeile – Quote in unquoted Feld bei Index %d (%s)', $i, substr($line, max(0, $i - 10), 20));
+                self::logError($message);
+                throw new RuntimeException($message);
+            }
+
+            // --- Feldabschluss bei Delimiter außerhalb Quotes ---
             if ($char === $delimiter && !$inQuotes) {
+                $current = substr($current, 0, -1); // Delimiter entfernen
                 $fields[] = new CSVField($current, $enclosure);
                 $current = '';
                 continue;
             }
 
-            $current .= $char;
+            if (str_contains($current, $delimiter . $enclosure)) {
+                self::logError('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
+                throw new RuntimeException('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
+            }
         }
 
-        // Letztes Feld hinzufügen
-        $fields[] = new CSVField($current, $enclosure);
+        // --- Ungültig, wenn am Ende noch inQuotes ---
+        if ($inQuotes) {
+            self::logError('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
+            throw new RuntimeException('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
+        }
+
+        // letztes Feld hinzufügen
+        if ($current !== '' || str_ends_with($line, $delimiter)) {
+            $fields[] = new CSVField($current, $enclosure);
+        }
 
         return new self($fields, $delimiter, $enclosure);
     }
@@ -93,6 +123,10 @@ class CSVLine {
         return count($this->fields);
     }
 
+    public function countQuotedFields(): int {
+        return count(array_filter($this->fields, fn(CSVField $f) => $f->isQuoted()));
+    }
+
     public function getDelimiter(): string {
         return $this->delimiter;
     }
@@ -106,14 +140,23 @@ class CSVLine {
     /**
      * Liefert [ 'strict' => int, 'non_strict' => int ] der Enclosure-Wiederholungen.
      */
-    public function getEnclosureRepeatRange(): array {
+    public function getEnclosureRepeatRange(bool $includeUnquoted = false): array {
         $repeats = array_map(fn(CSVField $f) => $f->getEnclosureRepeat(), $this->fields);
-        $positive = array_filter($repeats, fn($v) => $v > 0);
 
-        return [
-            'strict'     => empty($positive) ? 0 : min($positive),
-            'non_strict' => empty($positive) ? 0 : max($positive),
-        ];
+        // Wenn Unquoted-Felder NICHT berücksichtigt werden sollen
+        $filtered = $includeUnquoted ? $repeats : array_filter($repeats, fn($v) => $v > 0);
+
+        $strict     = 0;
+        $non_strict = 0;
+
+        if (!empty($filtered)) {
+            $strict     = min($filtered);
+            $non_strict = max($filtered);
+        }
+
+        $this->logDebug(sprintf('Enclosure Repeat Range ermittelt (includeUnquoted=%s): strict=%d, non_strict=%d', $includeUnquoted ? 'true' : 'false', $strict, $non_strict));
+
+        return [$strict, $non_strict];
     }
 
     /**
@@ -151,22 +194,5 @@ class CSVLine {
         }
 
         return true;
-    }
-
-    /**
-     * Liefert Debug-Infos für Unit-Tests.
-     */
-    public function debug(): array {
-        return [
-            'delimiter' => $this->delimiter,
-            'enclosure' => $this->enclosure,
-            'repeats'   => $this->getEnclosureRepeatRange(),
-            'fields'    => array_map(fn(CSVField $f) => [
-                'raw'     => $f->getRaw(),
-                'value'   => $f->getValue(),
-                'quoted'  => $f->isQuoted(),
-                'repeat'  => $f->getEnclosureRepeat(),
-            ], $this->fields),
-        ];
     }
 }

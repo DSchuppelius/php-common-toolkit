@@ -10,7 +10,11 @@
 
 namespace CommonToolkit\Entities\Common\CSV;
 
+use ERRORToolkit\Traits\ErrorLog;
+
 class CSVField {
+    use ErrorLog;
+
     public const DEFAULT_ENCLOSURE = '"';
 
     private string $value;
@@ -65,11 +69,6 @@ class CSVField {
                 $inner = $inner . str_repeat($enclosure, $endRun - $startRun);
             }
 
-            // Bei einfachem Quote-Level doppelte Quotes im Inneren entescapen
-            if ($this->enclosureRepeat === 1) {
-                $inner = str_replace($enclosure . $enclosure, $enclosure, $inner);
-            }
-
             $this->value = $inner;
         } else {
             // Unquoted Field
@@ -100,14 +99,12 @@ class CSVField {
 
         if ($this->quoted) {
             $enc = str_repeat($enclosure, $quoteLevel);
-            $value = $this->value;
 
-            // Nur bei einfachem Quote-Level innerhalb des Werts escapen
-            if ($this->enclosureRepeat === 1) {
-                $value = str_replace($enclosure, $enclosure . $enclosure, $value);
+            if (str_contains($this->value, $enclosure)) {
+                $this->logWarning('Falsche CSV-Syntax: Value enthält Enclosure: "' . $this->value . '"');
             }
 
-            return $enc . $value . $enc;
+            return $enc . $this->value . $enc;
         }
 
         return $this->value;
