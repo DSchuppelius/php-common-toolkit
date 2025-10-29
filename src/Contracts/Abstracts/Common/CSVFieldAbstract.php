@@ -3,19 +3,18 @@
  * Created on   : Tue Oct 28 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : CSVField.php
+ * Filename     : CSVFieldAbstract.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
 
-namespace CommonToolkit\Entities\Common\CSV;
+namespace CommonToolkit\Contracts\Abstracts\Common;
 
+use CommonToolkit\Contracts\Interfaces\Common\CSVFieldInterface;
 use ERRORToolkit\Traits\ErrorLog;
 
-class CSVField {
+class CSVFieldAbstract implements CSVFieldInterface {
     use ErrorLog;
-
-    public const DEFAULT_ENCLOSURE = '"';
 
     private string $value;
     private bool $quoted = false;
@@ -74,7 +73,7 @@ class CSVField {
             // Unquoted Field
             $this->quoted = false;
             $this->enclosureRepeat = 0;
-            $this->value = trim($raw);
+            $this->value = $trimmed;
         }
     }
 
@@ -94,7 +93,9 @@ class CSVField {
         return $this->raw;
     }
 
-    public function toString(string $enclosure = self::DEFAULT_ENCLOSURE): string {
+    public function toString(?string $enclosure = null): string {
+        $enclosure = $enclosure ?? self::DEFAULT_ENCLOSURE;
+
         $quoteLevel = max(1, $this->enclosureRepeat);
 
         if ($this->quoted) {

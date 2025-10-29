@@ -2,27 +2,30 @@
 /*
  * Created on   : Wed Oct 29 2025
  * Author       : Daniel Jörg Schuppelius
- * Description  : Unit Tests für CSVLine und CSVField Klassen.
+ * Author Uri   : https://schuppelius.org
+ * Filename     : CSVDataLineTest.php
+ * License      : MIT License
+ * License Uri  : https://opensource.org/license/mit
  */
 
 declare(strict_types=1);
 
 namespace Tests\CommonToolkit\Entities\Common\CSV;
 
-use CommonToolkit\Entities\Common\CSV\CSVLine;
-use CommonToolkit\Entities\Common\CSV\CSVField;
+use CommonToolkit\Entities\Common\CSV\CSVDataLine;
+use CommonToolkit\Entities\Common\CSV\CSVDataField;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
 
-class CSVLineTest extends TestCase {
+class CSVDataLineTest extends TestCase {
     public function testSimpleQuotedFields(): void {
-        $line = CSVLine::fromString('"A","B","C"');
+        $line = CSVDataLine::fromString('"A","B","C"');
 
         $this->assertCount(3, $line->getFields(), '3 Felder erwartet');
 
         foreach ($line->getFields() as $field) {
-            $this->assertInstanceOf(CSVField::class, $field);
+            $this->assertInstanceOf(CSVDataField::class, $field);
             $this->assertTrue($field->isQuoted(), 'Feld sollte gequotet sein');
             $this->assertSame(1, $field->getEnclosureRepeat(), 'Einfaches Quote erwartet');
         }
@@ -31,7 +34,7 @@ class CSVLineTest extends TestCase {
     }
 
     public function testMixedQuotedAndUnquotedFields(): void {
-        $line = CSVLine::fromString('"A",B,"C"');
+        $line = CSVDataLine::fromString('"A",B,"C"');
         $fields = $line->getFields();
 
         $this->assertTrue($fields[0]->isQuoted());
@@ -55,7 +58,7 @@ class CSVLineTest extends TestCase {
         foreach ($tests as $t) {
             $rebuilt = null;
             try {
-                $line = CSVLine::fromString($t, ',', '"');
+                $line = CSVDataLine::fromString($t, ',', '"');
                 $rebuilt = $line->toString(',', '"');
             } catch (RuntimeException $e) {
                 $this->assertStringContainsString('ungültig', strtolower($e->getMessage()));
@@ -94,7 +97,7 @@ class CSVLineTest extends TestCase {
         ];
 
         foreach ($tests as $test) {
-            $line   = CSVLine::fromString($test['line']);
+            $line   = CSVDataLine::fromString($test['line']);
             $fields = $line->getFields();
 
             // alle enclosureRepeats erfassen
@@ -137,7 +140,7 @@ class CSVLineTest extends TestCase {
         ];
 
         foreach ($longValues as $longValue) {
-            $line = CSVLine::fromString($longValue);
+            $line = CSVDataLine::fromString($longValue);
             $fields = $line->getFields();
 
             $this->assertEquals(16, $line->countFields());
@@ -149,7 +152,7 @@ class CSVLineTest extends TestCase {
     }
 
     public function testEmptyAndWhitespaceFields(): void {
-        $line = CSVLine::fromString('"A",,"C"');
+        $line = CSVDataLine::fromString('"A",,"C"');
         $fields = $line->getFields();
 
         $this->assertSame('A', $fields[0]->getValue());
@@ -159,15 +162,15 @@ class CSVLineTest extends TestCase {
     }
 
     public function testEscapedQuotesInValue(): void {
-        $line = CSVLine::fromString('"A ""quoted"" text","B"');
+        $line = CSVDataLine::fromString('"A ""quoted"" text","B"');
         $fields = $line->getFields();
 
-        $this->assertSame('A "quoted" text', $fields[0]->getValue());
-        $this->assertSame('"A "quoted" text","B"', $line->toString());
+        $this->assertSame('A ""quoted"" text', $fields[0]->getValue());
+        $this->assertSame('"A ""quoted"" text","B"', $line->toString());
     }
 
     public function testRawFieldPreserved(): void {
-        $line = CSVLine::fromString('"A","B","C"');
+        $line = CSVDataLine::fromString('"A","B","C"');
         $field = $line->getField(1);
 
         $this->assertNotNull($field);
@@ -175,14 +178,14 @@ class CSVLineTest extends TestCase {
     }
 
     public function testRoundTripWithDelimiterSemicolon(): void {
-        $line = CSVLine::fromString('"A";"B";"C"', ';');
+        $line = CSVDataLine::fromString('"A";"B";"C"', ';');
         $rebuilt = $line->toString(';');
 
         $this->assertSame('"A";"B";"C"', $rebuilt);
     }
 
     public function testUnquotedFields(): void {
-        $line = CSVLine::fromString('A,B,C');
+        $line = CSVDataLine::fromString('A,B,C');
         $fields = $line->getFields();
 
         foreach ($fields as $field) {
@@ -193,7 +196,7 @@ class CSVLineTest extends TestCase {
     }
 
     public function testQuotedFieldWithDelimiterInside(): void {
-        $line = CSVLine::fromString('"A,B",C');
+        $line = CSVDataLine::fromString('"A,B",C');
         $fields = $line->getFields();
 
         $this->assertSame('A,B', $fields[0]->getValue());

@@ -1,20 +1,23 @@
 <?php
 /*
- * Created on   : Thu Oct 30 2025
+ * Created on   : Wed Oct 29 2025
  * Author       : Daniel Jörg Schuppelius
- * Description  : Unit Tests für CSVField – prüft Analyse, Quoting, Escaping und Wiederaufbau.
+ * Author Uri   : https://schuppelius.org
+ * Filename     : CSVDataFieldTest.php
+ * License      : MIT License
+ * License Uri  : https://opensource.org/license/mit
  */
 
 declare(strict_types=1);
 
 namespace Tests\CommonToolkit\Entities\Common\CSV;
 
-use CommonToolkit\Entities\Common\CSV\CSVField;
+use CommonToolkit\Entities\Common\CSV\CSVDataField;
 use PHPUnit\Framework\TestCase;
 
-class CSVFieldTest extends TestCase {
+class CSVDataFieldTest extends TestCase {
     public function testSimpleQuotedValue(): void {
-        $field = new CSVField('"ABC"');
+        $field = new CSVDataField('"ABC"');
         $this->assertTrue($field->isQuoted(), 'Feld sollte gequotet sein');
         $this->assertSame('ABC', $field->getValue());
         $this->assertSame(1, $field->getEnclosureRepeat());
@@ -22,7 +25,7 @@ class CSVFieldTest extends TestCase {
     }
 
     public function testUnquotedValue(): void {
-        $field = new CSVField('ABC');
+        $field = new CSVDataField('ABC');
         $this->assertFalse($field->isQuoted());
         $this->assertSame('ABC', $field->getValue());
         $this->assertSame(0, $field->getEnclosureRepeat());
@@ -30,7 +33,7 @@ class CSVFieldTest extends TestCase {
     }
 
     public function testEmptyQuotedValue(): void {
-        $field = new CSVField('""');
+        $field = new CSVDataField('""');
         $this->assertTrue($field->isQuoted());
         $this->assertSame('', $field->getValue());
         $this->assertSame(1, $field->getEnclosureRepeat());
@@ -56,7 +59,7 @@ class CSVFieldTest extends TestCase {
         ];
 
         foreach ($tests as $test) {
-            $field = new CSVField($test['raw']);
+            $field = new CSVDataField($test['raw']);
 
             $this->assertTrue(
                 $field->isQuoted(),
@@ -83,40 +86,40 @@ class CSVFieldTest extends TestCase {
         }
     }
     public function testEscapedQuotesInsideValue(): void {
-        $field = new CSVField('"A ""quoted"" text"');
+        $field = new CSVDataField('"A ""quoted"" text"');
         $this->assertTrue($field->isQuoted());
-        $this->assertSame('A "quoted" text', $field->getValue());
+        $this->assertSame('A ""quoted"" text', $field->getValue());
         $this->assertSame('"A ""quoted"" text"', $field->toString());
     }
 
     public function testWhitespaceAroundValue(): void {
-        $field = new CSVField(' "ABC" ');
+        $field = new CSVDataField(' "ABC" ');
         $this->assertTrue($field->isQuoted(), 'Whitespace außen soll erkannt, aber ignoriert werden');
         $this->assertSame('ABC', $field->getValue());
     }
 
     public function testRawValuePreserved(): void {
         $raw = '"ABC"';
-        $field = new CSVField($raw);
+        $field = new CSVDataField($raw);
         $this->assertSame($raw, $field->getRaw());
     }
 
     public function testDifferentEnclosureCharacter(): void {
-        $field = new CSVField("'XYZ'", "'");
+        $field = new CSVDataField("'XYZ'", "'");
         $this->assertTrue($field->isQuoted());
         $this->assertSame('XYZ', $field->getValue());
         $this->assertSame("'", $field->toString("'")[0]);
     }
 
     public function testNonMatchingQuoteDoesNotQuote(): void {
-        $field = new CSVField('"ABC');
+        $field = new CSVDataField('"ABC');
         $this->assertFalse($field->isQuoted(), 'Ungeschlossene Quotes dürfen nicht als Quote erkannt werden');
         $this->assertSame('"ABC', $field->getValue());
         $this->assertSame('"ABC', $field->toString());
     }
 
     public function testEmptyFieldWithoutQuotes(): void {
-        $field = new CSVField('');
+        $field = new CSVDataField('');
         $this->assertFalse($field->isQuoted());
         $this->assertSame('', $field->getValue());
         $this->assertSame(0, $field->getEnclosureRepeat());

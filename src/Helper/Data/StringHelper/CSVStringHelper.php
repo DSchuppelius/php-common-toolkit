@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data\StringHelper;
 
-use CommonToolkit\Entities\Common\CSV\CSVLine;
+use CommonToolkit\Entities\Common\CSV\CSVDataLine;
 use CommonToolkit\Helper\Data\StringHelper;
 use RuntimeException;
 use Throwable;
@@ -22,8 +22,8 @@ class CSVStringHelper extends StringHelper {
         $s = self::stripStartEnd($line, $started, $closed);
         if (empty($s)) return 0;
 
-        $csvLine = CSVLine::fromString($s, $delimiter, $enclosure);
-        $fields = $csvLine->getFields();
+        $csvDataLine = CSVDataLine::fromString($s, $delimiter, $enclosure);
+        $fields = $csvDataLine->getFields();
 
         $repeats = [];
 
@@ -115,13 +115,13 @@ class CSVStringHelper extends StringHelper {
      * @return array{fields:array<int,string>,enclosed:int,total:int,meta?:array<int,array{quoted:bool,repeat:int,raw:string}>}
      * @throws RuntimeException
      */
-    private static function parseCSVLine(string $line, string $delimiter, string $enclosure, bool $withMeta = false): array {
+    private static function parseCSVDataLine(string $line, string $delimiter, string $enclosure, bool $withMeta = false): array {
         if ($delimiter === '') throw new RuntimeException('Delimiter darf nicht leer sein');
         if (empty(trim($line))) {
             return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
         }
 
-        $fields = CSVLine::fromString($line, $delimiter, $enclosure)->getFields();
+        $fields = CSVDataLine::fromString($line, $delimiter, $enclosure)->getFields();
         $meta   = [];
 
         foreach ($fields as $field) {
@@ -157,7 +157,7 @@ class CSVStringHelper extends StringHelper {
      */
     private static function parseCSVMultiLine(string $lines, string $delimiter = ',', string $enclosure = '"', ?string $nlReplacement = ' '): array {
         // Mit Meta parsen
-        $parsed = self::parseCSVLine($lines, $delimiter, $enclosure, true);
+        $parsed = self::parseCSVDataLine($lines, $delimiter, $enclosure, true);
 
         if ($nlReplacement === null) {
             return [
@@ -198,14 +198,14 @@ class CSVStringHelper extends StringHelper {
         }
 
         try {
-            $csvLine = CSVLine::fromString($s, $delimiter, $enclosure);
+            $CSVDataLine = CSVDataLine::fromString($s, $delimiter, $enclosure);
         } catch (Throwable) {
             return false; // Ungültige CSV-Struktur
         }
 
-        // --- Range aus CSVLine übernehmen ---
-        [$minRepeat, $maxRepeat] = $csvLine->getEnclosureRepeatRange(true);
-        $quotedCount = $csvLine->countQuotedFields();
+        // --- Range aus CSVDataLine übernehmen ---
+        [$minRepeat, $maxRepeat] = $CSVDataLine->getEnclosureRepeatRange(true);
+        $quotedCount = $CSVDataLine->countQuotedFields();
 
         if ($quotedCount === 0) {
             return false; // keine gequoteten Felder vorhanden
@@ -220,15 +220,15 @@ class CSVStringHelper extends StringHelper {
         return $maxRepeat >= $repeat;
     }
 
-    public static function canParseCompleteCSVLine(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null): bool {
+    public static function canParseCompleteCSVDataLine(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null): bool {
         // Start/End entfernen, aber originalen Vergleich sichern
         $trimmed = self::stripStartEnd($line, $started, $closed);
         if (empty($trimmed)) return false;
 
         try {
-            // Versuch, die Zeile über CSVLine zu parsen
-            $csvLine = CSVLine::fromString($trimmed, $delimiter, $enclosure);
-            $rebuilt = $csvLine->toString($delimiter, $enclosure);
+            // Versuch, die Zeile über CSVDataLine zu parsen
+            $CSVDataLine = CSVDataLine::fromString($trimmed, $delimiter, $enclosure);
+            $rebuilt = $CSVDataLine->toString($delimiter, $enclosure);
 
             // Wenn gleich → valide CSV-Struktur
             if ($trimmed === $rebuilt) {
@@ -300,7 +300,7 @@ class CSVStringHelper extends StringHelper {
             $parsed = self::parseCSVMultiLine($s, $delimiter, $enclosure, $multiLineReplacement);
             $fields = $parsed['fields'];
         } else {
-            $parsed  = self::parseCSVLine($s, $delimiter, $enclosure); // Regex-Parser
+            $parsed  = self::parseCSVDataLine($s, $delimiter, $enclosure); // Regex-Parser
             $fields  = $parsed['fields'] ?? [];
         }
 
