@@ -51,7 +51,7 @@ class CSVDocument {
             throw new RuntimeException('Leere CSV-Datei oder Inhalt');
         }
 
-        $lines = preg_split('/\r\n|\r|\n/', trim($csv));
+        $lines = CSVStringHelper::splitCsvByLogicalLine(trim($csv), $delimiter, $enclosure);
         if ($lines === false || $lines === []) {
             static::logError('CSVDocument::fromString() – leere Eingabe');
             throw new RuntimeException('CSVDocument::fromString() – leere Eingabe');
@@ -60,36 +60,9 @@ class CSVDocument {
         $header = null;
         $rows = [];
         $buffer = '';
-        $inMultiline = false;
 
         foreach ($lines as $i => $line) {
             $trimmed = rtrim($line, "\r\n");
-
-            // --- Falls gerade ein multiline-Feld fortgesetzt wird
-            if ($inMultiline) {
-                $buffer .= "\n" . $trimmed;
-
-                // Prüfen, ob jetzt die multiline-Sequenz geschlossen wurde
-                if (!CSVStringHelper::hasMultilineFields($buffer, $delimiter, $enclosure)) {
-                    // Fertige Zeile parsen
-                    if ($header === null && $hasHeader) {
-                        $header = CSVHeaderLine::fromString($buffer, $delimiter, $enclosure);
-                    } else {
-                        $rows[] = CSVDataLine::fromString($buffer, $delimiter, $enclosure);
-                    }
-                    $buffer = '';
-                    $inMultiline = false;
-                }
-
-                continue;
-            }
-
-            // --- Prüfen, ob aktuelle Zeile ein multiline-Feld enthält
-            if (\CommonToolkit\Helper\Data\StringHelper\CSVStringHelper::hasMultilineFields($trimmed, $delimiter, $enclosure)) {
-                $buffer = $trimmed;
-                $inMultiline = true;
-                continue;
-            }
 
             // --- Normale Zeile (nicht multiline)
             if ($i === 0 && $hasHeader) {
@@ -100,7 +73,7 @@ class CSVDocument {
         }
 
         // --- Falls am Ende noch ein unvollständiger Buffer übrig bleibt
-        if ($inMultiline && $buffer !== '') {
+        if ($buffer !== '') {
             if ($header === null && $hasHeader) {
                 $header = CSVHeaderLine::fromString($buffer, $delimiter, $enclosure);
             } else {

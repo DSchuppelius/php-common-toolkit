@@ -80,7 +80,7 @@ class CSVStringHelperTest extends BaseTestCase {
 
         foreach ($tests as $t) {
             $this->assertTrue(
-                CSVStringHelper::canParseCompleteCSVLine($t['line'], $t['delimiter'], '"'),
+                CSVStringHelper::canParseCompleteCSVDataLine($t['line'], $t['delimiter'], '"'),
                 sprintf("Zeile sollte gültig sein, war es aber nicht: %s", $t['line'])
             );
         }
@@ -100,7 +100,7 @@ class CSVStringHelperTest extends BaseTestCase {
 
         foreach ($tests as $line) {
             $this->assertFalse(
-                CSVStringHelper::canParseCompleteCSVLine($line, ',', '"'),
+                CSVStringHelper::canParseCompleteCSVDataLine($line, ',', '"'),
                 sprintf("Zeile sollte ungültig sein, war aber gültig: %s", $line)
             );
         }
@@ -114,7 +114,7 @@ class CSVStringHelperTest extends BaseTestCase {
 
         foreach ($tests as $line) {
             $this->assertTrue(
-                CSVStringHelper::canParseCompleteCSVLine($line['line'], $line['delimiter'], $line['enclosure'], $line['started'] ?? null, $line['closed'] ?? null),
+                CSVStringHelper::canParseCompleteCSVDataLine($line['line'], $line['delimiter'], $line['enclosure'], $line['started'] ?? null, $line['closed'] ?? null),
                 sprintf("Zeile sollte gültig sein, war aber ungültig: %s", $line['line'])
             );
         }

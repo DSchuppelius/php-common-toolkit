@@ -274,6 +274,44 @@ class CSVStringHelper extends StringHelper {
         return false;
     }
 
+    public static function splitCsvByLogicalLine(
+        string $csv,
+        string $delimiter = ',',
+        string $enclosure = '"'
+    ): array {
+        $lines = preg_split('/\r\n|\r|\n/', $csv);
+        $result = [];
+        $buffer = '';
+        $quoteCount = 0;
+
+        foreach ($lines as $line) {
+            // Zeilenpuffer aufbauen
+            if ($buffer !== '') {
+                $buffer .= "\n" . $line;
+            } else {
+                $buffer = $line;
+            }
+
+            // Quotes zählen (aber Escapes / doppelte Enclosures berücksichtigen)
+            $escaped = preg_replace('/' . preg_quote($enclosure, '/') . '{2}/', '', $buffer);
+            $quoteCount = substr_count($escaped, $enclosure);
+
+            // Wenn gerade Quote-Anzahl → vollständige logische Zeile
+            if ($quoteCount % 2 === 0) {
+                $result[] = $buffer;
+                $buffer = '';
+                $quoteCount = 0;
+            }
+        }
+
+        // Falls am Ende noch ein unvollständiger Buffer übrig ist → hinzufügen
+        if (trim($buffer) !== '') {
+            $result[] = $buffer;
+        }
+
+        return $result;
+    }
+
     /**
      * Extrahiert Felder aus einer CSV-ähnlichen Zeile, die mit wiederholten Enclosures
      * und einem Delimiter strukturiert ist.
