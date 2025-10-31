@@ -12,6 +12,7 @@ namespace Tests\CommonToolkit\Entities\Common\CSV;
 use CommonToolkit\Entities\Common\CSV\CSVDocument;
 use CommonToolkit\Entities\Common\CSV\CSVDataLine;
 use CommonToolkit\Entities\Common\CSV\CSVHeaderLine;
+use CommonToolkit\Parsers\CSVDocumentParser;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -43,7 +44,7 @@ class CSVDocumentTest extends TestCase {
 
     public function testParseCommaSeparatedCSV(): void {
         $csv = file_get_contents($this->testFileComma);
-        $doc = CSVDocument::fromString($csv, ',', '"');
+        $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
         $this->assertInstanceOf(CSVHeaderLine::class, $doc->getHeader());
         $this->assertGreaterThan(0, $doc->countRows(), 'Mindestens eine Datenzeile erwartet');
@@ -56,19 +57,19 @@ class CSVDocumentTest extends TestCase {
 
     public function testParseSemicolonSeparatedCSV(): void {
         $csv = file_get_contents($this->testFileSemicolon);
-        $doc = CSVDocument::fromString($csv, ';', '"');
+        $doc = CSVDocumentParser::fromString($csv, ';', '"');
         $this->assertGreaterThan(0, $doc->countRows());
     }
 
     public function testParseTabSeparatedCSV(): void {
         $csv = file_get_contents($this->testFileTab);
-        $doc = CSVDocument::fromString($csv, "\t", '"');
+        $doc = CSVDocumentParser::fromString($csv, "\t", '"');
         $this->assertGreaterThan(0, $doc->countRows());
     }
 
     public function testParseQuotedCSV(): void {
         $csv = file_get_contents($this->testFileQuoted);
-        $doc = CSVDocument::fromString($csv, ',', '"');
+        $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
         $row = $doc->getRow(0);
         $this->assertNotNull($row);
@@ -77,7 +78,7 @@ class CSVDocumentTest extends TestCase {
 
     public function testParseDoubleQuotedCSV(): void {
         $csv = file_get_contents($this->testFileDoubleQuoted);
-        $doc = CSVDocument::fromString($csv, ',', '"');
+        $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
         [$strict, $nonStrict] = $doc->getHeader()->getEnclosureRepeatRange();
         $this->assertGreaterThanOrEqual(2, $nonStrict);
@@ -85,7 +86,7 @@ class CSVDocumentTest extends TestCase {
 
     public function testDetectMultiLineCSV(): void {
         $csv = file_get_contents($this->testFileMultiLine);
-        $doc = CSVDocument::fromString($csv, ',', '"');
+        $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
         $this->assertGreaterThan(1, $doc->countRows());
         $multiLineValue = $doc->getRow(0)?->getField(2)?->getValue() ?? '';
@@ -95,28 +96,28 @@ class CSVDocumentTest extends TestCase {
     public function testEmptyCSVShouldThrow(): void {
         $csv = file_get_contents($this->testFileEmpty);
         $this->expectException(RuntimeException::class);
-        CSVDocument::fromString($csv);
+        CSVDocumentParser::fromString($csv);
     }
 
     public function testMalformedCSVShouldThrow(): void {
         $this->markTestSkipped('Derzeit wird keine Ausnahme bei fehlerhaftem CSV ausgelöst.');
         $csv = file_get_contents($this->testFileMalformed);
         $this->expectException(RuntimeException::class);
-        CSVDocument::fromString($csv);
+        CSVDocumentParser::fromString($csv);
     }
 
     public function testInconsistentQuotedCSVShouldThrow(): void {
         $csv = file_get_contents($this->testFileInconsistentQuoted);
         $this->expectException(RuntimeException::class);
-        CSVDocument::fromString($csv);
+        CSVDocumentParser::fromString($csv);
     }
 
     public function testRoundTripIntegrity(): void {
         $csv = file_get_contents($this->testFileComma);
-        $doc = CSVDocument::fromString($csv, ',', '"');
+        $doc = CSVDocumentParser::fromString($csv, ',', '"');
         $rebuilt = $doc->toString(',', '"');
 
-        $doc2 = CSVDocument::fromString($rebuilt, ',', '"');
+        $doc2 = CSVDocumentParser::fromString($rebuilt, ',', '"');
         $this->assertTrue($doc->equals($doc2), 'Roundtrip sollte identisch bleiben');
     }
 }

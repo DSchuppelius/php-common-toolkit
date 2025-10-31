@@ -26,6 +26,13 @@ class CSVFieldAbstract implements CSVFieldInterface {
         $this->analyze($raw, $enclosure);
     }
 
+    /**
+     * Analysiert das rohe Feld und setzt die Eigenschaften.
+     *
+     * @param string $raw       Das rohe Feld.
+     * @param string $enclosure Das Einschlusszeichen.
+     * @return void
+     */
     private function analyze(string $raw, string $enclosure): void {
         $enc = preg_quote($enclosure, '/');
         $trimmed = trim($raw);

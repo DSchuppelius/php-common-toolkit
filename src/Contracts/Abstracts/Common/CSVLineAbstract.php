@@ -12,6 +12,7 @@ namespace CommonToolkit\Contracts\Abstracts\Common;
 
 use CommonToolkit\Contracts\Interfaces\Common\CSVFieldInterface;
 use CommonToolkit\Contracts\Interfaces\Common\CSVLineInterface;
+use CommonToolkit\Helper\Data\StringHelper\CSVStringHelper;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
@@ -31,81 +32,29 @@ abstract class CSVLineAbstract implements CSVLineInterface {
 
     abstract protected static function createField(string $rawValue, string $enclosure): CSVFieldInterface;
 
+    /**
+     * Erstellt eine CSVLine-Instanz aus einer rohen CSV-Zeichenkette.
+     *
+     * @param string $line      Die rohe CSV-Zeichenkette.
+     * @param string $delimiter Die Trennzeichen-Zeichenkette.
+     * @param string $enclosure Die Einschlusszeichen-Zeichenkette.
+     * @return static
+     *
+     * @throws RuntimeException
+     */
     public static function fromString(string $line, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE): static {
         if ($delimiter === '') {
             static::logError('CSV delimiter darf nicht leer sein');
             throw new RuntimeException('CSV delimiter darf nicht leer sein');
         }
 
-        $fields = [];
-        $current = '';
-        $inQuotes = false;
-        $quoteRun = 0;
-        $len = strlen($line);
-
-        for ($i = 0; $i < $len; $i++) {
-            $char = $line[$i];
-            $next = $line[$i + 1] ?? '';
-            $prev = $i > 0 ? $line[$i - 1] : '';
-
-            $current .= $char;
-
-            // --- Quote-Start / -End Erkennung ---
-            if ($char === $enclosure) {
-                $quoteRun++;
-
-                // Start eines Quoted-Felds → wenn nicht inQuotes und davor Delimiter oder Zeilenanfang
-                if (!$inQuotes && ($prev === '' || $prev === $delimiter)) {
-                    $inQuotes = true;
-                    $quoteRun = 1;
-                    continue;
-                }
-
-                // Quote-Ende → wenn inQuotes und nächstes Zeichen ist Delimiter oder Zeilenende
-                if ($inQuotes && ($next === $delimiter || $next === '' || $next === "\r" || $next === "\n")) {
-                    $inQuotes = false;
-                    $quoteRun = 0;
-                    continue;
-                }
-            }
-
-            // --- Ungültiges Quote mitten im unquoted Feld ---
-            if (!$inQuotes && $char === $enclosure && ($prev !== $delimiter && $prev !== '')) {
-                $message = sprintf('Ungültige CSV-Zeile – Quote in unquoted Feld bei Index %d (%s)', $i, substr($line, max(0, $i - 10), 20));
-                static::logError($message);
-                throw new RuntimeException($message);
-            }
-
-            // --- Feldabschluss bei Delimiter außerhalb Quotes ---
-            if ($char === $delimiter && !$inQuotes) {
-                $current = substr($current, 0, -1); // Delimiter entfernen
-                $fields[] = static::createField($current, $enclosure);
-                $current = '';
-                continue;
-            }
-
-            if (str_contains($current, $delimiter . $enclosure)) {
-                static::logError('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
-                throw new RuntimeException('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
-            }
-        }
-
-        // --- Ungültig, wenn am Ende noch inQuotes ---
-        if ($inQuotes) {
-            static::logError('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
-            throw new RuntimeException('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
-        }
-
-        // letztes Feld hinzufügen
-        if ($current !== '' || str_ends_with($line, $delimiter)) {
-            $fields[] = static::createField($current, $enclosure);
-        }
+        $fields = array_map(
+            fn(string $raw) => static::createField($raw, $enclosure),
+            CSVStringHelper::parseLineToFields($line, $delimiter, $enclosure)
+        );
 
         return new static($fields, $delimiter, $enclosure);
     }
-
-
-    // ---------------- Getter ----------------
 
     /**
      * @return CSVFieldInterface[]
@@ -134,10 +83,11 @@ abstract class CSVLineAbstract implements CSVLineInterface {
         return $this->enclosure;
     }
 
-    // ---------------- CSV-spezifische Logik ----------------
-
     /**
-     * Liefert [ int, int ] der Enclosure-Wiederholungen.
+     * Liefert den Bereich der Einschluss-Wiederholungen in den Feldern dieser Zeile.
+     *
+     * @param bool $includeUnquoted Ob unquoted Felder berücksichtigt werden sollen.
+     * @return array [min, max]
      */
     public function getEnclosureRepeatRange(bool $includeUnquoted = false): array {
         $repeats = array_map(fn($f) => $f->getEnclosureRepeat(), $this->fields);
@@ -147,7 +97,11 @@ abstract class CSVLineAbstract implements CSVLineInterface {
     }
 
     /**
-     * Baut die Zeile exakt wieder zusammen, basierend auf den CSVField-Objekten.
+     * Wandelt die CSV-Zeile in eine rohe CSV-Zeichenkette um.
+     *
+     * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
+     * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
+     * @return string
      */
     public function toString(?string $delimiter = null, ?string $enclosure = null): string {
         $delimiter = $delimiter ?? $this->delimiter;
@@ -157,12 +111,20 @@ abstract class CSVLineAbstract implements CSVLineInterface {
         return implode($delimiter, $parts);
     }
 
+    /**
+     * Wandelt die CSV-Zeile in eine rohe CSV-Zeichenkette um.
+     *
+     * @return string
+     */
     public function __toString(): string {
         return $this->toString();
     }
 
     /**
-     * Vergleicht zwei CSVLine-Objekte feldweise.
+     * Vergleicht diese CSV-Zeile mit einer anderen auf Gleichheit.
+     *
+     * @param CSVLineInterface $other Die andere CSV-Zeile zum Vergleichen.
+     * @return bool
      */
     public function equals(CSVLineInterface $other): bool {
         if ($this->delimiter !== $other->getDelimiter() || $this->enclosure !== $other->getEnclosure()) {

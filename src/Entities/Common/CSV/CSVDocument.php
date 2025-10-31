@@ -11,106 +11,23 @@
 
 namespace CommonToolkit\Entities\Common\CSV;
 
-use CommonToolkit\Contracts\Interfaces\Common\CSVLineInterface;
-use CommonToolkit\Contracts\Interfaces\Common\CSVFieldInterface;
-use CommonToolkit\Helper\Data\StringHelper\CSVStringHelper;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
-class CSVDocument {
+final class CSVDocument {
     use ErrorLog;
 
-    protected ?CSVHeaderLine $header = null;
-    /** @var CSVDataLine[] */
-    protected array $rows = [];
+    private ?CSVHeaderLine $header;
+    private array $rows;
+    private string $delimiter;
+    private string $enclosure;
 
-    protected string $delimiter;
-    protected string $enclosure;
-
-    public function __construct(
-        ?CSVHeaderLine $header = null,
-        array $rows = [],
-        string $delimiter = CSVLineInterface::DEFAULT_DELIMITER,
-        string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE
-    ) {
-        $this->header = $header;
-        $this->rows = $rows;
+    public function __construct(?CSVHeaderLine $header = null, array $rows = [], string $delimiter = ',', string $enclosure = '"') {
+        $this->header    = $header;
+        $this->rows      = $rows;
         $this->delimiter = $delimiter;
         $this->enclosure = $enclosure;
     }
-
-    // -----------------------------------------------------------------
-    // Erzeugung & Parsing
-    // -----------------------------------------------------------------
-
-    /**
-     * Erstellt ein CSVDocument aus einer Rohzeichenkette.
-     */
-    public static function fromString(string $csv, string $delimiter = CSVLineInterface::DEFAULT_DELIMITER, string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): self {
-        if (trim($csv) === '') {
-            throw new RuntimeException('Leere CSV-Datei oder Inhalt');
-        }
-
-        $lines = CSVStringHelper::splitCsvByLogicalLine(trim($csv), $delimiter, $enclosure);
-        if ($lines === false || $lines === []) {
-            static::logError('CSVDocument::fromString() – leere Eingabe');
-            throw new RuntimeException('CSVDocument::fromString() – leere Eingabe');
-        }
-
-        $header = null;
-        $rows = [];
-        $buffer = '';
-
-        foreach ($lines as $i => $line) {
-            $trimmed = rtrim($line, "\r\n");
-
-            // --- Normale Zeile (nicht multiline)
-            if ($i === 0 && $hasHeader) {
-                $header = CSVHeaderLine::fromString($trimmed, $delimiter, $enclosure);
-            } else {
-                $rows[] = CSVDataLine::fromString($trimmed, $delimiter, $enclosure);
-            }
-        }
-
-        // --- Falls am Ende noch ein unvollständiger Buffer übrig bleibt
-        if ($buffer !== '') {
-            if ($header === null && $hasHeader) {
-                $header = CSVHeaderLine::fromString($buffer, $delimiter, $enclosure);
-            } else {
-                $rows[] = CSVDataLine::fromString($buffer, $delimiter, $enclosure);
-            }
-        }
-
-        return new self($header, $rows, $delimiter, $enclosure);
-    }
-
-
-    /**
-     * Erstellt ein CSVDocument aus einer Datei.
-     */
-    public static function fromFile(
-        string $file,
-        string $delimiter = CSVLineInterface::DEFAULT_DELIMITER,
-        string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE,
-        bool $hasHeader = true
-    ): self {
-        if (!is_file($file) || !is_readable($file)) {
-            static::logError("CSV-Datei nicht lesbar: $file");
-            throw new RuntimeException("CSV-Datei nicht lesbar: $file");
-        }
-
-        $content = file_get_contents($file);
-        if ($content === false) {
-            static::logError("Fehler beim Lesen der CSV-Datei: $file");
-            throw new RuntimeException("Fehler beim Lesen der CSV-Datei: $file");
-        }
-
-        return static::fromString($content, $delimiter, $enclosure, $hasHeader);
-    }
-
-    // -----------------------------------------------------------------
-    // Zugriff
-    // -----------------------------------------------------------------
 
     public function hasHeader(): bool {
         return $this->header !== null;
@@ -120,9 +37,7 @@ class CSVDocument {
         return $this->header;
     }
 
-    /**
-     * @return CSVDataLine[]
-     */
+    /** @return CSVDataLine[] */
     public function getRows(): array {
         return $this->rows;
     }
@@ -143,19 +58,14 @@ class CSVDocument {
         return $this->enclosure;
     }
 
-    // -----------------------------------------------------------------
-    // Validierung & Utilities
-    // -----------------------------------------------------------------
-
     /**
-     * Prüft, ob alle Zeilen die gleiche Spaltenanzahl haben.
+     * Überprüft, ob alle Zeilen die gleiche Anzahl an Feldern haben wie der Header (falls vorhanden) oder die erste Zeile.
+     *
+     * @return bool
      */
     public function isConsistent(): bool {
-        if (empty($this->rows)) return true;
-
-        $expected = $this->hasHeader()
-            ? $this->header->countFields()
-            : $this->rows[0]->countFields();
+        if ($this->rows === []) return true;
+        $expected = $this->header?->countFields() ?? $this->rows[0]->countFields();
 
         foreach ($this->rows as $i => $row) {
             if ($row->countFields() !== $expected) {
@@ -163,23 +73,24 @@ class CSVDocument {
                 return false;
             }
         }
-
         return true;
     }
 
     /**
-     * Wandelt das gesamte Dokument wieder in eine CSV-Zeichenkette um.
+     * Wandelt das gesamte CSV-Dokument in eine rohe CSV-Zeichenkette um.
+     *
+     * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
+     * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
+     * @return string
      */
     public function toString(?string $delimiter = null, ?string $enclosure = null): string {
-        $delimiter = $delimiter ?? $this->delimiter;
-        $enclosure = $enclosure ?? $this->enclosure;
+        $delimiter ??= $this->delimiter;
+        $enclosure ??= $this->enclosure;
 
         $lines = [];
-
         if ($this->header) {
             $lines[] = $this->header->toString($delimiter, $enclosure);
         }
-
         foreach ($this->rows as $row) {
             $lines[] = $row->toString($delimiter, $enclosure);
         }
@@ -188,50 +99,56 @@ class CSVDocument {
     }
 
     /**
-     * Schreibt das Dokument in eine Datei.
+     * Schreibt das gesamte CSV-Dokument in eine Datei.
+     *
+     * @param string      $file      Der Pfad zur Zieldatei.
+     * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
+     * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
+     * @return void
+     *
+     * @throws RuntimeException
      */
     public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null): void {
+        $delimiter ??= $this->delimiter;
+        $enclosure ??= $this->enclosure;
+
         $csv = $this->toString($delimiter, $enclosure);
-        if (file_put_contents($file, $csv) === false) {
+
+        $result = @file_put_contents($file, $csv);
+        if ($result === false) {
             static::logError("Fehler beim Schreiben der CSV-Datei: $file");
             throw new RuntimeException("Fehler beim Schreiben der CSV-Datei: $file");
         }
     }
 
-    // -----------------------------------------------------------------
-    // Helfer
-    // -----------------------------------------------------------------
-
     /**
-     * Gibt eine Assoziative Darstellung der CSV-Zeilen zurück
-     * (nur sinnvoll, wenn Header vorhanden ist).
+     * Wandelt das CSV-Dokument in ein assoziatives Array um.
      *
-     * @return array<int,array<string,string>>
+     * @return array
      */
     public function toAssoc(): array {
         if (!$this->header) return [];
-
-        $headerValues = array_map(fn($f) => $f->getValue(), $this->header->getFields());
+        $keys = array_map(fn($f) => $f->getValue(), $this->header->getFields());
         $assoc = [];
-
         foreach ($this->rows as $row) {
             $values = array_map(fn($f) => $f->getValue(), $row->getFields());
-            $assoc[] = array_combine($headerValues, $values);
+            $assoc[] = array_combine($keys, $values);
         }
-
         return $assoc;
     }
 
+    /**
+     * Vergleicht dieses CSV-Dokument mit einem anderen auf Gleichheit.
+     *
+     * @param CSVDocument $other Das andere CSV-Dokument zum Vergleichen.
+     * @return bool
+     */
     public function equals(CSVDocument $other): bool {
-        if ($this->getDelimiter() !== $other->getDelimiter()) return false;
-        if ($this->getEnclosure() !== $other->getEnclosure()) return false;
-
-        // Header-Vergleich
+        if ($this->delimiter !== $other->delimiter) return false;
+        if ($this->enclosure !== $other->enclosure) return false;
         if (($this->header && !$other->header) || (!$this->header && $other->header)) return false;
         if ($this->header && !$this->header->equals($other->header)) return false;
-
-        // Zeilen-Vergleich
-        if ($this->countRows() !== $other->countRows()) return false;
+        if (count($this->rows) !== count($other->rows)) return false;
         foreach ($this->rows as $i => $row) {
             if (!$row->equals($other->rows[$i])) return false;
         }
