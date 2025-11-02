@@ -238,6 +238,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @param string $file        Pfad zur Datei.
      * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
      * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @param int $startLine      Startzeile (Standard: 1).
      * @return Generator<string>
      * @throws FileNotFoundException
      */
@@ -280,6 +281,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @param string $file        Pfad zur Datei.
      * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
      * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @param int $startLine      Startzeile (Standard: 1).
      * @return string[] Array mit den Zeilen der Datei.
      * @throws FileNotFoundException
      */
