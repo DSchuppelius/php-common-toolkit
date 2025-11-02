@@ -238,10 +238,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @param string $file        Pfad zur Datei.
      * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
      * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
-     * @return \Generator<string>
+     * @return Generator<string>
      * @throws FileNotFoundException
      */
-    public static function readLines(string $file, bool $skipEmpty = false, ?int $maxLines = null): Generator {
+    public static function readLines(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): Generator {
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
             throw new FileNotFoundException("Datei nicht lesbar: $file");
@@ -254,8 +254,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         $count = 0;
+        $currentLine = 0;
+
         while (($line = fgets($handle)) !== false) {
-            if ($skipEmpty && trim($line) === '') {
+            $currentLine++;
+            if ($currentLine < $startLine) {
+                continue;
+            } elseif ($skipEmpty && empty(trim($line))) {
                 continue;
             }
             yield rtrim($line, "\r\n");
