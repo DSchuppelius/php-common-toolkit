@@ -283,8 +283,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @return string[] Array mit den Zeilen der Datei.
      * @throws FileNotFoundException
      */
-    public static function readLinesAsArray(string $file, bool $skipEmpty = false, ?int $maxLines = null): array {
-        return iterator_to_array(self::readLines($file, $skipEmpty, $maxLines), false);
+    public static function readLinesAsArray(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): array {
+        return iterator_to_array(self::readLines($file, $skipEmpty, $maxLines, $startLine), false);
     }
 
     /**
