@@ -83,9 +83,17 @@ final class CSVDocument {
      * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
      * @return string
      */
-    public function toString(?string $delimiter = null, ?string $enclosure = null): string {
+    public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null): string {
         $delimiter ??= $this->delimiter;
         $enclosure ??= $this->enclosure;
+
+        if ($enclosureRepeat !== null) {
+            foreach (array_merge($this->rows, $this->header ? [$this->header] : []) as $line) {
+                foreach ($line->getFields() as $field) {
+                    $field->setEnclosureRepeat($enclosureRepeat);
+                }
+            }
+        }
 
         $lines = [];
         if ($this->header) {
@@ -108,11 +116,11 @@ final class CSVDocument {
      *
      * @throws RuntimeException
      */
-    public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null): void {
+    public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null): void {
         $delimiter ??= $this->delimiter;
         $enclosure ??= $this->enclosure;
 
-        $csv = $this->toString($delimiter, $enclosure);
+        $csv = $this->toString($delimiter, $enclosure, $enclosureRepeat);
 
         $result = @file_put_contents($file, $csv);
         if ($result === false) {

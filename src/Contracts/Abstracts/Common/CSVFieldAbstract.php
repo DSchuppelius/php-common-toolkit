@@ -88,12 +88,25 @@ class CSVFieldAbstract implements CSVFieldInterface {
         return $this->quoted;
     }
 
+    public function isEmpty(): bool {
+        return empty($this->value);
+    }
+
     public function getEnclosureRepeat(): int {
         return $this->enclosureRepeat;
     }
 
+    public function setEnclosureRepeat(int $count): void {
+        $this->enclosureRepeat = max(0, $count);
+    }
+
     public function getValue(): string {
         return $this->value;
+    }
+
+    public function setValue(string $value): void {
+        $this->value = $value;
+        $this->raw = null;
     }
 
     public function getRaw(): ?string {
