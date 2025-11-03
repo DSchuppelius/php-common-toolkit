@@ -25,7 +25,11 @@ abstract class CSVLineAbstract implements CSVLineInterface {
     protected string $enclosure;
 
     public function __construct(array $fields, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE) {
-        $this->fields    = $fields;
+        $this->fields    = array_map(function ($field) use ($enclosure) {
+            return $field instanceof CSVFieldInterface
+                ? $field
+                : static::createField((string)$field, $enclosure);
+        }, $fields);
         $this->delimiter = $delimiter;
         $this->enclosure = $enclosure;
     }

@@ -33,6 +33,23 @@ class CSVDataLineTest extends TestCase {
         $this->assertSame('"A","B","C"', $line->toString());
     }
 
+    public function testConstructorAcceptsRawStringsAndCreatesCSVDataFields(): void {
+        $line = new CSVDataLine(['foo', 'bar', 'baz'], ',', '"');
+
+        $fields = $line->getFields();
+        $this->assertCount(3, $fields, 'Es sollten drei Felder erzeugt werden');
+
+        foreach ($fields as $field) {
+            $this->assertInstanceOf(
+                CSVDataField::class,
+                $field,
+                'Jedes Feld sollte eine Instanz von CSVDataField sein'
+            );
+        }
+
+        $this->assertSame('foo,bar,baz', $line->toString(), 'CSV-Zeile sollte korrekt serialisiert werden');
+    }
+
     public function testMixedQuotedAndUnquotedFields(): void {
         $line = CSVDataLine::fromString('"A",B,"C"');
         $fields = $line->getFields();
