@@ -18,7 +18,9 @@ final class CSVDocument {
     use ErrorLog;
 
     private ?CSVHeaderLine $header;
+    /** @var CSVDataLine[] */
     private array $rows;
+
     private string $delimiter;
     private string $enclosure;
 
@@ -39,7 +41,7 @@ final class CSVDocument {
 
     /** @return CSVDataLine[] */
     public function getRows(): array {
-        return $this->rows;
+        return array_values($this->rows);
     }
 
     public function getRow(int $index): ?CSVDataLine {

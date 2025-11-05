@@ -120,4 +120,38 @@ class CSVDocumentTest extends TestCase {
         $doc2 = CSVDocumentParser::fromString($rebuilt, ',', '"');
         $this->assertTrue($doc->equals($doc2), 'Roundtrip sollte identisch bleiben');
     }
+
+    public function testReorderColumnsAndFromDocument(): void {
+        // Beispiel-CSV mit 3 Spalten
+        $csv = <<<CSV
+        "Name","Email","Id"
+        "Alice","alice@example.com","1"
+        "Bob","bob@example.com","2"
+        CSV;
+
+        $doc = CSVDocumentParser::fromString($csv, ',', '"');
+
+        // Builder aus vorhandenem Dokument erzeugen
+        $builder = \CommonToolkit\Builders\CSVDocumentBuilder::fromDocument($doc);
+
+        // Spaltenreihenfolge ändern
+        $builder->reorderColumns(['Id', 'Name', 'Email']);
+        $newDoc = $builder->build();
+
+        // Prüfen, dass das Original unverändert bleibt
+        $this->assertSame('"Name","Email","Id"', $doc->getHeader()->toString(',', '"'));
+
+        // Neue Reihenfolge prüfen
+        $this->assertSame('"Id","Name","Email"', $newDoc->getHeader()->toString(',', '"'));
+
+        // Werte in der ersten Zeile prüfen
+        $firstRow = $newDoc->getRow(0);
+        $this->assertSame('"1"', $firstRow->getField(0)->toString());
+        $this->assertSame('"Alice"', $firstRow->getField(1)->toString());
+        $this->assertSame('"alice@example.com"', $firstRow->getField(2)->toString());
+
+        // Konsistenz und Gleichheit prüfen
+        $this->assertTrue($newDoc->isConsistent(), 'CSV nach Umsortierung muss konsistent bleiben');
+        $this->assertFalse($newDoc->equals($doc), 'Umsortiertes Dokument darf nicht als gleich gelten');
+    }
 }

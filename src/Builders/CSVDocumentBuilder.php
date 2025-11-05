@@ -15,6 +15,7 @@ namespace CommonToolkit\Builders;
 use CommonToolkit\Entities\Common\CSV\CSVDocument;
 use CommonToolkit\Entities\Common\CSV\CSVHeaderLine;
 use CommonToolkit\Entities\Common\CSV\CSVDataLine;
+use RuntimeException;
 
 final class CSVDocumentBuilder {
     private ?CSVHeaderLine $header = null;
@@ -43,6 +44,53 @@ final class CSVDocumentBuilder {
         foreach ($rows as $row) {
             $this->addRow($row);
         }
+        return $this;
+    }
+
+    public static function fromDocument(CSVDocument $document, ?string $delimiter = null, ?string $enclosure = null): self {
+        $builder = new self(
+            $delimiter ?? $document->getDelimiter(),
+            $enclosure ?? $document->getEnclosure()
+        );
+
+        $builder->header = $document->getHeader() ? clone $document->getHeader() : null;
+        $builder->rows   = array_map(fn($row) => clone $row, $document->getRows());
+        return $builder;
+    }
+
+    public function reorderColumns(array $newOrder): self {
+        if (!$this->header) {
+            throw new RuntimeException('Kein Header vorhanden – Spalten können nicht umsortiert werden.');
+        }
+
+        $headerValues = array_map(fn($f) => $f->getValue(), $this->header->getFields());
+        $headerMap = array_flip($headerValues);
+
+        foreach ($newOrder as $name) {
+            if (!isset($headerMap[$name])) {
+                throw new RuntimeException("Spalte '$name' existiert nicht im Header.");
+            }
+        }
+
+        // Header neu sortieren
+        $reorderedHeaderFields = array_map(
+            fn($name) => $this->header->getFields()[$headerMap[$name]],
+            $newOrder
+        );
+        $this->header = new CSVHeaderLine($reorderedHeaderFields);
+
+        // Zeilen neu sortieren
+        $newRows = [];
+        foreach ($this->rows as $row) {
+            $fields = $row->getFields();
+            $reorderedFields = array_map(
+                fn($name) => $fields[$headerMap[$name]],
+                $newOrder
+            );
+            $newRows[] = new CSVDataLine($reorderedFields);
+        }
+        $this->rows = $newRows;
+
         return $this;
     }
 

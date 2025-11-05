@@ -13,7 +13,7 @@ namespace CommonToolkit\Entities\Common\CSV;
 use CommonToolkit\Contracts\Abstracts\Common\CSVFieldAbstract;
 
 class CSVHeaderField extends CSVFieldAbstract {
-    public function getValue(): string {
-        return strtoupper(parent::getValue());
+    public function getValue(bool $upper = false): string {
+        return $upper ? strtoupper(parent::getValue()) : parent::getValue();
     }
 }
