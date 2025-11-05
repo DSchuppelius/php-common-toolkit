@@ -19,14 +19,14 @@ use CommonToolkit\Entities\Common\CSV\CSVDataLine;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
-final class CSVDocumentBuilder {
+class CSVDocumentBuilder {
     use ErrorLog;
 
-    private ?CSVHeaderLine $header = null;
+    protected ?CSVHeaderLine $header = null;
     /** @var CSVDataLine[] */
-    private array $rows = [];
-    private string $delimiter;
-    private string $enclosure;
+    protected array $rows = [];
+    protected string $delimiter;
+    protected string $enclosure;
 
     public function __construct(string $delimiter = ',', string $enclosure = '"') {
         $this->delimiter = $delimiter;
