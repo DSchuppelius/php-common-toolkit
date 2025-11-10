@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Tests\CommonToolkit\Entities\Common\CSV;
 
-use CommonToolkit\Entities\Common\CSV\CSVDocument;
+use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Entities\Common\CSV\CSVDataLine;
 use CommonToolkit\Entities\Common\CSV\CSVHeaderLine;
 use CommonToolkit\Parsers\CSVDocumentParser;
@@ -100,7 +100,7 @@ class CSVDocumentTest extends TestCase {
     }
 
     public function testMalformedCSVShouldThrow(): void {
-        $this->markTestSkipped('Derzeit wird keine Ausnahme bei fehlerhaftem CSV ausgelöst.');
+        //$this->markTestSkipped('Derzeit wird keine Ausnahme bei fehlerhaftem CSV ausgelöst.');
         $csv = file_get_contents($this->testFileMalformed);
         $this->expectException(RuntimeException::class);
         CSVDocumentParser::fromString($csv);
@@ -132,7 +132,7 @@ class CSVDocumentTest extends TestCase {
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
         // Builder aus vorhandenem Dokument erzeugen
-        $builder = \CommonToolkit\Builders\CSVDocumentBuilder::fromDocument($doc);
+        $builder = CSVDocumentBuilder::fromDocument($doc);
 
         // Spaltenreihenfolge ändern
         $builder->reorderColumns(['Id', 'Name', 'Email']);
