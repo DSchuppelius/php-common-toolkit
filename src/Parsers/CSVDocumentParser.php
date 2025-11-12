@@ -18,6 +18,7 @@ use CommonToolkit\Entities\Common\CSV\CSVDataLine;
 use CommonToolkit\Helper\Data\StringHelper\CSVStringHelper;
 use CommonToolkit\Contracts\Interfaces\Common\CSVLineInterface;
 use CommonToolkit\Contracts\Interfaces\Common\CSVFieldInterface;
+use CommonToolkit\Entities\Common\CSV\CSVDocument;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 use Throwable;
@@ -28,7 +29,7 @@ final class CSVDocumentParser {
     /**
      * Parst eine CSV-Zeichenkette in ein CSVDocument.
      */
-    public static function fromString(string $csv, string $delimiter = CSVLineInterface::DEFAULT_DELIMITER, string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): object {
+    public static function fromString(string $csv, string $delimiter = CSVLineInterface::DEFAULT_DELIMITER, string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): CSVDocument {
         $csv = trim($csv);
         if ($csv === '') {
             throw new RuntimeException('Leere CSV-Zeichenkette');
@@ -69,7 +70,12 @@ final class CSVDocumentParser {
             throw new RuntimeException("Fehler beim Parsen der CSV: " . $e->getMessage(), 0, $e);
         }
 
-        return $builder->build();
+        $result = $builder->build();
+        if (!$result->isConsistent()) {
+            static::logError('Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
+            throw new RuntimeException('Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
+        }
+        return $result;
     }
 
     /**
