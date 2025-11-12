@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace CKonverter\Core\Enums;
+namespace CommonToolkit\Enums\DATEV;
 
 /**
  * Enum der unterstützten DATEV-Formate.

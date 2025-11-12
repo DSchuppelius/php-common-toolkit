@@ -1,0 +1,7 @@
+"EXTF";700;46;"Zahlungsbedingungen";2;20240118092951894;;"RE";"";"";29098;55003;20240101;4;;;"";"";;;;"";;"";;;"04";;;"";""
+Nummer;Bezeichnung;Fälligkeitstyp;Skonto 1%;Skonto 1 Tage;Skonto 2 %;Skonto 2 Tage;Fällig Tage;Rechnung bis / Zeitraum 1;Skonto1 Datum / Zeitraum 1;Skonto 1 Monat / Zeitraum 1;Skonto 2 Datum / Zeitraum 1;Skonto 2 Monat / Zeitraum 1;Fällig Datum / Zeitraum 1;Fällig Monat / Zeitraum 1;Rechnung bis / Zeitraum 2;Skonto1 Datum / Zeitraum 2;Skonto 1 Monat / Zeitraum 2;Skonto 2 Datum / Zeitraum 2;Skonto 2 Monat / Zeitraum 2;Fällig Datum / Zeitraum 2;Fällig Monat / Zeitraum 2;Rechnung bis / Zeitraum 3;Skonto1 Datum / Zeitraum 3;Skonto1 Monat / Zeitraum 3;Skonto 2 Datum / Zeitraum 3;Skonto 2 Monat / Zeitraum 3;Fällig Datum / Zeitraum 3;Fällig Monat / Zeitraum 3;Leerfeld;Verwendung
+10;"30 Tage 2,0%; 60 Tage netto";1;2200;30;;0;60;;;0;;0;;0;;;0;;0;;0;;;0;;0;;0;"";0
+11;"5 Tage 3,0%; 10 Tage 2,0%; 30 Tage netto";1;300;5;200;10;30;;;0;;0;;0;;;0;;0;;0;;;0;;0;;0;"";0
+12;"10 Tage 3,0%; 20 Tage netto";1;300;10;000;0;20;;;0;;0;;0;;;0;;0;;0;;;0;;0;;0;"";0
+13;"14 Tage netto";1;000;0;000;0;14;;;0;;0;;0;;;0;;0;;0;;;0;;0;;0;"";0
+14;"mit 3 Fälligkeitszeiträumen";2;300;0;000;0;0;10;20;0;;0;31;0;20;31;0;;0;10;1;31;10;1;;0;20;1;"";0

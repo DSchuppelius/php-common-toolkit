@@ -9,32 +9,43 @@
 
 declare(strict_types=1);
 
-namespace CKonverter\Core\Entities\Datev;
+namespace CommonToolkit\Entities\Datev;
 
-use CommonToolkit\Entities\Common\CSV\CSVHeaderLine;
+use CommonToolkit\Contracts\Interfaces\DATEV\{DatevMetaHeaderInterface, DatevMetaHeaderFieldInterface};
+use InvalidArgumentException;
 
-/**
- * Erste Kopfzeile einer DATEV-CSV-Datei (Metadatenheader).
- * Enthält z. B. EXTF, Formatname, Version, Erzeugt am, Erzeugt durch.
- */
-final class DatevMetaHeaderLine extends CSVHeaderLine {
-    public function getFormatName(): ?string {
-        return $this->getFieldByName('Formatname')?->getValue();
-    }
+final class DatevMetaHeaderLine {
+    private array $values = [];
 
-    public function getFormatVersion(): ?string {
-        return $this->getFieldByName('Formatversion')?->getValue();
-    }
-
-    public function getCreatedBy(): ?string {
-        return $this->getFieldByName('Erzeugt durch')?->getValue();
-    }
-
-    public function toAssoc(): array {
-        $assoc = [];
-        foreach ($this->getFields() as $field) {
-            $assoc[] = $field->getValue();
+    public function __construct(private readonly DatevMetaHeaderInterface $definition) {
+        foreach ($definition->getFields() as $field) {
+            $this->values[$field->name] = $definition->getDefaultValue($field);
         }
-        return $assoc;
+    }
+
+    public function set(DatevMetaHeaderFieldInterface $field, mixed $value): self {
+        $pattern = $field->pattern();
+        if ($pattern && !preg_match('/' . $pattern . '/u', (string)$value)) {
+            throw new InvalidArgumentException("Ungültiger Wert für {$field->label()}: {$value}");
+        }
+        $this->values[$field->name] = $value;
+        return $this;
+    }
+
+    public function get(DatevMetaHeaderFieldInterface $field): mixed {
+        return $this->values[$field->name] ?? null;
+    }
+
+    public function toArray(): array {
+        return $this->values;
+    }
+
+    public function toString(string $delimiter = ';', string $enclosure = '"'): string {
+        $ordered = [];
+        foreach ($this->definition->getFields() as $field) {
+            $val = $this->values[$field->name] ?? '';
+            $ordered[] = $enclosure . (string)$val . $enclosure;
+        }
+        return implode($delimiter, $ordered);
     }
 }

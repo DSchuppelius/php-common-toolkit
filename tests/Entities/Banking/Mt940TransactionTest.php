@@ -10,11 +10,14 @@
 
 declare(strict_types=1);
 
+namespace Tests\CommonToolkit\Entities\Banking\Mt940;
+
 use CommonToolkit\Entities\Banking\Mt940\Mt940Reference;
 use PHPUnit\Framework\TestCase;
 use CommonToolkit\Entities\Banking\Mt940\Mt940Transaction;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
+use DateTimeImmutable;
 
 class Mt940TransactionTest extends TestCase {
 

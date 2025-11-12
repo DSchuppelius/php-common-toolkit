@@ -97,7 +97,7 @@ class PdfFile extends ConfiguredHelperAbstract {
             $metadata = self::getMetaData($file);
             if (isset($metadata['Encrypted'])) {
                 $encryptedValue = strtolower($metadata['Encrypted']);
-                return str_contains($encryptedValue, 'yes');
+                return str_contains($encryptedValue, 'yes') || str_contains($encryptedValue, 'true') || str_contains($encryptedValue, 'aes') || str_contains($encryptedValue, 'rc4') || str_contains($encryptedValue, '128') || str_contains($encryptedValue, '256');
             }
         } catch (InvalidPasswordException $e) {
             return true;

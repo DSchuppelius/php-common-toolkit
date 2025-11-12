@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace CKonverter\Core\Entities\Datev;
+namespace CommonToolkit\Entities\Datev;
 
 use CommonToolkit\Entities\Common\CSV\CSVHeaderLine;
 
