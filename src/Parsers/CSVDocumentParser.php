@@ -13,12 +13,12 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
-use CommonToolkit\Entities\Common\CSV\CSVHeaderLine;
-use CommonToolkit\Entities\Common\CSV\CSVDataLine;
-use CommonToolkit\Helper\Data\StringHelper\CSVStringHelper;
-use CommonToolkit\Contracts\Interfaces\Common\CSVLineInterface;
-use CommonToolkit\Contracts\Interfaces\Common\CSVFieldInterface;
-use CommonToolkit\Entities\Common\CSV\CSVDocument;
+use CommonToolkit\Entities\Common\CSV\HeaderLine;
+use CommonToolkit\Entities\Common\CSV\DataLine;
+use CommonToolkit\Helper\Data\CSV\StringHelper;
+use CommonToolkit\Contracts\Interfaces\Common\CSV\LineInterface;
+use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
+use CommonToolkit\Entities\Common\CSV\Document;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 use Throwable;
@@ -29,13 +29,13 @@ final class CSVDocumentParser {
     /**
      * Parst eine CSV-Zeichenkette in ein CSVDocument.
      */
-    public static function fromString(string $csv, string $delimiter = CSVLineInterface::DEFAULT_DELIMITER, string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): CSVDocument {
+    public static function fromString(string $csv, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): Document {
         $csv = trim($csv);
         if ($csv === '') {
             throw new RuntimeException('Leere CSV-Zeichenkette');
         }
 
-        $lines = CSVStringHelper::splitCsvByLogicalLine($csv, $enclosure);
+        $lines = StringHelper::splitCsvByLogicalLine($csv, $enclosure);
         if ($lines === [] || $lines === false) {
             static::logError('CSVDocumentParser::fromString() – keine gültigen Zeilen erkannt');
             throw new RuntimeException('Keine gültigen CSV-Zeilen erkannt');
@@ -49,21 +49,21 @@ final class CSVDocumentParser {
                 if ($headerLine === null) {
                     static::logError('Header-Zeile fehlt');
                     throw new RuntimeException('Header-Zeile fehlt');
-                } elseif (!CSVStringHelper::canParseCompleteCSVDataLine($headerLine, $delimiter, $enclosure)) {
+                } elseif (!StringHelper::canParseCompleteCSVDataLine($headerLine, $delimiter, $enclosure)) {
                     static::logError('Inkonsistente Quote-Struktur erkannt');
                     throw new RuntimeException('Inkonsistente Quote-Struktur erkannt');
                 }
-                $builder->setHeader(CSVHeaderLine::fromString($headerLine, $delimiter, $enclosure));
+                $builder->setHeader(HeaderLine::fromString($headerLine, $delimiter, $enclosure));
             }
 
             foreach ($lines as $line) {
                 if (trim($line) === '') continue;
-                elseif (!CSVStringHelper::canParseCompleteCSVDataLine($line, $delimiter, $enclosure)) {
+                elseif (!StringHelper::canParseCompleteCSVDataLine($line, $delimiter, $enclosure)) {
                     static::logError('Inkonsistente Quote-Struktur erkannt');
                     throw new RuntimeException('Inkonsistente Quote-Struktur erkannt');
                 }
 
-                $builder->addRow(CSVDataLine::fromString($line, $delimiter, $enclosure));
+                $builder->addRow(DataLine::fromString($line, $delimiter, $enclosure));
             }
         } catch (Throwable $e) {
             static::logError("Fehler beim Parsen der CSV: " . $e->getMessage());
@@ -81,7 +81,7 @@ final class CSVDocumentParser {
     /**
      * Parst eine CSV-Datei in ein CSVDocument.
      */
-    public static function fromFile(string $file, string $delimiter = CSVLineInterface::DEFAULT_DELIMITER, string $enclosure = CSVFieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): object {
+    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): object {
         if (!is_file($file) || !is_readable($file)) {
             static::logError("CSV-Datei nicht lesbar: $file");
             throw new RuntimeException("CSV-Datei nicht lesbar: $file");

@@ -13,17 +13,17 @@ declare(strict_types=1);
 namespace CommonToolkit\Builders;
 
 use CommonToolkit\Contracts\Interfaces\Common\CSVLineInterface;
-use CommonToolkit\Entities\Common\CSV\CSVDocument;
-use CommonToolkit\Entities\Common\CSV\CSVHeaderLine;
-use CommonToolkit\Entities\Common\CSV\CSVDataLine;
+use CommonToolkit\Entities\Common\CSV\Document;
+use CommonToolkit\Entities\Common\CSV\HeaderLine;
+use CommonToolkit\Entities\Common\CSV\DataLine;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
 class CSVDocumentBuilder {
     use ErrorLog;
 
-    protected ?CSVHeaderLine $header = null;
-    /** @var CSVDataLine[] */
+    protected ?HeaderLine $header = null;
+    /** @var DataLine[] */
     protected array $rows = [];
     protected string $delimiter;
     protected string $enclosure;
@@ -35,13 +35,13 @@ class CSVDocumentBuilder {
 
     /**
      * Fügt eine Zeile hinzu.
-     * @param CSVLineInterface $line
+     * @param LineInterface $line
      * @return $this
      */
-    public function addLine(CSVLineInterface $line): self {
+    public function addLine(LineInterface $line): self {
         match (true) {
-            $line instanceof CSVHeaderLine => $this->header = $line,
-            $line instanceof CSVDataLine   => $this->rows[] = $line,
+            $line instanceof HeaderLine => $this->header = $line,
+            $line instanceof DataLine   => $this->rows[] = $line,
             default => throw new RuntimeException('Unsupported CSV line type: ' . $line::class),
         };
         return $this;
@@ -49,12 +49,12 @@ class CSVDocumentBuilder {
 
     /**
      * Fügt mehrere Zeilen hinzu.
-     * @param CSVLineInterface[] $lines
+     * @param LineInterface[] $lines
      * @return $this
      */
     public function addLines(array $lines): self {
         foreach ($lines as $line) {
-            if ($line instanceof CSVLineInterface) {
+            if ($line instanceof LineInterface) {
                 $this->addLine($line);
             } else {
                 $this->logError('Ungültiger Zeilentyp übergeben', ['line' => $line]);
@@ -66,27 +66,27 @@ class CSVDocumentBuilder {
 
     /**
      * Setzt den Header der CSV-Datei.
-     * @param CSVHeaderLine $header
+     * @param HeaderLine $header
      * @return $this
      */
-    public function setHeader(CSVHeaderLine $header): self {
+    public function setHeader(HeaderLine $header): self {
         $this->header = $header;
         return $this;
     }
 
     /**
      * Fügt eine Datenzeile hinzu.
-     * @param CSVDataLine $row
+     * @param DataLine $row
      * @return $this
      */
-    public function addRow(CSVDataLine $row): self {
+    public function addRow(DataLine $row): self {
         $this->rows[] = $row;
         return $this;
     }
 
     /**
      * Fügt mehrere Datenzeilen hinzu.
-     * @param CSVDataLine[] $rows
+     * @param DataLine[] $rows
      * @return $this
      */
     public function addRows(array $rows): self {
@@ -98,12 +98,12 @@ class CSVDocumentBuilder {
 
     /**
      * Erstellt einen Builder aus einem bestehenden CSV-Dokument.
-     * @param CSVDocument $document
+     * @param Document $document
      * @param string|null $delimiter
      * @param string|null $enclosure
      * @return self
      */
-    public static function fromDocument(CSVDocument $document, ?string $delimiter = null, ?string $enclosure = null): self {
+    public static function fromDocument(Document $document, ?string $delimiter = null, ?string $enclosure = null): self {
         $builder = new self(
             $delimiter ?? $document->getDelimiter(),
             $enclosure ?? $document->getEnclosure()
@@ -141,7 +141,7 @@ class CSVDocumentBuilder {
             fn($name) => $this->header->getFields()[$headerMap[$name]],
             $newOrder
         );
-        $this->header = new CSVHeaderLine($reorderedHeaderFields);
+        $this->header = new HeaderLine($reorderedHeaderFields);
 
         // Zeilen neu sortieren
         $newRows = [];
@@ -151,7 +151,7 @@ class CSVDocumentBuilder {
                 fn($name) => $fields[$headerMap[$name]],
                 $newOrder
             );
-            $newRows[] = new CSVDataLine($reorderedFields);
+            $newRows[] = new DataLine($reorderedFields);
         }
         $this->rows = $newRows;
 
@@ -160,10 +160,10 @@ class CSVDocumentBuilder {
 
     /**
      * Baut das CSV-Dokument.
-     * @return CSVDocument
+     * @return Document
      */
-    public function build(): CSVDocument {
-        return new CSVDocument(
+    public function build(): Document {
+        return new Document(
             $this->header,
             $this->rows,
             $this->delimiter,

@@ -15,8 +15,8 @@ namespace CommonToolkit\Enums;
 use InvalidArgumentException;
 
 enum CreditDebit: string {
-    case CREDIT = 'Credit'; // Gutschrift
-    case DEBIT = 'Debit';   // Lastschrift
+    case CREDIT = 'Credit'; // Gutschrift / Haben
+    case DEBIT  = 'Debit';  // Lastschrift / Soll
 
     public function toMt940Code(): string {
         return $this === self::CREDIT ? 'C' : 'D';
@@ -24,6 +24,10 @@ enum CreditDebit: string {
 
     public function toCamt053Code(): string {
         return $this === self::CREDIT ? 'CRDT' : 'DBIT';
+    }
+
+    public function toDatevCode(): string {
+        return $this === self::CREDIT ? 'H' : 'S'; // Haben / Soll
     }
 
     public function getSymbol(): string {
@@ -34,11 +38,15 @@ enum CreditDebit: string {
         return $this === self::CREDIT ? 'Gutschrift' : 'Lastschrift';
     }
 
+    public function toGerman(): string {
+        return $this === self::CREDIT ? 'Haben' : 'Soll';
+    }
+
     public static function fromMt940Code(string $code): self {
         return match (strtoupper($code)) {
             'C' => self::CREDIT,
             'D' => self::DEBIT,
-            default => throw new \InvalidArgumentException("Ungültiger MT940-Code: $code"),
+            default => throw new InvalidArgumentException("Ungültiger MT940-Code: $code"),
         };
     }
 
@@ -46,7 +54,15 @@ enum CreditDebit: string {
         return match (strtoupper($code)) {
             'CRDT' => self::CREDIT,
             'DBIT' => self::DEBIT,
-            default => throw new \InvalidArgumentException("Ungültiger CAMT.053-Code: $code"),
+            default => throw new InvalidArgumentException("Ungültiger CAMT.053-Code: $code"),
+        };
+    }
+
+    public static function fromDatevCode(string $code): self {
+        return match (strtoupper($code)) {
+            'H' => self::CREDIT,
+            'S' => self::DEBIT,
+            default => throw new InvalidArgumentException("Ungültiger DATEV-Code (Soll/Haben-Kz): $code"),
         };
     }
 }

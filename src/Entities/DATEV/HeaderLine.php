@@ -1,0 +1,28 @@
+<?php
+/*
+ * Created on   : Wed Nov 05 2025
+ * Author       : Daniel Jörg Schuppelius
+ * Author Uri   : https://schuppelius.org
+ * Filename     : DatevFieldHeaderLine.php
+ * License      : MIT License
+ */
+
+declare(strict_types=1);
+
+namespace CommonToolkit\Entities\Datev;
+
+use CommonToolkit\Entities\Common\CSV\HeaderLine as CSVHeaderLine;
+
+/**
+ * Zweite Kopfzeile der DATEV-CSV-Datei.
+ * Beschreibt die eigentlichen Spaltennamen der Buchungsdaten.
+ */
+final class HeaderLine extends CSVHeaderLine {
+    public function hasField(string $name): bool {
+        return $this->getFieldByName($name) !== null;
+    }
+
+    public function toAssoc(): array {
+        return array_map(fn($f) => $f->getValue(), $this->getFields());
+    }
+}

@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Helper\Data\StringHelper\CSVStringHelper;
+use CommonToolkit\Helper\Data\CSV\StringHelper;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\Validation\Validator;
 use Exception;
@@ -352,7 +352,7 @@ class CsvFile extends HelperAbstract {
 
         foreach (File::readLines($file, true, $maxLines) as $line) {
             $checked++;
-            if (CSVStringHelper::hasRepeatedEnclosure($line, $delimiter, self::$defaultEnclosure, $enclosureRepeat)) {
+            if (StringHelper::hasRepeatedEnclosure($line, $delimiter, self::$defaultEnclosure, $enclosureRepeat)) {
                 $hits++;
             }
         }

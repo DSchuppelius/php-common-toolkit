@@ -1,4 +1,12 @@
 <?php
+/*
+ * Created on   : Sun Nov 23 2025
+ * Author       : Daniel Jörg Schuppelius
+ * Author Uri   : https://schuppelius.org
+ * Filename     : BankHelperTest.php
+ * License      : MIT License
+ * License Uri  : https://opensource.org/license/mit
+ */
 
 use CommonToolkit\Helper\Data\BankHelper;
 use Tests\Contracts\BaseTestCase;
