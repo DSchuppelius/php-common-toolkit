@@ -13,9 +13,9 @@ declare(strict_types=1);
 namespace Tests\CommonToolkit\Entities\Common\CSV;
 
 use CommonToolkit\Entities\Common\CSV\DataField;
-use PHPUnit\Framework\TestCase;
+use Tests\Contracts\BaseTestCase;
 
-class DataFieldTest extends TestCase {
+class DataFieldTest extends BaseTestCase {
     public function testSimpleQuotedValue(): void {
         $field = new DataField('"ABC"');
         $this->assertTrue($field->isQuoted(), 'Feld sollte gequotet sein');

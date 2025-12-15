@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Builders;
 
-use CommonToolkit\Entities\Banking\Mt940\Mt940Document;
-use CommonToolkit\Entities\Banking\Mt940\Mt940Transaction;
-use CommonToolkit\Entities\Banking\Mt940\Mt940Balance;
+use CommonToolkit\Entities\Banking\Mt940\Document;
+use CommonToolkit\Entities\Banking\Mt940\Transaction;
+use CommonToolkit\Entities\Banking\Mt940\Balance;
 use CommonToolkit\Enums\CreditDebit;
 use InvalidArgumentException;
 use RuntimeException;
@@ -24,12 +24,11 @@ final class Mt940DocumentBuilder {
     private string $referenceId = 'COMMON';
     private string $statementNumber = '00000';
 
-    /** @var Mt940Transaction[] */
+    /** @var Transaction[] */
     private array $transactions = [];
 
-    private ?Mt940Balance $openingBalance = null;
-    private ?Mt940Balance $closingBalance = null;
-
+    private ?Balance $openingBalance = null;
+    private ?Balance $closingBalance = null;
     public function setAccountId(string $accountId): self {
         $clone = clone $this;
         $clone->accountId = $accountId;
@@ -48,7 +47,7 @@ final class Mt940DocumentBuilder {
         return $clone;
     }
 
-    public function addTransaction(Mt940Transaction $transaction): self {
+    public function addTransaction(Transaction $transaction): self {
         $clone = clone $this;
         $clone->transactions[] = $transaction;
         return $clone;
@@ -56,27 +55,27 @@ final class Mt940DocumentBuilder {
 
     public function addTransactions(array $transactions): self {
         foreach ($transactions as $transaction) {
-            if (!$transaction instanceof Mt940Transaction) {
-                throw new InvalidArgumentException('Alle Elemente müssen vom Typ Mt940Transaction sein.');
+            if (!$transaction instanceof Transaction) {
+                throw new InvalidArgumentException('Alle Elemente müssen vom Typ Transaction sein.');
             }
             $this->transactions[] = $transaction;
         }
         return $this;
     }
 
-    public function setOpeningBalance(Mt940Balance $balance): self {
+    public function setOpeningBalance(Balance $balance): self {
         $clone = clone $this;
         $clone->openingBalance = $balance;
         return $clone;
     }
 
-    public function setClosingBalance(Mt940Balance $balance): self {
+    public function setClosingBalance(Balance $balance): self {
         $clone = clone $this;
         $clone->closingBalance = $balance;
         return $clone;
     }
 
-    public function build(): Mt940Document {
+    public function build(): Document {
         if (!$this->openingBalance && !$this->closingBalance) {
             throw new RuntimeException("Mindestens ein Saldo (Opening oder Closing) muss angegeben werden.");
         }
@@ -96,10 +95,10 @@ final class Mt940DocumentBuilder {
             }
         }
 
-        return new Mt940Document($this->accountId, $this->referenceId, $this->statementNumber, $opening, $closing, $this->transactions);
+        return new Document($this->accountId, $this->referenceId, $this->statementNumber, $opening, $closing, $this->transactions);
     }
 
-    private function calculateClosingBalance(Mt940Balance $opening): Mt940Balance {
+    private function calculateClosingBalance(Balance $opening): Balance {
         $total = $opening->isDebit() ? -$opening->getAmount() : $opening->getAmount();
 
         foreach ($this->transactions as $txn) {
@@ -108,10 +107,10 @@ final class Mt940DocumentBuilder {
         }
 
         $direction = $total >= 0 ? CreditDebit::CREDIT : CreditDebit::DEBIT;
-        return new Mt940Balance($direction, $opening->getDate(), $opening->getCurrency(), abs($total));
+        return new Balance($direction, $opening->getDate(), $opening->getCurrency(), abs($total));
     }
 
-    private function reverseCalculateBalance(Mt940Balance $closing): Mt940Balance {
+    private function reverseCalculateBalance(Balance $closing): Balance {
         $total = $closing->isDebit() ? -$closing->getAmount() : $closing->getAmount();
 
         foreach ($this->transactions as $txn) {
@@ -120,6 +119,6 @@ final class Mt940DocumentBuilder {
         }
 
         $direction = $total >= 0 ? CreditDebit::CREDIT : CreditDebit::DEBIT;
-        return new Mt940Balance($direction, $closing->getDate(), $closing->getCurrency(), abs($total));
+        return new Balance($direction, $closing->getDate(), $closing->getCurrency(), abs($total));
     }
 }

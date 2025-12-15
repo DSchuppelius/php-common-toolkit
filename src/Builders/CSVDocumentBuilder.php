@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Builders;
 
-use CommonToolkit\Contracts\Interfaces\Common\CSVLineInterface;
+use CommonToolkit\Contracts\Interfaces\Common\CSV\LineInterface;
 use CommonToolkit\Entities\Common\CSV\Document;
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Entities\Common\CSV\DataLine;

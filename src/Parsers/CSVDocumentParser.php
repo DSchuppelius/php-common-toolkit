@@ -13,21 +13,27 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
-use CommonToolkit\Entities\Common\CSV\HeaderLine;
-use CommonToolkit\Entities\Common\CSV\DataLine;
+use CommonToolkit\Entities\Common\CSV\{HeaderLine, DataLine};
 use CommonToolkit\Helper\Data\CSV\StringHelper;
-use CommonToolkit\Contracts\Interfaces\Common\CSV\LineInterface;
-use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
+use CommonToolkit\Contracts\Interfaces\Common\CSV\{LineInterface, FieldInterface};
 use CommonToolkit\Entities\Common\CSV\Document;
+use CommonToolkit\Helper\FileSystem\File;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 use Throwable;
 
-final class CSVDocumentParser {
+class CSVDocumentParser {
     use ErrorLog;
 
     /**
      * Parst eine CSV-Zeichenkette in ein CSVDocument.
+     *
+     * @param string $csv Die CSV-Zeichenkette
+     * @param string $delimiter CSV-Trennzeichen
+     * @param string $enclosure CSV-Textbegrenzer
+     * @param bool $hasHeader Ob ein Header vorhanden ist
+     * @return Document Das geparste CSV-Dokument
+     * @throws RuntimeException Bei Parsing-Fehlern
      */
     public static function fromString(string $csv, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): Document {
         $csv = trim($csv);
@@ -80,19 +86,78 @@ final class CSVDocumentParser {
 
     /**
      * Parst eine CSV-Datei in ein CSVDocument.
+     *
+     * @param string $file Der Pfad zur CSV-Datei
+     * @param string $delimiter CSV-Trennzeichen
+     * @param string $enclosure CSV-Textbegrenzer
+     * @param bool $hasHeader Ob ein Header vorhanden ist
+     * @param int $startLine Ab welcher Zeile gelesen werden soll (1-basiert)
+     * @param int|null $maxLines Maximale Anzahl zu lesender Zeilen (null = alle)
+     * @param bool $skipEmpty Leere Zeilen überspringen
+     * @return Document Das geparste CSV-Dokument
+     * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
-    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): object {
-        if (!is_file($file) || !is_readable($file)) {
+    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, int $startLine = 1, ?int $maxLines = null, bool $skipEmpty = false): Document {
+        if (!File::isReadable($file)) {
             static::logError("CSV-Datei nicht lesbar: $file");
             throw new RuntimeException("CSV-Datei nicht lesbar: $file");
         }
 
-        $content = file_get_contents($file);
-        if ($content === false) {
-            static::logError("Fehler beim Lesen der CSV-Datei: $file");
-            throw new RuntimeException("Fehler beim Lesen der CSV-Datei: $file");
+        // Nutze erweiterte FileHelper-Funktionen für effizienten Dateizugriff
+        $lines = File::readLinesAsArray($file, $skipEmpty, $maxLines, $startLine);
+
+        if (empty($lines)) {
+            static::logError("Keine Zeilen in CSV-Datei gefunden: $file");
+            throw new RuntimeException("Keine Zeilen in CSV-Datei gefunden: $file");
         }
 
+        $content = implode("\n", $lines);
         return self::fromString($content, $delimiter, $enclosure, $hasHeader);
+    }
+
+    /**
+     * Parst einen Bereich einer CSV-Datei (optimiert für große Dateien).
+     *
+     * @param string $file Der Pfad zur CSV-Datei
+     * @param int $fromLine Startzeile (1-basiert, inklusive)
+     * @param int $toLine Endzeile (1-basiert, inklusive)
+     * @param string $delimiter CSV-Trennzeichen
+     * @param string $enclosure CSV-Textbegrenzer
+     * @param bool $includeHeader Ob Header-Zeile aus Zeile 1 mit einbezogen werden soll
+     * @return Document Das geparste CSV-Dokument
+     * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
+     */
+    public static function fromFileRange(string $file, int $fromLine, int $toLine, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $includeHeader = true): Document {
+        if ($fromLine > $toLine) {
+            throw new RuntimeException("Startzeile ($fromLine) darf nicht größer als Endzeile ($toLine) sein");
+        }
+
+        if (!File::isReadable($file)) {
+            static::logError("CSV-Datei nicht lesbar: $file");
+            throw new RuntimeException("CSV-Datei nicht lesbar: $file");
+        }
+
+        $lines = [];
+
+        // Header hinzufügen falls gewünscht
+        if ($includeHeader && $fromLine > 1) {
+            $headerLines = File::readLinesAsArray($file, false, 1, 1);
+            if (!empty($headerLines)) {
+                $lines[] = $headerLines[0];
+            }
+        }
+
+        // Datenzeilen lesen
+        $maxLines = $toLine - $fromLine + 1;
+        $dataLines = File::readLinesAsArray($file, false, $maxLines, $fromLine);
+        $lines = array_merge($lines, $dataLines);
+
+        if (empty($lines)) {
+            static::logError("Keine Zeilen im angegebenen Bereich gefunden: $file (Zeilen $fromLine-$toLine)");
+            throw new RuntimeException("Keine Zeilen im angegebenen Bereich gefunden");
+        }
+
+        $content = implode("\n", $lines);
+        return self::fromString($content, $delimiter, $enclosure, $includeHeader);
     }
 }

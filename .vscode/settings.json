@@ -1,8 +1,62 @@
 {
+    "fileHeaderComment.parameter": {
+        "date": "YYYY-MM-DD",
+        "commentbegin": "/*",
+        "commentprefix": " *",
+        "commentend": " */",
+        "*": {
+            "author": "Daniel Jörg Schuppelius",
+            "web": "https://schuppelius.org",
+            "license": "MIT License",
+            "licenseuri": "https://opensource.org/license/mit"
+        }
+    },
+    "fileHeaderComment.template": {
+        "*": [
+            "${commentbegin}",
+            "${commentprefix} Created on   : ${date}",
+            "${commentprefix} Author       : ${author}",
+            "${commentprefix} Author Uri   : ${web}",
+            "${commentprefix} Filename     : ${filename}",
+            "${commentprefix} License      : ${license}",
+            "${commentprefix} License Uri  : ${licenseuri}",
+            "${commentend}"
+        ]
+    },
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "intelephense.format.braces": "k&r",
+    "git.autofetch": true,
     "notebook.defaultFormatter": "zobo.php-intellisense",
     "editor.defaultFormatter": "bmewburn.vscode-intelephense-client",
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
     "notebook.formatOnSave.enabled": true,
-    "prettier.documentSelectors": ["*.php"]
+    "prettier.documentSelectors": [
+        "*.php"
+    ],
+    "phpunit.environment": {
+    },
+    "redhat.telemetry.enabled": true,
+    "prettier.requireConfig": true,
+    "editor.unicodeHighlight.nonBasicASCII": false,
+    "remote.autoForwardPortsSource": "hybrid",
+    "git.replaceTagsWhenPull": true,
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "workbench.editorAssociations": {
+        "*.copilotmd": "vscode.markdown.preview.editor",
+        "*.csv": "default"
+    },
+    "[css]": {
+        "editor.defaultFormatter": "vscode.css-language-features"
+    },
+    "[html]": {
+        "editor.defaultFormatter": "vscode.html-language-features"
+    },
+    "github.copilot.chat.localeOverride": "de",
+    "gitlens.defaultDateLocale": "de-DE",
+    "typescript.locale": "de",
+    "editor.codeActionsOnSave": {
+        
+    },
 }

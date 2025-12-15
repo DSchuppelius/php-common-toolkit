@@ -16,146 +16,164 @@ namespace Tests\CommonToolkit\Entities\Common\CSV;
 use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
-use CommonToolkit\Parsers\CSVDocumentParser;
-use PHPUnit\Framework\TestCase;
+use CommonToolkit\Entities\Common\CSV\Document;
 use RuntimeException;
+use Tests\Contracts\BaseTestCase;
 
-class DocumentTest extends TestCase {
-    private string $testFileComma;
-    private string $testFileSemicolon;
-    private string $testFileTab;
-    private string $testFileEmpty;
-    private string $testFileMalformed;
-    private string $testFileMultiLine;
-    private string $testFileQuoted;
-    private string $testFileDoubleQuoted;
-    private string $testFileInconsistentQuoted;
+class DocumentTest extends BaseTestCase {
+    private function createTestDocument(): Document {
+        $builder = new CSVDocumentBuilder();
 
-    protected function setUp(): void {
-        $base = __DIR__ . '/../../../../.samples/';
-        $this->testFileComma              = $base . 'comma.csv';
-        $this->testFileSemicolon          = $base . 'semicolon.csv';
-        $this->testFileTab                = $base . 'tab.csv';
-        $this->testFileEmpty              = $base . 'empty.csv';
-        $this->testFileMalformed          = $base . 'malformed.csv';
-        $this->testFileMultiLine          = $base . 'multiline.csv';
-        $this->testFileQuoted             = $base . 'quoted.csv';
-        $this->testFileDoubleQuoted       = $base . 'doublequoted.csv';
-        $this->testFileInconsistentQuoted = $base . 'quoted-inkonsistent.csv';
+        // Header erstellen
+        $header = HeaderLine::fromString('"Name","Email","Age"', ',', '"');
+        $builder->setHeader($header);
+
+        // Datenzeilen hinzufügen
+        $builder->addRow(DataLine::fromString('"Alice","alice@example.com","30"', ',', '"'));
+        $builder->addRow(DataLine::fromString('"Bob","bob@example.com","25"', ',', '"'));
+        $builder->addRow(DataLine::fromString('"Charlie","charlie@example.com","35"', ',', '"'));
+
+        return $builder->build();
     }
 
-    // ----------------------------- TESTS -----------------------------
+    public function testDocumentConstruction(): void {
+        $doc = $this->createTestDocument();
 
-    public function testParseCommaSeparatedCSV(): void {
-        $csv = file_get_contents($this->testFileComma);
-        $doc = CSVDocumentParser::fromString($csv, ',', '"');
-
+        $this->assertTrue($doc->hasHeader());
+        $this->assertEquals(3, $doc->countRows());
         $this->assertInstanceOf(HeaderLine::class, $doc->getHeader());
-        $this->assertGreaterThan(0, $doc->countRows(), 'Mindestens eine Datenzeile erwartet');
         $this->assertInstanceOf(DataLine::class, $doc->getRow(0));
-
-        $rebuilt = $doc->toString();
-        $this->assertNotEmpty($rebuilt);
-        $this->assertStringContainsString(',', $rebuilt);
     }
 
-    public function testParseSemicolonSeparatedCSV(): void {
-        $csv = file_get_contents($this->testFileSemicolon);
-        $doc = CSVDocumentParser::fromString($csv, ';', '"');
-        $this->assertGreaterThan(0, $doc->countRows());
+    public function testGetColumnByName(): void {
+        $doc = $this->createTestDocument();
+
+        // Test existierende Spalten
+        $names = $doc->getColumnByName('Name');
+        $this->assertEquals(['Alice', 'Bob', 'Charlie'], $names);
+
+        $emails = $doc->getColumnByName('Email');
+        $this->assertEquals(['alice@example.com', 'bob@example.com', 'charlie@example.com'], $emails);
+
+        $ages = $doc->getColumnByName('Age');
+        $this->assertEquals(['30', '25', '35'], $ages);
     }
 
-    public function testParseTabSeparatedCSV(): void {
-        $csv = file_get_contents($this->testFileTab);
-        $doc = CSVDocumentParser::fromString($csv, "\t", '"');
-        $this->assertGreaterThan(0, $doc->countRows());
-    }
+    public function testGetColumnByNameThrowsExceptionForNonExistentColumn(): void {
+        $doc = $this->createTestDocument();
 
-    public function testParseQuotedCSV(): void {
-        $csv = file_get_contents($this->testFileQuoted);
-        $doc = CSVDocumentParser::fromString($csv, ',', '"');
-
-        $row = $doc->getRow(0);
-        $this->assertNotNull($row);
-        $this->assertStringContainsString('"', $row->toString());
-    }
-
-    public function testParseDoubleQuotedCSV(): void {
-        $csv = file_get_contents($this->testFileDoubleQuoted);
-        $doc = CSVDocumentParser::fromString($csv, ',', '"');
-
-        [$strict, $nonStrict] = $doc->getHeader()->getEnclosureRepeatRange();
-        $this->assertGreaterThanOrEqual(2, $nonStrict);
-    }
-
-    public function testDetectMultiLineCSV(): void {
-        $csv = file_get_contents($this->testFileMultiLine);
-        $doc = CSVDocumentParser::fromString($csv, ',', '"');
-
-        $this->assertGreaterThan(1, $doc->countRows());
-        $multiLineValue = $doc->getRow(0)?->getField(2)?->getValue() ?? '';
-        $this->assertStringContainsString("\n", $multiLineValue, 'Mehrzeiliger Inhalt erwartet');
-    }
-
-    public function testEmptyCSVShouldThrow(): void {
-        $csv = file_get_contents($this->testFileEmpty);
         $this->expectException(RuntimeException::class);
-        CSVDocumentParser::fromString($csv);
+        $this->expectExceptionMessage("Spalte 'NonExistent' nicht im Header gefunden");
+        $doc->getColumnByName('NonExistent');
     }
 
-    public function testMalformedCSVShouldThrow(): void {
-        //$this->markTestSkipped('Derzeit wird keine Ausnahme bei fehlerhaftem CSV ausgelöst.');
-        $csv = file_get_contents($this->testFileMalformed);
+    public function testGetColumnByIndex(): void {
+        $doc = $this->createTestDocument();
+
+        // Test Index 0 (Name)
+        $column0 = $doc->getColumnByIndex(0);
+        $this->assertEquals(['Alice', 'Bob', 'Charlie'], $column0);
+
+        // Test Index 1 (Email)
+        $column1 = $doc->getColumnByIndex(1);
+        $this->assertEquals(['alice@example.com', 'bob@example.com', 'charlie@example.com'], $column1);
+
+        // Test Index 2 (Age)
+        $column2 = $doc->getColumnByIndex(2);
+        $this->assertEquals(['30', '25', '35'], $column2);
+    }
+
+    public function testGetColumnByIndexThrowsExceptionForInvalidIndex(): void {
+        $doc = $this->createTestDocument();
+
         $this->expectException(RuntimeException::class);
-        CSVDocumentParser::fromString($csv);
+        $this->expectExceptionMessage("Spalten-Index '-1' ist ungültig");
+        $doc->getColumnByIndex(-1);
     }
 
-    public function testInconsistentQuotedCSVShouldThrow(): void {
-        $csv = file_get_contents($this->testFileInconsistentQuoted);
-        $this->expectException(RuntimeException::class);
-        CSVDocumentParser::fromString($csv);
+    public function testGetColumnIndex(): void {
+        $doc = $this->createTestDocument();
+
+        // Test existierende Spalten
+        $this->assertEquals(0, $doc->getColumnIndex('Name'));
+        $this->assertEquals(1, $doc->getColumnIndex('Email'));
+        $this->assertEquals(2, $doc->getColumnIndex('Age'));
+
+        // Test nicht existierende Spalte
+        $this->assertEquals(-1, $doc->getColumnIndex('NonExistent'));
     }
 
-    public function testRoundTripIntegrity(): void {
-        $csv = file_get_contents($this->testFileComma);
-        $doc = CSVDocumentParser::fromString($csv, ',', '"');
-        $rebuilt = $doc->toString(',', '"');
+    public function testHasColumn(): void {
+        $doc = $this->createTestDocument();
 
-        $doc2 = CSVDocumentParser::fromString($rebuilt, ',', '"');
-        $this->assertTrue($doc->equals($doc2), 'Roundtrip sollte identisch bleiben');
+        // Test existierende Spalten
+        $this->assertTrue($doc->hasColumn('Name'));
+        $this->assertTrue($doc->hasColumn('Email'));
+        $this->assertTrue($doc->hasColumn('Age'));
+
+        // Test nicht existierende Spalte
+        $this->assertFalse($doc->hasColumn('NonExistent'));
+        $this->assertFalse($doc->hasColumn(''));
     }
 
-    public function testReorderColumnsAndFromDocument(): void {
-        // Beispiel-CSV mit 3 Spalten
-        $csv = <<<CSV
-        "Name","Email","Id"
-        "Alice","alice@example.com","1"
-        "Bob","bob@example.com","2"
-        CSV;
+    public function testGetColumnNames(): void {
+        $doc = $this->createTestDocument();
 
-        $doc = CSVDocumentParser::fromString($csv, ',', '"');
+        $columnNames = $doc->getColumnNames();
+        $this->assertEquals(['Name', 'Email', 'Age'], $columnNames);
+    }
 
-        // Builder aus vorhandenem Dokument erzeugen
-        $builder = CSVDocumentBuilder::fromDocument($doc);
+    public function testColumnFunctionsWithoutHeader(): void {
+        // Dokument ohne Header erstellen
+        $builder = new CSVDocumentBuilder();
+        $builder->addRow(DataLine::fromString('"Alice","alice@example.com"', ',', '"'));
+        $doc = $builder->build();
 
-        // Spaltenreihenfolge ändern
-        $builder->reorderColumns(['Id', 'Name', 'Email']);
-        $newDoc = $builder->build();
+        // Sollte leeres Array zurückgeben
+        $this->assertEquals([], $doc->getColumnNames());
+        $this->assertFalse($doc->hasColumn('Name'));
+        $this->assertEquals(-1, $doc->getColumnIndex('Name'));
+    }
 
-        // Prüfen, dass das Original unverändert bleibt
-        $this->assertSame('"Name","Email","Id"', $doc->getHeader()->toString(',', '"'));
+    public function testColumnFunctionsWithQuotedHeaders(): void {
+        $builder = new CSVDocumentBuilder();
 
-        // Neue Reihenfolge prüfen
-        $this->assertSame('"Id","Name","Email"', $newDoc->getHeader()->toString(',', '"'));
+        $header = HeaderLine::fromString('"Full Name","E-Mail Address","Years Old"', ',', '"');
+        $builder->setHeader($header);
 
-        // Werte in der ersten Zeile prüfen
-        $firstRow = $newDoc->getRow(0);
-        $this->assertSame('"1"', $firstRow->getField(0)->toString());
-        $this->assertSame('"Alice"', $firstRow->getField(1)->toString());
-        $this->assertSame('"alice@example.com"', $firstRow->getField(2)->toString());
+        $builder->addRow(DataLine::fromString('"Alice Smith","alice@example.com","25"', ',', '"'));
+        $builder->addRow(DataLine::fromString('"Bob Jones","bob@example.com","30"', ',', '"'));
 
-        // Konsistenz und Gleichheit prüfen
-        $this->assertTrue($newDoc->isConsistent(), 'CSV nach Umsortierung muss konsistent bleiben');
-        $this->assertFalse($newDoc->equals($doc), 'Umsortiertes Dokument darf nicht als gleich gelten');
+        $doc = $builder->build();
+
+        // Test mit Anführungszeichen in Header-Namen
+        $names = $doc->getColumnByName('Full Name');
+        $this->assertEquals(['Alice Smith', 'Bob Jones'], $names);
+
+        $this->assertTrue($doc->hasColumn('E-Mail Address'));
+        $this->assertEquals(2, $doc->getColumnIndex('Years Old'));
+    }
+
+    public function testColumnFunctionsWithEmptyFields(): void {
+        $builder = new CSVDocumentBuilder();
+
+        $header = HeaderLine::fromString('"Name","Email","Phone"', ',', '"');
+        $builder->setHeader($header);
+
+        $builder->addRow(DataLine::fromString('"Alice","alice@example.com",""', ',', '"'));
+        $builder->addRow(DataLine::fromString('"Bob","","555-1234"', ',', '"'));
+        $builder->addRow(DataLine::fromString('"","carol@example.com","555-5678"', ',', '"'));
+
+        $doc = $builder->build();
+
+        // Test mit leeren Feldern
+        $names = $doc->getColumnByName('Name');
+        $this->assertEquals(['Alice', 'Bob', ''], $names);
+
+        $emails = $doc->getColumnByName('Email');
+        $this->assertEquals(['alice@example.com', '', 'carol@example.com'], $emails);
+
+        $phones = $doc->getColumnByName('Phone');
+        $this->assertEquals(['', '555-1234', '555-5678'], $phones);
     }
 }

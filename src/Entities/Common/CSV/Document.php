@@ -31,10 +31,26 @@ class Document {
         $this->enclosure = $enclosure;
     }
 
+    /**
+     * Prüft ob eine Spalte mit dem gegebenen Namen existiert.
+     *
+     * @param string $columnName Name der Spalte
+     * @return bool True wenn die Spalte existiert
+     */
+    public function hasColumn(string $columnName): bool {
+        return $this->getColumnIndex($columnName) !== -1;
+    }
+
+    /**
+     * Prüft ob ein Header vorhanden ist.
+     *
+     * @return bool
+     */
     public function hasHeader(): bool {
         return $this->header !== null;
     }
 
+    /** @return HeaderLine|null */
     public function getHeader(): ?HeaderLine {
         return $this->header;
     }
@@ -44,18 +60,22 @@ class Document {
         return array_values($this->rows);
     }
 
+    /** @return DataLine|null */
     public function getRow(int $index): ?DataLine {
         return $this->rows[$index] ?? null;
     }
 
+    /** @return int */
     public function countRows(): int {
         return count($this->rows);
     }
 
+    /** @return string */
     public function getDelimiter(): string {
         return $this->delimiter;
     }
 
+    /** @return string */
     public function getEnclosure(): string {
         return $this->enclosure;
     }
@@ -145,6 +165,76 @@ class Document {
             $assoc[] = array_combine($keys, $values);
         }
         return $assoc;
+    }
+
+    /**
+     * Findet den Index einer Spalte anhand des Header-Namens.
+     *
+     * @param string $columnName Name der Spalte
+     * @return int Index der Spalte oder -1 wenn nicht gefunden
+     */
+    public function getColumnIndex(string $columnName): int {
+        if (!$this->header) {
+            return -1;
+        }
+
+        $headerFields = $this->header->getFields();
+        foreach ($headerFields as $index => $field) {
+            if (trim($field->getValue(), '"') === $columnName) {
+                return $index;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Liefert alle Werte einer Spalte anhand des Header-Namens.
+     *
+     * @param string $columnName Name der Spalte
+     * @return array Array mit allen Werten der Spalte
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    public function getColumnByName(string $columnName): array {
+        $index = $this->getColumnIndex($columnName);
+
+        if ($index === -1) {
+            static::logError("Spalte '$columnName' nicht im Header gefunden");
+            throw new RuntimeException("Spalte '$columnName' nicht im Header gefunden");
+        }
+
+        return $this->getColumnByIndex($index);
+    }
+
+    /**
+     * Liefert alle Werte einer Spalte anhand des Index.
+     *
+     * @param int $index Index der Spalte
+     * @return array Array mit allen Werten der Spalte
+     * @throws RuntimeException Wenn der Index ungültig ist
+     */
+    public function getColumnByIndex(int $index): array {
+        if ($index < 0) {
+            static::logError("Spalten-Index '$index' ist ungültig");
+            throw new RuntimeException("Spalten-Index '$index' ist ungültig");
+        }
+
+        $values = [];
+        foreach ($this->rows as $row) {
+            $field = $row->getField($index);
+            $values[] = $field ? $field->getValue() : '';
+        }
+
+        return $values;
+    }
+
+    /**
+     * Liefert alle Header-Namen als Array.
+     *
+     * @return array Array mit allen Spalten-Namen
+     */
+    public function getColumnNames(): array {
+        return !$this->header ? [] : array_map(fn($field) => trim($field->getValue(), '"'), $this->header->getFields());
     }
 
     /**

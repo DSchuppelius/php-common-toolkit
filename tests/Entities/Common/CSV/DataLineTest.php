@@ -14,11 +14,11 @@ namespace Tests\CommonToolkit\Entities\Common\CSV;
 
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\Common\CSV\DataField;
-use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Tests\Contracts\BaseTestCase;
 use Throwable;
 
-class DataLineTest extends TestCase {
+class DataLineTest extends BaseTestCase {
     public function testSimpleQuotedFields(): void {
         $line = DataLine::fromString('"A","B","C"');
 

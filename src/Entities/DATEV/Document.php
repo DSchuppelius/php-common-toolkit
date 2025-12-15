@@ -12,12 +12,15 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\DATEV;
 
 use CommonToolkit\Entities\Common\CSV\Document as CSVDocument;
+use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use RuntimeException;
 
-final class Document extends CSVDocument {
+class Document extends CSVDocument {
+    public const DEFAULT_DELIMITER = ';';
+
     private ?MetaHeaderLine $metaHeader = null;
 
-    /** @param DatevDataLine[] $rows */
+    /** @param DataLine[] $rows */
     public function __construct(
         ?MetaHeaderLine $metaHeader,
         ?HeaderLine $header,
@@ -29,10 +32,6 @@ final class Document extends CSVDocument {
 
     public function getMetaHeader(): ?MetaHeaderLine {
         return $this->metaHeader;
-    }
-
-    public function getHeader(): ?HeaderLine {
-        return $this->header;
     }
 
     public function validate(): void {
@@ -55,11 +54,19 @@ final class Document extends CSVDocument {
         return [
             'meta' => [
                 'format' => 'DATEV',
+                'formatType' => $this->getFormatType(),
                 'metaHeader' => $this->metaHeader?->toAssoc(),
                 'columns' => $this->header?->countFields() ?? 0,
                 'rows' => count($rows),
             ],
             'data' => $rows,
         ];
+    }
+
+    /**
+     * Gibt den DATEV-Format-Typ zurück.
+     */
+    public function getFormatType(): string {
+        return 'DATEV (Generisch)';
     }
 }

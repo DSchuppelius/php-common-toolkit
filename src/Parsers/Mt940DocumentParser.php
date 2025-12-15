@@ -13,10 +13,10 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Builders\Mt940DocumentBuilder;
-use CommonToolkit\Entities\Banking\Mt940\Mt940Balance;
-use CommonToolkit\Entities\Banking\Mt940\Mt940Document;
-use CommonToolkit\Entities\Banking\Mt940\Mt940Transaction;
-use CommonToolkit\Entities\Banking\Mt940\Mt940Reference;
+use CommonToolkit\Entities\Banking\Mt940\Balance;
+use CommonToolkit\Entities\Banking\Mt940\Document;
+use CommonToolkit\Entities\Banking\Mt940\Transaction;
+use CommonToolkit\Entities\Banking\Mt940\Reference;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Helper\Data\CurrencyHelper;
@@ -25,7 +25,7 @@ use RuntimeException;
 use Throwable;
 
 final class Mt940DocumentParser {
-    public static function parse(string $rawBlock): Mt940Document {
+    public static function parse(string $rawBlock): Document {
         $lines = preg_split('/\r\n|\n|\r/', trim($rawBlock));
         $transactions = [];
         $accountId = null;
@@ -77,13 +77,13 @@ final class Mt940DocumentParser {
                         $transactionCode = $match[5];
                         $reference = trim($match[6]);
 
-                        $transactions[] = new Mt940Transaction(
+                        $transactions[] = new Transaction(
                             date: $date,
                             valutaDate: $valutaDate,
                             amount: $amount,
                             creditDebit: $creditDebit,
                             currency: $openingBalance?->getCurrency() ?? CurrencyCode::Euro,
-                            reference: new Mt940Reference($transactionCode, $reference),
+                            reference: new Reference($transactionCode, $reference),
                             purpose: $purpose
                         );
                     }
@@ -111,12 +111,12 @@ final class Mt940DocumentParser {
             ->build();
     }
 
-    private static function parseBalance(string $raw): Mt940Balance {
+    private static function parseBalance(string $raw): Balance {
         if (!preg_match('/^([CD])(\d{6})([A-Z]{3})([0-9,]+)$/', $raw, $matches)) {
             throw new RuntimeException("Balance-String ungültig: $raw");
         }
 
-        return new Mt940Balance(
+        return new Balance(
             creditDebit: CreditDebit::fromMt940Code($matches[1]),
             date: DateTimeImmutable::createFromFormat('ymd', $matches[2]) ?: throw new RuntimeException("Datum ungültig"),
             currency: CurrencyCode::tryFrom($matches[3]) ?? throw new RuntimeException("Währung ungültig: {$matches[3]}"),

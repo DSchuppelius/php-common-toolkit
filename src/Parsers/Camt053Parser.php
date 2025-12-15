@@ -12,14 +12,14 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Parsers;
 
-use CommonToolkit\Entities\Banking\Camt053\Camt053Document;
-use CommonToolkit\Entities\Banking\Camt053\Camt053Transaction;
+use CommonToolkit\Entities\Banking\Camt053\Document;
+use CommonToolkit\Entities\Banking\Camt053\Transaction;
 use DOMDocument;
 use DOMXPath;
 use RuntimeException;
 
 class Camt053Parser {
-    public static function fromXml(string $xmlContent): Camt053Document {
+    public static function fromXml(string $xmlContent): Document {
         $dom = new DOMDocument();
         libxml_use_internal_errors(true);
 
@@ -40,7 +40,7 @@ class Camt053Parser {
         $accountIban       = $xpath->evaluate('string(ns:Acct/ns:Id/ns:IBAN)', $stmtNode);
         $currency          = $xpath->evaluate('string(ns:Acct/ns:Ccy)', $stmtNode) ?: 'EUR';
 
-        $document = new Camt053Document($statementId, $creationDateTime, $accountIban, $currency);
+        $document = new Document($statementId, $creationDateTime, $accountIban, $currency);
 
         foreach ($xpath->query('.//ns:Ntry', $stmtNode) as $entry) {
             $amount     = (float) str_replace(',', '.', $xpath->evaluate('string(ns:Amt)', $entry));
@@ -51,7 +51,7 @@ class Camt053Parser {
             $ref         = $xpath->evaluate('string(ns:NtryRef)', $entry);
             $purpose     = $xpath->evaluate('string(ns:AddtlNtryInf)', $entry);
 
-            $transaction = new Camt053Transaction(
+            $transaction = new Transaction(
                 bookingDate: $bookingDate,
                 valutaDate: $valutaDate,
                 amount: $amount,
