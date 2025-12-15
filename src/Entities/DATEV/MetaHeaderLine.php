@@ -13,9 +13,11 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\DATEV;
 
 use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderFieldInterface;
-use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderInterface;
+use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderDefinitionInterface;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use CommonToolkit\Entities\Common\CSV\DataLine;
+use CommonToolkit\Entities\Common\CSV\DataField;
+use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use InvalidArgumentException;
 
 final class MetaHeaderLine extends DataLine {
@@ -29,14 +31,14 @@ final class MetaHeaderLine extends DataLine {
     /**
      * Header-Definition für versionsneutrale Feldlokalisierung.
      */
-    private MetaHeaderInterface $definition;
+    private MetaHeaderDefinitionInterface $definition;
 
     /**
-     * @param MetaHeaderInterface $definition Definition des DATEV-Meta-Headers
+     * @param MetaHeaderDefinitionInterface $definition Definition des DATEV-Meta-Headers
      * @param string              $delimiter  CSV-Trennzeichen
      * @param string              $enclosure  CSV-Textbegrenzer
      */
-    public function __construct(MetaHeaderInterface $definition, string $delimiter = Document::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE) {
+    public function __construct(MetaHeaderDefinitionInterface $definition, string $delimiter = Document::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE) {
         $this->definition = $definition;
         $rawFields = [];
 
@@ -57,7 +59,7 @@ final class MetaHeaderLine extends DataLine {
 
         if ($pattern && !preg_match('/' . $pattern . '/u', (string) $value)) {
             throw new InvalidArgumentException(
-                "Ungültiger Wert für {$field->label()} ({$field->name}): {$value}"
+                "Ungültiger Wert für {$field->label()} ({$field->name}): \"{$value}\" (Pattern: {$pattern})"
             );
         }
 
@@ -67,8 +69,38 @@ final class MetaHeaderLine extends DataLine {
 
         $index = $this->fieldIndex[$field->name];
 
-        // Field-Objekt über die DataLine-/LineAbstract-Logik erzeugen
+        // Einfache Feld-Erstellung - nutze die Standard-CSV-Logik der Parent-Klasse
         $this->fields[$index] = static::createField((string) $value, $this->enclosure);
+
+        return $this;
+    }
+
+    /**
+     * Setzt einen Feldwert mit expliziter Quote-Information.
+     * Wird für das korrekte Roundtrip-Verhalten bei DATEV-Importen verwendet.
+     */
+    public function setWithQuoteInfo(MetaHeaderFieldInterface $field, mixed $value, bool $wasQuoted): self {
+        $pattern = $field->pattern();
+        if ($pattern && !preg_match('/' . $pattern . '/u', (string) $value)) {
+            throw new InvalidArgumentException(
+                "Ungültiger Wert für {$field->label()} ({$field->name}): \"{$value}\" (Pattern: {$pattern})"
+            );
+        }
+
+        if (!array_key_exists($field->name, $this->fieldIndex)) {
+            throw new InvalidArgumentException("Unbekanntes MetaHeader-Feld: {$field->name}");
+        }
+
+        $index = $this->fieldIndex[$field->name];
+        $stringValue = (string) $value;
+
+        // Verwende die explizite Quote-Information aus der Original-Analyse
+        if ($wasQuoted) {
+            $quotedValue = $this->enclosure . $stringValue . $this->enclosure;
+            $this->fields[$index] = new DataField($quotedValue, $this->enclosure);
+        } else {
+            $this->fields[$index] = new DataField($stringValue, $this->enclosure);
+        }
 
         return $this;
     }
@@ -111,8 +143,9 @@ final class MetaHeaderLine extends DataLine {
         return (int)($this->getFieldByName('Versionsnummer') ?? 0);
     }
 
-    public function getFormatkategorie(): int {
-        return (int)($this->getFieldByName('Formatkategorie') ?? 0);
+    public function getFormatkategorie(): ?Category {
+        $value = (int)($this->getFieldByName('Formatkategorie') ?? 0);
+        return Category::tryFrom($value);
     }
 
     public function getFormatname(): string {
@@ -139,10 +172,10 @@ final class MetaHeaderLine extends DataLine {
     /**
      * Convenience-Fabrik: aus Werteliste (Index 0..N) MetaHeaderLine bauen.
      *
-     * @param MetaHeaderInterface     $definition
-     * @param array<int, string|null> $values
+     * @param MetaHeaderDefinitionInterface $definition
+     * @param array<int, string|null>       $values
      */
-    public static function fromValues(MetaHeaderInterface $definition, array $values, string $delimiter = Document::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE,): self {
+    public static function fromValues(MetaHeaderDefinitionInterface $definition, array $values, string $delimiter = Document::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE,): self {
         $line = new self($definition, $delimiter, $enclosure);
 
         foreach ($definition->getFields() as $index => $field) {

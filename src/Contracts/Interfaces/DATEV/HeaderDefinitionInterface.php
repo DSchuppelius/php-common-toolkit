@@ -14,7 +14,7 @@ namespace CommonToolkit\Contracts\Interfaces\DATEV;
 
 /**
  * Interface für DATEV Header-Definitionen.
- * Definiert die Struktur verschiedener DATEV-Header-Typen (Buchungsstapel, Stammdaten, etc.).
+ * Definiert die Struktur verschiedener DATEV-Header-Typen (BookingBatch, Stammdaten, etc.).
  */
 interface HeaderDefinitionInterface {
     /**

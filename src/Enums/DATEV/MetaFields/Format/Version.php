@@ -23,13 +23,13 @@ enum Version: int {
      */
     public static function forCategory(Category $category): self {
         return match ($category) {
-            Category::DebitorenKreditoren      => self::V5,   // 5 = Debitoren/Kreditoren
-            Category::Sachkontenbeschriftungen => self::V3,   // 3 = Sachkontenbeschriftungen
+            Category::DebitorenKreditoren      => self::V5,   //  5 = Debitoren/Kreditoren
+            Category::Sachkontenbeschriftungen => self::V3,   //  3 = Sachkontenbeschriftungen
             Category::Buchungsstapel           => self::V13,  // 13 = Buchungsstapel
-            Category::Zahlungsbedingungen      => self::V2,   // 2 = Zahlungsbedingungen
-            Category::DiverseAdressen          => self::V2,   // 2 = Diverse Adressen
-            Category::WiederkehrendeBuchungen  => self::V4,   // 4 = Wiederkehrende Buchungen
-            Category::NaturalStapel            => self::V2,   // 2 = Natural-Stapel
+            Category::Zahlungsbedingungen      => self::V2,   //  2 = Zahlungsbedingungen
+            Category::DiverseAdressen          => self::V2,   //  2 = Diverse Adressen
+            Category::WiederkehrendeBuchungen  => self::V4,   //  4 = Wiederkehrende Buchungen
+            Category::NaturalStapel            => self::V2,   //  2 = Natural-Stapel
         };
     }
 

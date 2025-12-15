@@ -1,6 +1,6 @@
 <?php
 /*
- * Created on   : Sun Dec 15 2025
+ * Created on   : Mon Dec 15 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
  * Filename     : DocumentInfo.php

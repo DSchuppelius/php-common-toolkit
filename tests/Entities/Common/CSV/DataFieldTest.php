@@ -108,7 +108,7 @@ class DataFieldTest extends BaseTestCase {
         $field = new DataField("'XYZ'", "'");
         $this->assertTrue($field->isQuoted());
         $this->assertSame('XYZ', $field->getValue());
-        $this->assertSame("'", $field->toString("'")[0]);
+        $this->assertSame("'XYZ'", $field->toString("'"));
     }
 
     public function testNonMatchingQuoteDoesNotQuote(): void {

@@ -11,6 +11,7 @@
 
 namespace CommonToolkit\Entities\Common\CSV;
 
+use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
@@ -189,13 +190,14 @@ class Document {
     }
 
     /**
-     * Liefert alle Werte einer Spalte anhand des Header-Namens.
+     * Liefert alle Field-Objekte einer Spalte anhand des Header-Namens.
+     * Bietet vollständigen Zugriff auf Field-Metadaten (Wert, Raw-Wert, Quote-Info, etc.).
      *
      * @param string $columnName Name der Spalte
-     * @return array Array mit allen Werten der Spalte
+     * @return FieldInterface[] Array mit allen Field-Objekten der Spalte
      * @throws RuntimeException Wenn die Spalte nicht gefunden wird
      */
-    public function getColumnByName(string $columnName): array {
+    public function getFieldsByName(string $columnName): array {
         $index = $this->getColumnIndex($columnName);
 
         if ($index === -1) {
@@ -203,7 +205,42 @@ class Document {
             throw new RuntimeException("Spalte '$columnName' nicht im Header gefunden");
         }
 
-        return $this->getColumnByIndex($index);
+        return $this->getFieldsByIndex($index);
+    }
+
+    /**
+     * Liefert alle Werte einer Spalte anhand des Header-Namens.
+     *
+     * @param string $columnName Name der Spalte
+     * @return array Array mit allen Werten der Spalte
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    public function getColumnByName(string $columnName): array {
+        $fields = $this->getFieldsByName($columnName);
+        return array_map(fn($field) => $field ? $field->getValue() : '', $fields);
+    }
+
+    /**
+     * Liefert alle Field-Objekte einer Spalte anhand des Index.
+     * Bietet vollständigen Zugriff auf Field-Metadaten (Wert, Raw-Wert, Quote-Info, etc.).
+     *
+     * @param int $index Index der Spalte
+     * @return FieldInterface[] Array mit allen Field-Objekten der Spalte
+     * @throws RuntimeException Wenn der Index ungültig ist
+     */
+    public function getFieldsByIndex(int $index): array {
+        if ($index < 0) {
+            static::logError("Spalten-Index '$index' ist ungültig");
+            throw new RuntimeException("Spalten-Index '$index' ist ungültig");
+        }
+
+        $fields = [];
+        foreach ($this->rows as $row) {
+            $field = $row->getField($index);
+            $fields[] = $field; // Kann null sein - Caller entscheidet, wie damit umgegangen wird
+        }
+
+        return $fields;
     }
 
     /**
@@ -214,18 +251,8 @@ class Document {
      * @throws RuntimeException Wenn der Index ungültig ist
      */
     public function getColumnByIndex(int $index): array {
-        if ($index < 0) {
-            static::logError("Spalten-Index '$index' ist ungültig");
-            throw new RuntimeException("Spalten-Index '$index' ist ungültig");
-        }
-
-        $values = [];
-        foreach ($this->rows as $row) {
-            $field = $row->getField($index);
-            $values[] = $field ? $field->getValue() : '';
-        }
-
-        return $values;
+        $fields = $this->getFieldsByIndex($index);
+        return array_map(fn($field) => $field ? $field->getValue() : '', $fields);
     }
 
     /**

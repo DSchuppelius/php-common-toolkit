@@ -3,7 +3,7 @@
  * Created on   : Sat Dec 14 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : BookingHeaderLineTest.php
+ * Filename     : BookingBatchHeaderLineTest.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -12,13 +12,13 @@ declare(strict_types=1);
 
 namespace Tests\Entities\DATEV\Header\V700;
 
-use CommonToolkit\Entities\DATEV\Header\BookingHeaderLine;
-use CommonToolkit\Entities\DATEV\Header\V700\BookingHeaderDefinition;
-use CommonToolkit\Enums\DATEV\V700\BookingHeaderField;
+use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
+use CommonToolkit\Entities\DATEV\Header\V700\BookingBatchHeaderDefinition;
+use CommonToolkit\Enums\DATEV\V700\BookingBatchHeaderField;
 use Tests\Contracts\BaseTestCase;
 
-class BookingHeaderLineTest extends BaseTestCase {
-    private const BUCHUNGSSTAPEL_V700 = 'Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;WKZ Umsatz;Kurs;' .
+class BookingBatchHeaderLineTest extends BaseTestCase {
+    private const BOOKINGBATCH_V700 = 'Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;WKZ Umsatz;Kurs;' .
         'Basis-Umsatz;WKZ Basis-Umsatz;Konto;Gegenkonto (ohne BU-Schlüssel);BU-Schlüssel;Belegdatum;' .
         'Belegfeld 1;Belegfeld 2;Skonto;Buchungstext;Postensperre;Diverse Adressnummer;Geschäftspartnerbank;' .
         'Sachverhalt;Zinssperre;Beleglink;Beleginfo - Art 1;Beleginfo - Inhalt 1;Beleginfo - Art 2;' .
@@ -50,22 +50,22 @@ class BookingHeaderLineTest extends BaseTestCase {
         'Steuersatz;Land;Abrechnungsreferenz;BVV-Position;EU-Land u. UStID (Ursprung);' .
         'EU-Steuersatz (Ursprung);Abw. Skontokonto';
 
-    private const KREDITOREN_V700 = 'Konto;Name (Adressattyp Unternehmen);Unternehmensgegenstand;' .
+    private const CREDITORS_V700 = 'Konto;Name (Adressattyp Unternehmen);Unternehmensgegenstand;' .
         'Name (Adressattyp natürl. Person);Vorname (Adressattyp natürl. Person);Name (Adressattyp keine Angabe);' .
         'Adressattyp;Kurzbezeichnung;EU-Land;EU-UStID;Anrede;Titel/Akad. Grad;Adelstitel;Namensvorsatz;' .
         'Adressart;Straße;Postfach;Postleitzahl;Ort;Land;Versandzusatz;Adresszusatz';
 
     public function testCanCreateWithDefinition(): void {
-        $definition = new BookingHeaderDefinition();
-        $headerLine = new BookingHeaderLine($definition);
+        $definition = new BookingBatchHeaderDefinition();
+        $headerLine = new BookingBatchHeaderLine($definition);
 
-        $this->assertInstanceOf(BookingHeaderLine::class, $headerLine);
-        $this->assertInstanceOf(BookingHeaderDefinition::class, $headerLine->getDefinition());
+        $this->assertInstanceOf(BookingBatchHeaderLine::class, $headerLine);
+        $this->assertInstanceOf(BookingBatchHeaderDefinition::class, $headerLine->getDefinition());
     }
 
     public function testCreateDefault(): void {
-        $definition = new BookingHeaderDefinition();
-        $headerLine = new BookingHeaderLine($definition);
+        $definition = new BookingBatchHeaderDefinition();
+        $headerLine = new BookingBatchHeaderLine($definition);
         $fields = $headerLine->getFields();
 
         $this->assertCount(125, $fields, 'V700 sollte 125 Felder haben');
@@ -78,67 +78,67 @@ class BookingHeaderLineTest extends BaseTestCase {
     }
 
     public function testCreateMinimal(): void {
-        $definition = new BookingHeaderDefinition();
-        $headerLine = BookingHeaderLine::createMinimal($definition);
+        $definition = new BookingBatchHeaderDefinition();
+        $headerLine = BookingBatchHeaderLine::createMinimal($definition);
         $fields = $headerLine->getFields();
 
         // Minimal sollte nur Pflichtfelder haben
-        $requiredCount = count(BookingHeaderField::required());
+        $requiredCount = count(BookingBatchHeaderField::required());
         $this->assertCount($requiredCount, $fields);
     }
 
     public function testFieldAccess(): void {
-        $definition = new BookingHeaderDefinition();
-        $headerLine = new BookingHeaderLine($definition);
+        $definition = new BookingBatchHeaderDefinition();
+        $headerLine = new BookingBatchHeaderLine($definition);
 
         // Test hasField
-        $this->assertTrue($headerLine->hasField(BookingHeaderField::Umsatz));
+        $this->assertTrue($headerLine->hasField(BookingBatchHeaderField::Umsatz));
         $this->assertTrue($headerLine->hasField('Umsatz (ohne Soll/Haben-Kz)'));
 
         // Test getFieldIndex
-        $this->assertEquals(0, $headerLine->getFieldIndex(BookingHeaderField::Umsatz));
-        $this->assertEquals(1, $headerLine->getFieldIndex(BookingHeaderField::SollHabenKennzeichen));
+        $this->assertEquals(0, $headerLine->getFieldIndex(BookingBatchHeaderField::Umsatz));
+        $this->assertEquals(1, $headerLine->getFieldIndex(BookingBatchHeaderField::SollHabenKennzeichen));
         $this->assertEquals(-1, $headerLine->getFieldIndex('NichtVorhandenesFelder'));
     }
 
     public function testEnumCompatibility(): void {
-        $definition = new BookingHeaderDefinition();
-        $headerLine = new BookingHeaderLine($definition);
+        $definition = new BookingBatchHeaderDefinition();
+        $headerLine = new BookingBatchHeaderLine($definition);
 
         // Test V700 Kompatibilität
         $this->assertTrue($headerLine->isV700BookingHeader());
-        $this->assertTrue($headerLine->isCompatibleWithEnum(BookingHeaderField::class));
+        $this->assertTrue($headerLine->isCompatibleWithEnum(BookingBatchHeaderField::class));
 
         // Test mit falscher Enum-Klasse
         $this->assertFalse($headerLine->isCompatibleWithEnum('NonExistentEnum'));
     }
 
     public function testFormatDetection(): void {
-        $definition = new BookingHeaderDefinition();
-        $headerLine = new BookingHeaderLine($definition);
+        $definition = new BookingBatchHeaderDefinition();
+        $headerLine = new BookingBatchHeaderLine($definition);
 
         // Test Format-Erkennung
-        $candidates = [BookingHeaderField::class];
+        $candidates = [BookingBatchHeaderField::class];
         $detectedFormat = $headerLine->detectFormat($candidates);
 
-        $this->assertEquals(BookingHeaderField::class, $detectedFormat);
+        $this->assertEquals(BookingBatchHeaderField::class, $detectedFormat);
 
         // Test mit leerer Kandidatenliste
         $this->assertNull($headerLine->detectFormat([]));
     }
 
     public function testHeaderValidationWithRealDATEVHeaders(): void {
-        $definition = new BookingHeaderDefinition();
-        $headerLine = new BookingHeaderLine($definition);
+        $definition = new BookingBatchHeaderDefinition();
+        $headerLine = new BookingBatchHeaderLine($definition);
 
-        // Test: Buchungsstapel V700 Header sollte validiert werden
-        $buchungsStapelFields = explode(';', self::BUCHUNGSSTAPEL_V700);
+        // Test: BookingBatch V700 Header sollte validiert werden
+        $BookingBatchFields = explode(';', self::BOOKINGBATCH_V700);
 
         // Prüfe ob alle Felder aus dem echten DATEV-Header in unserem Enum existieren
-        $enumValues = array_map(fn($case) => $case->value, BookingHeaderField::cases());
+        $enumValues = array_map(fn($case) => $case->value, BookingBatchHeaderField::cases());
 
         $foundFields = 0;
-        foreach ($buchungsStapelFields as $field) {
+        foreach ($BookingBatchFields as $field) {
             if (in_array($field, $enumValues, true)) {
                 $foundFields++;
             }
@@ -147,11 +147,11 @@ class BookingHeaderLineTest extends BaseTestCase {
         // Es sollten viele Felder gefunden werden (nicht alle, da sich DATEV-Formate unterscheiden können)
         $this->assertGreaterThan(50, $foundFields, 'Mindestens 50 Felder vom echten DATEV-Header sollten im Enum gefunden werden');
 
-        // Test: Unser Header sollte als V700 Buchungsstapel erkannt werden
+        // Test: Unser Header sollte als V700 BookingBatch erkannt werden
         $this->assertTrue($headerLine->isV700BookingHeader());
 
-        // Test: Kreditoren Header sollte NICHT als Buchungsstapel erkannt werden
-        $kreditorenFields = explode(';', self::KREDITOREN_V700);
+        // Test: Kreditoren Header sollte NICHT als BookingBatch erkannt werden
+        $kreditorenFields = explode(';', self::CREDITORS_V700);
         $kreditorenFoundInBooking = 0;
 
         foreach ($kreditorenFields as $field) {
@@ -160,28 +160,28 @@ class BookingHeaderLineTest extends BaseTestCase {
             }
         }
 
-        // Kreditoren-Felder sollten kaum im Buchungsstapel-Enum gefunden werden
-        $this->assertLessThan(20, $kreditorenFoundInBooking, 'Kreditoren-Felder sollten nicht in Buchungsstapel-Enum sein');
+        // Kreditoren-Felder sollten kaum im BookingBatch-Enum gefunden werden
+        $this->assertLessThan(20, $kreditorenFoundInBooking, 'Kreditoren-Felder sollten nicht in BookingBatch-Enum sein');
     }
 
     public function testFieldCountConsistency(): void {
-        $definition = new BookingHeaderDefinition();
-        $headerLine = new BookingHeaderLine($definition);
+        $definition = new BookingBatchHeaderDefinition();
+        $headerLine = new BookingBatchHeaderLine($definition);
 
         // Unser Header sollte 125 Felder haben (wie im Enum definiert)
         $this->assertCount(125, $headerLine->getFields());
 
         // Test mit echten DATEV-Headern
-        $buchungsStapelFieldCount = count(explode(';', self::BUCHUNGSSTAPEL_V700));
-        $kreditorenFieldCount = count(explode(';', self::KREDITOREN_V700));
+        $BookingBatchFieldCount = count(explode(';', self::BOOKINGBATCH_V700));
+        $kreditorenFieldCount = count(explode(';', self::CREDITORS_V700));
 
         // Dokumentiere die Unterschiede für Debugging
         $this->addToAssertionCount(1); // Zähle als Assertion
 
         // Optional: Ausgabe für Debugging (wird nur bei Fehlern angezeigt)
-        if ($buchungsStapelFieldCount !== 125) {
+        if ($BookingBatchFieldCount !== 125) {
             $this->markTestIncomplete(
-                "DATEV Buchungsstapel hat $buchungsStapelFieldCount Felder, unser Enum hat 125. " .
+                "DATEV BookingBatch hat $BookingBatchFieldCount Felder, unser Enum hat 125. " .
                     "Kreditoren hat $kreditorenFieldCount Felder."
             );
         }

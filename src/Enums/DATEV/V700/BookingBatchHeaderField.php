@@ -3,7 +3,7 @@
  * Created on   : Sat Dec 14 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : BookingHeaderField.php
+ * Filename     : BookingBatchHeaderField.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -15,11 +15,13 @@ namespace CommonToolkit\Enums\DATEV\V700;
 use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
 
 /**
- * DATEV Buchungsstapel - Feldheader (Spaltenbeschreibungen) V700.
- * Vollständige Implementierung aller 136 DATEV-Felder in korrekter Reihenfolge,
+ * DATEV BookingBatch - Feldheader (Spaltenbeschreibungen) V700.
+ * Vollständige Implementierung aller 125 DATEV-Felder in korrekter Reihenfolge,
  * einschließlich der 20 Zusatzinformationsfelder (ZI-Felder).
+ * 
+ * @see https://developer.datev.de/de/file-format/details/datev-format/format-description/booking-batch
  */
-enum BookingHeaderField: string implements FieldHeaderInterface {
+enum BookingBatchHeaderField: string implements FieldHeaderInterface {
     // Spalten 1-10: Grunddaten der Buchung (gemäß DATEV-Dokumentation)
     case Umsatz                      = 'Umsatz (ohne Soll/Haben-Kz)';               // 1
     case SollHabenKennzeichen        = 'Soll/Haben-Kennzeichen';                    // 2
@@ -317,7 +319,7 @@ enum BookingHeaderField: string implements FieldHeaderInterface {
     }
 
     /**
-     * Liefert die Mindestfelder für einen gültigen Buchungsstapel.
+     * Liefert die Mindestfelder für einen gültigen BookingBatch.
      */
     public static function required(): array {
         return [
@@ -541,6 +543,234 @@ enum BookingHeaderField: string implements FieldHeaderInterface {
             self::Buchungstext => 60,
             self::KOST1, self::KOST2 => 8,
             default => null, // Unbegrenzt oder unbekannt
+        };
+    }
+
+    /**
+     * Liefert das Regex-Pattern für DATEV-Validierung basierend auf der offiziellen Spezifikation.
+     */
+    public function getValidationPattern(): ?string {
+        return match ($this) {
+            // Spalte 1: Umsatz - Betrag muss positiv und darf nicht 0,00 sein
+            self::Umsatz => '^(?!0{1,10}\,00)\d{1,10}\,\d{2}$',
+
+            // Spalte 2: Soll-/Haben-Kennzeichen - S oder H
+            self::SollHabenKennzeichen => '^["](S|H)["]$',
+
+            // Spalte 3: WKZ Umsatz - ISO-Code der Währung (3 Zeichen)
+            self::WKZUmsatz => '^["]([A-Z]{3})["]$',
+
+            // Spalte 4: Kurs - Fremdwährungskurs, darf nicht 0 sein
+            self::Kurs => '^([1-9]\d{0,3}[,]\d{2,6})$',
+
+            // Spalte 5: Basisumsatz - Betrag muss positiv und darf nicht 0,00 sein
+            self::BasisUmsatz => '^(?!0{1,10}\,00)\d{1,10}\,\d{2}$',
+
+            // Spalten 7,8: Konto/Gegenkonto - darf nicht 0 sein, max. 9-stellig
+            self::Konto, self::Gegenkonto => '^(?!0{1,9}$)(\d{1,9})$',
+
+            // Spalte 9: BU-Schlüssel - 4-stelliger Schlüssel
+            self::BUSchluessel => '^(["]\d{4}["])$',
+
+            // Spalte 10: Belegdatum - Format TTMM
+            self::Belegdatum => '^(\d{4})$',
+
+            // Spalte 11: Belegfeld 1 - Rechnungs-/Belegnummer mit erlaubten Sonderzeichen
+            self::Belegfeld1 => '^(["][\w$%\-\/]{0,36}["])$',
+
+            // Spalte 12: Belegfeld 2 - OPOS-Verarbeitungsinformationen
+            self::Belegfeld2 => '^(["][\w$%\-\/]{0,12}["])$',
+
+            // Spalte 13: Skonto - Skonto-Betrag, darf nicht 0 sein
+            self::Skonto => '^([1-9]\d{0,7}[,]\d{2})$',
+
+            // Spalte 14: Buchungstext - 0-60 Zeichen
+            self::Buchungstext => '^(["].{0,60}["])$',
+
+            // Spalte 15: Postensperre - 0 oder 1
+            self::Postensperre => '^(0|1)$',
+
+            // Spalte 16: Diverse Adressnummer - Alphanumerisch, max. 9 Zeichen
+            self::DiverseAdressnummer => '^(["]\w{0,9}["])$',
+
+            // Spalte 17: Geschäftspartnerbank - 3-stellige Nummer
+            self::Geschaeftspartnerbank => '^(\d{3})$',
+
+            // Spalte 18: Sachverhalt - 2-stellige Kennzeichnung
+            self::Sachverhalt => '^(\d{2})$',
+
+            // Spalte 19: Zinssperre - 0 oder 1
+            self::Zinssperre => '^(0|1)$',
+
+            // Spalte 20: Beleglink - Allgemein max. 210 Zeichen oder spezifisch für DATEV Apps
+            self::Beleglink => '^(["].{0,210}["])$',
+
+            // Spalten 21,23,25,27,29,31,33,35: Beleginfo-Art - max. 20 Zeichen
+            self::BelegInfoArt1, self::BelegInfoArt2, self::BelegInfoArt3, self::BelegInfoArt4,
+            self::BelegInfoArt5, self::BelegInfoArt6, self::BelegInfoArt7, self::BelegInfoArt8 => '^(["].{0,20}["])$',
+
+            // Spalten 22,24,26,28,30,32,34,36: Beleginfo-Inhalt - max. 210 Zeichen
+            self::BelegInfoInhalt1, self::BelegInfoInhalt2, self::BelegInfoInhalt3, self::BelegInfoInhalt4,
+            self::BelegInfoInhalt5, self::BelegInfoInhalt6, self::BelegInfoInhalt7, self::BelegInfoInhalt8 => '^(["].{0,210}["])$',
+
+            // Spalten 37,38: KOST-Kostenstelle - Alphanumerisch mit Leerzeichen, max. 36 Zeichen
+            self::KOST1, self::KOST2 => '^(["][\w ]{0,36}["])$',
+
+            // Spalte 39: KOST-Menge - 12 Vor- und 4 Nachkommastellen
+            self::KostMenge => '^\d{12}[,]\d{4}$',
+
+            // Spalte 40: EU-Mitgliedstaat u. UStID (Bestimmung) - max. 15 Zeichen
+            self::EULandUStID => '^(["].{0,15}["])$',
+
+            // Spalte 41: EU-Steuersatz (Bestimmung) - Format XX,XX
+            self::EUSteuer => '^\d{2}[,]\d{2}$',
+
+            // Spalte 42: Abweichende Versteuerungsart - I, K, P oder S
+            self::Abwkonto => '^(["](I|K|P|S)["])$',
+
+            // Spalte 43: Sachverhalt L+L - 1-3 Stellen, darf nicht 0 sein
+            self::SachverhaltLuL => '^(\d{1,3})$',
+
+            // Spalte 44: Funktionsergänzung L+L - max. 3 Stellen, darf 0 sein aber nicht nur 0
+            self::FunktionsergaenzungLuL => '^\d{0,3}$',
+
+            // Spalte 45: BU 49 Hauptfunktionstyp - 1 Stelle
+            self::BU49Hauptfunktionstyp => '^\d$',
+
+            // Spalte 46: BU 49 Hauptfunktionsnummer - max. 2 Stellen
+            self::BU49Hauptfunktionsnummer => '^\d{0,2}$',
+
+            // Spalte 47: BU 49 Funktionsergänzung - max. 3 Stellen
+            self::BU49Funktionsergaenzung => '^\d{0,3}$',
+
+            // Spalten 48-87: Zusatzinformation Art - max. 20 Zeichen
+            self::ZusatzInfo1, self::ZusatzInfo2, self::ZusatzInfo3, self::ZusatzInfo4, self::ZusatzInfo5,
+            self::ZusatzInfo6, self::ZusatzInfo7, self::ZusatzInfo8, self::ZusatzInfo9, self::ZusatzInfo10,
+            self::ZusatzInfo11, self::ZusatzInfo12, self::ZusatzInfo13, self::ZusatzInfo14, self::ZusatzInfo15,
+            self::ZusatzInfo16, self::ZusatzInfo17, self::ZusatzInfo18, self::ZusatzInfo19, self::ZusatzInfo20 => '^(["].{0,20}["])$',
+
+            // Spalten 49-87: Zusatzinformation Inhalt - max. 210 Zeichen
+            self::ZusatzInfoInhalt1, self::ZusatzInfoInhalt2, self::ZusatzInfoInhalt3, self::ZusatzInfoInhalt4,
+            self::ZusatzInfoInhalt5, self::ZusatzInfoInhalt6, self::ZusatzInfoInhalt7, self::ZusatzInfoInhalt8,
+            self::ZusatzInfoInhalt9, self::ZusatzInfoInhalt10, self::ZusatzInfoInhalt11, self::ZusatzInfoInhalt12,
+            self::ZusatzInfoInhalt13, self::ZusatzInfoInhalt14, self::ZusatzInfoInhalt15, self::ZusatzInfoInhalt16,
+            self::ZusatzInfoInhalt17, self::ZusatzInfoInhalt18, self::ZusatzInfoInhalt19, self::ZusatzInfoInhalt20 => '^(["].{0,210}["])$',
+
+            // Spalte 88: Stück - max. 8 Stellen
+            self::Stueck => '^\d{0,8}$',
+
+            // Spalte 89: Gewicht - 1-8 Stellen mit 2 Nachkommastellen
+            self::Gewicht => '^(\d{1,8}[,]\d{2})$',
+
+            // Spalte 90: Zahlweise - max. 2 Stellen
+            self::Zahlweise => '^\d{0,2}$',
+
+            // Spalte 91: Forderungsart - Alphanumerisch, max. 10 Zeichen
+            self::Forderungsart => '^(["]\w{0,10}["])$',
+
+            // Spalte 92: Veranlagungsjahr - Format JJJJ (20XX)
+            self::Veranlagungsjahr => '^(([2])([0])([0-9]{2}))$',
+
+            // Spalte 93: Zugeordnete Fälligkeit - Format TTMMJJJJ
+            self::ZugeordneteFaelligkeit => '^((0[1-9]|[1-2][0-9]|3[0-1])(0[1-9]|1[0-2])([2])([0])([0-9]{2}))$',
+
+            // Spalte 94: Skontotyp - 1 Stelle
+            self::SkontoTyp => '^\d$',
+
+            // Spalte 95: Auftragsnummer - max. 30 Zeichen
+            self::Auftragsnummer => '^(["].{0,30}["])$',
+
+            // Spalte 96: Buchungstyp - 2 Großbuchstaben
+            self::Buchungstyp => '^(["][A-Z]{2}["])$',
+
+            // Spalte 97: USt-Schlüssel (Anzahlungen) - max. 4 Stellen
+            self::UStSchluessel => '^\d{0,4}$',
+
+            // Spalte 98: EU-Mitgliedstaat (Anzahlungen) - 2 Großbuchstaben
+            self::EUMitgliedstaatAnzahlung => '^(["][A-Z]{2}["])$',
+
+            // Spalte 99: Sachverhalt L+L (Anzahlungen) - max. 3 Stellen, darf nicht 0 sein
+            self::SachverhaltLL => '^\d{0,3}$',
+
+            // Spalte 100: EU-Steuersatz (Anzahlungen) - Format X,XX oder XX,XX
+            self::EUSteuersatzAnzahlung => '^(\d{1,2}[,]\d{2})$',
+
+            // Spalte 101: Erlöskonto (Anzahlungen) - 4-8 Stellen
+            self::ErloeskontoAnzahlung => '^(\d{4,8})$',
+
+            // Spalte 102: Herkunft-Kz - 2 Großbuchstaben
+            self::HerkunftKZ => '^(["][A-Z]{2}["])$',
+
+            // Spalte 103: Leerfeld - max. 36 Zeichen
+            self::Leerfeld => '^(["].{0,36}["])$',
+
+            // Spalte 104: KOST-Datum - Format TTMMJJJJ
+            self::KOSTDatum => '^((0[1-9]|[1-2]\d|3[0-1])(0[1-9]|1[0-2])([2])([0])(\d{2}))$',
+
+            // Spalte 105: SEPA-Mandatsreferenz - max. 35 Zeichen
+            self::SEPAMandatsreferenz => '^(["].{0,35}["])$',
+
+            // Spalte 106: Skontosperre - 0 oder 1
+            self::Skontosperre => '^[0|1]$',
+
+            // Spalte 107: Gesellschaftername - max. 76 Zeichen
+            self::Gesellschaftername => '^(["].{0,76}["])$',
+
+            // Spalte 108: Beteiligtennummer - 4-stellige Nummer
+            self::Beteiligtennummer => '^(\d{4})$',
+
+            // Spalte 109: Identifikationsnummer - max. 11 Zeichen
+            self::Identifikationsnummer => '^(["].{0,11}["])$',
+
+            // Spalte 110: Zeichnernummer - max. 20 Zeichen
+            self::Zeichnernummer => '^(["].{0,20}["])$',
+
+            // Spalte 111: Postensperre bis - Format TTMMJJJJ
+            self::PostensperreBis => '^((0[1-9]|[1-2]\d|3[0-1])(0[1-9]|1[0-2])([2])([0])(\d{2}))$',
+
+            // Spalte 112: Bezeichnung SoBil-Sachverhalt - max. 30 Zeichen
+            self::BezeichnungSoBilSachverhalt => '^(["].{0,30}["])$',
+
+            // Spalte 113: Kennzeichen SoBil-Buchung - 1-2 Stellen
+            self::KennzeichenSoBilBuchung => '^(\d{1,2})$',
+
+            // Spalte 114: Festschreibung - 0 oder 1
+            self::Festschreibung => '^(0|1)$',
+
+            // Spalte 115: Leistungsdatum - Format TTMMJJJJ
+            self::Leistungsdatum => '^((0[1-9]|[1-2]\d|3[0-1])(0[1-9]|1[0-2])([2])([0])(\d{2}))$',
+
+            // Spalte 116: Datum Zuordnung Steuerperiode - Format TTMMJJJJ
+            self::DatumZuordnungSteuerperiode => '^((0[1-9]|[1-2]\d|3[0-1])(0[1-9]|1[0-2])([2])([0])(\d{2}))$',
+
+            // Spalte 117: Fälligkeit - Format TTMMJJJJ
+            self::Faelligkeit => '^((0[1-9]|[1-2]\d|3[0-1])(0[1-9]|1[0-2])([2])([0])(\d{2}))$',
+
+            // Spalte 118: Generalumkehr - "0" oder "1"
+            self::Generalumkehr => '^(["](0|1)["])$',
+
+            // Spalte 119: Steuersatz - Format XX,XX
+            self::Steuersatz => '^(\d{1,2}[,]\d{2})$',
+
+            // Spalte 120: Land - ISO-Code (2 Großbuchstaben)
+            self::Land => '^(["][A-Z]{2}["])$',
+
+            // Spalte 121: Abrechnungsreferenz - max. 50 Zeichen
+            self::Abrechnungsreferenz => '^(["].{0,50}["])$',
+
+            // Spalte 122: BVV-Position - 1-5
+            self::BVVPosition => '^([1|2|3|4|5])$',
+
+            // Spalte 123: EU-Mitgliedstaat u. UStID (Ursprung) - max. 15 Zeichen
+            self::EUMitgliedstaatUstID => '^(["].{0,15}["])$',
+
+            // Spalte 124: EU-Steuersatz (Ursprung) - Format XX,XX
+            self::EUSteuersatzUrsprung => '^\d{2}[,]\d{2}$',
+
+            // Spalte 125: Abweichendes Skontokonto - 1-9 Stellen
+            self::AbwSkontokonto => '^(\d{1,9})$',
+
+            default => null,
         };
     }
 }

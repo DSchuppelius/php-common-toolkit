@@ -1,9 +1,9 @@
 <?php
 /*
- * Created on   : Sun Dec 15 2025
+ * Created on   : Mon Dec 15 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : Buchungsstapel.php
+ * Filename     : BookingBatch.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -17,11 +17,11 @@ use CommonToolkit\Entities\DATEV\{Document, MetaHeaderLine, FormatInfo};
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 
 /**
- * DATEV-Buchungsstapel-Dokument.
- * Spezielle Document-Klasse für Buchungsstapel-Format (Kategorie 21).
+ * DATEV-BookingBatch-Dokument.
+ * Spezielle Document-Klasse für BookingBatch-Format (Kategorie 21).
  */
-final class Buchungsstapel extends Document {
-    public function __construct(?MetaHeaderLine $metaHeader,        ?HeaderLine $header,        array $rows = []) {
+final class BookingBatch extends Document {
+    public function __construct(?MetaHeaderLine $metaHeader, ?HeaderLine $header, array $rows = []) {
         parent::__construct($metaHeader, $header, $rows);
     }
 
@@ -40,16 +40,16 @@ final class Buchungsstapel extends Document {
     }
 
     /**
-     * Validiert, dass es sich um ein Buchungsstapel-Format handelt.
+     * Validiert, dass es sich um ein BookingBatch-Format handelt.
      */
     public function validate(): void {
         parent::validate();
 
-        // Zusätzliche Validierung für Buchungsstapel
+        // Zusätzliche Validierung für BookingBatch
         if ($this->getMetaHeader() !== null) {
             $metaFields = $this->getMetaHeader()->getFields();
             if (count($metaFields) > 2 && $metaFields[2]->getValue() !== '21') {
-                throw new \RuntimeException('Document ist kein Buchungsstapel-Format');
+                throw new \RuntimeException('Document ist kein BookingBatch-Format');
             }
         }
     }

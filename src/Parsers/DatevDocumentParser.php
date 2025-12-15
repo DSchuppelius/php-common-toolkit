@@ -1,6 +1,6 @@
 <?php
 /*
- * Created on   : Sun Dec 15 2025
+ * Created on   : Mon Dec 15 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
  * Filename     : DatevDocumentParser.php
@@ -14,12 +14,11 @@ namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Entities\Common\CSV\{DataLine, HeaderLine};
 use CommonToolkit\Entities\DATEV\{Document, MetaHeaderLine};
-use CommonToolkit\Entities\DATEV\Header\BookingHeaderLine;
-use CommonToolkit\Entities\DATEV\Header\V700\BookingHeaderDefinition;
+use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
+use CommonToolkit\Entities\DATEV\Header\V700\BookingBatchHeaderDefinition;
 use CommonToolkit\Registries\DATEV\HeaderRegistry;
-use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderInterface;
+use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderDefinitionInterface;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
-use CommonToolkit\Enums\DATEV\V700\MetaHeaderField;
 use CommonToolkit\Helper\FileSystem\File;
 use Exception;
 use RuntimeException;
@@ -50,12 +49,11 @@ class DatevDocumentParser extends CSVDocumentParser {
         // 1. MetaHeader extrahieren
         $metaHeaderLine = self::parseMetaHeader($lines[0], $delimiter, $enclosure);
 
-        // 2. Format-Unterstützung prüfen - typisierte Getter ohne Casts nutzen
-        $categoryNumber = $metaHeaderLine->getFormatkategorie();
+        // 2. Format-Unterstützung prüfen - automatische Klassenerkennung
+        $category = $metaHeaderLine->getFormatkategorie();
         $version = $metaHeaderLine->getVersionsnummer();
-        $categoryEnum = Category::tryFrom($categoryNumber);
-        $formatType = $categoryEnum?->nameValue() ?? 'Unbekannt';
-        $isSupported = $formatType === 'Buchungsstapel' && $version === 700;
+        $formatType = $category?->nameValue() ?? 'Unbekannt';
+        $isSupported = self::isFormatSupported($category, $version);
 
         if (!$isSupported) {
             throw new RuntimeException("Format '$formatType' v$version ist noch nicht implementiert");
@@ -65,11 +63,11 @@ class DatevDocumentParser extends CSVDocumentParser {
         $csvWithoutMetaHeader = implode("\n", array_slice($lines, 1));
         $csvDocument = parent::fromString($csvWithoutMetaHeader, $delimiter, $enclosure, true);
 
-        // 4. Für Buchungsstapel: BookingHeaderLine erstellen
-        $bookingHeader = self::createBookingHeaderLine($csvDocument->getHeader(), $delimiter, $enclosure);
+        // 4. Format-spezifische HeaderLine erstellen
+        $formatHeader = self::createFormatHeaderLine($metaHeaderLine, $csvDocument->getHeader(), $delimiter, $enclosure);
 
-        // 5. DATEV-spezifisches Document mit MetaHeader und BookingHeader erstellen
-        return new Document($metaHeaderLine, $bookingHeader, $csvDocument->getRows());
+        // 5. DATEV-spezifisches Document mit MetaHeader und Format-Header erstellen
+        return new Document($metaHeaderLine, $formatHeader, $csvDocument->getRows());
     }
 
     /**
@@ -132,15 +130,14 @@ class DatevDocumentParser extends CSVDocumentParser {
             ];
         }
 
-        // Format-Informationen direkt aus DataLine - keine raw value extraction nötig!
-        $version = $metaDefinition->getVersion();
-        $categoryField = $dataLine->getFields()[2] ?? null;
-        $categoryNumber = $categoryField ? (int)$categoryField->getValue() : 0;
-        $categoryEnum = Category::tryFrom($categoryNumber);
+        // Format-Informationen über typisierte MetaHeaderLine - konsistent mit fromString!
+        $metaHeaderLine = self::createMetaHeaderLineFromDataLine($dataLine, $metaDefinition);
+        $version = $metaHeaderLine->getVersionsnummer();
+        $category = $metaHeaderLine->getFormatkategorie();
 
-        // Nur Buchungsstapel ist aktuell unterstützt
-        $formatType = $categoryEnum?->nameValue() ?? 'Unbekannt';
-        $isSupported = $formatType === 'Buchungsstapel' && $version === 700;
+        // Format-Unterstützung automatisch erkennen
+        $formatType = $category?->nameValue() ?? 'Unbekannt';
+        $isSupported = self::isFormatSupported($category, $version);
 
         return [
             'format_type' => $formatType,
@@ -222,39 +219,95 @@ class DatevDocumentParser extends CSVDocumentParser {
     }
 
     /**
-     * Gibt die unterstützten DATEV-Formate zurück.
+     * Prüft automatisch, ob ein DATEV-Format unterstützt wird.
+     * Basiert auf der Existenz entsprechender Document-Klassen.
+     */
+    private static function isFormatSupported(?Category $category, int $version): bool {
+        if (!$category) {
+            return false;
+        }
+
+        // Prüfe ob Version überhaupt unterstützt wird
+        $supportedVersions = HeaderRegistry::getSupportedVersions();
+        if (!in_array($version, $supportedVersions, true)) {
+            return false;
+        }
+
+        // Prüfe ob entsprechende Document-Klasse existiert
+        $className = self::getDocumentClassName($category);
+        return class_exists($className);
+    }
+
+    /**
+     * Leitet den Klassennamen der entsprechenden Document-Klasse ab.
+     */
+    private static function getDocumentClassName(Category $category): string {
+        $formatName = match ($category) {
+            Category::Buchungsstapel => 'BookingBatch',
+            Category::DebitorenKreditoren => 'DebitorenKreditoren',
+            Category::Sachkontenbeschriftungen => 'Kontenbeschriftungen',
+            Category::Zahlungsbedingungen => 'Zahlungsbedingungen',
+            Category::DiverseAdressen => 'DiverseAdressen',
+            Category::WiederkehrendeBuchungen => 'WiederkehrendeBuchungen',
+            Category::NaturalStapel => 'NaturalStapel',
+        };
+
+        return "CommonToolkit\\Entities\\DATEV\\Documents\\{$formatName}";
+    }
+
+    /**
+     * Gibt die unterstützten DATEV-Formate dynamisch zurück.
+     * Prüft automatisch alle verfügbaren Document-Klassen.
      * 
      * @return array<string, bool> Format-Name => Unterstützt
      */
     public static function getSupportedFormats(): array {
-        return [
-            'Buchungsstapel' => true,
-            'Debitoren/Kreditoren' => false,
-            'Kontenbeschriftungen' => false,
-            'Wiederkehrende Buchungen' => false,
-            'Zahlungsbedingungen' => false,
-            'Diverse Adressen' => false,
-            'Natural-Stapel' => false,
-        ];
+        $formats = [];
+        $supportedVersions = HeaderRegistry::getSupportedVersions();
+
+        foreach (Category::cases() as $category) {
+            $formatName = $category->nameValue();
+
+            // Prüfe für alle verfügbaren Versionen
+            $isSupported = false;
+            foreach ($supportedVersions as $version) {
+                if (self::isFormatSupported($category, $version)) {
+                    $isSupported = true;
+                    break;
+                }
+            }
+
+            $formats[$formatName] = $isSupported;
+        }
+        return $formats;
     }
 
     /**
-     * Erstellt eine BookingHeaderLine für Buchungsstapel.
+     * Erstellt eine format-spezifische HeaderLine basierend auf MetaHeader-Informationen.
      * 
+     * @param MetaHeaderLine $metaHeaderLine Der geparste MetaHeader
      * @param HeaderLine|null $header Der Standard CSV-Header
      * @param string $delimiter CSV-Trennzeichen
      * @param string $enclosure CSV-Textbegrenzer
-     * @return BookingHeaderLine Die DATEV BookingHeaderLine
+     * @return HeaderLine Die DATEV format-spezifische HeaderLine
      */
-    private static function createBookingHeaderLine(?HeaderLine $header, string $delimiter, string $enclosure): BookingHeaderLine {
+    private static function createFormatHeaderLine(MetaHeaderLine $metaHeaderLine, ?HeaderLine $header, string $delimiter, string $enclosure): HeaderLine {
         if (!$header) {
-            throw new RuntimeException('Header fehlt für BookingHeaderLine-Erstellung');
+            throw new RuntimeException('Header fehlt für Format-HeaderLine-Erstellung');
         }
 
-        // BookingHeaderDefinition für V700 Buchungsstapel
-        $definition = new BookingHeaderDefinition();
+        $category = $metaHeaderLine->getFormatkategorie();
+        $version = $metaHeaderLine->getVersionsnummer();
 
-        return new BookingHeaderLine($definition, $delimiter, $enclosure);
+        // Aktuell nur BookingBatch V700 unterstützt
+        if ($category === Category::Buchungsstapel && $version === 700) {
+            $definition = new BookingBatchHeaderDefinition();
+            return new BookingBatchHeaderLine($definition, $delimiter, $enclosure);
+        }
+
+        throw new RuntimeException(
+            "Format '" . ($category?->nameValue() ?? 'Unbekannt') . "' Version {$version} hat noch keine Header-Definition"
+        );
     }
 
     /**
@@ -262,12 +315,12 @@ class DatevDocumentParser extends CSVDocumentParser {
      * Eliminiert doppeltes CSV-Parsing durch direkte Verwendung der geparsten DataLine.
      *
      * @param DataLine $dataLine Die bereits geparste CSV-Zeile
-     * @param MetaHeaderInterface $definition Die MetaHeader-Definition
+     * @param MetaHeaderDefinitionInterface $definition Die MetaHeader-Definition
      * @return MetaHeaderLine Die erstellte MetaHeaderLine
      */
     private static function createMetaHeaderLineFromDataLine(
         DataLine $dataLine,
-        MetaHeaderInterface $definition
+        MetaHeaderDefinitionInterface $definition
     ): MetaHeaderLine {
         // Feldwerte direkt aus bereits geparster DataLine extrahieren - kein doppeltes Parsing!
         $rawFieldValues = [];
@@ -277,11 +330,10 @@ class DatevDocumentParser extends CSVDocumentParser {
 
         // Validate field count against expected MetaHeader structure
         $expectedFields = $definition->getFields();
-        $expectedFieldCount = count($expectedFields);
         $actualFieldCount = count($rawFieldValues);
 
-        if ($actualFieldCount !== $expectedFieldCount) {
-            static::logError(sprintf('MetaHeader field count mismatch: expected %d fields, got %d fields', $expectedFieldCount, $actualFieldCount));
+        if ($actualFieldCount !== $definition->countFields()) {
+            static::logError(sprintf('MetaHeader field count mismatch: expected %d fields, got %d fields', $definition->countFields(), $actualFieldCount));
         }
 
         // Create MetaHeaderLine with definition and populate with parsed values

@@ -12,19 +12,19 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Registries\DATEV;
 
-use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderInterface;
+use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderDefinitionInterface;
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\Header\V700\MetaHeaderDefinition as MetaHeaderDefinition700;
 use RuntimeException;
 
 final class HeaderRegistry {
-    /** @var array<int, class-string<MetaHeaderInterface>> */
+    /** @var array<int, class-string<MetaHeaderDefinitionInterface>> */
     private static array $definitions = [
         700 => MetaHeaderDefinition700::class,
         // später weitere Versionen hinzufügen
     ];
 
-    public static function get(int $version): MetaHeaderInterface {
+    public static function get(int $version): MetaHeaderDefinitionInterface {
         $class = self::$definitions[$version] ?? null;
         if (!$class) {
             throw new RuntimeException("Keine DATEV-Headerdefinition für Version {$version} registriert.");
@@ -36,7 +36,7 @@ final class HeaderRegistry {
      * Automatische Erkennung aus dem rohen Werte-Array.
      * Prüft die Versionsnummer an Position 1 (feste DATEV-Struktur).
      */
-    public static function detectFromValues(array $values): ?MetaHeaderInterface {
+    public static function detectFromValues(array $values): ?MetaHeaderDefinitionInterface {
         // Versionsnummer muss an Position 1 stehen (DATEV-Standard)
         if (isset($values[1]) && preg_match('/^\d+$/', (string)$values[1])) {
             $version = (int)$values[1];
@@ -52,7 +52,7 @@ final class HeaderRegistry {
      * Automatische Erkennung direkt aus einer geparsten DataLine.
      * Prüft die Versionsnummer an Position 1 (feste DATEV-Struktur).
      */
-    public static function detectFromDataLine(DataLine $dataLine): ?MetaHeaderInterface {
+    public static function detectFromDataLine(DataLine $dataLine): ?MetaHeaderDefinitionInterface {
         $fields = $dataLine->getFields();
 
         // Versionsnummer an Position 1 prüfen (DATEV-Standard)
@@ -73,9 +73,9 @@ final class HeaderRegistry {
      * Registriert eine neue Header-Definition für eine Version.
      */
     public static function register(int $version, string $definitionClass): void {
-        if (!is_subclass_of($definitionClass, MetaHeaderInterface::class)) {
+        if (!is_subclass_of($definitionClass, MetaHeaderDefinitionInterface::class)) {
 
-            throw new RuntimeException("Definition class must implement MetaHeaderInterface");
+            throw new RuntimeException("Definition class must implement MetaHeaderDefinitionInterface");
         }
         self::$definitions[$version] = $definitionClass;
     }

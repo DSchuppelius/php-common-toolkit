@@ -12,18 +12,16 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Entities\DATEV\Header\V700;
 
-use CommonToolkit\Contracts\Interfaces\DATEV\{MetaHeaderFieldInterface, MetaHeaderInterface};
+use CommonToolkit\Contracts\Abstracts\DATEV\MetaHeaderDefinitionAbstract;
+use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderFieldInterface;
 use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Enums\DATEV\MetaFields\{AccountingPurpose, BookingType, Establishing, Mark};
 use CommonToolkit\Enums\DATEV\MetaFields\Format\{Category, Version};
 use CommonToolkit\Enums\DATEV\V700\MetaHeaderField;
 use InvalidArgumentException;
 
-final class MetaHeaderDefinition implements MetaHeaderInterface {
-    public function getVersion(): int {
-        // Header-Versionsnummer laut DATEV (aktuell 700)
-        return 700;
-    }
+final class MetaHeaderDefinition extends MetaHeaderDefinitionAbstract {
+    protected const VERSION = 700;
 
     /**
      * Liefert den Enum-Typ, der die Meta-Header-Felder beschreibt.
@@ -45,17 +43,6 @@ final class MetaHeaderDefinition implements MetaHeaderInterface {
     }
 
     /**
-     * Regex-Pattern für ein Feld aus der Felddefinition (MetaHeaderField).
-     */
-    public function getValidationPattern(MetaHeaderFieldInterface $field): ?string {
-        if (!$field instanceof MetaHeaderField) {
-            throw new InvalidArgumentException('Inkompatibles Feldobjekt übergeben.');
-        }
-
-        return $field->pattern();
-    }
-
-    /**
      * Liefert die fachlichen Default-Werte für den Metaheader.
      *
      * Enums werden hier auf ihre skalaren Werte (int/string) abgebildet, damit
@@ -66,7 +53,7 @@ final class MetaHeaderDefinition implements MetaHeaderInterface {
             throw new InvalidArgumentException('Inkompatibles Feldobjekt übergeben.');
         }
 
-        // Default-Format für diese Definition (V700 Buchungsstapel)
+        // Default-Format für diese Definition (V700 BookingBatch)
         $category = Category::Buchungsstapel;
 
         return match ($field) {

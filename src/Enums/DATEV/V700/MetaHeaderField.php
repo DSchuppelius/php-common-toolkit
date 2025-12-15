@@ -75,7 +75,7 @@ enum MetaHeaderField: string implements MetaHeaderFieldInterface {
      * Wichtig: KEINE eigenen Delimiter, weil preg_match('/'.$pattern.'/u') verwendet wird.
      */
     private static function textSlotPattern(): string {
-        return '^(?:""|"[^"]*"|)$';
+        return '^.*$';
     }
 
     public function label(): string {
@@ -95,18 +95,18 @@ enum MetaHeaderField: string implements MetaHeaderFieldInterface {
     public function pattern(): ?string {
         return match ($this) {
             // 1–5
-            self::Kennzeichen            => '^"(EXTF|DTVF)"$',
+            self::Kennzeichen            => '^(EXTF|DTVF)$',
             self::Versionsnummer         => '^(700)$',
             self::Formatkategorie        => '^(16|20|21|46|48|65|66)$',
-            self::Formatname             => '^"(Buchungsstapel|Wiederkehrende Buchungen|Debitoren\/Kreditoren|Kontenbeschriftungen|Zahlungsbedingungen|Diverse Adressen|Natural\-Stapel)"$',
+            self::Formatname             => '^(Buchungsstapel|Wiederkehrende Buchungen|Debitoren\/Kreditoren|Kontenbeschriftungen|Zahlungsbedingungen|Diverse Adressen|Natural\-Stapel)$',
             self::Formatversion          => '^(2|3|4|5|13)$',
 
             // 6–10
             self::ErzeugtAm              => '^20\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(2[0-3]|[01]\d)([0-5]\d)([0-5]\d)\d{3}$',
             self::Importiert             => self::alphaNumericSlotPattern(),
-            self::Herkunft               => '^"\w{0,2}"$',
-            self::ExportiertVon          => '^"\w{0,25}"$',
-            self::ImportiertVon          => '^"\w{0,25}"$',
+            self::Herkunft               => '^\w{0,2}$',
+            self::ExportiertVon          => '^\w{0,25}$',
+            self::ImportiertVon          => '^\w{0,25}$',
 
             // 11–16
             self::Beraternummer          => '^(\d{4,6}|\d{7})$',
@@ -117,12 +117,12 @@ enum MetaHeaderField: string implements MetaHeaderFieldInterface {
             self::DatumBis               => '^(?:20\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01]))?$',
 
             // 17–22
-            self::Bezeichnung            => '^"[\w.\-\/ ]{0,30}"$',
-            self::Diktatkuerzel          => '^"([A-Z]{2}){0,2}"$',
+            self::Bezeichnung            => '^[\w.\-\/ ]{0,30}$',
+            self::Diktatkuerzel          => '^([A-Z]{2}){0,2}$',
             self::Buchungstyp            => '^(?:[1-2])?$',
             self::Rechnungslegungszweck  => '^(?:0|30|40|50|64)?$',
             self::Festschreibung         => '^(?:0|1)?$',
-            self::Waehrungskennzeichen   => '^(?:"[A-Z]{3}"|"")$',
+            self::Waehrungskennzeichen   => '^(?:[A-Z]{3}|)?$',
 
             // 23–26
             self::Reserviert23           => self::alphaNumericSlotPattern(),
@@ -131,11 +131,11 @@ enum MetaHeaderField: string implements MetaHeaderFieldInterface {
             self::Reserviert26           => self::alphaNumericSlotPattern(),
 
             // 27–31
-            self::Sachkontenrahmen       => '^(?:\d{1,4}|""|"[0-9]{1,4}"|)$',
-            self::BranchenloesungID      => '^(?:\d{0,4}|"{2})$',
+            self::Sachkontenrahmen       => '^\d{0,4}$',
+            self::BranchenloesungID      => '^\d{0,4}$',
             self::Reserviert29           => self::alphaNumericSlotPattern(),
             self::Reserviert30           => self::textSlotPattern(),
-            self::Anwendungsinformation  => '^(?:"[^"]{0,16}"|)$',
+            self::Anwendungsinformation  => '^[^"]{0,16}$',
 
             default => null,
         };
@@ -144,6 +144,8 @@ enum MetaHeaderField: string implements MetaHeaderFieldInterface {
     public function position(): int {
         return array_search($this, self::ordered(), true) + 1;
     }
+
+
 
     /**
      * Reihenfolge 1..31 für Export/Parsing.

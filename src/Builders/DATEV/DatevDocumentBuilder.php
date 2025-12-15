@@ -33,7 +33,7 @@ final class DatevDocumentBuilder extends CSVDocumentBuilder {
     }
 
     /**
-     * Erzeugt automatisch den festen DATEV-Feldheader (Buchungsstapel-Format).
+     * Erzeugt automatisch den festen DATEV-Feldheader (BookingBatch-Format).
      */
     protected function createFixedFieldHeader(): FieldHeaderLine {
         $fields = [

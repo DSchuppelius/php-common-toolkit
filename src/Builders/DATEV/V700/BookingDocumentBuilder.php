@@ -14,22 +14,22 @@ namespace CommonToolkit\Builders\DATEV\V700;
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Entities\DATEV\{Document as DatevDocument, MetaHeaderLine};
-use CommonToolkit\Entities\DATEV\Header\V700\{MetaHeaderDefinition, BookingHeaderDefinition, BookingHeaderLine};
+use CommonToolkit\Entities\DATEV\Header\V700\{MetaHeaderDefinition, BookingBatchHeaderDefinition, BookingBatchHeaderLine};
 use CommonToolkit\Entities\DATEV\V700\BookingDataLine;
-use CommonToolkit\Enums\DATEV\V700\{MetaHeaderField, BookingHeaderField};
+use CommonToolkit\Enums\DATEV\V700\{MetaHeaderField, BookingBatchHeaderField};
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 use DateTimeImmutable;
 
 /**
- * Builder für DATEV Buchungsstapel-Dokumente (V700).
+ * Builder für DATEV BookingBatch-Dokumente (V700).
  * Erstellt komplette DATEV-Export-Dateien mit MetaHeader, FieldHeader und Buchungsdaten.
  */
 final class BookingDocumentBuilder extends CSVDocumentBuilder {
     use ErrorLog;
 
     private ?MetaHeaderLine $metaHeader = null;
-    private ?BookingHeaderLine $fieldHeader = null;
+    private ?BookingBatchHeaderLine $fieldHeader = null;
     /** @var BookingDataLine[] */
     private array $bookingLines = [];
 
@@ -38,7 +38,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     }
 
     /**
-     * Setzt den MetaHeader mit Standard-Buchungsstapel-Konfiguration.
+     * Setzt den MetaHeader mit Standard-BookingBatch-Konfiguration.
      */
     public function setMetaHeader(?MetaHeaderLine $metaHeader = null): self {
         $this->metaHeader = $metaHeader ?? $this->createDefaultMetaHeader();
@@ -48,8 +48,8 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     /**
      * Setzt den FieldHeader (Spaltenbeschreibungen).
      */
-    public function setFieldHeader(?BookingHeaderLine $fieldHeader = null): self {
-        $this->fieldHeader = $fieldHeader ?? BookingHeaderLine::createDefault();
+    public function setFieldHeader(?BookingBatchHeaderLine $fieldHeader = null): self {
+        $this->fieldHeader = $fieldHeader ?? BookingBatchHeaderLine::createDefault();
         return $this;
     }
 
@@ -126,7 +126,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     }
 
     /**
-     * Setzt die Beschreibung des Buchungsstapels.
+     * Setzt die Beschreibung des BookingBatchs.
      */
     public function setDescription(string $description): self {
         if (!$this->metaHeader) {
@@ -151,7 +151,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
         }
 
         if (empty($this->bookingLines)) {
-            static::logWarning('Buchungsstapel ohne Buchungszeilen erstellt');
+            static::logWarning('BookingBatch ohne Buchungszeilen erstellt');
         }
 
         // Validierung
@@ -193,7 +193,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     }
 
     /**
-     * Erstellt einen Standard-MetaHeader für Buchungsstapel.
+     * Erstellt einen Standard-MetaHeader für BookingBatch.
      */
     private function createDefaultMetaHeader(): MetaHeaderLine {
         $definition = new MetaHeaderDefinition();

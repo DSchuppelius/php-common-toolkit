@@ -1,6 +1,6 @@
 <?php
 /*
- * Created on   : Sun Dec 15 2025
+ * Created on   : Mon Dec 15 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
  * Filename     : DatevDocumentParserTest.php
@@ -13,13 +13,13 @@ declare(strict_types=1);
 namespace Tests\Parsers;
 
 use CommonToolkit\Entities\DATEV\Document;
-use CommonToolkit\Entities\DATEV\Header\BookingHeaderLine;
+use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
 use CommonToolkit\Parsers\DatevDocumentParser;
 use RuntimeException;
 use Tests\Contracts\BaseTestCase;
 
 class DatevDocumentParserTest extends BaseTestCase {
-    public function testAnalyzeFormatBuchungsstapelV700(): void {
+    public function testAnalyzeFormatBookingBatchV700(): void {
         $csvContent = '"EXTF";700;21;"Buchungsstapel";13;20240130140440439;;"RE";"";"";29098;55003;20240101;4;20240101;20240831;"Buchungsstapel";"WD";1;0;0;"EUR";;"";;;"03";;;"";""' . "\n" .
             'Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;WKZ Umsatz;Kurs;Basis-Umsatz;WKZ Basis-Umsatz;Konto;Gegenkonto (ohne BU-Schlüssel);BU-Schlüssel;Belegdatum;Belegfeld 1;Belegfeld 2;Skonto;Buchungstext;Postensperre;Diverse Adressnummer;Geschäftspartnerbank;Sachverhalt;Zinssperre;Beleglink;Beleginfo - Art 1;Beleginfo - Inhalt 1;Beleginfo - Art 2;Beleginfo - Inhalt 2;Beleginfo - Art 3;Beleginfo - Inhalt 3;Beleginfo - Art 4;Beleginfo - Inhalt 4;Beleginfo - Art 5;Beleginfo - Inhalt 5;Beleginfo - Art 6;Beleginfo - Inhalt 6;Beleginfo - Art 7;Beleginfo - Inhalt 7;Beleginfo - Art 8;Beleginfo - Inhalt 8;KOST1 - Kostenstelle;KOST2 - Kostenstelle;Kost-Menge;EU-Land u. UStID (Bestimmung);EU-Steuersatz (Bestimmung);Abw. Versteuerungsart;Sachverhalt L+L;Funktionsergänzung L+L;BU 49 Hauptfunktionstyp;BU 49 Hauptfunktionsnummer;BU 49 Funktionsergänzung;Zusatzinformation - Art 1;Zusatzinformation- Inhalt 1;Zusatzinformation - Art 2;Zusatzinformation- Inhalt 2;Zusatzinformation - Art 3;Zusatzinformation- Inhalt 3;Zusatzinformation - Art 4;Zusatzinformation- Inhalt 4;Zusatzinformation - Art 5;Zusatzinformation- Inhalt 5;Zusatzinformation - Art 6;Zusatzinformation- Inhalt 6;Zusatzinformation - Art 7;Zusatzinformation- Inhalt 7;Zusatzinformation - Art 8;Zusatzinformation- Inhalt 8;Zusatzinformation - Art 9;Zusatzinformation- Inhalt 9;Zusatzinformation - Art 10;Zusatzinformation- Inhalt 10;Zusatzinformation - Art 11;Zusatzinformation- Inhalt 11;Zusatzinformation - Art 12;Zusatzinformation- Inhalt 12;Zusatzinformation - Art 13;Zusatzinformation- Inhalt 13;Zusatzinformation - Art 14;Zusatzinformation- Inhalt 14;Zusatzinformation - Art 15;Zusatzinformation- Inhalt 15;Zusatzinformation - Art 16;Zusatzinformation- Inhalt 16;Zusatzinformation - Art 17;Zusatzinformation- Inhalt 17;Zusatzinformation - Art 18;Zusatzinformation- Inhalt 18;Zusatzinformation - Art 19;Zusatzinformation- Inhalt 19;Zusatzinformation - Art 20;Zusatzinformation- Inhalt 20;Stück;Gewicht;Zahlweise;Forderungsart;Veranlagungsjahr;Zugeordnete Fälligkeit;Skontotyp;Auftragsnummer;Buchungstyp;USt-Schlüssel (Anzahlungen);EU-Land (Anzahlungen);Sachverhalt L+L (Anzahlungen);EU-Steuersatz (Anzahlungen);Erlöskonto (Anzahlungen);Herkunft-Kz;Buchungs GUID;KOST-Datum;SEPA-Mandatsreferenz;Skontosperre;Gesellschaftername;Beteiligtennummer;Identifikationsnummer;Zeichnernummer;Postensperre bis;Bezeichnung SoBil-Sachverhalt;Kennzeichen SoBil-Buchung;Festschreibung;Leistungsdatum;Datum Zuord. Steuerperiode;Fälligkeit;Generalumkehr (GU);Steuersatz;Land;Abrechnungsreferenz;BVV-Position;EU-Land u. UStID (Ursprung);EU-Steuersatz (Ursprung);Abw. Skontokonto' . "\n" .
             '100,18;"S";"";;;"";48400;8401;"";3101;"";"";;"Test Anzahlung";;"";1;;"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"50";"";;"";;"";;"";;;;"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";;;;"";2012;;1;"Projekt 4711";"AG";3;"";;;8070;"WK";"";;"";;"";;"";"";;"";;0;;;;"";;"";"";;"";;';
@@ -55,7 +55,7 @@ class DatevDocumentParserTest extends BaseTestCase {
         $this->assertStringContainsString('Ungültiger DATEV MetaHeader', $analysis['error']);
     }
 
-    public function testParseBuchungsstapelV700FromRealFile(): void {
+    public function testParseBookingBatchV700FromRealFile(): void {
         $sampleFile = __DIR__ . '/../../.samples/DATEV/EXTF_Buchungsstapel.csv';
         $this->assertFileExists($sampleFile, 'Sample file für Buchungsstapel muss existieren');
 
@@ -66,7 +66,7 @@ class DatevDocumentParserTest extends BaseTestCase {
 
         $this->assertInstanceOf(Document::class, $document);
         $this->assertTrue($document->hasHeader());
-        $this->assertInstanceOf(BookingHeaderLine::class, $document->getHeader());
+        $this->assertInstanceOf(BookingBatchHeaderLine::class, $document->getHeader());
 
         // Prüfe dass FieldHeader die erwartete Anzahl von Feldern hat (125 bei V700)
         $header = $document->getHeader();
@@ -84,17 +84,24 @@ class DatevDocumentParserTest extends BaseTestCase {
         $this->assertGreaterThan(0, $document->countRows(), 'Es sollten Datensätze vorhanden sein');
     }
 
-    public function testParseBuchungsstapelV700WithEmptyLines(): void {
-        $csvContent = '"EXTF";700;"21";"Buchungsstapel";7;20191001000000;7;"";"";"";"SV";"";"";"";0;""' . "\n" .
-            '"Umsatz (ohne Soll/Haben-Kz)";"Soll/Haben-Kennzeichen";"WKZ Umsatz"' . "\n" .
-            '"100,00";"S";"EUR"' . "\n" .
+    public function testParseBookingBatchV700WithEmptyLines(): void {
+        $csvContent = '"EXTF";700;21;"Buchungsstapel";13;20240130140440439;;"RE";"";"";29098;55003;20240101;4;20240101;20240831;"Buchungsstapel";"WD";1;0;0;"EUR";;"";;;"03";;;"";""' . "\n" .
+            'Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;WKZ Umsatz;Kurs;Basis-Umsatz;WKZ Basis-Umsatz;Konto;Gegenkonto (ohne BU-Schlüssel);BU-Schlüssel;Belegdatum;Belegfeld 1;Belegfeld 2;Skonto;Buchungstext;Postensperre;Diverse Adressnummer;Geschäftspartnerbank;Sachverhalt;Zinssperre;Beleglink;Beleginfo - Art 1;Beleginfo - Inhalt 1;Beleginfo - Art 2;Beleginfo - Inhalt 2;Beleginfo - Art 3;Beleginfo - Inhalt 3;Beleginfo - Art 4;Beleginfo - Inhalt 4;Beleginfo - Art 5;Beleginfo - Inhalt 5;Beleginfo - Art 6;Beleginfo - Inhalt 6;Beleginfo - Art 7;Beleginfo - Inhalt 7;Beleginfo - Art 8;Beleginfo - Inhalt 8;KOST1 - Kostenstelle;KOST2 - Kostenstelle;Kost-Menge;EU-Land u. UStID (Bestimmung);EU-Steuersatz (Bestimmung);Abw. Versteuerungsart;Sachverhalt L+L;Funktionsergänzung L+L;BU 49 Hauptfunktionstyp;BU 49 Hauptfunktionsnummer;BU 49 Funktionsergänzung;Zusatzinformation - Art 1;Zusatzinformation- Inhalt 1;Zusatzinformation - Art 2;Zusatzinformation- Inhalt 2;Zusatzinformation - Art 3;Zusatzinformation- Inhalt 3;Zusatzinformation - Art 4;Zusatzinformation- Inhalt 4;Zusatzinformation - Art 5;Zusatzinformation- Inhalt 5;Zusatzinformation - Art 6;Zusatzinformation- Inhalt 6;Zusatzinformation - Art 7;Zusatzinformation- Inhalt 7;Zusatzinformation - Art 8;Zusatzinformation- Inhalt 8;Zusatzinformation - Art 9;Zusatzinformation- Inhalt 9;Zusatzinformation - Art 10;Zusatzinformation- Inhalt 10;Zusatzinformation - Art 11;Zusatzinformation- Inhalt 11;Zusatzinformation - Art 12;Zusatzinformation- Inhalt 12;Zusatzinformation - Art 13;Zusatzinformation- Inhalt 13;Zusatzinformation - Art 14;Zusatzinformation- Inhalt 14;Zusatzinformation - Art 15;Zusatzinformation- Inhalt 15;Zusatzinformation - Art 16;Zusatzinformation- Inhalt 16;Zusatzinformation - Art 17;Zusatzinformation- Inhalt 17;Zusatzinformation - Art 18;Zusatzinformation- Inhalt 18;Zusatzinformation - Art 19;Zusatzinformation- Inhalt 19;Zusatzinformation - Art 20;Zusatzinformation- Inhalt 20;Stück;Gewicht;Zahlweise;Forderungsart;Veranlagungsjahr;Zugeordnete Fälligkeit;Skontotyp;Auftragsnummer;Buchungstyp;USt-Schlüssel (Anzahlungen);EU-Land (Anzahlungen);Sachverhalt L+L (Anzahlungen);EU-Steuersatz (Anzahlungen);Erlöskonto (Anzahlungen);Herkunft-Kz;Buchungs GUID;KOST-Datum;SEPA-Mandatsreferenz;Skontosperre;Gesellschaftername;Beteiligtennummer;Identifikationsnummer;Zeichnernummer;Postensperre bis;Bezeichnung SoBil-Sachverhalt;Kennzeichen SoBil-Buchung;Festschreibung;Leistungsdatum;Datum Zuord. Steuerperiode;Fälligkeit;Generalumkehr (GU);Steuersatz;Land;Abrechnungsreferenz;BVV-Position;EU-Land u. UStID (Ursprung);EU-Steuersatz (Ursprung);Abw. Skontokonto' . "\n" .
+            '64083;"S";"";;;"";4400;85;"";3101;"";"";;"Normalabschreibung Gebäude";;"";;;;"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"50";"";;"";;"";;;;;;"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";;;;"";;;;"";"";;"";;;;"WK";"";;"";;"";;"";"";;"";;0;;;;"";;"";"";;"";;' . "\n" .
             '' . "\n" .  // Leere Zeile
-            '"50,00";"H";"EUR"' . "\n" .
+            '15301,67;"H";"";;;"";8400;10300;"";2002;"201802027";"";;"";;"";;;;"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"201";"";;"";;"";;;;;;"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";"";;;;"";;;;"";"";;"";;;;"WK";"";;"";;"";;"";"";;"";;0;;;;"";;"";"";;"";;' . "\n" .
             '';          // Leere Zeile am Ende
 
         $document = DatevDocumentParser::fromString($csvContent);
 
         $this->assertEquals(2, $document->countRows(), 'Leere Zeilen sollten übersprungen werden');
+        $this->assertEquals('64083', $document->getFieldsByName('Umsatz (ohne Soll/Haben-Kz)')[0]->toString());
+        $this->assertEquals('15301,67', $document->getFieldsByName('Umsatz (ohne Soll/Haben-Kz)')[1]->getValue());
+        $this->assertEquals('S', $document->getFieldsByName('Soll/Haben-Kennzeichen')[0]->getValue());
+        $this->assertEquals('"H"', $document->getFieldsByName('Soll/Haben-Kennzeichen')[1]->toString());
+
+        $this->assertTrue($document->getFieldsByName('Soll/Haben-Kennzeichen')[1]->isQuoted());
+        $this->assertFalse($document->getFieldsByName('Umsatz (ohne Soll/Haben-Kz)')[1]->isQuoted());
     }
 
     public function testParseDebKredStammFromRealFile(): void {
@@ -204,13 +211,13 @@ class DatevDocumentParserTest extends BaseTestCase {
     }
 
     public function testGetSupportedFormats(): void {
-        // Test der verfügbaren Formate mit echter Buchungsstapel-Datei
-        $sampleFile = __DIR__ . '/../../.samples/DATEV/EXTF_Buchungsstapel.csv';
+        // Test der verfügbaren Formate mit echter BookingBatch-Datei
+        $sampleFile = __DIR__ . '/../../.samples/DATEV/EXTF_BookingBatch.csv';
 
         if (file_exists($sampleFile)) {
             $csvContent = file_get_contents($sampleFile);
             $analysis = DatevDocumentParser::analyzeFormat($csvContent);
-            $this->assertTrue($analysis['supported'], 'Buchungsstapel sollte unterstützt werden');
+            $this->assertTrue($analysis['supported'], 'BookingBatch sollte unterstützt werden');
         }
 
         // Test mit nicht unterstütztem Format

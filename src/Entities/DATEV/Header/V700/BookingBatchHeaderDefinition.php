@@ -3,7 +3,7 @@
  * Created on   : Sat Dec 14 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : BookingHeaderDefinition.php
+ * Filename     : BookingBatchHeaderDefinition.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -13,14 +13,14 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\DATEV\Header\V700;
 
 use CommonToolkit\Contracts\Interfaces\DATEV\{FieldHeaderInterface, HeaderDefinitionInterface};
-use CommonToolkit\Enums\DATEV\V700\BookingHeaderField;
+use CommonToolkit\Enums\DATEV\V700\BookingBatchHeaderField;
 use InvalidArgumentException;
 
 /**
- * Definition für DATEV Buchungsstapel-Header (V700).
+ * Definition für DATEV BookingBatch-Header (V700).
  * Definiert die Struktur der Spaltenbeschreibungen für Buchungsdaten.
  */
-final class BookingHeaderDefinition implements HeaderDefinitionInterface {
+final class BookingBatchHeaderDefinition implements HeaderDefinitionInterface {
     public function getVersion(): int {
         return 700;
     }
@@ -28,10 +28,10 @@ final class BookingHeaderDefinition implements HeaderDefinitionInterface {
     /**
      * Liefert den Enum-Typ für die Header-Felder.
      *
-     * @return class-string<BookingHeaderField>
+     * @return class-string<BookingBatchHeaderField>
      */
     public function getFieldEnum(): string {
-        return BookingHeaderField::class;
+        return BookingBatchHeaderField::class;
     }
 
     /**
@@ -40,7 +40,7 @@ final class BookingHeaderDefinition implements HeaderDefinitionInterface {
      * @return FieldHeaderInterface[]
      */
     public function getFields(): array {
-        return BookingHeaderField::ordered();
+        return BookingBatchHeaderField::ordered();
     }
 
     /**
@@ -49,14 +49,14 @@ final class BookingHeaderDefinition implements HeaderDefinitionInterface {
      * @return FieldHeaderInterface[]
      */
     public function getRequiredFields(): array {
-        return BookingHeaderField::required();
+        return BookingBatchHeaderField::required();
     }
 
     /**
      * Prüft, ob ein Feld in diesem Header gültig ist.
      */
     public function isValidField(FieldHeaderInterface $field): bool {
-        return $field instanceof BookingHeaderField;
+        return $field instanceof BookingBatchHeaderField;
     }
 
     /**
@@ -94,7 +94,7 @@ final class BookingHeaderDefinition implements HeaderDefinitionInterface {
         foreach ($fields as $field) {
             if (!$this->isValidField($field)) {
                 throw new InvalidArgumentException(
-                    "Ungültiges Feld für Buchungsstapel: {$field->value}"
+                    "Ungültiges Feld für BookingBatch: {$field->value}"
                 );
             }
         }

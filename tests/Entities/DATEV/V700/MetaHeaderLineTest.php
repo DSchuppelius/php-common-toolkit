@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Tests\CommonToolkit\Entities\DATEV\V700;
 
+use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\MetaHeaderLine;
 use CommonToolkit\Enums\DATEV\V700\MetaHeaderField;
 use CommonToolkit\Registries\DATEV\HeaderRegistry;
@@ -25,10 +26,10 @@ class MetaHeaderLineTest extends BaseTestCase {
     private const METAHEADER_WIEDERKEHRENDE_BUCHUNGEN = '"EXTF";700;65;"Wiederkehrende Buchungen";4;20240118094256087;;"WK";"Admin";"";29098;55003;20240101;4;;;"";"";;;;"";;"KP";"";;3;"";"";;';
     private const METAHEADER_ZAHLUNGSBEDINGUNGEN = '"EXTF";700;46;"Zahlungsbedingungen";2;20240118092951894;;"RE";"";"";29098;55003;20240101;4;;;"";"";;;;"";;"";;;"04";;;"";""';
 
-    public function testParseAndRebuildForBuchungsstapel(): void {
+    public function testParseAndRebuildForBookingBatch(): void {
         $this->assertHeaderRoundtrip(
             self::METAHEADER_BUCHUNGSSTAPEL,
-            'Buchungsstapel-Header muss identisch zurückgegeben werden'
+            'BookingBatch-Header muss identisch zurückgegeben werden'
         );
     }
 
@@ -89,18 +90,26 @@ class MetaHeaderLineTest extends BaseTestCase {
      * abschließende Semikolons).
      */
     private function assertHeaderRoundtrip(string $header, string $message): void {
-        $line   = trim($header);
-        $values = explode(';', $line);
+        $line = trim($header);
+
+        // Nutze die bestehende CSV-Parser-Logik, die bereits Quote-Information erhält
+        $dataLine = DataLine::fromString($line, ';', '"');
+        $fields = $dataLine->getFields();
 
         $definition = HeaderRegistry::get(700);
-        $meta       = new MetaHeaderLine($definition);
+        $meta = new MetaHeaderLine($definition);
 
         foreach (MetaHeaderField::ordered() as $i => $field) {
-            $meta->set($field, $values[$i] ?? '');
+            $csvField = $fields[$i] ?? null;
+            if ($csvField) {
+                // Nutze die Quote-Information aus dem geparsten CSV-Feld
+                $meta->setWithQuoteInfo($field, $csvField->getValue(), $csvField->isQuoted());
+            } else {
+                $meta->setWithQuoteInfo($field, '', false);
+            }
         }
 
         $rebuilt = $meta->toString();
-
         $this->assertSame($line, $rebuilt, $message);
     }
 }

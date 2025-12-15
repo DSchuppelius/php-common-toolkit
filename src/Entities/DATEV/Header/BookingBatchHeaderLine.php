@@ -3,7 +3,7 @@
  * Created on   : Sat Dec 14 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : BookingHeaderLine.php
+ * Filename     : BookingBatchHeaderLine.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -20,11 +20,11 @@ use CommonToolkit\Entities\DATEV\Document;
 use InvalidArgumentException;
 
 /**
- * DATEV Buchungsstapel Header-Zeile (Spaltenbeschreibungen).
+ * DATEV BookingBatch Header-Zeile (Spaltenbeschreibungen).
  * Zweite Zeile im DATEV-Format nach dem MetaHeader.
  * Versionsunabhängig - arbeitet mit HeaderDefinitionInterface.
  */
-final class BookingHeaderLine extends HeaderLine {
+final class BookingBatchHeaderLine extends HeaderLine {
     private HeaderDefinitionInterface $definition;
     private array $fieldIndex = [];
 
@@ -117,7 +117,7 @@ final class BookingHeaderLine extends HeaderLine {
 
     /**
      * Prüft, ob dieser Header zu einem bestimmten DATEV-Format passt.
-     * Ermittelt anhand des Enums ob der Header zur V700 Buchungsstapel passt.
+     * Ermittelt anhand des Enums ob der Header zur V700 BookingBatch passt.
      */
     public function isCompatibleWithEnum(string $enumClass): bool {
         if (!enum_exists($enumClass)) {
@@ -156,10 +156,10 @@ final class BookingHeaderLine extends HeaderLine {
     }
 
     /**
-     * Convenience-Methode: Prüft ob dieser Header zu V700 Buchungsstapel passt.
+     * Convenience-Methode: Prüft ob dieser Header zu V700 BookingBatch passt.
      */
     public function isV700BookingHeader(): bool {
-        return $this->isCompatibleWithEnum(\CommonToolkit\Enums\DATEV\V700\BookingHeaderField::class);
+        return $this->isCompatibleWithEnum(\CommonToolkit\Enums\DATEV\V700\BookingBatchHeaderField::class);
     }
 
     protected static function createField(string $rawValue, string $enclosure): FieldInterface {
