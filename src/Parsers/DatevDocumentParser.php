@@ -14,8 +14,15 @@ namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Entities\Common\CSV\{DataLine, HeaderLine};
 use CommonToolkit\Entities\DATEV\{Document, MetaHeaderLine};
-use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
-use CommonToolkit\Entities\DATEV\Header\V700\BookingBatchHeaderDefinition;
+use CommonToolkit\Entities\DATEV\Header\{
+    BookingBatchHeaderLine,
+    DebitorsCreditorsHeaderLine,
+    VariousAddressesHeaderLine,
+    GLAccountDescriptionHeaderLine,
+    RecurringBookingsHeaderLine,
+    PaymentTermsHeaderLine,
+    NaturalStackHeaderLine
+};
 use CommonToolkit\Registries\DATEV\HeaderRegistry;
 use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderDefinitionInterface;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
@@ -227,9 +234,8 @@ class DatevDocumentParser extends CSVDocumentParser {
             return false;
         }
 
-        // Prüfe ob Version überhaupt unterstützt wird
-        $supportedVersions = HeaderRegistry::getSupportedVersions();
-        if (!in_array($version, $supportedVersions, true)) {
+        // Verwende Registry um zu prüfen, ob Version/Kategorie unterstützt wird
+        if (!HeaderRegistry::isFormatSupported($category, $version)) {
             return false;
         }
 
@@ -244,12 +250,12 @@ class DatevDocumentParser extends CSVDocumentParser {
     private static function getDocumentClassName(Category $category): string {
         $formatName = match ($category) {
             Category::Buchungsstapel => 'BookingBatch',
-            Category::DebitorenKreditoren => 'DebitorenKreditoren',
-            Category::Sachkontenbeschriftungen => 'Kontenbeschriftungen',
-            Category::Zahlungsbedingungen => 'Zahlungsbedingungen',
-            Category::DiverseAdressen => 'DiverseAdressen',
-            Category::WiederkehrendeBuchungen => 'WiederkehrendeBuchungen',
-            Category::NaturalStapel => 'NaturalStapel',
+            Category::DebitorenKreditoren => 'DebitorsCreditors',
+            Category::Sachkontenbeschriftungen => 'GLAccountDescription',
+            Category::Zahlungsbedingungen => 'PaymentTerms',
+            Category::DiverseAdressen => 'VariousAddresses',
+            Category::WiederkehrendeBuchungen => 'RecurringBookings',
+            Category::NaturalStapel => 'NaturalStack',
         };
 
         return "CommonToolkit\\Entities\\DATEV\\Documents\\{$formatName}";
@@ -299,15 +305,42 @@ class DatevDocumentParser extends CSVDocumentParser {
         $category = $metaHeaderLine->getFormatkategorie();
         $version = $metaHeaderLine->getVersionsnummer();
 
-        // Aktuell nur BookingBatch V700 unterstützt
-        if ($category === Category::Buchungsstapel && $version === 700) {
-            $definition = new BookingBatchHeaderDefinition();
-            return new BookingBatchHeaderLine($definition, $delimiter, $enclosure);
+        // Versionsbasierte Header-Definition-Auswahl
+        return self::createVersionedHeaderLine($category, $version, $delimiter, $enclosure);
+    }
+
+    /**
+     * Erstellt versionsabhängige Header-Lines basierend auf Kategorie und Version.
+     */
+    private static function createVersionedHeaderLine(?Category $category, int $version, string $delimiter, string $enclosure): HeaderLine {
+        if ($version === 700) {
+            return self::createV700HeaderLine($category, $delimiter, $enclosure);
         }
 
-        throw new RuntimeException(
-            "Format '" . ($category?->nameValue() ?? 'Unbekannt') . "' Version {$version} hat noch keine Header-Definition"
-        );
+        throw new RuntimeException("Version {$version} ist noch nicht implementiert");
+    }
+
+    /**
+     * Erstellt V700-spezifische Header-Lines.
+     */
+    private static function createV700HeaderLine(?Category $category, string $delimiter, string $enclosure): HeaderLine {
+        if (!$category) {
+            throw new RuntimeException('Ungültige Kategorie für Header-Erstellung');
+        }
+
+        // Verwende Registry für versionsabhängige Header-Definition  
+        $definition = HeaderRegistry::getFormatDefinition($category, 700);
+
+        // Erstelle Header-Line basierend auf Kategorie
+        return match ($category) {
+            Category::Buchungsstapel => new BookingBatchHeaderLine($definition, $delimiter, $enclosure),
+            Category::DebitorenKreditoren => new DebitorsCreditorsHeaderLine($definition, $delimiter, $enclosure),
+            Category::DiverseAdressen => new VariousAddressesHeaderLine($definition, $delimiter, $enclosure),
+            Category::Sachkontenbeschriftungen => new GLAccountDescriptionHeaderLine($definition, $delimiter, $enclosure),
+            Category::WiederkehrendeBuchungen => new RecurringBookingsHeaderLine($definition, $delimiter, $enclosure),
+            Category::Zahlungsbedingungen => new PaymentTermsHeaderLine($definition, $delimiter, $enclosure),
+            Category::NaturalStapel => new NaturalStackHeaderLine($definition, $delimiter, $enclosure),
+        };
     }
 
     /**

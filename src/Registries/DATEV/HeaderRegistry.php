@@ -12,9 +12,19 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Registries\DATEV;
 
-use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderDefinitionInterface;
+use CommonToolkit\Contracts\Interfaces\DATEV\{HeaderDefinitionInterface, MetaHeaderDefinitionInterface};
 use CommonToolkit\Entities\Common\CSV\DataLine;
-use CommonToolkit\Entities\DATEV\Header\V700\MetaHeaderDefinition as MetaHeaderDefinition700;
+use CommonToolkit\Entities\DATEV\Header\V700\{
+    MetaHeaderDefinition as MetaHeaderDefinition700,
+    BookingBatchHeaderDefinition,
+    DebitorsCreditorsHeaderDefinition,
+    VariousAddressesHeaderDefinition,
+    GLAccountDescriptionHeaderDefinition,
+    RecurringBookingsHeaderDefinition,
+    PaymentTermsHeaderDefinition,
+    NaturalStackHeaderDefinition
+};
+use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use RuntimeException;
 
 final class HeaderRegistry {
@@ -24,12 +34,53 @@ final class HeaderRegistry {
         // später weitere Versionen hinzufügen
     ];
 
+    /** @var array<int, array<int, class-string<HeaderDefinitionInterface>>> */
+    private static array $formatDefinitions = [];
+
+    private static function initializeFormatDefinitions(): void {
+        if (empty(self::$formatDefinitions)) {
+            self::$formatDefinitions = [
+                700 => [
+                    Category::Buchungsstapel->value => BookingBatchHeaderDefinition::class,
+                    Category::DebitorenKreditoren->value => DebitorsCreditorsHeaderDefinition::class,
+                    Category::DiverseAdressen->value => VariousAddressesHeaderDefinition::class,
+                    Category::Sachkontenbeschriftungen->value => GLAccountDescriptionHeaderDefinition::class,
+                    Category::WiederkehrendeBuchungen->value => RecurringBookingsHeaderDefinition::class,
+                    Category::Zahlungsbedingungen->value => PaymentTermsHeaderDefinition::class,
+                    Category::NaturalStapel->value => NaturalStackHeaderDefinition::class,
+                ]
+            ];
+        }
+    }
+
     public static function get(int $version): MetaHeaderDefinitionInterface {
         $class = self::$definitions[$version] ?? null;
         if (!$class) {
             throw new RuntimeException("Keine DATEV-Headerdefinition für Version {$version} registriert.");
         }
-        return new $class();
+        return new $class;
+    }
+
+    /**
+     * Liefert die Format-spezifische Header-Definition für eine Kategorie und Version.
+     */
+    public static function getFormatDefinition(Category $category, int $version): HeaderDefinitionInterface {
+        self::initializeFormatDefinitions();
+        $class = self::$formatDefinitions[$version][$category->value] ?? null;
+        if (!$class) {
+            throw new RuntimeException(
+                "Keine Header-Definition für Format '{$category->nameValue()}' Version {$version} registriert."
+            );
+        }
+        return new $class;
+    }
+
+    /**
+     * Prüft ob eine Format/Version-Kombination unterstützt wird.
+     */
+    public static function isFormatSupported(Category $category, int $version): bool {
+        self::initializeFormatDefinitions();
+        return isset(self::$formatDefinitions[$version][$category->value]);
     }
 
     /**

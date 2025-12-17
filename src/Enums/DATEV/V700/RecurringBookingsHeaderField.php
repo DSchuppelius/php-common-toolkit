@@ -3,7 +3,7 @@
  * Created on   : Sun Dec 15 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : RecurringBookingBatchHeaderField.php
+ * Filename     : RecurringBookingsBatchHeaderField.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -21,7 +21,7 @@ use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
  * 
  * @see https://developer.datev.de/de/file-format/details/datev-format/format-description/recurring-bookings
  */
-enum RecurringBookingHeaderField: string implements FieldHeaderInterface {
+enum RecurringBookingsHeaderField: string implements FieldHeaderInterface {
     // Spalten 1-10: Grunddaten der wiederkehrenden Buchung
     case B1                          = 'B1';                                       // 1
     case WKZUmsatz                   = 'WKZ Umsatz';                               // 2

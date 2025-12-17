@@ -13,8 +13,9 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\DATEV\Documents;
 
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
-use CommonToolkit\Entities\DATEV\{Document, MetaHeaderLine, FormatInfo};
+use CommonToolkit\Entities\DATEV\{Document, DocumentInfo, MetaHeaderLine};
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
+use RuntimeException;
 
 /**
  * DATEV-BookingBatch-Dokument.
@@ -35,8 +36,8 @@ final class BookingBatch extends Document {
     /**
      * Gibt die Format-Informationen zurück.
      */
-    public function getFormatInfo(): FormatInfo {
-        return new FormatInfo(Category::Buchungsstapel, 700);
+    public function getDocumentInfo(): DocumentInfo {
+        return new DocumentInfo(Category::Buchungsstapel, 700);
     }
 
     /**
@@ -49,7 +50,7 @@ final class BookingBatch extends Document {
         if ($this->getMetaHeader() !== null) {
             $metaFields = $this->getMetaHeader()->getFields();
             if (count($metaFields) > 2 && $metaFields[2]->getValue() !== '21') {
-                throw new \RuntimeException('Document ist kein BookingBatch-Format');
+                throw new RuntimeException('Document ist kein BookingBatch-Format');
             }
         }
     }

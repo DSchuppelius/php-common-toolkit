@@ -3,7 +3,7 @@
  * Created on   : Mon Dec 15 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : DebitorsCreditors­HeaderField.php
+ * Filename     : DebitorsCreditorsHeaderField.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -21,7 +21,7 @@ use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
  * 
  * @see https://developer.datev.de/de/file-format/details/datev-format/format-description/debitorskreditors
  */
-enum DebitorsCreditors­HeaderField: string implements FieldHeaderInterface {
+enum DebitorsCreditorsHeaderField: string implements FieldHeaderInterface {
     // Spalten 1-10: Grunddaten und Namensangaben
     case Konto                                  = 'Konto';                                             // 1
     case NameUnternehmen                        = 'Name (Adressattyp Unternehmen)';                    // 2

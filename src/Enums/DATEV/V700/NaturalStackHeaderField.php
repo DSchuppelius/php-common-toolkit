@@ -3,7 +3,7 @@
  * Created on   : Sun Dec 15 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : NaturalStapelHeaderField.php
+ * Filename     : NaturalStackHeaderField.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -21,7 +21,7 @@ use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
  * 
  * @see https://developer.datev.de/de/file-format/details/datev-format/appendix/natural-stack
  */
-enum NaturalStapelHeaderField: string implements FieldHeaderInterface {
+enum NaturalStackHeaderField: string implements FieldHeaderInterface {
     // Spalten 1-15: Natural-Stapel für Land-/Forstwirtschaft
     case Textschluessel                 = 'Textschlüssel';                        // 1
     case Art                            = 'Art';                                  // 2

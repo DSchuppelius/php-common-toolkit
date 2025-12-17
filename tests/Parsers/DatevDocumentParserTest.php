@@ -33,7 +33,7 @@ class DatevDocumentParserTest extends BaseTestCase {
         $this->assertArrayHasKey('format_info', $analysis);
     }
 
-    public function testAnalyzeFormatUnsupported(): void {
+    public function testAnalyzeFormatDebitorsCreditors(): void {
         $csvContent = '"EXTF";700;16;"Debitoren/Kreditoren";5;20240130140659583;;"RE";"";"";29098;55003;20240101;4;;;"";"";;;;"";;"";;;"03";;;"";""' . "\n" .
             'Konto;Name (Adressattyp Unternehmen);Unternehmensgegenstand;Name (Adressattyp nat�rl. Person);Vorname (Adressattyp nat�rl. Person);Name (Adressattyp keine Angabe);Adressattyp;Kurzbezeichnung;EU-Land;EU-UStID;Anrede;Titel/Akad. Grad;Adelstitel;Namensvorsatz;Adressart;Stra�e;Postfach;Postleitzahl;Ort;Land;Versandzusatz;Adresszusatz;Abweichende Anrede;Abw. Zustellbezeichnung 1;Abw. Zustellbezeichnung 2;Kennz. Korrespondenzadresse;Adresse G�ltig von;Adresse G�ltig bis;Telefon;Bemerkung (Telefon);Telefon GL;Bemerkung (Telefon GL);E-Mail;Bemerkung (E-Mail);Internet;Bemerkung (Internet);Fax;Bemerkung (Fax);Sonstige;Bemerkung (Sonstige);Bankleitzahl 1;Bankbezeichnung 1;Bank-Kontonummer 1;L�nderkennzeichen 1;IBAN-Nr. 1;Leerfeld;SWIFT-Code 1;Abw. Kontoinhaber 1;Kennz. Hauptbankverb. 1;Bankverb 1 G�ltig von;Bankverb 1 G�ltig bis;Bankleitzahl 2;Bankbezeichnung 2;Bank-Kontonummer 2;L�nderkennzeichen 2;IBAN-Nr. 2;Leerfeld;SWIFT-Code 2;Abw. Kontoinhaber 2;Kennz. Hauptbankverb. 2;Bankverb 2 G�ltig von;Bankverb 2 G�ltig bis;Bankleitzahl 3;Bankbezeichnung 3;Bank-Kontonummer 3;L�nderkennzeichen 3;IBAN-Nr. 3;Leerfeld;SWIFT-Code 3;Abw. Kontoinhaber 3;Kennz. Hauptbankverb. 3;Bankverb 3 G�ltig von;Bankverb 3 G�ltig bis;Bankleitzahl 4;Bankbezeichnung 4;Bank-Kontonummer 4;L�nderkennzeichen 4;IBAN-Nr. 4;Leerfeld;SWIFT-Code 4;Abw. Kontoinhaber 4;Kennz. Hauptbankverb. 4;Bankverb 4 G�ltig von;Bankverb 4 G�ltig bis;Bankleitzahl 5;Bankbezeichnung 5;Bank-Kontonummer 5;L�nderkennzeichen 5;IBAN-Nr. 5;Leerfeld;SWIFT-Code 5;Abw. Kontoinhaber 5;Kennz. Hauptbankverb. 5;Bankverb 5 G�ltig von;Bankverb 5 G�ltig bis;Leerfeld;Briefanrede;Gru�formel;Kunden-/Lief.-Nr.;Steuernummer;Sprache;Ansprechpartner;Vertreter;Sachbearbeiter;Diverse-Konto;Ausgabeziel;W�hrungssteuerung;Kreditlimit (Debitor);Zahlungsbedingung;F�lligkeit in Tagen (Debitor);Skonto in Prozent (Debitor);Kreditoren-Ziel 1 Tg.;Kreditoren-Skonto 1 %;Kreditoren-Ziel 2 Tg.;Kreditoren-Skonto 2 %;Kreditoren-Ziel 3 Brutto Tg.;Kreditoren-Ziel 4 Tg.;Kreditoren-Skonto 4 %;Kreditoren-Ziel 5 Tg.;Kreditoren-Skonto 5 %;Mahnung;Kontoauszug;Mahntext 1;Mahntext 2;Mahntext 3;Kontoauszugstext;Mahnlimit Betrag;Mahnlimit %;Zinsberechnung;Mahnzinssatz 1;Mahnzinssatz 2;Mahnzinssatz 3;Lastschrift;Leerfeld;Mandantenbank;Zahlungstr�ger;Indiv. Feld 1;Indiv. Feld 2;Indiv. Feld 3;Indiv. Feld 4;Indiv. Feld 5;Indiv. Feld 6;Indiv. Feld 7;Indiv. Feld 8;Indiv. Feld 9;Indiv. Feld 10;Indiv. Feld 11;Indiv. Feld 12;Indiv. Feld 13;Indiv. Feld 14;Indiv. Feld 15;Abweichende Anrede (Rechnungsadresse);Adressart (Rechnungsadresse);Stra�e (Rechnungsadresse);Postfach (Rechnungsadresse);Postleitzahl (Rechnungsadresse);Ort (Rechnungsadresse);Land (Rechnungsadresse);Versandzusatz (Rechnungsadresse);Adresszusatz (Rechnungsadresse);Abw. Zustellbezeichnung 1 (Rechnungsadresse);Abw. Zustellbezeichnung 2 (Rechnungsadresse);Adresse G�ltig von (Rechnungsadresse);Adresse G�ltig bis (Rechnungsadresse);Bankleitzahl 6;Bankbezeichnung 6;Bank-Kontonummer 6;L�nderkennzeichen 6;IBAN-Nr. 6;Leerfeld;SWIFT-Code 6;Abw. Kontoinhaber 6;Kennz. Hauptbankverb. 6;Bankverb 6 G�ltig von;Bankverb 6 G�ltig bis;Bankleitzahl 7;Bankbezeichnung 7;Bank-Kontonummer 7;L�nderkennzeichen 7;IBAN-Nr. 7;Leerfeld;SWIFT-Code 7;Abw. Kontoinhaber 7;Kennz. Hauptbankverb. 7;Bankverb 7 G�ltig von;Bankverb 7 G�ltig bis;Bankleitzahl 8;Bankbezeichnung 8;Bank-Kontonummer 8;L�nderkennzeichen 8;IBAN-Nr. 8;Leerfeld;SWIFT-Code 8;Abw. Kontoinhaber 8;Kennz. Hauptbankverb. 8;Bankverb 8 G�ltig von;Bankverb 8 G�ltig bis;Bankleitzahl 9;Bankbezeichnung 9;Bank-Kontonummer 9;L�nderkennzeichen 9;IBAN-Nr. 9;Leerfeld;SWIFT-Code 9;Abw. Kontoinhaber 9;Kennz. Hauptbankverb. 9;Bankverb 9 G�ltig von;Bankverb 9 G�ltig bis;Bankleitzahl 10;Bankbezeichnung 10;Bank-Kontonummer 10;L�nderkennzeichen 10;IBAN-Nr. 10;Leerfeld;SWIFT-Code 10;Abw. Kontoinhaber 10;Kennz. Hauptbankverb. 10;Bankverb 10 G�ltig von;Bankverb 10 G�ltig bis;Nummer Fremdsystem;Insolvent;SEPA-Mandatsreferenz 1;SEPA-Mandatsreferenz 2;SEPA-Mandatsreferenz 3;SEPA-Mandatsreferenz 4;SEPA-Mandatsreferenz 5;SEPA-Mandatsreferenz 6;SEPA-Mandatsreferenz 7;SEPA-Mandatsreferenz 8;SEPA-Mandatsreferenz 9;SEPA-Mandatsreferenz 10;Verkn�pftes OPOS-Konto;Mahnsperre bis;Lastschriftsperre bis;Zahlungssperre bis;Geb�hrenberechnung;Mahngeb�hr 1;Mahngeb�hr 2;Mahngeb�hr 3;Pauschalenberechnung;Verzugspauschale 1;Verzugspauschale 2;Verzugspauschale 3;Alternativer Suchname;Status;Anschrift manuell ge�ndert (Korrespondenzadresse);Anschrift individuell (Korrespondenzadresse);Anschrift manuell ge�ndert (Rechnungsadresse);Anschrift individuell (Rechnungsadresse);Fristberechnung bei Debitor;Mahnfrist 1;Mahnfrist 2;Mahnfrist 3;Letzte Frist' . "\n" .
             '10000;"M�bel Testgruber";"Schreinerei";"";"";"";"2";"M�bel Testgrube";"DE";"133546770";"Firma";"";"";"";"STR";"Nelkenteststra�e 125";"";"90482";"N�rnberg";"";"";"";"Firma";"";"";1;01012012;;"";"";"";"";"";"";"";"";"";"";"";"";"50090500";"Sparda-Bank Hessen";"2345678";"DE";"DE49100102220002222222";"";"GENODEF1S12";"Herr Testm�ller";"1";01012012;01012022;"50090500";"Sparda-Bank Hessen";"2345678";"DE";"DE49100102220002222222";"";"GENODEF1S12";"Herr Testm�ller";"0";01012012;01012020;"50090500";"Sparda-Bank Hessen";"2345678";"DE";"DE49100102220002222222";"";"GENODEF1S12";"Herr Testm�ller";"0";01012012;01012020;"50090500";"Sparda-Bank Hessen";"2345678";"DE";"DE49100102220002222222";"";"GENODEF1S12";"Herr Testm�ller";"0";01012012;01012020;"50090500";"Sparda-Bank Hessen";"2345678";"DE";"DE49100102220002222222";"";"GENODEF1S12";"Herr Testm�ller";"0";01012012;01012020;"";"Sehr geehrte Frau";"Hallo";"KDN 12345";"DE776655";"1";"Frau Huber";"Herr Schmid";"Frau Tester";;;"";0;0;0;0,00;0;0,00;0;0,00;0;0;0,00;0;0,00;7;;;;;;23,30;20,25;1;10,50;11,11;12,12;"7";"1";1;"9";"ind. Feld";"";"";"";"";"";"";"";"";"";"";"individuelle Beschriftung";"";"";"";"";"";"";"";"";"";"";"";"";"";"";;;"";"";"";"";"";"";"";"";"";;;"";"";"";"";"";"";"";"";"";;;"";"";"";"";"";"";"";"";"";;;"";"";"";"";"";"";"";"";"";;;"";"";"";"";"";"";"";"";"";;;"";0;"1234-AB-56787";"";"";"";"";"";"";"";"";"778259637";;03122018;02122018;01122018;1;5,1;5,2;5,3;1;0,9;0,2;0,5;"";1;0;"";1;"";;;;;';
@@ -43,7 +43,7 @@ class DatevDocumentParserTest extends BaseTestCase {
         $this->assertArrayHasKey('format_type', $analysis, 'Format sollte erkannt werden');
         $this->assertEquals('Debitoren/Kreditoren', $analysis['format_type']);
         $this->assertEquals(700, $analysis['version']);
-        $this->assertFalse($analysis['supported']);
+        $this->assertTrue($analysis['supported']);
     }
 
     public function testAnalyzeFormatInvalid(): void {
@@ -111,11 +111,9 @@ class DatevDocumentParserTest extends BaseTestCase {
         $csvContent = file_get_contents($sampleFile);
         $this->assertNotEmpty($csvContent, 'Sample file darf nicht leer sein');
 
-        // Diese Funktion sollte eine Exception werfen, da Debitoren/Kreditoren noch nicht implementiert ist
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('ist noch nicht implementiert');
-
-        DatevDocumentParser::fromString($csvContent);
+        // Debitoren/Kreditoren ist jetzt implementiert und sollte funktionieren
+        $document = DatevDocumentParser::fromString($csvContent);
+        $this->assertNotNull($document, 'DATEV-Dokument sollte erfolgreich geparst werden');
     }
 
     public function testAnalyzeFormatFromRealDebKredFile(): void {
@@ -128,7 +126,7 @@ class DatevDocumentParserTest extends BaseTestCase {
         $this->assertArrayHasKey('format_type', $analysis, 'Format sollte erkannt werden');
         $this->assertEquals('Debitoren/Kreditoren', $analysis['format_type']);
         $this->assertEquals(700, $analysis['version']);
-        $this->assertFalse($analysis['supported']);
+        $this->assertTrue($analysis['supported']);
     }
 
     public function testParseSachkontobeschriftungenFromRealFile(): void {
@@ -138,11 +136,9 @@ class DatevDocumentParserTest extends BaseTestCase {
         $csvContent = file_get_contents($sampleFile);
         $this->assertNotEmpty($csvContent, 'Sample file darf nicht leer sein');
 
-        // Diese Funktion sollte eine Exception werfen, da Sachkontobeschriftungen noch nicht implementiert ist
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('ist noch nicht implementiert');
-
-        DatevDocumentParser::fromString($csvContent);
+        // Kontenbeschriftungen ist jetzt implementiert und sollte funktionieren
+        $document = DatevDocumentParser::fromString($csvContent);
+        $this->assertNotNull($document, 'DATEV-Dokument sollte erfolgreich geparst werden');
     }
 
     public function testParseUnknownFormat(): void {
@@ -182,12 +178,12 @@ class DatevDocumentParserTest extends BaseTestCase {
         $sampleDir = __DIR__ . '/../../.samples/DATEV/';
         $sampleFiles = [
             'EXTF_Buchungsstapel.csv' => ['format' => 'Buchungsstapel', 'supported' => true],
-            'EXTF_DebKred_Stamm.csv' => ['format' => 'Debitoren/Kreditoren', 'supported' => false],
-            'EXTF_Sachkontobeschriftungen.csv' => ['format' => 'Kontenbeschriftungen', 'supported' => false],
-            'EXTF_Zahlungsbedingungen.csv' => ['format' => 'Zahlungsbedingungen', 'supported' => false],
-            'EXTF_Naturalstapel.csv' => ['format' => 'Naturalstapel', 'supported' => false],
-            'EXTF_Wiederkehrende-Buchungen.csv' => ['format' => 'Wiederkehrende Buchungen', 'supported' => false],
-            'EXTF_Div-Adressen.csv' => ['format' => 'Diverse Adressen', 'supported' => false]
+            'EXTF_DebKred_Stamm.csv' => ['format' => 'Debitoren/Kreditoren', 'supported' => true],
+            'EXTF_Sachkontobeschriftungen.csv' => ['format' => 'Kontenbeschriftungen', 'supported' => true],
+            'EXTF_Zahlungsbedingungen.csv' => ['format' => 'Zahlungsbedingungen', 'supported' => true],
+            'EXTF_Naturalstapel.csv' => ['format' => 'Naturalstapel', 'supported' => true],
+            'EXTF_Wiederkehrende-Buchungen.csv' => ['format' => 'Wiederkehrende Buchungen', 'supported' => true],
+            'EXTF_Div-Adressen.csv' => ['format' => 'Diverse Adressen', 'supported' => true]
         ];
 
         foreach ($sampleFiles as $fileName => $expected) {
@@ -211,22 +207,22 @@ class DatevDocumentParserTest extends BaseTestCase {
     }
 
     public function testGetSupportedFormats(): void {
-        // Test der verfügbaren Formate mit echter BookingBatch-Datei
-        $sampleFile = __DIR__ . '/../../.samples/DATEV/EXTF_BookingBatch.csv';
+        // Test der verfügbaren Formate mit echter Buchungsstapel-Datei
+        $sampleFile = __DIR__ . '/../../.samples/DATEV/EXTF_Buchungsstapel.csv';
 
         if (file_exists($sampleFile)) {
             $csvContent = file_get_contents($sampleFile);
             $analysis = DatevDocumentParser::analyzeFormat($csvContent);
-            $this->assertTrue($analysis['supported'], 'BookingBatch sollte unterstützt werden');
+            $this->assertTrue($analysis['supported'], 'Buchungsstapel sollte unterstützt werden');
         }
 
         // Test mit nicht unterstütztem Format
-        $sampleFile = __DIR__ . '/../../.samples/DATEV/EXTF_DebKred_Stamm.csv';
+        // $sampleFile = __DIR__ . '/../../.samples/DATEV/EXTF_DebKred_Stamm.csv';
 
-        if (file_exists($sampleFile)) {
-            $csvContent = file_get_contents($sampleFile);
-            $analysis = DatevDocumentParser::analyzeFormat($csvContent);
-            $this->assertFalse($analysis['supported'], 'Debitoren/Kreditoren sollte noch nicht unterstützt werden');
-        }
+        // if (file_exists($sampleFile)) {
+        //     $csvContent = file_get_contents($sampleFile);
+        //     $analysis = DatevDocumentParser::analyzeFormat($csvContent);
+        //     $this->assertFalse($analysis['supported'], 'Debitoren/Kreditoren sollte noch nicht unterstützt werden');
+        // }
     }
 }
