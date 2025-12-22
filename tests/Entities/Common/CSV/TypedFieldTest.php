@@ -15,7 +15,7 @@ final class TypedFieldTest extends BaseTestCase {
 
         $this->assertFalse($field->isQuoted());
         $this->assertTrue($field->isInt());
-        $this->assertEquals(42, $field->getAsInt());
+        $this->assertEquals(42, $field->getTypedValue());
         $this->assertTrue($field->isFloat()); // Integer sind auch gültige Floats
         $this->assertFalse($field->isBool());
         $this->assertFalse($field->isDateTime());
@@ -26,7 +26,7 @@ final class TypedFieldTest extends BaseTestCase {
 
         $this->assertFalse($field->isQuoted());
         $this->assertTrue($field->isFloat());
-        $this->assertEquals(3.14, $field->getAsFloat());
+        $this->assertEquals(3.14, $field->getTypedValue());
         $this->assertFalse($field->isInt());
         $this->assertFalse($field->isBool());
     }
@@ -35,7 +35,7 @@ final class TypedFieldTest extends BaseTestCase {
         $field = new DataField('3,14');
 
         $this->assertTrue($field->isFloat());
-        $this->assertEquals(3.14, $field->getAsFloat());
+        $this->assertEquals(3.14, $field->getTypedValue());
     }
 
     public function testBooleanDetectionAndConversion(): void {
@@ -45,25 +45,25 @@ final class TypedFieldTest extends BaseTestCase {
         foreach ($trueValues as $value) {
             $field = new DataField($value);
             $this->assertTrue($field->isBool(), "'{$value}' should be detected as boolean");
-            $this->assertTrue($field->getAsBool(), "'{$value}' should convert to true");
+            $this->assertTrue($field->getTypedValue(), "'{$value}' should convert to true");
         }
 
         foreach ($falseValues as $value) {
             $field = new DataField($value);
             $this->assertTrue($field->isBool(), "'{$value}' should be detected as boolean");
-            $this->assertFalse($field->getAsBool(), "'{$value}' should convert to false");
+            $this->assertFalse($field->getTypedValue(), "'{$value}' should convert to false");
         }
 
         // Numerische Werte werden als Integer erkannt, nicht als Boolean
         $numericField = new DataField('1');
         $this->assertTrue($numericField->isInt());
         $this->assertFalse($numericField->isBool());
-        $this->assertSame(1, $numericField->getAsInt());
+        $this->assertSame(1, $numericField->getTypedValue());
 
         $zeroField = new DataField('0');
         $this->assertTrue($zeroField->isInt());
         $this->assertFalse($zeroField->isBool());
-        $this->assertSame(0, $zeroField->getAsInt());
+        $this->assertSame(0, $zeroField->getTypedValue());
     }
 
     public function testDateTimeDetectionAndConversion(): void {
@@ -81,7 +81,7 @@ final class TypedFieldTest extends BaseTestCase {
             $field = new DataField($value);
             $this->assertTrue($field->isDateTime(), "'{$value}' should be detected as datetime");
 
-            $dateTime = $field->getAsDateTime();
+            $dateTime = $field->getTypedValue();
             $this->assertInstanceOf(DateTimeImmutable::class, $dateTime);
         }
     }
@@ -91,11 +91,11 @@ final class TypedFieldTest extends BaseTestCase {
         $field = new DataField($timestamp);
 
         $this->assertTrue($field->isDateTime());
-        $dateTime = $field->getAsDateTime();
+        $dateTime = $field->getTypedValue();
         $this->assertInstanceOf(DateTimeImmutable::class, $dateTime);
         $this->assertEquals('2024-12-26', $dateTime->format('Y-m-d'));
 
-        // Normale Integer (nicht Timestamp-Länge)  
+        // Normale Integer (nicht Timestamp-Länge)
         $normalInt = new DataField('123');
         $this->assertTrue($normalInt->isInt());
         $this->assertFalse($normalInt->isDateTime());
@@ -103,7 +103,7 @@ final class TypedFieldTest extends BaseTestCase {
         // Standard DateTime-Format
         $dateField = new DataField('2024-12-26');
         $this->assertTrue($dateField->isDateTime());
-        $this->assertInstanceOf(DateTimeImmutable::class, $dateField->getAsDateTime());
+        $this->assertInstanceOf(DateTimeImmutable::class, $dateField->getTypedValue());
     }
 
     public function testQuotedFieldsReturnNull(): void {
@@ -111,12 +111,6 @@ final class TypedFieldTest extends BaseTestCase {
 
         $this->assertTrue($field->isQuoted());
         $this->assertEquals('42', $field->getValue()); // String value bleibt verfügbar
-
-        // Typisierte Getter geben null zurück für quoted Fields
-        $this->assertNull($field->getAsInt());
-        $this->assertNull($field->getAsFloat());
-        $this->assertNull($field->getAsBool());
-        $this->assertNull($field->getAsDateTime());
 
         // Type detection gibt false zurück für quoted Fields
         $this->assertFalse($field->isInt());
@@ -130,12 +124,6 @@ final class TypedFieldTest extends BaseTestCase {
 
         $this->assertFalse($field->isQuoted());
         $this->assertTrue($field->isEmpty());
-
-        // Alle typisierten Getter geben null zurück für leere Fields
-        $this->assertNull($field->getAsInt());
-        $this->assertNull($field->getAsFloat());
-        $this->assertNull($field->getAsBool());
-        $this->assertNull($field->getAsDateTime());
 
         // Type detection gibt false zurück für leere Fields
         $this->assertFalse($field->isInt());
@@ -151,7 +139,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertTrue($field->isDateTime());
         $this->assertTrue($field->isDateTime('d-m-Y')); // Und auch mit custom Format
 
-        $dateTime = $field->getAsDateTime('d-m-Y');
+        $dateTime = $field->getTypedValue();
         $this->assertInstanceOf(DateTimeImmutable::class, $dateTime);
         $this->assertEquals('2025-12-26', $dateTime->format('Y-m-d'));
     }
@@ -164,15 +152,13 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertTrue($field->isFloat());   // Integer sind auch gültige Floats
         $this->assertFalse($field->isBool());  // Wird nicht als Boolean erkannt (Integer hat Vorrang)
 
-        $this->assertSame(1, $field->getAsInt());
-        $this->assertSame(1.0, $field->getAsFloat());
-        $this->assertNull($field->getAsBool()); // Kein Boolean
+        $this->assertSame(1, $field->getTypedValue());
 
         // Echter Boolean-Wert
         $boolField = new DataField('true');
         $this->assertTrue($boolField->isBool());
         $this->assertFalse($boolField->isInt());
-        $this->assertTrue($boolField->getAsBool());
+        $this->assertTrue($boolField->getTypedValue());
     }
 
     public function testInvalidValues(): void {
@@ -182,23 +168,18 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertFalse($field->isFloat());
         $this->assertFalse($field->isBool());
         $this->assertFalse($field->isDateTime());
-
-        $this->assertNull($field->getAsInt());
-        $this->assertNull($field->getAsFloat());
-        $this->assertNull($field->getAsBool());
-        $this->assertNull($field->getAsDateTime());
     }
 
     public function testTypedValueDirectAccess(): void {
         // Integer
         $field = new DataField('42');
         $this->assertSame(42, $field->getTypedValue());
-        $this->assertTrue(is_int($field->getTypedValue()));
+        $this->assertTrue($field->isInt());
 
         // Float
         $field = new DataField('3.14');
         $this->assertSame(3.14, $field->getTypedValue());
-        $this->assertTrue(is_float($field->getTypedValue()));
+        $this->assertTrue($field->isFloat());
 
         // German decimal
         $field = new DataField('3,14');
@@ -207,7 +188,7 @@ final class TypedFieldTest extends BaseTestCase {
         // Boolean
         $field = new DataField('true');
         $this->assertSame(true, $field->getTypedValue());
-        $this->assertTrue(is_bool($field->getTypedValue()));
+        $this->assertTrue($field->isBool());
 
         // DateTime
         $field = new DataField('2025-12-22');
@@ -216,26 +197,11 @@ final class TypedFieldTest extends BaseTestCase {
         // Quoted stays string
         $field = new DataField('"42"');
         $this->assertSame('42', $field->getTypedValue());
-        $this->assertTrue(is_string($field->getTypedValue()));
+        $this->assertTrue($field->isString());
 
         // String fallback
         $field = new DataField('not-a-type');
         $this->assertSame('not-a-type', $field->getTypedValue());
-        $this->assertTrue(is_string($field->getTypedValue()));
-    }
-
-    public function testPerformanceOptimizedGetters(): void {
-        $field = new DataField('42');
-
-        // Multiple calls should return same object/value (no re-parsing)
-        $typed1 = $field->getTypedValue();
-        $typed2 = $field->getTypedValue();
-        $int1 = $field->getAsInt();
-        $int2 = $field->getAsInt();
-
-        $this->assertSame($typed1, $typed2);
-        $this->assertSame($int1, $int2);
-        $this->assertSame(42, $typed1);
-        $this->assertSame(42, $int1);
+        $this->assertTrue($field->isString());
     }
 }

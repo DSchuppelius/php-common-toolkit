@@ -871,4 +871,49 @@ enum CountryCode: string {
             default => 'Unbekannt',
         };
     }
+
+    /**
+     * Gibt die DateTime-Formatgruppe für das Land zurück.
+     *
+     * @return DateTimeFormatGroup Die Format-Gruppe
+     */
+    public function getDateTimeFormatGroup(): DateTimeFormatGroup {
+        return match ($this) {
+            // Europäische Länder - DD/MM/YYYY Format
+            self::Germany, self::Austria, self::Switzerland,
+            self::France, self::Italy, self::Spain, self::Portugal,
+            self::Netherlands, self::Belgium, self::Luxembourg,
+            self::Poland, self::Czechia, self::Slovakia,
+            self::Hungary, self::Slovenia, self::Croatia,
+            self::Denmark, self::Sweden, self::Norway, self::Finland => DateTimeFormatGroup::European,
+
+            // Amerikanisches Format - MM/DD/YYYY
+            self::UnitedStatesOfAmerica => DateTimeFormatGroup::American,
+
+            // Commonwealth Länder - DD/MM/YYYY (wie europäisch)
+            self::UnitedKingdomOfGreatBritainAndNorthernIreland,
+            self::Canada, self::Australia, self::NewZealand,
+            self::Ireland, self::SouthAfrica => DateTimeFormatGroup::European,
+
+            // Asiatische Länder - YYYY/MM/DD bevorzugt
+            self::Japan, self::KoreaRepublicOf, self::China,
+            self::Singapore, self::HongKong => DateTimeFormatGroup::Asian,
+
+            // Lateinamerikanische Länder - DD/MM/YYYY
+            self::Brazil, self::Argentina, self::Chile,
+            self::Colombia, self::Peru, self::Mexico => DateTimeFormatGroup::European,
+
+            // Osteuropäische Länder - DD.MM.YYYY bevorzugt
+            self::RussianFederation, self::Ukraine, self::Belarus => DateTimeFormatGroup::Russian,
+
+            // Südasiatische Länder - DD/MM/YYYY (britischer Einfluss)
+            self::India, self::Pakistan, self::Bangladesh => DateTimeFormatGroup::European,
+
+            // Südeuropäische/Nahosteuropäische Länder - gemischt
+            self::Turkey, self::Greece, self::Cyprus => DateTimeFormatGroup::Mixed,
+
+            // Fallback für alle anderen Länder
+            default => DateTimeFormatGroup::European,
+        };
+    }
 }

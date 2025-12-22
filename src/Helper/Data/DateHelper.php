@@ -12,7 +12,8 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\DateFormat;
+use CommonToolkit\Enums\CountryCode;
+use CommonToolkit\Enums\DateTimeFormat;
 use CommonToolkit\Enums\Month;
 use DateInterval;
 use DateTime;
@@ -102,20 +103,20 @@ class DateHelper {
      * Überprüft, ob ein Datum gültig ist.
      *
      * @param string $value Der zu überprüfende Datumswert.
-     * @param DateFormat|null $format Das erkannte Datumsformat (optional).
-     * @param DateFormat $preferredFormat Bevorzugtes Format (DE oder US).
-     * @return bool True, wenn das Datum gültig ist, andernfalls false.
+     * @param DateTimeFormat|null $format Das erkannte Datumsformat (optional).
+     * @param DateTimeFormat $preferredFormat Bevorzugtes Format (DE oder US).
+     * @return bool True, wenn der Wert ein gültiges Datum ist, andernfalls false.
      */
-    public static function isDate(string $value, ?DateFormat &$format = null, DateFormat $preferredFormat = DateFormat::DE): bool {
+    public static function isDate(string $value, ?DateTimeFormat &$format = null, DateTimeFormat $preferredFormat = DateTimeFormat::DE): bool {
         $len = strlen($value);
         if ($len < 6 || $len > 19) return false;
 
         // ISO ohne oder mit Uhrzeit
         $cleaned = preg_replace('#[^0-9]#', '', $value);
         $formatMap = [
-            8  => ['Ymd', DateFormat::ISO],
-            12 => ['YmdHi', DateFormat::ISO],
-            14 => ['YmdHis', DateFormat::ISO],
+            8  => ['Ymd', DateTimeFormat::ISO],
+            12 => ['YmdHi', DateTimeFormat::ISO],
+            14 => ['YmdHis', DateTimeFormat::ISO],
         ];
         if (isset($formatMap[strlen($cleaned)])) {
             [$fmt, $fmtType] = $formatMap[strlen($cleaned)];
@@ -138,14 +139,14 @@ class DateHelper {
 
             if ($a > 12) {
                 $detected = 'd-m-Y';
-                $format = DateFormat::DE;
+                $format = DateTimeFormat::DE;
             } elseif ($b > 12) {
                 $detected = 'm-d-Y';
-                $format = DateFormat::US;
+                $format = DateTimeFormat::US;
             } elseif ($isAmbiguous) {
                 // Fallback auf preferredFormat
                 $format = $preferredFormat;
-                $detected = $preferredFormat === DateFormat::US ? 'm-d-Y' : 'd-m-Y';
+                $detected = $preferredFormat === DateTimeFormat::US ? 'm-d-Y' : 'd-m-Y';
             }
 
             // Zeit prüfen
@@ -341,11 +342,11 @@ class DateHelper {
      * @return string|false Das Datum im ISO-Format oder false bei ungültigem Datum.
      */
     public static function germanToIso(string $value): string|false {
-        if (!self::isDate($value, $detectedFormat) || $detectedFormat !== DateFormat::DE) {
+        if (!self::isDate($value, $detectedFormat) || $detectedFormat !== DateTimeFormat::DE) {
             self::logError("Ungültiges DE-Datum: $value");
             return false;
         }
-        return self::formatDate($value, DateFormat::ISO, DateFormat::DE) ?? false;
+        return self::formatDate($value, DateTimeFormat::ISO, DateTimeFormat::DE) ?? false;
     }
 
     /**
@@ -358,24 +359,24 @@ class DateHelper {
     public static function isoToGerman(?string $value, bool $withTime = false): string|false {
         if ($value === null || in_array($value, ['0000-00-00', '1970-01-01', '00:00:00'], true)) {
             return false;
-        } elseif (!self::isDate($value, $detectedFormat) || $detectedFormat !== DateFormat::ISO) {
+        } elseif (!self::isDate($value, $detectedFormat) || $detectedFormat !== DateTimeFormat::ISO) {
             self::logError("Ungültiges ISO-Datum: $value");
             return false;
         }
 
-        return self::formatDate($value, DateFormat::DE, DateFormat::ISO, $withTime) ?? false;
+        return self::formatDate($value, DateTimeFormat::DE, DateTimeFormat::ISO, $withTime) ?? false;
     }
 
     /**
      * Formatiert ein Datum in das angegebene Ziel-Format.
      *
      * @param string $value Das Datum, das formatiert werden soll.
-     * @param DateFormat $targetFormat Das Ziel-Format (ISO, DE, US, MYSQL_DATETIME, ISO_DATETIME).
-     * @param DateFormat $preferredInputFormat Bevorzugtes Eingabeformat (DE oder US).
+     * @param DateTimeFormat $targetFormat Das Ziel-Format (ISO, DE, US, MYSQL_DATETIME, ISO_DATETIME).
+     * @param DateTimeFormat $preferredInputFormat Bevorzugtes Eingabeformat (DE oder US).
      * @param bool $withTime Ob die Zeit im Ergebnis enthalten sein soll.
      * @return string|null Das formatierte Datum oder null, wenn ungültig.
      */
-    public static function formatDate(string $value, DateFormat $targetFormat, DateFormat $preferredInputFormat = DateFormat::DE, bool $withTime = false): ?string {
+    public static function formatDate(string $value, DateTimeFormat $targetFormat, DateTimeFormat $preferredInputFormat = DateTimeFormat::DE, bool $withTime = false): ?string {
         $dateIso = self::normalizeToIso($value, $preferredInputFormat);
         if ($dateIso === null) return null;
 
@@ -390,12 +391,12 @@ class DateHelper {
         if (!$dt) return null;
 
         return match ($targetFormat) {
-            DateFormat::ISO => $dt->format('Y-m-d'),
-            DateFormat::DE  => $dt->format($withTime ? 'd.m.Y H:i' : 'd.m.Y'),
-            DateFormat::US  => $dt->format($withTime ? 'm/d/Y H:i' : 'm/d/Y'),
-            DateFormat::MYSQL_DATETIME => $dt->format('Y-m-d H:i:s'),
-            DateFormat::ISO_DATETIME,
-            DateFormat::ISO8601 => $dt->format('Y-m-d\TH:i:s'),
+            DateTimeFormat::ISO => $dt->format($targetFormat->getPattern()),
+            DateTimeFormat::DE  => $dt->format($targetFormat->getPattern($withTime)),
+            DateTimeFormat::US  => $dt->format($targetFormat->getPattern($withTime)),
+            DateTimeFormat::MYSQL_DATETIME => $dt->format($targetFormat->getPattern()),
+            DateTimeFormat::ISO_DATETIME,
+            DateTimeFormat::ISO8601 => $dt->format($targetFormat->getPattern()),
         };
     }
 
@@ -403,10 +404,10 @@ class DateHelper {
      * Normalisiert ein Datum in ISO-Format (YYYY-MM-DD) und gibt es zurück.
      *
      * @param string $value Das Datum, das normalisiert werden soll.
-     * @param DateFormat $preferredFormat Bevorzugtes Format (DE oder US).
+     * @param DateTimeFormat $preferredFormat Bevorzugtes Format (DE oder US).
      * @return string|null Das normalisierte Datum im ISO-Format oder null, wenn ungültig.
      */
-    public static function normalizeToIso(string $value, DateFormat $preferredFormat = DateFormat::DE): ?string {
+    public static function normalizeToIso(string $value, DateTimeFormat $preferredFormat = DateTimeFormat::DE): ?string {
         $detectedFormat = null;
 
         if (!self::isDate($value, $detectedFormat, $preferredFormat)) {
@@ -415,7 +416,7 @@ class DateHelper {
 
         // ISO direkt zurückgeben (ggf. mit Zeit)
         $cleaned = preg_replace('#[^0-9]#', '', $value);
-        if ($detectedFormat === DateFormat::ISO && strlen($cleaned) >= 8) {
+        if ($detectedFormat === DateTimeFormat::ISO && strlen($cleaned) >= 8) {
             $format = match (strlen($cleaned)) {
                 14 => 'YmdHis',
                 12 => 'YmdHi',
@@ -436,8 +437,8 @@ class DateHelper {
         $hasTime = $colonCount > 0;
 
         $formatString = match ($detectedFormat) {
-            DateFormat::DE => $hasTime ? ($hasSeconds ? 'd-m-Y H:i:s' : 'd-m-Y H:i') : 'd-m-Y',
-            DateFormat::US => $hasTime ? ($hasSeconds ? 'm-d-Y H:i:s' : 'm-d-Y H:i') : 'm-d-Y',
+            DateTimeFormat::DE => $hasTime ? ($hasSeconds ? 'd-m-Y H:i:s' : 'd-m-Y H:i') : 'd-m-Y',
+            DateTimeFormat::US => $hasTime ? ($hasSeconds ? 'm-d-Y H:i:s' : 'm-d-Y H:i') : 'm-d-Y',
             default => 'Y-m-d',
         };
 
@@ -477,11 +478,11 @@ class DateHelper {
     public static function diffDetailed(DateTimeInterface $start, DateTimeInterface $end): array {
         $diff = $start->diff($end);
         return [
-            'years' => $diff->y,
-            'months' => $diff->m,
-            'days' => $diff->d,
+            'years'      => $diff->y,
+            'months'     => $diff->m,
+            'days'       => $diff->d,
             'total_days' => $diff->days,
-            'weeks' => intdiv($diff->days, 7),
+            'weeks'      => intdiv($diff->days, 7),
         ];
     }
 
@@ -532,23 +533,77 @@ class DateHelper {
      * Parst einen DateTime-String länder-spezifisch.
      *
      * @param string $value Der zu parsende DateTime-String
-     * @param \CommonToolkit\Enums\CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @param CountryCode $country Das Land für länder-spezifische Formatinterpretation
      * @return DateTimeImmutable|null Das geparste Datum oder null wenn nicht erkannt
      */
-    public static function parseDateTime(string $value, \CommonToolkit\Enums\CountryCode $country = \CommonToolkit\Enums\CountryCode::Germany): ?DateTimeImmutable {
+    public static function parseDateTime(string $value, CountryCode $country = CountryCode::Germany): ?DateTimeImmutable {
+        $format = self::detectDateTimeFormat($value, $country);
+        if ($format === null) {
+            return null;
+        }
+
+        if ($format === 'U') {
+            $timestamp = (int) $value;
+            if (strlen($value) === 13) {
+                $timestamp = intval($timestamp / 1000);
+            }
+            return DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
+        }
+
+        if ($format === 'strtotime') {
+            $timestamp = strtotime($value);
+            return DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
+        }
+
+        return DateTimeImmutable::createFromFormat($format, $value) ?: null;
+    }
+
+    /**
+     * Prüft, ob ein String ein gültiges Datum/Zeit ist.
+     *
+     * @param string $value Der zu prüfende String
+     * @param string|null $format Spezifisches Format oder null für Auto-Detection
+     * @param CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @return bool True wenn gültiges Datum
+     */
+    public static function isDateTime(string $value, ?string $format = null, CountryCode $country = CountryCode::Germany): bool {
+        if ($format) {
+            return DateTimeImmutable::createFromFormat($format, $value) !== false;
+        }
+
+        return self::detectDateTimeFormat($value, $country) !== null;
+    }
+
+    /**
+     * Erkennt das DateTime-Format eines Strings.
+     *
+     * @param string $value Der DateTime-String
+     * @param CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @return string|null Das erkannte Format oder null
+     */
+    public static function detectDateTimeFormat(string $value, CountryCode $country = CountryCode::Germany): ?string {
+        return self::detectFormatInternal($value, $country);
+    }
+
+    /**
+     * Interne Methode zur Format-Erkennung.
+     *
+     * @param string $value Der DateTime-String
+     * @param CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @return string|null Das erkannte Format oder null ('strtotime' für strtotime-Fallback)
+     */
+    private static function detectFormatInternal(string $value, CountryCode $country): ?string {
         // Unix timestamp prüfen (10 oder 13 Stellen)
         if (ctype_digit($value) && (strlen($value) === 10 || strlen($value) === 13)) {
             $timestamp = (int) $value;
             if ($timestamp > 0 && $timestamp < 2147483647) {
-                if (strlen($value) === 13) {
-                    $timestamp = intval($timestamp / 1000);
-                }
-                return DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
+                return 'U';
             }
         }
 
-        // Standard-Formate prüfen (vorsichtig - nur eindeutige Formate)
+        // Alle möglichen Formate sammeln
         $formats = [
+            // Standard-Formate (vorsichtig - nur eindeutige Formate)
             'Y-m-d H:i:s',
             'Y-m-d\TH:i:s',
             'Y-m-d\TH:i:sP',
@@ -558,70 +613,10 @@ class DateHelper {
         ];
 
         // Länder-spezifische Formate hinzufügen
-        $countryFormats = self::getCountrySpecificFormats($country);
+        $countryFormats = $country->getDateTimeFormatGroup()->getFormats();
         $formats = array_merge($formats, $countryFormats);
 
-        foreach ($formats as $fmt) {
-            $date = DateTimeImmutable::createFromFormat($fmt, $value);
-            if ($date !== false) {
-                return $date;
-            }
-        }
-
-        // Fallback: strtotime (nur bei längeren Strings und wenn sie wie typische Datums-Strings aussehen)
-        if (strlen($value) >= 8 && preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
-            $timestamp = strtotime($value);
-            if ($timestamp !== false) {
-                return DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Prüft, ob ein String ein gültiges Datum/Zeit ist.
-     *
-     * @param string $value Der zu prüfende String
-     * @param string|null $format Spezifisches Format oder null für Auto-Detection
-     * @param \CommonToolkit\Enums\CountryCode $country Das Land für länder-spezifische Formatinterpretation
-     * @return bool True wenn gültiges Datum
-     */
-    public static function isDateTime(string $value, ?string $format = null, \CommonToolkit\Enums\CountryCode $country = \CommonToolkit\Enums\CountryCode::Germany): bool {
-        if ($format) {
-            return DateTimeImmutable::createFromFormat($format, $value) !== false;
-        }
-
-        return self::parseDateTime($value, $country) !== null;
-    }
-
-    /**
-     * Erkennt das DateTime-Format eines Strings.
-     *
-     * @param string $value Der DateTime-String
-     * @param \CommonToolkit\Enums\CountryCode $country Das Land für länder-spezifische Formatinterpretation
-     * @return string|null Das erkannte Format oder null
-     */
-    public static function detectDateTimeFormat(string $value, \CommonToolkit\Enums\CountryCode $country = \CommonToolkit\Enums\CountryCode::Germany): ?string {
-        // Unix timestamp prüfen
-        if (ctype_digit($value) && (strlen($value) === 10 || strlen($value) === 13)) {
-            return 'U';
-        }
-
-        // Standard-Formate prüfen (gleiche Reihenfolge wie parseDateTime)
-        $formats = [
-            'Y-m-d H:i:s',
-            'Y-m-d\TH:i:s',
-            'Y-m-d\TH:i:sP',
-            'Y-m-d',
-            'd.m.Y',
-            'd.m.Y H:i:s',
-        ];
-
-        // Länder-spezifische Formate hinzufügen
-        $countryFormats = self::getCountrySpecificFormats($country);
-        $formats = array_merge($formats, $countryFormats);
-
+        // Formate durchprobieren
         foreach ($formats as $fmt) {
             $date = DateTimeImmutable::createFromFormat($fmt, $value);
             if ($date !== false) {
@@ -629,11 +624,11 @@ class DateHelper {
             }
         }
 
-        // Fallback für strtotime - generisches Format
+        // Fallback: strtotime (nur bei längeren Strings und wenn sie wie typische Datums-Strings aussehen)
         if (strlen($value) >= 8 && preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
             $timestamp = strtotime($value);
             if ($timestamp !== false) {
-                return 'Y-m-d H:i:s'; // Default Format für strtotime
+                return 'strtotime'; // Spezial-Indikator für strtotime
             }
         }
 
@@ -644,37 +639,45 @@ class DateHelper {
      * Gibt länder-spezifische DateTime-Formate zurück.
      * Diese Formate können mehrdeutig sein und sollten kontextbezogen interpretiert werden.
      *
-     * @param \CommonToolkit\Enums\CountryCode $country Das Land
+     * @param CountryCode $country Das Land
      * @return array<string> Array von DateTime-Formaten
+     * @deprecated Use $country->getDateTimeFormatGroup()->getFormats() directly
      */
-    private static function getCountrySpecificFormats(\CommonToolkit\Enums\CountryCode $country): array {
-        return match ($country) {
-            \CommonToolkit\Enums\CountryCode::Germany, \CommonToolkit\Enums\CountryCode::Austria, \CommonToolkit\Enums\CountryCode::Switzerland => [
-                // Deutsche Formate: DD/MM/YYYY und DD-MM-YYYY (Europäisch)
-                'd/m/Y',
-                'd/m/Y H:i:s',
-                'd-m-Y',
-                'd-m-Y H:i:s',
-            ],
-            \CommonToolkit\Enums\CountryCode::UnitedStatesOfAmerica => [
-                // Amerikanische Formate: MM/DD/YYYY
-                'm/d/Y',
-                'm/d/Y H:i:s',
-                'm-d-Y',
-                'm-d-Y H:i:s',
-            ],
-            \CommonToolkit\Enums\CountryCode::UnitedKingdomOfGreatBritainAndNorthernIreland, \CommonToolkit\Enums\CountryCode::Canada, \CommonToolkit\Enums\CountryCode::Australia => [
-                // Britische/Commonwealth Formate: DD/MM/YYYY (wie Deutschland)
-                'd/m/Y',
-                'd/m/Y H:i:s',
-                'd-m-Y',
-                'd-m-Y H:i:s',
-            ],
-            default => [
-                // Fallback für andere Länder: Europäisches Format
-                'd/m/Y',
-                'd-m-Y',
-            ],
-        };
+    private static function getCountrySpecificFormats(CountryCode $country): array {
+        return $country->getDateTimeFormatGroup()->getFormats();
+    }
+
+    /**
+     * Konvertiert ein Land zu einem bevorzugten DateTimeFormat.
+     * Nutzt die Verbindung zwischen CountryCode, DateTimeFormatGroup und DateTimeFormat.
+     *
+     * @param CountryCode $country Das Land
+     * @return DateTimeFormat Das bevorzugte Format für dieses Land
+     */
+    public static function getPreferredFormatForCountry(CountryCode $country): DateTimeFormat {
+        return DateTimeFormat::fromFormatGroup($country->getDateTimeFormatGroup());
+    }
+
+    /**
+     * Parst einen DateTime-String mit automatischer Länder-spezifischer Format-Erkennung.
+     * Diese Methode demonstriert die elegante Verbindung der drei Enums.
+     *
+     * @param string $value Der DateTime-String
+     * @param CountryCode $country Das Land für Formatpräferenz
+     * @return DateTimeImmutable|null Das geparste Datum
+     */
+    public static function parseWithCountryPreference(string $value, CountryCode $country): ?DateTimeImmutable {
+        // Zuerst mit länder-spezifischen Formaten versuchen
+        $parsed = self::parseDateTime($value, $country);
+
+        if ($parsed !== null) {
+            return $parsed;
+        }
+
+        // Fallback: Mit bevorzugtem Format des Landes versuchen
+        $preferredFormat = self::getPreferredFormatForCountry($country);
+        $pattern = $preferredFormat->getPattern();
+
+        return DateTimeImmutable::createFromFormat($pattern, $value) ?: null;
     }
 }
