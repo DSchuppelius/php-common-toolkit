@@ -244,22 +244,22 @@ class DateHelper {
     /**
      * Fügt eine bestimmte Anzahl von Tagen zu einem Datum hinzu.
      *
-     * @param DateTimeInterface $date Das Datum, zu dem Tage hinzugefügt werden sollen.
+     * @param DateTime|DateTimeImmutable $date Das Datum, zu dem Tage hinzugefügt werden sollen.
      * @param int $days Die Anzahl der Tage, die hinzugefügt werden sollen.
-     * @return DateTimeInterface Das neue Datum nach der Addition.
+     * @return DateTime|DateTimeImmutable Das neue Datum nach der Addition.
      */
-    public static function addDays(DateTimeInterface $date, int $days): DateTimeInterface {
+    public static function addDays(DateTime|DateTimeImmutable $date, int $days): DateTime|DateTimeImmutable {
         return $date->add(new DateInterval("P{$days}D"));
     }
 
     /**
      * Subtrahiert eine bestimmte Anzahl von Tagen von einem Datum.
      *
-     * @param DateTimeInterface $date Das Datum, von dem Tage subtrahiert werden sollen.
+     * @param DateTime|DateTimeImmutable $date Das Datum, von dem Tage subtrahiert werden sollen.
      * @param int $days Die Anzahl der Tage, die subtrahiert werden sollen.
-     * @return DateTimeInterface Das neue Datum nach der Subtraktion.
+     * @return DateTime|DateTimeImmutable Das neue Datum nach der Subtraktion.
      */
-    public static function subtractDays(DateTimeInterface $date, int $days): DateTimeInterface {
+    public static function subtractDays(DateTime|DateTimeImmutable $date, int $days): DateTime|DateTimeImmutable {
         return $date->sub(new DateInterval("P{$days}D"));
     }
 
