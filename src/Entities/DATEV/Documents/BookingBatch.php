@@ -13,8 +13,11 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\DATEV\Documents;
 
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
-use CommonToolkit\Entities\DATEV\{Document, DocumentInfo, MetaHeaderLine};
+use CommonToolkit\Contracts\Abstracts\DATEV\Document;
+use CommonToolkit\Entities\DATEV\{DocumentInfo, MetaHeaderLine};
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
+use CommonToolkit\Enums\DATEV\V700\BookingBatchHeaderField;
+use CommonToolkit\Enums\{CreditDebit, CurrencyCode, CountryCode};
 use RuntimeException;
 
 /**
@@ -53,5 +56,85 @@ final class BookingBatch extends Document {
                 throw new RuntimeException('Document ist kein BookingBatch-Format');
             }
         }
+    }
+    
+    // ==== BOOKINGBATCH-SPEZIFISCHE ENUM GETTER/SETTER ====
+
+    /**
+     * Gibt das Soll/Haben-Kennzeichen einer Buchung zurück.
+     */
+    public function getSollHabenKennzeichen(int $rowIndex): ?CreditDebit {
+        return $this->getCreditDebit($rowIndex, BookingBatchHeaderField::SollHabenKennzeichen->getPosition());
+    }
+
+    /**
+     * Setzt das Soll/Haben-Kennzeichen einer Buchung.
+     * TODO: Implementierung für Field-Mutation
+     */
+    // public function setSollHabenKennzeichen(int $rowIndex, CreditDebit $creditDebit): void {
+    //     $this->setCreditDebit($rowIndex, BookingBatchHeaderField::SollHabenKennzeichen->getPosition(), $creditDebit);
+    // }
+
+    /**
+     * Gibt die Basiswährung einer Buchung zurück.
+     */
+    public function getWKZBasisUmsatz(int $rowIndex): ?CurrencyCode {
+        return $this->getCurrencyCode($rowIndex, BookingBatchHeaderField::WKZBasisUmsatz->getPosition());
+    }
+    
+// NOTE: Setter-Methoden sind vorübergehend deaktiviert, da das Field-System immutable ist
+
+    /**
+     * Gibt die Umsatzwährung einer Buchung zurück.
+     */
+    public function getWKZUmsatz(int $rowIndex): ?CurrencyCode {
+        return $this->getCurrencyCode($rowIndex, BookingBatchHeaderField::WKZUmsatz->getPosition());
+    }
+
+    /**
+     * Gibt das EU-Land einer Buchung zurück.
+     */
+    public function getEULandUStID(int $rowIndex): ?CountryCode {
+        return $this->getCountryCode($rowIndex, BookingBatchHeaderField::EULandUStID->getPosition());
+    }
+
+    /**
+     * Gibt das Land einer Buchung zurück.
+     */
+    public function getLand(int $rowIndex): ?CountryCode {
+        return $this->getCountryCode($rowIndex, BookingBatchHeaderField::Land->getPosition());
+    }
+    
+    // ==== CONVENIENCE METHODS ====
+
+    /**
+     * Prüft, ob eine Buchung ein EU-Land hat.
+     */
+    public function isEUBooking(int $rowIndex): bool {
+        $country = $this->getEULandUStID($rowIndex) ?? $this->getLand($rowIndex);
+        return $country?->isEU() ?? false;
+    }
+
+    /**
+     * Prüft, ob eine Buchung Euro als Währung nutzt.
+     */
+    public function isEuroCurrency(int $rowIndex): bool {
+        $currency = $this->getWKZUmsatz($rowIndex) ?? $this->getWKZBasisUmsatz($rowIndex);
+        return $currency === CurrencyCode::Euro;
+    }
+
+    /**
+     * Gibt alle Buchungen mit einem bestimmten Soll/Haben-Kennzeichen zurück.
+     */
+    public function getRowsByCreditDebit(CreditDebit $creditDebit): array {
+        $result = [];
+
+        foreach ($this->rows as $index => $row) {
+            if ($this->getSollHabenKennzeichen($index) === $creditDebit) {
+                $result[] = $index;
+            }
+        }
+
+        return $result;
     }
 }

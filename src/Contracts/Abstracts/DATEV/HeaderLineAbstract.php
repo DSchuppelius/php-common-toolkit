@@ -15,7 +15,8 @@ namespace CommonToolkit\Contracts\Abstracts\DATEV;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use CommonToolkit\Contracts\Interfaces\DATEV\{FieldHeaderInterface, HeaderDefinitionInterface};
 use CommonToolkit\Entities\Common\CSV\{HeaderField, HeaderLine};
-use CommonToolkit\Entities\DATEV\Document;
+use CommonToolkit\Contracts\Abstracts\DATEV\Document;
+use CommonToolkit\Enums\CountryCode;
 
 /**
  * Abstrakte Basisklasse für DATEV Header-Zeilen (Spaltenbeschreibungen).
@@ -158,6 +159,6 @@ abstract class HeaderLineAbstract extends HeaderLine {
     }
 
     protected static function createField(string $rawValue, string $enclosure): FieldInterface {
-        return new HeaderField($rawValue, $enclosure);
+        return new HeaderField($rawValue, $enclosure, CountryCode::Germany);
     }
 }

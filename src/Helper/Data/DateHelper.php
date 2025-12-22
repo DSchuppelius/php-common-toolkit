@@ -527,4 +527,154 @@ class DateHelper {
     public static function getLocalizedMonthName(DateTimeInterface $date, string $locale = 'de'): string {
         return self::getMonth($date)->getName($locale);
     }
+
+    /**
+     * Parst einen DateTime-String länder-spezifisch.
+     *
+     * @param string $value Der zu parsende DateTime-String
+     * @param \CommonToolkit\Enums\CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @return DateTimeImmutable|null Das geparste Datum oder null wenn nicht erkannt
+     */
+    public static function parseDateTime(string $value, \CommonToolkit\Enums\CountryCode $country = \CommonToolkit\Enums\CountryCode::Germany): ?DateTimeImmutable {
+        // Unix timestamp prüfen (10 oder 13 Stellen)
+        if (ctype_digit($value) && (strlen($value) === 10 || strlen($value) === 13)) {
+            $timestamp = (int) $value;
+            if ($timestamp > 0 && $timestamp < 2147483647) {
+                if (strlen($value) === 13) {
+                    $timestamp = intval($timestamp / 1000);
+                }
+                return DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
+            }
+        }
+
+        // Standard-Formate prüfen (vorsichtig - nur eindeutige Formate)
+        $formats = [
+            'Y-m-d H:i:s',
+            'Y-m-d\TH:i:s',
+            'Y-m-d\TH:i:sP',
+            'Y-m-d',        // ISO Format: YYYY-MM-DD
+            'd.m.Y',        // Deutsch: DD.MM.YYYY (sicherer als DD-MM-YYYY)
+            'd.m.Y H:i:s',  // Deutsch mit Zeit
+        ];
+
+        // Länder-spezifische Formate hinzufügen
+        $countryFormats = self::getCountrySpecificFormats($country);
+        $formats = array_merge($formats, $countryFormats);
+
+        foreach ($formats as $fmt) {
+            $date = DateTimeImmutable::createFromFormat($fmt, $value);
+            if ($date !== false) {
+                return $date;
+            }
+        }
+
+        // Fallback: strtotime (nur bei längeren Strings und wenn sie wie typische Datums-Strings aussehen)
+        if (strlen($value) >= 8 && preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
+            $timestamp = strtotime($value);
+            if ($timestamp !== false) {
+                return DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Prüft, ob ein String ein gültiges Datum/Zeit ist.
+     *
+     * @param string $value Der zu prüfende String
+     * @param string|null $format Spezifisches Format oder null für Auto-Detection
+     * @param \CommonToolkit\Enums\CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @return bool True wenn gültiges Datum
+     */
+    public static function isDateTime(string $value, ?string $format = null, \CommonToolkit\Enums\CountryCode $country = \CommonToolkit\Enums\CountryCode::Germany): bool {
+        if ($format) {
+            return DateTimeImmutable::createFromFormat($format, $value) !== false;
+        }
+
+        return self::parseDateTime($value, $country) !== null;
+    }
+
+    /**
+     * Erkennt das DateTime-Format eines Strings.
+     *
+     * @param string $value Der DateTime-String
+     * @param \CommonToolkit\Enums\CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @return string|null Das erkannte Format oder null
+     */
+    public static function detectDateTimeFormat(string $value, \CommonToolkit\Enums\CountryCode $country = \CommonToolkit\Enums\CountryCode::Germany): ?string {
+        // Unix timestamp prüfen
+        if (ctype_digit($value) && (strlen($value) === 10 || strlen($value) === 13)) {
+            return 'U';
+        }
+
+        // Standard-Formate prüfen (gleiche Reihenfolge wie parseDateTime)
+        $formats = [
+            'Y-m-d H:i:s',
+            'Y-m-d\TH:i:s',
+            'Y-m-d\TH:i:sP',
+            'Y-m-d',
+            'd.m.Y',
+            'd.m.Y H:i:s',
+        ];
+
+        // Länder-spezifische Formate hinzufügen
+        $countryFormats = self::getCountrySpecificFormats($country);
+        $formats = array_merge($formats, $countryFormats);
+
+        foreach ($formats as $fmt) {
+            $date = DateTimeImmutable::createFromFormat($fmt, $value);
+            if ($date !== false) {
+                return $fmt;
+            }
+        }
+
+        // Fallback für strtotime - generisches Format
+        if (strlen($value) >= 8 && preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
+            $timestamp = strtotime($value);
+            if ($timestamp !== false) {
+                return 'Y-m-d H:i:s'; // Default Format für strtotime
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gibt länder-spezifische DateTime-Formate zurück.
+     * Diese Formate können mehrdeutig sein und sollten kontextbezogen interpretiert werden.
+     *
+     * @param \CommonToolkit\Enums\CountryCode $country Das Land
+     * @return array<string> Array von DateTime-Formaten
+     */
+    private static function getCountrySpecificFormats(\CommonToolkit\Enums\CountryCode $country): array {
+        return match ($country) {
+            \CommonToolkit\Enums\CountryCode::Germany, \CommonToolkit\Enums\CountryCode::Austria, \CommonToolkit\Enums\CountryCode::Switzerland => [
+                // Deutsche Formate: DD/MM/YYYY und DD-MM-YYYY (Europäisch)
+                'd/m/Y',
+                'd/m/Y H:i:s',
+                'd-m-Y',
+                'd-m-Y H:i:s',
+            ],
+            \CommonToolkit\Enums\CountryCode::UnitedStatesOfAmerica => [
+                // Amerikanische Formate: MM/DD/YYYY
+                'm/d/Y',
+                'm/d/Y H:i:s',
+                'm-d-Y',
+                'm-d-Y H:i:s',
+            ],
+            \CommonToolkit\Enums\CountryCode::UnitedKingdomOfGreatBritainAndNorthernIreland, \CommonToolkit\Enums\CountryCode::Canada, \CommonToolkit\Enums\CountryCode::Australia => [
+                // Britische/Commonwealth Formate: DD/MM/YYYY (wie Deutschland)
+                'd/m/Y',
+                'd/m/Y H:i:s',
+                'd-m-Y',
+                'd-m-Y H:i:s',
+            ],
+            default => [
+                // Fallback für andere Länder: Europäisches Format
+                'd/m/Y',
+                'd-m-Y',
+            ],
+        };
+    }
 }

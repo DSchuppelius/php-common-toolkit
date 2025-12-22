@@ -12,9 +12,12 @@ namespace Tests\Contracts;
 
 use ERRORToolkit\Factories\ConsoleLoggerFactory;
 use ERRORToolkit\LoggerRegistry;
+use ERRORToolkit\Traits\ErrorLog;
 use PHPUnit\Framework\TestCase;
 
 abstract class BaseTestCase extends TestCase {
+    use ErrorLog;
+
     protected function setUp(): void {
         parent::setUp();
 

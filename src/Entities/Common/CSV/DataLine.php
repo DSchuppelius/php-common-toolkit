@@ -12,9 +12,10 @@ namespace CommonToolkit\Entities\Common\CSV;
 
 use CommonToolkit\Contracts\Abstracts\Common\CSV\LineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
+use CommonToolkit\Enums\CountryCode;
 
 class DataLine extends LineAbstract {
     protected static function createField(string $rawValue, string $enclosure): FieldInterface {
-        return new DataField($rawValue, $enclosure);
+        return new DataField($rawValue, $enclosure, CountryCode::Germany);
     }
 }

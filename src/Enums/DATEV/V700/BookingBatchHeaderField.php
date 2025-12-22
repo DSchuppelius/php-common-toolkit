@@ -773,4 +773,14 @@ enum BookingBatchHeaderField: string implements FieldHeaderInterface {
             default => null,
         };
     }
+
+    /**
+     * Gibt die Position/den Index des Feldes in der Feldreihenfolge zurück.
+     * 
+     * @return int Die nullbasierte Position des Feldes
+     */
+    public function getPosition(): int {
+        $ordered = self::ordered();
+        return array_search($this, $ordered, true) ?: 0;
+    }
 }

@@ -13,6 +13,7 @@ declare(strict_types=1);
 use CommonToolkit\Enums\DateFormat;
 use CommonToolkit\Enums\Month;
 use CommonToolkit\Enums\Weekday;
+use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Helper\Data\DateHelper;
 use Tests\Contracts\BaseTestCase;
 
@@ -144,5 +145,91 @@ class DateHelperTest extends BaseTestCase {
     public function testGetLocalizedMonthName() {
         $date = new DateTime('2024-04-16');
         $this->assertEquals('April', DateHelper::getLocalizedMonthName($date, 'de'));
+    }
+
+    // === Neue Tests für verschobene DateTime-Funktionen ===
+
+    public function testParseDateTime(): void {
+        // ISO Format
+        $result = DateHelper::parseDateTime('2024-12-22');
+        $this->assertInstanceOf(\DateTimeImmutable::class, $result);
+        $this->assertEquals('2024-12-22', $result->format('Y-m-d'));
+
+        // Deutsche Formate
+        $result = DateHelper::parseDateTime('22.12.2024');
+        $this->assertInstanceOf(\DateTimeImmutable::class, $result);
+        $this->assertEquals('2024-12-22', $result->format('Y-m-d'));
+
+        $result = DateHelper::parseDateTime('22.12.2024 15:30:45');
+        $this->assertInstanceOf(\DateTimeImmutable::class, $result);
+        $this->assertEquals('2024-12-22 15:30:45', $result->format('Y-m-d H:i:s'));
+
+        // Unix Timestamp
+        $result = DateHelper::parseDateTime('1734800123');
+        $this->assertInstanceOf(\DateTimeImmutable::class, $result);
+
+        // Ungültiges Format
+        $result = DateHelper::parseDateTime('invalid-date');
+        $this->assertNull($result);
+    }
+
+    public function testParseDateTimeWithCountryCode(): void {
+        // Deutschland: dd/mm/yyyy
+        $result = DateHelper::parseDateTime('22/12/2024', CountryCode::Germany);
+        $this->assertInstanceOf(\DateTimeImmutable::class, $result);
+        $this->assertEquals('2024-12-22', $result->format('Y-m-d'));
+
+        // USA: mm/dd/yyyy  
+        $result = DateHelper::parseDateTime('12/22/2024', CountryCode::UnitedStatesOfAmerica);
+        $this->assertInstanceOf(\DateTimeImmutable::class, $result);
+        $this->assertEquals('2024-12-22', $result->format('Y-m-d'));
+    }
+
+    public function testDetectDateTimeFormat(): void {
+        // Standard Formate
+        $this->assertEquals('Y-m-d', DateHelper::detectDateTimeFormat('2024-12-22'));
+        $this->assertEquals('Y-m-d H:i:s', DateHelper::detectDateTimeFormat('2024-12-22 15:30:45'));
+        $this->assertEquals('d.m.Y', DateHelper::detectDateTimeFormat('22.12.2024'));
+        $this->assertEquals('d.m.Y H:i:s', DateHelper::detectDateTimeFormat('22.12.2024 15:30:45'));
+
+        // Unix Timestamp
+        $this->assertEquals('U', DateHelper::detectDateTimeFormat('1734800123'));
+
+        // Unbekannt
+        $this->assertNull(DateHelper::detectDateTimeFormat('invalid-date'));
+    }
+
+    public function testDetectDateTimeFormatWithCountryCode(): void {
+        // Deutschland: d/m/Y interpretiert als europäisch
+        $format = DateHelper::detectDateTimeFormat('22/12/2024', CountryCode::Germany);
+        $this->assertEquals('d/m/Y', $format);
+
+        // USA: m/d/Y interpretiert als amerikanisch
+        $format = DateHelper::detectDateTimeFormat('12/22/2024', CountryCode::UnitedStatesOfAmerica);
+        $this->assertEquals('m/d/Y', $format);
+    }
+
+    public function testIsDateTimeString(): void {
+        // Gültige DateTime-Strings
+        $this->assertTrue(DateHelper::isDateTime('2024-12-22'));
+        $this->assertTrue(DateHelper::isDateTime('22.12.2024'));
+        $this->assertTrue(DateHelper::isDateTime('22.12.2024 15:30:45'));
+        $this->assertTrue(DateHelper::isDateTime('1734800123'));
+
+        // Mit spezifischem Format
+        $this->assertTrue(DateHelper::isDateTime('22.12.2024', 'd.m.Y'));
+        $this->assertFalse(DateHelper::isDateTime('2024-12-22', 'd.m.Y'));
+
+        // Ungültige DateTime-Strings
+        $this->assertFalse(DateHelper::isDateTime('invalid-date'));
+        $this->assertFalse(DateHelper::isDateTime(''));
+    }
+
+    public function testIsDateTimeWithCountryCode(): void {
+        // Deutschland
+        $this->assertTrue(DateHelper::isDateTime('22/12/2024', null, CountryCode::Germany));
+
+        // USA
+        $this->assertTrue(DateHelper::isDateTime('12/22/2024', null, CountryCode::UnitedStatesOfAmerica));
     }
 }

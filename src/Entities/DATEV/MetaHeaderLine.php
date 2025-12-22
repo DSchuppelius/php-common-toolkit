@@ -15,6 +15,7 @@ namespace CommonToolkit\Entities\DATEV;
 use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderFieldInterface;
 use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderDefinitionInterface;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
+use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\Common\CSV\DataField;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;

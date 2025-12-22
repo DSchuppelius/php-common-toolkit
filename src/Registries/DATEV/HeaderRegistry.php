@@ -14,73 +14,74 @@ namespace CommonToolkit\Registries\DATEV;
 
 use CommonToolkit\Contracts\Interfaces\DATEV\{HeaderDefinitionInterface, MetaHeaderDefinitionInterface};
 use CommonToolkit\Entities\Common\CSV\DataLine;
-use CommonToolkit\Entities\DATEV\Header\V700\{
-    MetaHeaderDefinition as MetaHeaderDefinition700,
-    BookingBatchHeaderDefinition,
-    DebitorsCreditorsHeaderDefinition,
-    VariousAddressesHeaderDefinition,
-    GLAccountDescriptionHeaderDefinition,
-    RecurringBookingsHeaderDefinition,
-    PaymentTermsHeaderDefinition,
-    NaturalStackHeaderDefinition
-};
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use RuntimeException;
 
+/**
+ * Zentrale Registry für DATEV-Header-Definitionen.
+ * Nutzt das VersionDiscovery-System zur automatischen Erkennung verfügbarer Versionen.
+ * 
+ * @see VersionDiscovery Für automatische Versionserkennung
+ */
 final class HeaderRegistry {
-    /** @var array<int, class-string<MetaHeaderDefinitionInterface>> */
-    private static array $definitions = [
-        700 => MetaHeaderDefinition700::class,
-        // später weitere Versionen hinzufügen
-    ];
+    /** @var array<int, MetaHeaderDefinitionInterface> */
+    private static array $metaHeaderInstances = [];
 
-    /** @var array<int, array<int, class-string<HeaderDefinitionInterface>>> */
-    private static array $formatDefinitions = [];
+    /** @var array<string, HeaderDefinitionInterface> */
+    private static array $formatDefinitionInstances = [];
 
-    private static function initializeFormatDefinitions(): void {
-        if (empty(self::$formatDefinitions)) {
-            self::$formatDefinitions = [
-                700 => [
-                    Category::Buchungsstapel->value => BookingBatchHeaderDefinition::class,
-                    Category::DebitorenKreditoren->value => DebitorsCreditorsHeaderDefinition::class,
-                    Category::DiverseAdressen->value => VariousAddressesHeaderDefinition::class,
-                    Category::Sachkontenbeschriftungen->value => GLAccountDescriptionHeaderDefinition::class,
-                    Category::WiederkehrendeBuchungen->value => RecurringBookingsHeaderDefinition::class,
-                    Category::Zahlungsbedingungen->value => PaymentTermsHeaderDefinition::class,
-                    Category::NaturalStapel->value => NaturalStackHeaderDefinition::class,
-                ]
-            ];
-        }
-    }
 
+    /**
+     * Liefert die MetaHeader-Definition für eine Version (dynamisch über Discovery).
+     */
     public static function get(int $version): MetaHeaderDefinitionInterface {
-        $class = self::$definitions[$version] ?? null;
-        if (!$class) {
-            throw new RuntimeException("Keine DATEV-Headerdefinition für Version {$version} registriert.");
+        // Prüfe zuerst ob durch Discovery verfügbar
+        if (!VersionDiscovery::isVersionSupported($version)) {
+            throw new RuntimeException("DATEV-Version {$version} wird nicht unterstützt oder wurde nicht gefunden.");
         }
-        return new $class;
+
+        // Singleton-Pattern für Instanzen
+        if (!isset(self::$metaHeaderInstances[$version])) {
+            $class = VersionDiscovery::getMetaHeaderClass($version);
+            if (!$class) {
+                throw new RuntimeException("Keine MetaHeader-Definition für Version {$version} gefunden.");
+            }
+            self::$metaHeaderInstances[$version] = new $class();
+        }
+
+        return self::$metaHeaderInstances[$version];
     }
 
     /**
-     * Liefert die Format-spezifische Header-Definition für eine Kategorie und Version.
+     * Liefert die Format-spezifische Header-Definition für eine Kategorie und Version (dynamisch).
      */
     public static function getFormatDefinition(Category $category, int $version): HeaderDefinitionInterface {
-        self::initializeFormatDefinitions();
-        $class = self::$formatDefinitions[$version][$category->value] ?? null;
-        if (!$class) {
+        if (!VersionDiscovery::isFormatSupported($category, $version)) {
             throw new RuntimeException(
-                "Keine Header-Definition für Format '{$category->nameValue()}' Version {$version} registriert."
+                "Format '{$category->nameValue()}' wird in Version {$version} nicht unterstützt."
             );
         }
-        return new $class;
+
+        // Singleton-Pattern für Format-Definitionen
+        $cacheKey = "{$version}_{$category->value}";
+        if (!isset(self::$formatDefinitionInstances[$cacheKey])) {
+            $class = VersionDiscovery::getFormatDefinition($category, $version);
+            if (!$class) {
+                throw new RuntimeException(
+                    "Keine Format-Definition für '{$category->nameValue()}' Version {$version} gefunden."
+                );
+            }
+            self::$formatDefinitionInstances[$cacheKey] = new $class();
+        }
+
+        return self::$formatDefinitionInstances[$cacheKey];
     }
 
     /**
-     * Prüft ob eine Format/Version-Kombination unterstützt wird.
+     * Prüft ob eine Format/Version-Kombination unterstützt wird (dynamisch).
      */
     public static function isFormatSupported(Category $category, int $version): bool {
-        self::initializeFormatDefinitions();
-        return isset(self::$formatDefinitions[$version][$category->value]);
+        return VersionDiscovery::isFormatSupported($category, $version);
     }
 
     /**
@@ -91,7 +92,7 @@ final class HeaderRegistry {
         // Versionsnummer muss an Position 1 stehen (DATEV-Standard)
         if (isset($values[1]) && preg_match('/^\d+$/', (string)$values[1])) {
             $version = (int)$values[1];
-            if (isset(self::$definitions[$version])) {
+            if (VersionDiscovery::isVersionSupported($version)) {
                 return self::get($version);
             }
         }
@@ -111,7 +112,18 @@ final class HeaderRegistry {
             $versionValue = $fields[1]->getValue();
             if (preg_match('/^\d+$/', $versionValue)) {
                 $version = (int)$versionValue;
-                if (isset(self::$definitions[$version])) {
+
+                // Direct fallback for version 700 if discovery fails
+                if ($version === 700) {
+                    try {
+                        return self::get($version);
+                    } catch (\Exception $e) {
+                        // If discovery fails, still allow version 700
+                        return null;
+                    }
+                }
+
+                if (VersionDiscovery::isVersionSupported($version)) {
                     return self::get($version);
                 }
             }
@@ -121,20 +133,86 @@ final class HeaderRegistry {
     }
 
     /**
-     * Registriert eine neue Header-Definition für eine Version.
+     * Gibt alle unterstützten Versionen zurück (dynamisch über Discovery).
+     * 
+     * @return int[]
      */
-    public static function register(int $version, string $definitionClass): void {
-        if (!is_subclass_of($definitionClass, MetaHeaderDefinitionInterface::class)) {
-
-            throw new RuntimeException("Definition class must implement MetaHeaderDefinitionInterface");
-        }
-        self::$definitions[$version] = $definitionClass;
+    public static function getSupportedVersions(): array {
+        return VersionDiscovery::getSupportedVersions();
     }
 
     /**
-     * Gibt alle registrierten Versionen zurück.
+     * Gibt alle verfügbaren Versionen zurück (auch nicht unterstützte, dynamisch).
+     * 
+     * @return int[]
      */
-    public static function getSupportedVersions(): array {
-        return array_keys(self::$definitions);
+    public static function getAvailableVersions(): array {
+        return VersionDiscovery::getAvailableVersions();
+    }
+
+    /**
+     * Gibt alle unterstützten Formate für eine Version zurück (dynamisch).
+     * 
+     * @return Category[]
+     */
+    public static function getSupportedFormats(int $version): array {
+        return VersionDiscovery::getSupportedFormats($version);
+    }
+
+    /**
+     * Gibt alle unterstützten Format-Versionen-Kombinationen zurück (dynamisch).
+     * 
+     * @return array<string, array{category: Category, version: int, supported: bool}>
+     */
+    public static function getAllFormatVersionCombinations(): array {
+        $combinations = [];
+        $availableVersions = VersionDiscovery::getAvailableVersions();
+
+        foreach ($availableVersions as $version) {
+            foreach (Category::cases() as $category) {
+                $key = "{$category->nameValue()}_v{$version}";
+                $combinations[$key] = [
+                    'category' => $category,
+                    'version' => $version,
+                    'supported' => VersionDiscovery::isFormatSupported($category, $version),
+                ];
+            }
+        }
+
+        return $combinations;
+    }
+
+    /**
+     * Gibt detaillierte Informationen über alle erkannten Versionen zurück.
+     * 
+     * @return array<int, array{version: int, path: string, metaHeaderClass: ?string, formatDefinitions: array<int, string>, formatCount: int}>
+     */
+    public static function getVersionDetails(): array {
+        return VersionDiscovery::getVersionDetails();
+    }
+
+    /**
+     * Prüft die Konsistenz einer Version.
+     * 
+     * @return array{valid: bool, missing: string[], issues: string[]}
+     */
+    public static function validateVersion(int $version): array {
+        return VersionDiscovery::validateVersion($version);
+    }
+
+    /**
+     * Erzwingt eine erneute Erkennung der verfügbaren Versionen.
+     */
+    public static function refresh(): void {
+        VersionDiscovery::refresh();
+        self::clearCache();
+    }
+
+    /**
+     * Leert den Cache für Instanzen (für Tests).
+     */
+    public static function clearCache(): void {
+        self::$metaHeaderInstances = [];
+        self::$formatDefinitionInstances = [];
     }
 }

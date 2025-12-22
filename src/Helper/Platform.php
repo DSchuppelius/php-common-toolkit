@@ -12,6 +12,12 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper;
 
+use ERRORToolkit\Helper\OsHelper;
+
+/**
+ * Platform Helper - Wrapper um den OsHelper aus dem ERRORToolkit.
+ * Bietet plattformspezifische Funktionen und stellt Kompatibilität mit der ursprünglichen API sicher.
+ */
 class Platform {
     /**
      * Überprüft, ob das aktuelle Betriebssystem Windows ist.
@@ -19,7 +25,7 @@ class Platform {
      * @return bool True, wenn das Betriebssystem Windows ist, andernfalls false.
      */
     public static function isWindows(): bool {
-        return self::getOsName() === 'WINDOWS';
+        return OsHelper::isWindows();
     }
 
     /**
@@ -28,7 +34,7 @@ class Platform {
      * @return bool True, wenn das Betriebssystem Linux ist, andernfalls false.
      */
     public static function isLinux(): bool {
-        return self::getOsName() === 'LINUX';
+        return OsHelper::isLinux();
     }
 
     /**
@@ -37,16 +43,32 @@ class Platform {
      * @return bool True, wenn das Betriebssystem macOS ist, andernfalls false.
      */
     public static function isMac(): bool {
-        return self::getOsName() === 'DARWIN';
+        return OsHelper::isMacOS();
+    }
+
+    /**
+     * Überprüft, ob das aktuelle Betriebssystem Unix-artig ist (Linux oder macOS).
+     *
+     * @return bool True, wenn das System Unix-artig ist, andernfalls false.
+     */
+    public static function isUnix(): bool {
+        return OsHelper::isUnix();
     }
 
     /**
      * Gibt den Namen des Betriebssystems zurück.
+     * Für Rückwärtskompatibilität wird das Format angepasst.
      *
-     * @return string Der Name des Betriebssystems in Großbuchstaben (z. B. 'WINDOWS', 'LINUX', 'DARWIN').
+     * @return string Der Name des Betriebssystems in Großbuchstaben (z. B. 'WINDOWS', 'LINUX', 'DARWIN').
      */
     public static function getOsName(): string {
-        return strtoupper(PHP_OS_FAMILY); // z. B. 'WINDOWS', 'LINUX', 'DARWIN'
+        $osName = OsHelper::getOsName();
+        return match ($osName) {
+            'Windows' => 'WINDOWS',
+            'Linux' => 'LINUX',
+            'macOS' => 'DARWIN',
+            default => strtoupper($osName)
+        };
     }
 
     /**
@@ -64,23 +86,173 @@ class Platform {
     }
 
     /**
-     * Gibt den Dateinamen mit der richtigen Erweiterung für die aktuelle Plattform zurück.
+     * Gibt die Dateiendung für ausführbare Dateien zurück.
      *
-     * @param string $filename Der Dateiname ohne Erweiterung.
-     * @return string Der Dateiname mit der richtigen Erweiterung.
+     * @return string Die Dateiendung ('.exe' für Windows, leer für Unix).
      */
     public static function getExecutableExtension(): string {
         return self::isWindows() ? '.exe' : '';
     }
 
     /**
-     * Gibt den Pfad an, der für die aktuelle Plattform geeignet ist.
+     * Gibt den Pfad an, der für die aktuelle Plattform angepasst wurde.
      *
      * @param string $path Der Pfad, der angepasst werden soll.
      * @return string Der angepasste Pfad.
      */
     public static function adjustPath(string $path): string {
-        // Beispiel: Auf Windows evtl. Backslashes normalisieren
         return self::isWindows() ? str_replace('/', '\\', $path) : $path;
+    }
+
+    // === Erweiterte Funktionen aus dem OsHelper ===
+
+    /**
+     * Gibt das Home-Verzeichnis des aktuellen Benutzers zurück.
+     *
+     * @return string Das Home-Verzeichnis.
+     */
+    public static function getHomeDirectory(): string {
+        return OsHelper::getHomeDirectory();
+    }
+
+    /**
+     * Gibt das System-Temp-Verzeichnis zurück.
+     *
+     * @return string Das Temp-Verzeichnis.
+     */
+    public static function getTempDirectory(): string {
+        return OsHelper::getTempDirectory();
+    }
+
+    /**
+     * Gibt den korrekten Pfad-Separator für das aktuelle System zurück.
+     *
+     * @return string Der Pfad-Separator ('\\' für Windows, '/' für Unix).
+     */
+    public static function getPathSeparator(): string {
+        return OsHelper::getPathSeparator();
+    }
+
+    /**
+     * Gibt den korrekten PATH-Separator für Umgebungsvariablen zurück.
+     *
+     * @return string Der PATH-Separator (';' für Windows, ':' für Unix).
+     */
+    public static function getEnvPathSeparator(): string {
+        return OsHelper::getEnvPathSeparator();
+    }
+
+    /**
+     * Prüft, ob eine Datei ausführbar ist.
+     *
+     * @param string $path Der Pfad zur Datei.
+     * @return bool True, wenn die Datei ausführbar ist.
+     */
+    public static function isExecutable(string $path): bool {
+        return OsHelper::isExecutable($path);
+    }
+
+    /**
+     * Sucht nach einem Executable in den PATH-Verzeichnissen.
+     *
+     * @param string $name Der Name des Executables.
+     * @return string|null Der vollständige Pfad oder null, wenn nicht gefunden.
+     */
+    public static function findExecutable(string $name): ?string {
+        return OsHelper::findExecutable($name);
+    }
+
+    /**
+     * Gibt den aktuellen Benutzernamen zurück.
+     *
+     * @return string Der Benutzername.
+     */
+    public static function getCurrentUsername(): string {
+        return OsHelper::getCurrentUsername();
+    }
+
+    /**
+     * Prüft, ob der aktuelle Benutzer Root/Administrator-Rechte hat.
+     *
+     * @return bool True, wenn der Benutzer privilegiert ist.
+     */
+    public static function isPrivilegedUser(): bool {
+        return OsHelper::isPrivilegedUser();
+    }
+
+    /**
+     * Gibt eine Umgebungsvariable zurück.
+     *
+     * @param string $name Der Name der Umgebungsvariable.
+     * @param string|null $default Der Default-Wert, falls die Variable nicht existiert.
+     * @return string|null Der Wert der Umgebungsvariable oder der Default-Wert.
+     */
+    public static function getEnv(string $name, ?string $default = null): ?string {
+        return OsHelper::getEnv($name, $default);
+    }
+
+    /**
+     * Setzt eine Umgebungsvariable.
+     *
+     * @param string $name Der Name der Umgebungsvariable.
+     * @param string $value Der Wert der Umgebungsvariable.
+     * @return bool True bei Erfolg.
+     */
+    public static function setEnv(string $name, string $value): bool {
+        return OsHelper::setEnv($name, $value);
+    }
+
+    /**
+     * Gibt die Anzahl der verfügbaren CPU-Kerne zurück.
+     *
+     * @return int Die Anzahl der CPU-Kerne.
+     */
+    public static function getCpuCoreCount(): int {
+        return OsHelper::getCpuCoreCount();
+    }
+
+    /**
+     * Gibt die System-Architektur zurück.
+     *
+     * @return string Die Architektur (z.B. 'x86_64', 'aarch64').
+     */
+    public static function getArchitecture(): string {
+        return OsHelper::getArchitecture();
+    }
+
+    /**
+     * Gibt die Kernel-Version zurück.
+     *
+     * @return string Die Kernel-Version.
+     */
+    public static function getKernelVersion(): string {
+        return OsHelper::getKernelVersion();
+    }
+
+    /**
+     * Gibt detaillierte System-Informationen zurück.
+     *
+     * @return array Umfassende System-Informationen.
+     */
+    public static function getSystemInfo(): array {
+        return OsHelper::getSystemInfo();
+    }
+
+    /**
+     * Gibt die aktuelle Benutzer-ID zurück (nur Unix).
+     *
+     * @return int|null Die Benutzer-ID oder null auf Windows.
+     */
+    public static function getCurrentUserId(): ?int {
+        return OsHelper::getCurrentUserId();
+    }
+
+    /**
+     * Gibt die aktuelle Gruppen-ID zurück (nur Unix).
+     *
+     * @return int|null Die Gruppen-ID oder null auf Windows.
+     */
+    public static function getCurrentGroupId(): ?int {
+        return OsHelper::getCurrentGroupId();
     }
 }

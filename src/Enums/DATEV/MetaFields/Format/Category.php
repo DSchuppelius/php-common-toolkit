@@ -29,7 +29,7 @@ enum Category: int {
             self::Zahlungsbedingungen      => 'Zahlungsbedingungen',
             self::DiverseAdressen          => 'Diverse Adressen',
             self::WiederkehrendeBuchungen  => 'Wiederkehrende Buchungen',
-            self::NaturalStapel            => 'Naturalstapel',
+            self::NaturalStapel            => 'Natural-Stapel',
         };
     }
 

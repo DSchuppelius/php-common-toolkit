@@ -13,7 +13,8 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\DATEV\Documents;
 
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
-use CommonToolkit\Entities\DATEV\{Document, MetaHeaderLine};
+use CommonToolkit\Contracts\Abstracts\DATEV\Document;
+use CommonToolkit\Entities\DATEV\MetaHeaderLine;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 
 /**
@@ -34,6 +35,13 @@ final class VariousAddresses extends Document {
      */
     public function getCategory(): Category {
         return Category::DiverseAdressen;
+    }
+
+    /**
+     * Gibt den DATEV-Format-Typ zurück.
+     */
+    public function getFormatType(): string {
+        return Category::DiverseAdressen->nameValue();
     }
 
     /**

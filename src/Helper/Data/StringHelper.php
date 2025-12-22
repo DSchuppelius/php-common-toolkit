@@ -13,8 +13,10 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\Data;
 
 use CommonToolkit\Enums\CaseType;
+use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Enums\SearchMode;
 use CommonToolkit\Helper\Shell\ShellChardet;
+use DateTimeImmutable;
 use ERRORToolkit\Traits\ErrorLog;
 use Throwable;
 
@@ -464,4 +466,151 @@ class StringHelper {
 
         return true;
     }
+
+    /**
+     * Ermittelt den typisierten Wert eines Strings.
+     * Priorität: Unix-Timestamp -> Integer -> Float -> Boolean -> DateTime -> String
+     *
+     * @param string $value Der zu typisierende String
+     * @param CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @return mixed Der typisierte Wert
+     */
+    public static function parseToTypedValue(string $value, CountryCode $country = CountryCode::Germany): mixed {
+        if ($value === '') {
+            return $value;
+        }
+
+        $trimmed = trim($value);
+
+        // Spezialfall: Unix Timestamps (10 Stellen) als DateTime erkennen
+        if (ctype_digit($trimmed) && strlen($trimmed) === 10) {
+            $timestamp = (int) $trimmed;
+            if ($timestamp > 946684800 && $timestamp < 2147483647) { // 2000-2038
+                $dateTime = DateTimeImmutable::createFromFormat('U', $trimmed);
+                if ($dateTime !== false) {
+                    return $dateTime;
+                }
+            }
+        }
+
+        // Integer prüfen (aber nicht bei mehrstelligen Zahlen mit führenden Nullen)
+        if (filter_var($trimmed, FILTER_VALIDATE_INT) !== false) {
+            // Führende Nullen bei mehrstelligen Zahlen beibehalten
+            if (strlen($trimmed) > 1 && str_starts_with($trimmed, '0') && $trimmed !== '0') {
+                return $trimmed; // Als String beibehalten
+            }
+            return (int) $trimmed;
+        }
+
+        // Float prüfen (deutsche Komma normalisieren)
+        $normalized = str_replace(',', '.', $trimmed);
+        if (filter_var($normalized, FILTER_VALIDATE_FLOAT) !== false) {
+            // Führende Nullen bei ganzen Zahlen beibehalten (aber nicht bei Dezimalzahlen)
+            if (strlen($trimmed) > 1 && str_starts_with($trimmed, '0') && !str_contains($trimmed, '.') && !str_contains($trimmed, ',')) {
+                return $trimmed; // Als String beibehalten
+            }
+            return (float) $normalized;
+        }
+
+        // Boolean prüfen
+        $lower = strtolower($trimmed);
+        if (in_array($lower, ['true', 'yes', 'on'], true)) {
+            return true;
+        }
+        if (in_array($lower, ['false', 'no', 'off'], true)) {
+            return false;
+        }
+
+        // DateTime prüfen
+        $dateTime = DateHelper::parseDateTime($trimmed, $country);
+        if ($dateTime !== null) {
+            return $dateTime;
+        }
+
+        // Fallback: String
+        return $value;
+    }
+
+    /**
+     * Versucht einen String als DateTime zu parsen.
+     *
+     * @param string $value Der zu parsende String
+     * @param CountryCode $country Das Land für länder-spezifische Formatinterpretation
+     * @return DateTimeImmutable|null Das DateTime-Objekt oder null
+     */
+    public static function parseDateTime(string $value, CountryCode $country = CountryCode::Germany): ?DateTimeImmutable {
+        // Unix timestamp prüfen (10 oder 13 Stellen)
+        if (ctype_digit($value) && (strlen($value) === 10 || strlen($value) === 13)) {
+            $timestamp = (int) $value;
+            if ($timestamp > 0 && $timestamp < 2147483647) {
+                if (strlen($value) === 13) {
+                    $timestamp = intval($timestamp / 1000);
+                }
+                return DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
+            }
+        }
+
+        // Standard-Formate prüfen (vorsichtig - nur eindeutige Formate)
+        $formats = [
+            'Y-m-d H:i:s',
+            'Y-m-d\TH:i:s',
+            'Y-m-d\TH:i:sP',
+            'Y-m-d',        // ISO Format: YYYY-MM-DD
+            'd.m.Y',        // Deutsch: DD.MM.YYYY (sicherer als DD-MM-YYYY)
+            'd.m.Y H:i:s',  // Deutsch mit Zeit
+        ];
+
+        // Länder-spezifische Formate hinzufügen
+        $countryFormats = self::getCountrySpecificFormats($country);
+        $formats = array_merge($formats, $countryFormats);
+
+        foreach ($formats as $fmt) {
+            $date = DateTimeImmutable::createFromFormat($fmt, $value);
+            if ($date !== false) {
+                return $date;
+            }
+        }
+
+        // Fallback: strtotime (nur bei längeren Strings und wenn sie wie typische Datums-Strings aussehen)
+        if (strlen($value) >= 8 && preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
+            $timestamp = strtotime($value);
+            if ($timestamp !== false) {
+                return \DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Prüft, ob ein String eine gültige Ganzzahl ist.
+     */
+    public static function isInt(string $value): bool {
+        return filter_var(trim($value), FILTER_VALIDATE_INT) !== false;
+    }
+
+    /**
+     * Prüft, ob ein String eine gültige Fließkommazahl ist.
+     */
+    public static function isFloat(string $value): bool {
+        $normalized = str_replace(',', '.', trim($value));
+        return filter_var($normalized, FILTER_VALIDATE_FLOAT) !== false;
+    }
+
+    /**
+     * Prüft, ob ein String ein gültiger Boolean ist.
+     */
+    public static function isBool(string $value): bool {
+        $lower = strtolower(trim($value));
+        return in_array($lower, ['true', 'false', 'yes', 'no', 'on', 'off'], true);
+    }
+
+    /**
+     * Prüft, ob ein String ein gültiges Datum/Zeit ist.
+     */
+    public static function isDateTime(string $value, ?string $format = null): bool {
+        return DateHelper::isDateTime($value, $format);
+    }
+
+
 }

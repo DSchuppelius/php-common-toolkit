@@ -13,7 +13,17 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Entities\Common\CSV\{DataLine, HeaderLine};
-use CommonToolkit\Entities\DATEV\{Document, MetaHeaderLine};
+use CommonToolkit\Contracts\Abstracts\DATEV\Document;
+use CommonToolkit\Entities\DATEV\MetaHeaderLine;
+use CommonToolkit\Entities\DATEV\Documents\{
+    BookingBatch,
+    DebitorsCreditors,
+    VariousAddresses,
+    GLAccountDescription,
+    RecurringBookings,
+    PaymentTerms,
+    NaturalStack
+};
 use CommonToolkit\Entities\DATEV\Header\{
     BookingBatchHeaderLine,
     DebitorsCreditorsHeaderLine,
@@ -74,7 +84,7 @@ class DatevDocumentParser extends CSVDocumentParser {
         $formatHeader = self::createFormatHeaderLine($metaHeaderLine, $csvDocument->getHeader(), $delimiter, $enclosure);
 
         // 5. DATEV-spezifisches Document mit MetaHeader und Format-Header erstellen
-        return new Document($metaHeaderLine, $formatHeader, $csvDocument->getRows());
+        return self::createDocument($category, $metaHeaderLine, $formatHeader, $csvDocument->getRows());
     }
 
     /**
@@ -143,7 +153,8 @@ class DatevDocumentParser extends CSVDocumentParser {
         $category = $metaHeaderLine->getFormatkategorie();
 
         // Format-Unterstützung automatisch erkennen
-        $formatType = $category?->nameValue() ?? 'Unbekannt';
+        // Use enum name for consistency with test format mappings
+        $formatType = $category->name;
         $isSupported = self::isFormatSupported($category, $version);
 
         return [
@@ -385,5 +396,28 @@ class DatevDocumentParser extends CSVDocumentParser {
         }
 
         return $metaHeaderLine;
+    }
+
+    /**
+     * Erstellt das korrekte Document-Objekt basierend auf der DATEV-Kategorie.
+     *
+     * @param Category|null $category Die DATEV-Kategorie
+     * @param MetaHeaderLine $metaHeader Der MetaHeader
+     * @param HeaderLine $header Der Format-spezifische Header
+     * @param array $rows Die Datenzeilen
+     * @return Document Das korrekte Document-Objekt
+     * @throws RuntimeException Wenn die Kategorie nicht unterstützt wird
+     */
+    private static function createDocument(?Category $category, MetaHeaderLine $metaHeader, HeaderLine $header, array $rows): Document {
+        return match ($category) {
+            Category::Buchungsstapel => new BookingBatch($metaHeader, $header, $rows),
+            Category::DebitorenKreditoren => new DebitorsCreditors($metaHeader, $header, $rows),
+            Category::DiverseAdressen => new VariousAddresses($metaHeader, $header, $rows),
+            Category::Sachkontenbeschriftungen => new GLAccountDescription($metaHeader, $header, $rows),
+            Category::WiederkehrendeBuchungen => new RecurringBookings($metaHeader, $header, $rows),
+            Category::Zahlungsbedingungen => new PaymentTerms($metaHeader, $header, $rows),
+            Category::NaturalStapel => new NaturalStack($metaHeader, $header, $rows),
+            default => throw new RuntimeException(sprintf('Unsupported DATEV category: %s', $category?->nameValue() ?? 'null')),
+        };
     }
 }

@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Enums\MetricPrefix;
 use CommonToolkit\Enums\TemperatureUnit;
 use RuntimeException;
@@ -157,5 +158,168 @@ class NumberHelper {
      */
     public static function percentage(float $part, float $total): float {
         return $total !== 0.0 ? ($part / $total) * 100 : 0.0;
+    }
+
+    /**
+     * Erkennt das Format einer Zahl und gibt ein generisches Template basierend auf der Input-Länge zurück.
+     *
+     * @param string $value Der zu analysierende Zahlenwert
+     * @return string|null Format-Template angepasst an die Input-Struktur oder null wenn nicht erkannt
+     */
+    public static function detectNumberFormat(string $value): ?string {
+        $trimmed = trim($value);
+        if ($trimmed === '' || !is_numeric(str_replace(['.', ',', ' '], '', $trimmed))) {
+            return null;
+        }
+
+        // Negative Zahlen: Vorzeichen entfernen für Template-Generierung
+        $workingValue = ltrim($trimmed, '-');
+
+        // Einfache Ganzzahlen (ohne Trennzeichen)
+        if (preg_match('/^\d+$/', $workingValue)) {
+            return str_repeat('0', strlen($workingValue));
+        }
+
+        // Deutsche/Europäische Formate: Punkt als Tausender, Komma als Dezimal
+
+        // Format: 1.234.567,89 (deutsches Format mit Tausendertrennern)
+        if (preg_match('/^(\d{1,3})(?:\.(\d{3}))*,(\d+)$/', $workingValue, $matches)) {
+            $beforeComma = $matches[1];
+            $afterComma = end($matches); // Letzte Gruppe = Nachkommastellen
+
+            // Template für Vorkommastellen generieren
+            $template = str_repeat('0', strlen($beforeComma));
+            // Punkt-getrennte 3er-Gruppen hinzufügen
+            $groupCount = substr_count($workingValue, '.');
+            for ($i = 0; $i < $groupCount; $i++) {
+                $template .= '.000';
+            }
+            // Nachkommastellen hinzufügen
+            $template .= ',' . str_repeat('0', strlen($afterComma));
+
+            return $template;
+        }
+
+        // Format: 1.234 (deutsche Ganzzahl mit Tausendertrennern)
+        if (preg_match('/^(\d{1,3})(?:\.(\d{3}))+$/', $workingValue, $matches)) {
+            $beforePoint = $matches[1];
+            $template = str_repeat('0', strlen($beforePoint));
+
+            // Punkt-getrennte 3er-Gruppen hinzufügen
+            $groupCount = substr_count($workingValue, '.');
+            for ($i = 0; $i < $groupCount; $i++) {
+                $template .= '.000';
+            }
+
+            return $template;
+        }
+
+        // US/Anglo Formate: Komma als Tausender, Punkt als Dezimal
+
+        // Format: 1,234,567.89 (US Format mit Tausendertrennern)
+        if (preg_match('/^(\d{1,3})(?:,(\d{3}))*\.(\d+)$/', $workingValue, $matches)) {
+            $beforeComma = $matches[1];
+            $afterDot = end($matches); // Letzte Gruppe = Nachkommastellen
+
+            // Template für Vorkommastellen generieren
+            $template = str_repeat('0', strlen($beforeComma));
+            // Komma-getrennte 3er-Gruppen hinzufügen
+            $groupCount = substr_count($workingValue, ',');
+            for ($i = 0; $i < $groupCount; $i++) {
+                $template .= ',000';
+            }
+            // Nachkommastellen hinzufügen
+            $template .= '.' . str_repeat('0', strlen($afterDot));
+
+            return $template;
+        }
+
+        // Format: 1,234 (US Ganzzahl mit Tausendertrennern)
+        if (preg_match('/^(\d{1,3})(?:,(\d{3}))+$/', $workingValue, $matches)) {
+            $beforeComma = $matches[1];
+            $template = str_repeat('0', strlen($beforeComma));
+
+            // Komma-getrennte 3er-Gruppen hinzufügen
+            $groupCount = substr_count($workingValue, ',');
+            for ($i = 0; $i < $groupCount; $i++) {
+                $template .= ',000';
+            }
+
+            return $template;
+        }
+
+        // Einfache Dezimalformate
+
+        // Format: 100,18 (einfaches deutsches Format)
+        if (preg_match('/^(\d+),(\d+)$/', $workingValue, $matches)) {
+            $beforeComma = $matches[1];
+            $afterComma = $matches[2];
+            return str_repeat('0', strlen($beforeComma)) . ',' . str_repeat('0', strlen($afterComma));
+        }
+
+        // Format: 100.18 (einfaches US Format)
+        if (preg_match('/^(\d+)\.(\d+)$/', $workingValue, $matches)) {
+            $beforeDot = $matches[1];
+            $afterDot = $matches[2];
+            return str_repeat('0', strlen($beforeDot)) . '.' . str_repeat('0', strlen($afterDot));
+        }
+
+        return null;
+    }
+
+    /**
+     * Formatiert eine Zahl gemäß einem dynamischen Format-Template.
+     * 
+     * @param float|int $number Die zu formatierende Zahl
+     * @param string $formatTemplate Template angepasst an die Input-Struktur
+     * @return string Die formatierte Zahl
+     */
+    public static function formatNumberByTemplate(float|int $number, string $formatTemplate): string {
+        // Einfache Ganzzahlen: nur Nullen (z.B. "000", "00000")
+        if (preg_match('/^0+$/', $formatTemplate)) {
+            $intValue = (int) $number;
+            $result = (string) abs($intValue);
+            // Auf Template-Länge auffüllen (linksbündig mit Nullen)
+            $result = str_pad($result, strlen($formatTemplate), '0', STR_PAD_LEFT);
+            return $number < 0 ? '-' . $result : $result;
+        }
+
+        // Ganzzahlen mit Tausendertrennzeichen erkennen zuerst!
+        // US: 0,000 oder 00,000 (Komma genau 3 Zeichen vor Ende, max 2 Nullen davor)
+        if (preg_match('/^0{1,2},000$/', $formatTemplate)) {
+            return number_format($number, 0, '', ',');
+        }
+
+        // Deutsche: 0.000 oder 00.000 (Punkt genau 3 Zeichen vor Ende, max 2 Nullen davor)  
+        if (preg_match('/^0{1,2}\.000$/', $formatTemplate)) {
+            return number_format($number, 0, '', '.');
+        }
+
+        // Deutsche Dezimalformate mit Komma
+        if (str_contains($formatTemplate, ',') && preg_match('/,0+$/', $formatTemplate)) {
+            $parts = explode(',', $formatTemplate);
+            $afterComma = array_pop($parts);
+            $beforeComma = implode(',', $parts);
+            $decimalPlaces = strlen($afterComma);
+
+            // Tausendertrennzeichen bestimmen
+            $thousandsSep = str_contains($beforeComma, '.') ? '.' : '';
+            return number_format($number, $decimalPlaces, ',', $thousandsSep);
+        }
+
+        // US Dezimalformate mit Punkt
+        if (str_contains($formatTemplate, '.') && preg_match('/\.0+$/', $formatTemplate)) {
+            $parts = explode('.', $formatTemplate);
+            $afterDot = array_pop($parts);
+            $beforeDot = implode('.', $parts);
+            $decimalPlaces = strlen($afterDot);
+
+            // Tausendertrennzeichen bestimmen
+            $thousandsSep = str_contains($beforeDot, ',') ? ',' : '';
+            return number_format($number, $decimalPlaces, '.', $thousandsSep);
+        }
+
+        // Fallback
+        return (string) $number;
     }
 }

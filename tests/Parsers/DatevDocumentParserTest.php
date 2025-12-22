@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Tests\Parsers;
 
-use CommonToolkit\Entities\DATEV\Document;
+use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
 use CommonToolkit\Parsers\DatevDocumentParser;
 use RuntimeException;
@@ -41,7 +41,7 @@ class DatevDocumentParserTest extends BaseTestCase {
         $analysis = DatevDocumentParser::analyzeFormat($csvContent);
 
         $this->assertArrayHasKey('format_type', $analysis, 'Format sollte erkannt werden');
-        $this->assertEquals('Debitoren/Kreditoren', $analysis['format_type']);
+        $this->assertEquals('DebitorenKreditoren', $analysis['format_type']);
         $this->assertEquals(700, $analysis['version']);
         $this->assertTrue($analysis['supported']);
     }
@@ -124,7 +124,7 @@ class DatevDocumentParserTest extends BaseTestCase {
         $analysis = DatevDocumentParser::analyzeFormat($csvContent);
 
         $this->assertArrayHasKey('format_type', $analysis, 'Format sollte erkannt werden');
-        $this->assertEquals('Debitoren/Kreditoren', $analysis['format_type']);
+        $this->assertEquals('DebitorenKreditoren', $analysis['format_type']);
         $this->assertEquals(700, $analysis['version']);
         $this->assertTrue($analysis['supported']);
     }
@@ -178,12 +178,12 @@ class DatevDocumentParserTest extends BaseTestCase {
         $sampleDir = __DIR__ . '/../../.samples/DATEV/';
         $sampleFiles = [
             'EXTF_Buchungsstapel.csv' => ['format' => 'Buchungsstapel', 'supported' => true],
-            'EXTF_DebKred_Stamm.csv' => ['format' => 'Debitoren/Kreditoren', 'supported' => true],
-            'EXTF_Sachkontobeschriftungen.csv' => ['format' => 'Kontenbeschriftungen', 'supported' => true],
+            'EXTF_DebKred_Stamm.csv' => ['format' => 'DebitorenKreditoren', 'supported' => true],
+            'EXTF_Sachkontobeschriftungen.csv' => ['format' => 'Sachkontenbeschriftungen', 'supported' => true],
             'EXTF_Zahlungsbedingungen.csv' => ['format' => 'Zahlungsbedingungen', 'supported' => true],
-            'EXTF_Naturalstapel.csv' => ['format' => 'Naturalstapel', 'supported' => true],
-            'EXTF_Wiederkehrende-Buchungen.csv' => ['format' => 'Wiederkehrende Buchungen', 'supported' => true],
-            'EXTF_Div-Adressen.csv' => ['format' => 'Diverse Adressen', 'supported' => true]
+            'EXTF_Naturalstapel.csv' => ['format' => 'NaturalStapel', 'supported' => true],
+            'EXTF_Wiederkehrende-Buchungen.csv' => ['format' => 'WiederkehrendeBuchungen', 'supported' => true],
+            'EXTF_Div-Adressen.csv' => ['format' => 'DiverseAdressen', 'supported' => true]
         ];
 
         foreach ($sampleFiles as $fileName => $expected) {

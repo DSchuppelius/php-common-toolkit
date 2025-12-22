@@ -14,7 +14,7 @@ namespace CommonToolkit\Entities\DATEV\Header;
 
 use CommonToolkit\Contracts\Abstracts\DATEV\HeaderLineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
-use CommonToolkit\Entities\DATEV\Document;
+use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\Header\V700\RecurringBookingsHeaderDefinition;
 use CommonToolkit\Enums\DATEV\V700\RecurringBookingsHeaderField;
 
