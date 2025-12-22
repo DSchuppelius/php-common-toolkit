@@ -12,7 +12,6 @@ use CommonToolkit\Helper\Data\BankHelper;
 use Tests\Contracts\BaseTestCase;
 
 class BankHelperTest extends BaseTestCase {
-
     public function testIsBLZ() {
         $this->assertTrue(BankHelper::isBLZ("10000000"));
         $this->assertFalse(BankHelper::isBLZ("123"));

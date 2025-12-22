@@ -17,7 +17,6 @@ use Tests\Contracts\BaseTestCase;
 use Throwable;
 
 class ShellChardetTest extends BaseTestCase {
-
     private string $sampleText = "Grüße aus Potsdam mit Umlauten äöüß";
 
     public function testShellChardetDetectTemporary(): void {

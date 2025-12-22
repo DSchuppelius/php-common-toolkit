@@ -17,7 +17,6 @@ use CommonToolkit\Helper\Data\StringHelper;
 use Tests\Contracts\BaseTestCase;
 
 class StringHelperTest extends BaseTestCase {
-
     public function testUtf8ToIso8859_1(): void {
         $utf8 = "Grüße";
         $iso = StringHelper::utf8ToIso8859_1($utf8);

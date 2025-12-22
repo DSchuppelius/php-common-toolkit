@@ -15,7 +15,6 @@ use Tests\Contracts\BaseTestCase;
 use Exception;
 
 class ShellTest extends BaseTestCase {
-
     public function testExecuteShellCommandSuccess() {
         $unixCommand = 'echo "Hello World"';
         $windowsCommand = 'echo Hello World';

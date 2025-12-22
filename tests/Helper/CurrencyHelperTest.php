@@ -14,7 +14,6 @@ use CommonToolkit\Helper\Data\CurrencyHelper;
 use Tests\Contracts\BaseTestCase;
 
 class CurrencyHelperTest extends BaseTestCase {
-
     public function testFormat(): void {
         $formatted = CurrencyHelper::format(1234.56, 'EUR', 'de_DE');
         $this->assertStringContainsString('€', $formatted);

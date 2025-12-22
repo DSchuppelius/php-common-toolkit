@@ -17,7 +17,6 @@ use Tests\Contracts\BaseTestCase;
 use ConfigToolkit\ConfigLoader;
 
 class JavaTest extends BaseTestCase {
-
     public function testExecuteThrowsIfPathIsEmpty(): void {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Für JAVA-Ausführung muss der Pfad zur JAR-Datei gesetzt sein.");

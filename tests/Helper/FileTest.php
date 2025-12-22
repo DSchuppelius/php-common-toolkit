@@ -14,7 +14,6 @@ use CommonToolkit\Helper\FileSystem\File;
 use Tests\Contracts\BaseTestCase;
 
 class FileTest extends BaseTestCase {
-
     private $testFile;
 
     protected function setUp(): void {

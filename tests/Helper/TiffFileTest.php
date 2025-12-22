@@ -15,7 +15,6 @@ use CommonToolkit\Helper\FileSystem\FileTypes\TifFile;
 use Tests\Contracts\BaseTestCase;
 
 class TiffFileTest extends BaseTestCase {
-
     private $testFile;
 
     protected function setUp(): void {

@@ -16,7 +16,6 @@ use CommonToolkit\Enums\DATEV\V700\BookingBatchHeaderField;
 use Tests\Contracts\BaseTestCase;
 
 class BookingBatchHeaderFieldTest extends BaseTestCase {
-
     public function testHasCorrectNumberOfFields(): void {
         $ordered = BookingBatchHeaderField::ordered();
         $this->assertCount(125, $ordered, 'DATEV Buchungsstapel V700 sollte genau 125 Felder haben');
