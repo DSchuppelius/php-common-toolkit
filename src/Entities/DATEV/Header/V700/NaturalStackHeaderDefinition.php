@@ -14,7 +14,7 @@ namespace CommonToolkit\Entities\DATEV\Header\V700;
 
 use CommonToolkit\Contracts\Abstracts\DATEV\HeaderDefinitionAbstract;
 use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
-use CommonToolkit\Enums\DATEV\V700\NaturalStackHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\NaturalStackHeaderField;
 use InvalidArgumentException;
 
 /**

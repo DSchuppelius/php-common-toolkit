@@ -96,7 +96,7 @@ class FieldAbstract implements FieldInterface {
                 $this->originalFormat = DateHelper::detectDateTimeFormat($trimmed, $this->country);
             } elseif (is_float($this->typedValue)) {
                 // Float-Format erkennen (z.B. deutsche vs. US Schreibweise)
-                $detectedFormat = NumberHelper::detectNumberFormat($trimmed, $this->country);
+                $detectedFormat = NumberHelper::detectNumberFormat($trimmed);
                 if ($detectedFormat !== null) {
                     // Format-Template speichern für korrekte Ausgabe
                     $this->originalFormat = $detectedFormat;
@@ -236,14 +236,19 @@ class FieldAbstract implements FieldInterface {
     /**
      * Gibt den Wert als String zurück.
      */
-    public function toString(?string $enclosure = null): string {
+    public function toString(?string $enclosure = null, ?int $maxWidth = null): string {
         $enclosure = $enclosure ?? self::DEFAULT_ENCLOSURE;
 
         $quoteLevel = max(1, $this->enclosureRepeat);
+        $value = $this->getValue();
+
+        // Wert kürzen wenn maximale Breite definiert ist
+        if ($maxWidth !== null && $maxWidth > 0 && mb_strlen($value) > $maxWidth) {
+            $value = mb_substr($value, 0, $maxWidth);
+        }
 
         if ($this->quoted) {
             $enc = str_repeat($enclosure, $quoteLevel);
-            $value = $this->getValue();
 
             if (str_contains($value, $enclosure)) {
                 $this->logWarning('Falsche CSV-Syntax: Value enthält Enclosure: "' . $value . '"');
@@ -252,6 +257,6 @@ class FieldAbstract implements FieldInterface {
             return $enc . $value . $enc;
         }
 
-        return $this->getValue();
+        return $value;
     }
 }

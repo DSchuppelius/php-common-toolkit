@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace CommonToolkit\Enums\DATEV\V700;
+namespace CommonToolkit\Enums\DATEV\HeaderFields\V700;
 
 use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderFieldInterface;
 

@@ -16,7 +16,7 @@ use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\MetaHeaderLine;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
-use CommonToolkit\Enums\DATEV\V700\DebitorsCreditorsHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\DebitorsCreditorsHeaderField;
 use CommonToolkit\Enums\{CurrencyCode, CountryCode};
 use RuntimeException;
 
@@ -116,7 +116,7 @@ final class DebitorsCreditors extends Document {
     public function setWaehrungssteuerung(int $rowIndex, CurrencyCode $currencyCode): void {
         $this->setCurrencyCode($rowIndex, DebitorsCreditorsHeaderField::Waehrungssteuerung->getPosition(), $currencyCode);
     }
-    
+
     // ==== CONVENIENCE METHODS ====
 
     /**

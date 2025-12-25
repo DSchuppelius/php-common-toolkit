@@ -17,7 +17,7 @@ use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderFieldInterface;
 use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Enums\DATEV\MetaFields\{AccountingPurpose, BookingType, Establishing, Mark};
 use CommonToolkit\Enums\DATEV\MetaFields\Format\{Category, Version};
-use CommonToolkit\Enums\DATEV\V700\MetaHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\MetaHeaderField;
 use InvalidArgumentException;
 
 final class MetaHeaderDefinition extends MetaHeaderDefinitionAbstract {

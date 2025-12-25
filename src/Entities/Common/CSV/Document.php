@@ -12,6 +12,9 @@
 namespace CommonToolkit\Entities\Common\CSV;
 
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
+use CommonToolkit\Contracts\Interfaces\Common\CSV\HeaderLineInterface;
+use CommonToolkit\Contracts\Abstracts\Common\CSV\DataLineAbstract;
+use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
@@ -24,12 +27,23 @@ class Document {
 
     protected string $delimiter;
     protected string $enclosure;
+    protected ?ColumnWidthConfig $columnWidthConfig = null;
 
-    public function __construct(?HeaderLine $header = null, array $rows = [], string $delimiter = ',', string $enclosure = '"') {
-        $this->header    = $header;
-        $this->rows      = $rows;
-        $this->delimiter = $delimiter;
-        $this->enclosure = $enclosure;
+    /**
+     * Steuert ob beim CSV-Export der Header mit ausgegeben werden soll.
+     * Standard ist true - kann in Subklassen überschrieben werden.
+     */
+    protected bool $exportWithHeader = true;
+
+    public function __construct(?HeaderLine $header = null, array $rows = [], string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null) {
+        $this->delimiter           = $delimiter;
+        $this->enclosure           = $enclosure;
+        $this->columnWidthConfig   = $columnWidthConfig;
+        $this->header              = $header;
+        $this->rows                = $rows;
+
+        // Verknüpfe DataLines mit HeaderLine
+        $this->linkDataLinesToHeader();
     }
 
     /**
@@ -39,7 +53,7 @@ class Document {
      * @return bool True wenn die Spalte existiert
      */
     public function hasColumn(string $columnName): bool {
-        return $this->getColumnIndex($columnName) !== -1;
+        return $this->header?->hasColumn($columnName) ?? false;
     }
 
     /**
@@ -82,6 +96,25 @@ class Document {
     }
 
     /**
+     * Setzt die Spaltenbreiten-Konfiguration.
+     *
+     * @param ColumnWidthConfig|null $config
+     * @return void
+     */
+    public function setColumnWidthConfig(?ColumnWidthConfig $config): void {
+        $this->columnWidthConfig = $config;
+    }
+
+    /**
+     * Gibt die Spaltenbreiten-Konfiguration zurück.
+     *
+     * @return ColumnWidthConfig|null
+     */
+    public function getColumnWidthConfig(): ?ColumnWidthConfig {
+        return $this->columnWidthConfig;
+    }
+
+    /**
      * Überprüft, ob alle Zeilen die gleiche Anzahl an Feldern haben wie der Header (falls vorhanden) oder die erste Zeile.
      *
      * @return bool
@@ -104,6 +137,7 @@ class Document {
      *
      * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
      * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
+     * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
      * @return string
      */
     public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null): string {
@@ -119,11 +153,14 @@ class Document {
         }
 
         $lines = [];
-        if ($this->header) {
+
+        if ($this->header && $this->exportWithHeader) {
+            // Header wird NICHT gekürzt - kein columnWidthConfig übergeben
             $lines[] = $this->header->toString($delimiter, $enclosure);
         }
         foreach ($this->rows as $row) {
-            $lines[] = $row->toString($delimiter, $enclosure);
+            // Nur Datenzeilen bekommen ColumnWidthConfig für Kürzung
+            $lines[] = $row->toString($delimiter, $enclosure, $this->columnWidthConfig);
         }
 
         return implode("\n", $lines);
@@ -135,6 +172,7 @@ class Document {
      * @param string      $file      Der Pfad zur Zieldatei.
      * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
      * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
+     * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
      * @return void
      *
      * @throws RuntimeException
@@ -179,14 +217,7 @@ class Document {
             return -1;
         }
 
-        $headerFields = $this->header->getFields();
-        foreach ($headerFields as $index => $field) {
-            if (trim($field->getValue(), '"') === $columnName) {
-                return $index;
-            }
-        }
-
-        return -1;
+        return $this->header->getColumnIndex($columnName) ?? -1;
     }
 
     /**
@@ -261,7 +292,7 @@ class Document {
      * @return array Array mit allen Spalten-Namen
      */
     public function getColumnNames(): array {
-        return !$this->header ? [] : array_map(fn($field) => trim($field->getValue(), '"'), $this->header->getFields());
+        return $this->header?->getColumnNames() ?? [];
     }
 
     /**
@@ -280,5 +311,27 @@ class Document {
             if (!$row->equals($other->rows[$i])) return false;
         }
         return true;
+    }
+
+    /**
+     * Baut ein Array der Spaltenbreiten für die toString-Methode auf.
+     *
+     * @param array<string> $columnNames Die Spaltennamen
+     * @return Headerline Spaltenbreiten-Array
+     */
+
+    /**
+     * Verknüpft alle DataLines mit der HeaderLine.
+     */
+    private function linkDataLinesToHeader(): void {
+        if ($this->header === null) {
+            return;
+        }
+
+        foreach ($this->rows as $row) {
+            if ($row instanceof DataLineAbstract) {
+                $row->setHeaderLine($this->header);
+            }
+        }
     }
 }

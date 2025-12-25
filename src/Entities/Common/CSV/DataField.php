@@ -10,7 +10,7 @@
 
 namespace CommonToolkit\Entities\Common\CSV;
 
-use CommonToolkit\Contracts\Abstracts\Common\CSV\FieldAbstract;
+use CommonToolkit\Contracts\Abstracts\Common\CSV\DataFieldAbstract;
 
-class DataField extends FieldAbstract {
+class DataField extends DataFieldAbstract {
 }

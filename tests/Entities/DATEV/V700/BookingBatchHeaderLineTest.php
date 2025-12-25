@@ -14,7 +14,7 @@ namespace Tests\Entities\DATEV\Header\V700;
 
 use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
 use CommonToolkit\Entities\DATEV\Header\V700\BookingBatchHeaderDefinition;
-use CommonToolkit\Enums\DATEV\V700\BookingBatchHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\BookingBatchHeaderField;
 use Tests\Contracts\BaseTestCase;
 
 class BookingBatchHeaderLineTest extends BaseTestCase {

@@ -16,7 +16,7 @@ use CommonToolkit\Contracts\Abstracts\DATEV\HeaderLineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\Header\V700\PaymentTermsHeaderDefinition;
-use CommonToolkit\Enums\DATEV\V700\PaymentTermsHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\PaymentTermsHeaderField;
 
 /**
  * DATEV Zahlungsbedingungen Header-Zeile (Spaltenbeschreibungen).

@@ -16,6 +16,8 @@ use CommonToolkit\Contracts\Interfaces\Common\CSV\LineInterface;
 use CommonToolkit\Entities\Common\CSV\Document;
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Entities\Common\CSV\DataLine;
+use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
+use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
@@ -27,10 +29,12 @@ class CSVDocumentBuilder {
     protected array $rows = [];
     protected string $delimiter;
     protected string $enclosure;
+    protected ?ColumnWidthConfig $columnWidthConfig = null;
 
-    public function __construct(string $delimiter = ',', string $enclosure = '"') {
-        $this->delimiter = $delimiter;
-        $this->enclosure = $enclosure;
+    public function __construct(string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null) {
+        $this->delimiter           = $delimiter;
+        $this->enclosure           = $enclosure;
+        $this->columnWidthConfig   = $columnWidthConfig;
     }
 
     /**
@@ -106,12 +110,67 @@ class CSVDocumentBuilder {
     public static function fromDocument(Document $document, ?string $delimiter = null, ?string $enclosure = null): self {
         $builder = new self(
             $delimiter ?? $document->getDelimiter(),
-            $enclosure ?? $document->getEnclosure()
+            $enclosure ?? $document->getEnclosure(),
+            $document->getColumnWidthConfig()
         );
 
         $builder->header = $document->getHeader() ? clone $document->getHeader() : null;
         $builder->rows   = array_map(fn($row) => clone $row, $document->getRows());
         return $builder;
+    }
+
+    /**
+     * Setzt die Spaltenbreiten-Konfiguration.
+     *
+     * @param ColumnWidthConfig|null $config
+     * @return $this
+     */
+    public function setColumnWidthConfig(?ColumnWidthConfig $config): self {
+        $this->columnWidthConfig = $config;
+        return $this;
+    }
+
+    /**
+     * Setzt eine Spaltenbreite für eine bestimmte Spalte.
+     *
+     * @param string|int $column Spaltenname oder Index
+     * @param int $width Maximale Breite
+     * @return $this
+     */
+    public function setColumnWidth(string|int $column, int $width): self {
+        if ($this->columnWidthConfig === null) {
+            $this->columnWidthConfig = new ColumnWidthConfig();
+        }
+        $this->columnWidthConfig->setColumnWidth($column, $width);
+        return $this;
+    }
+
+    /**
+     * Setzt eine Standard-Spaltenbreite für alle Spalten.
+     *
+     * @param int|null $width Standardbreite oder null zum Deaktivieren
+     * @return $this
+     */
+    public function setDefaultColumnWidth(?int $width): self {
+        if ($this->columnWidthConfig === null) {
+            $this->columnWidthConfig = new ColumnWidthConfig();
+        }
+        $this->columnWidthConfig->setDefaultWidth($width);
+        return $this;
+    }
+
+    /**
+     * Setzt die Abschneidungsstrategie für zu lange Werte.
+     *
+     * @param TruncationStrategy $strategy Abschneidungsstrategie
+     * @return $this
+     */
+    public function setTruncationStrategy(TruncationStrategy $strategy): self {
+        if ($this->columnWidthConfig === null) {
+            $this->columnWidthConfig = new ColumnWidthConfig();
+        }
+        $this->columnWidthConfig->setTruncationStrategy($strategy);
+        return $this;
     }
 
     /**
@@ -151,7 +210,7 @@ class CSVDocumentBuilder {
                 fn($name) => $fields[$headerMap[$name]],
                 $newOrder
             );
-            $newRows[] = new DataLine($reorderedFields);
+            $newRows[] = new DataLine($reorderedFields, $this->delimiter, $this->enclosure, $this->header);
         }
         $this->rows = $newRows;
 
@@ -167,7 +226,8 @@ class CSVDocumentBuilder {
             $this->header,
             $this->rows,
             $this->delimiter,
-            $this->enclosure
+            $this->enclosure,
+            $this->columnWidthConfig
         );
     }
 }

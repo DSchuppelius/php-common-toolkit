@@ -15,7 +15,7 @@ namespace Tests\Builders;
 use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Entities\Common\CSV\{DataLine, DataField, HeaderLine, HeaderField};
 use CommonToolkit\Entities\DATEV\MetaHeaderLine;
-use CommonToolkit\Enums\DATEV\V700\MetaHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\MetaHeaderField;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use CommonToolkit\Parsers\DatevDocumentParser;
 use CommonToolkit\Registries\DATEV\{HeaderRegistry, VersionDiscovery};

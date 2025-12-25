@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\DATEV\Header\V700;
 
 use CommonToolkit\Contracts\Abstracts\DATEV\HeaderDefinitionAbstract;
-use CommonToolkit\Enums\DATEV\V700\VariousAddressesHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\VariousAddressesHeaderField;
 
 /**
  * Definition für DATEV Diverse Adressen-Header (V700).

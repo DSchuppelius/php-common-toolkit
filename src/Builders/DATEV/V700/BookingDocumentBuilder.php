@@ -16,7 +16,7 @@ use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Entities\DATEV\{Document as DatevDocument, MetaHeaderLine};
 use CommonToolkit\Entities\DATEV\Header\V700\{MetaHeaderDefinition, BookingBatchHeaderDefinition, BookingBatchHeaderLine};
 use CommonToolkit\Entities\DATEV\V700\BookingDataLine;
-use CommonToolkit\Enums\DATEV\V700\{MetaHeaderField, BookingBatchHeaderField};
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\{MetaHeaderField, BookingBatchHeaderField};
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 use DateTimeImmutable;

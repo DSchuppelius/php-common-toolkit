@@ -16,7 +16,7 @@ use CommonToolkit\Contracts\Abstracts\DATEV\HeaderLineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\Header\V700\NaturalStackHeaderDefinition;
-use CommonToolkit\Enums\DATEV\V700\NaturalStackHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\NaturalStackHeaderField;
 
 /**
  * DATEV Natürliche Personen Header-Zeile (Spaltenbeschreibungen).

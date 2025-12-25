@@ -16,7 +16,7 @@ use CommonToolkit\Contracts\Abstracts\DATEV\HeaderLineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\Header\V700\BookingBatchHeaderDefinition;
-use CommonToolkit\Enums\DATEV\V700\BookingBatchHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\BookingBatchHeaderField;
 
 /**
  * DATEV BookingBatch Header-Zeile (Spaltenbeschreibungen).

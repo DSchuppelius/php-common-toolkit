@@ -16,7 +16,7 @@ use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\{DocumentInfo, MetaHeaderLine};
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
-use CommonToolkit\Enums\DATEV\V700\BookingBatchHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\BookingBatchHeaderField;
 use CommonToolkit\Enums\{CreditDebit, CurrencyCode, CountryCode};
 use RuntimeException;
 

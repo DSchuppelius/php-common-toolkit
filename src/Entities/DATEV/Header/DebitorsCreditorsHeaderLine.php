@@ -16,7 +16,7 @@ use CommonToolkit\Contracts\Abstracts\DATEV\HeaderLineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\Header\V700\DebitorsCreditorsHeaderDefinition;
-use CommonToolkit\Enums\DATEV\V700\DebitorsCreditorsHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\DebitorsCreditorsHeaderField;
 
 /**
  * DATEV Debitoren/Kreditoren Header-Zeile (Spaltenbeschreibungen).

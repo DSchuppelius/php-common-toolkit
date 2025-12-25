@@ -13,7 +13,7 @@ namespace Tests\CommonToolkit\Entities\DATEV\V700;
 
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\MetaHeaderLine;
-use CommonToolkit\Enums\DATEV\V700\MetaHeaderField;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\MetaHeaderField;
 use CommonToolkit\Registries\DATEV\HeaderRegistry;
 use Tests\Contracts\BaseTestCase;
 
