@@ -19,6 +19,7 @@ use CommonToolkit\Entities\DATEV\MetaHeaderLine;
 use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use CommonToolkit\Enums\DATEV\HeaderFields\V700\PaymentTermsHeaderField;
+use RuntimeException;
 
 /**
  * DATEV-Zahlungsbedingungen-Dokument.
@@ -28,11 +29,7 @@ use CommonToolkit\Enums\DATEV\HeaderFields\V700\PaymentTermsHeaderField;
  * aus PaymentTermsHeaderField::getMaxLength() angewendet.
  */
 final class PaymentTerms extends Document {
-    public function __construct(
-        ?MetaHeaderLine $metaHeader,
-        ?HeaderLine $header,
-        array $rows = []
-    ) {
+    public function __construct(?MetaHeaderLine $metaHeader, ?HeaderLine $header, array $rows = []) {
         parent::__construct($metaHeader, $header, $rows);
     }
 
@@ -78,7 +75,7 @@ final class PaymentTerms extends Document {
 
         $metaFields = $this->getMetaHeader()?->getFields() ?? [];
         if (count($metaFields) > 2 && (int)$metaFields[2]->getValue() !== 46) {
-            throw new \RuntimeException('Ungültige Kategorie für Zahlungsbedingungen-Dokument. Erwartet: 46');
+            throw new RuntimeException('Ungültige Kategorie für Zahlungsbedingungen-Dokument. Erwartet: 46');
         }
     }
 }

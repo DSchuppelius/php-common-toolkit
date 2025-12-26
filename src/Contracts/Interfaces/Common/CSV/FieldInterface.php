@@ -18,6 +18,8 @@ interface FieldInterface {
     public function getRaw(): ?string;
 
     public function setValue(string $value): void;
+    public function withValue(string $newValue): static;
+    public function withTypedValue(mixed $newValue): static;
 
     public function isQuoted(): bool;
     public function getEnclosureRepeat(): int;

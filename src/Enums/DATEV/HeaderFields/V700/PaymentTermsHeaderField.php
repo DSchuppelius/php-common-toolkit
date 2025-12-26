@@ -285,6 +285,16 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
     }
 
     /**
+     * Gibt die Position/den Index des Feldes in der Feldreihenfolge zurück.
+     * 
+     * @return int Die nullbasierte Position des Feldes
+     */
+    public function getPosition(): int {
+        $ordered = self::ordered();
+        return array_search($this, $ordered, true) ?: 0;
+    }
+
+    /**
      * Liefert die DATEV-Kategorie für dieses Header-Format.
      */
     public static function getCategory(): Category {

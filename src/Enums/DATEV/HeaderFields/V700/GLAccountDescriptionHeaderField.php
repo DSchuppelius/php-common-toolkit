@@ -103,6 +103,16 @@ enum GLAccountDescriptionHeaderField: string implements FieldHeaderInterface {
     }
 
     /**
+     * Gibt die Position/den Index des Feldes in der Feldreihenfolge zurück.
+     * 
+     * @return int Die nullbasierte Position des Feldes
+     */
+    public function getPosition(): int {
+        $ordered = self::ordered();
+        return array_search($this, $ordered, true) ?: 0;
+    }
+
+    /**
      * Liefert die maximale Feldlänge für DATEV.
      */
     public function getMaxLength(): ?int {

@@ -125,4 +125,182 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame(0, $field->getEnclosureRepeat());
         $this->assertSame('', $field->toString());
     }
+
+    // ========== Tests für setValue() ==========
+
+    public function testSetValueChangesValueMutably(): void {
+        $field = new DataField('"ABC"');
+        $this->assertSame('ABC', $field->getValue());
+
+        $field->setValue('XYZ');
+        $this->assertSame('XYZ', $field->getValue());
+        $this->assertTrue($field->isQuoted(), 'Quote-Status bleibt erhalten');
+    }
+
+    public function testSetValueWithUnquotedFieldDetectsTypes(): void {
+        $field = new DataField('test');
+        $this->assertFalse($field->isQuoted());
+
+        $field->setValue('42');
+        $this->assertSame(42, $field->getTypedValue(), 'Integer sollte erkannt werden');
+
+        $field->setValue('3.14');
+        $this->assertEquals(3.14, $field->getTypedValue(), 'Float sollte erkannt werden');
+
+        $field->setValue('true');
+        $this->assertTrue($field->getTypedValue(), 'Boolean sollte erkannt werden');
+    }
+
+    public function testSetValueWithQuotedFieldPreservesStringType(): void {
+        $field = new DataField('"test"');
+        $this->assertTrue($field->isQuoted());
+
+        $field->setValue('42');
+        $this->assertSame('42', $field->getTypedValue(), 'Bei quoted bleibt String erhalten');
+    }
+
+    // ========== Tests für withValue() ==========
+
+    public function testWithValueReturnsNewInstance(): void {
+        $original = new DataField('"ABC"');
+        $new = $original->withValue('XYZ');
+
+        $this->assertNotSame($original, $new, 'withValue muss neue Instanz zurückgeben');
+        $this->assertSame('ABC', $original->getValue(), 'Original bleibt unverändert');
+        $this->assertSame('XYZ', $new->getValue(), 'Neue Instanz hat neuen Wert');
+    }
+
+    public function testWithValuePreservesQuotedStatus(): void {
+        $quoted = new DataField('"ABC"');
+        $newQuoted = $quoted->withValue('XYZ');
+        $this->assertTrue($newQuoted->isQuoted(), 'Quote-Status muss erhalten bleiben');
+
+        $unquoted = new DataField('ABC');
+        $newUnquoted = $unquoted->withValue('XYZ');
+        $this->assertFalse($newUnquoted->isQuoted(), 'Unquoted-Status muss erhalten bleiben');
+    }
+
+    public function testWithValueDetectsTypesForUnquotedFields(): void {
+        $field = new DataField('123'); // unquoted integer field
+
+        $intField = $field->withValue('456');
+        $this->assertSame(456, $intField->getTypedValue());
+
+        $floatField = $field->withValue('3,14');
+        $this->assertEquals(3.14, $floatField->getTypedValue());
+
+        $boolField = $field->withValue('yes');
+        $this->assertTrue($boolField->getTypedValue());
+    }
+
+    public function testWithValuePreservesEnclosureRepeat(): void {
+        $field = new DataField('""ABC""');
+        $this->assertSame(2, $field->getEnclosureRepeat());
+
+        $new = $field->withValue('XYZ');
+        $this->assertSame(2, $new->getEnclosureRepeat(), 'Enclosure-Repeat muss erhalten bleiben');
+    }
+
+    // ========== Tests für withTypedValue() ==========
+
+    public function testWithTypedValueReturnsNewInstance(): void {
+        $original = new DataField('100');
+        $new = $original->withTypedValue(200);
+
+        $this->assertNotSame($original, $new);
+        $this->assertSame(100, $original->getTypedValue());
+        $this->assertSame(200, $new->getTypedValue());
+    }
+
+    public function testWithTypedValueAcceptsInteger(): void {
+        $field = new DataField('0');
+        $new = $field->withTypedValue(42);
+
+        $this->assertSame(42, $new->getTypedValue());
+        $this->assertSame('42', $new->getValue());
+    }
+
+    public function testWithTypedValueAcceptsFloat(): void {
+        $field = new DataField('0');
+        $new = $field->withTypedValue(3.14159);
+
+        $this->assertEquals(3.14159, $new->getTypedValue());
+        $this->assertSame('3.14159', $new->getValue());
+    }
+
+    public function testWithTypedValueAcceptsBoolean(): void {
+        $field = new DataField('0');
+
+        $trueField = $field->withTypedValue(true);
+        $this->assertTrue($trueField->getTypedValue());
+        $this->assertSame('1', $trueField->getValue(), 'Boolean true wird zu "1" konvertiert');
+
+        $falseField = $field->withTypedValue(false);
+        $this->assertFalse($falseField->getTypedValue());
+        $this->assertSame('', $falseField->getValue(), 'Boolean false wird zu leerem String konvertiert');
+    }
+
+    public function testWithTypedValueAcceptsNull(): void {
+        $field = new DataField('test');
+        $new = $field->withTypedValue(null);
+
+        $this->assertNull($new->getTypedValue());
+        $this->assertSame('', $new->getValue());
+    }
+
+    public function testWithTypedValueAcceptsDateTimeImmutable(): void {
+        $field = new DataField('2025-01-01');
+        $date = new \DateTimeImmutable('2025-12-26');
+        $new = $field->withTypedValue($date);
+
+        $this->assertInstanceOf(\DateTimeImmutable::class, $new->getTypedValue());
+        // Das originalFormat vom Quell-Feld bestimmt das Ausgabeformat
+        $this->assertSame('2025-12-26', $new->getValue());
+    }
+
+    public function testWithTypedValuePreservesQuotedStatus(): void {
+        $quoted = new DataField('"100"');
+        $newQuoted = $quoted->withTypedValue(200);
+        $this->assertTrue($newQuoted->isQuoted());
+
+        $unquoted = new DataField('100');
+        $newUnquoted = $unquoted->withTypedValue(200);
+        $this->assertFalse($newUnquoted->isQuoted());
+    }
+
+    public function testWithTypedValueNoTypeAnalysis(): void {
+        // withTypedValue setzt den Wert direkt, ohne Analyse
+        $field = new DataField('text');
+        $new = $field->withTypedValue('42'); // String "42", nicht Integer
+
+        $this->assertSame('42', $new->getTypedValue(), 'String muss String bleiben');
+        $this->assertSame('42', $new->getValue());
+    }
+
+    // ========== Kombinations-Tests ==========
+
+    public function testImmutabilityChain(): void {
+        $original = new DataField('10');
+        $step1 = $original->withTypedValue(20);
+        $step2 = $step1->withTypedValue(30);
+        $step3 = $step2->withTypedValue(40);
+
+        $this->assertSame(10, $original->getTypedValue());
+        $this->assertSame(20, $step1->getTypedValue());
+        $this->assertSame(30, $step2->getTypedValue());
+        $this->assertSame(40, $step3->getTypedValue());
+    }
+
+    public function testMutableVsImmutableBehavior(): void {
+        $field = new DataField('original');
+
+        // Mutable: ändert das Objekt
+        $field->setValue('mutable');
+        $this->assertSame('mutable', $field->getValue());
+
+        // Immutable: gibt neues Objekt zurück
+        $newField = $field->withValue('immutable');
+        $this->assertSame('mutable', $field->getValue(), 'Original unverändert');
+        $this->assertSame('immutable', $newField->getValue(), 'Neues Objekt hat neuen Wert');
+    }
 }

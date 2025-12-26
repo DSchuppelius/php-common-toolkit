@@ -408,4 +408,56 @@ class Document {
         }
         return true;
     }
+
+    /**
+     * Gibt den Rohwert eines Feldes zurück.
+     *
+     * @param int $rowIndex Index der Zeile.
+     * @param int $fieldIndex Index des Feldes.
+     * @return string|null Der Wert oder null wenn nicht vorhanden.
+     */
+    protected function getFieldValue(int $rowIndex, int $fieldIndex): ?string {
+        if (!isset($this->rows[$rowIndex])) {
+            return null;
+        }
+
+        $fields = $this->rows[$rowIndex]->getFields();
+        if (!isset($fields[$fieldIndex])) {
+            return null;
+        }
+
+        return $fields[$fieldIndex]->getValue();
+    }
+
+    /**
+     * Setzt den Wert eines Feldes.
+     * Nutzt das immutable Pattern: Erstellt neue Field- und Line-Objekte.
+     *
+     * @param int $rowIndex Index der Zeile.
+     * @param int $fieldIndex Index des Feldes.
+     * @param string $value Der neue Wert.
+     * @throws RuntimeException Wenn Zeile oder Feld nicht existiert.
+     */
+    protected function setFieldValue(int $rowIndex, int $fieldIndex, string $value): void {
+        if (!isset($this->rows[$rowIndex])) {
+            throw new RuntimeException("Zeile $rowIndex existiert nicht");
+        }
+
+        $oldRow = $this->rows[$rowIndex];
+        $fields = $oldRow->getFields();
+
+        if (!isset($fields[$fieldIndex])) {
+            throw new RuntimeException("Feld $fieldIndex existiert nicht in Zeile $rowIndex");
+        }
+
+        // Neues Field mit neuem Wert erstellen (behält quoted, enclosureRepeat, etc.)
+        $fields[$fieldIndex] = $fields[$fieldIndex]->withValue($value);
+
+        // Neue DataLine erstellen
+        $this->rows[$rowIndex] = new DataLine(
+            $fields,
+            $this->delimiter,
+            $this->enclosure
+        );
+    }
 }

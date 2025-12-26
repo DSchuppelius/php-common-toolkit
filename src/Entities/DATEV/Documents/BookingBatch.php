@@ -17,6 +17,7 @@ use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\{DocumentInfo, MetaHeaderLine};
 use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
+use CommonToolkit\Enums\DATEV\{DiscountLock, DiscountType, InterestLock, PostingLock};
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use CommonToolkit\Enums\DATEV\HeaderFields\V700\BookingBatchHeaderField;
 use CommonToolkit\Enums\{CreditDebit, CurrencyCode, CountryCode};
@@ -82,7 +83,8 @@ final class BookingBatch extends Document {
             }
         }
     }
-    
+
+
     // ==== BOOKINGBATCH-SPEZIFISCHE ENUM GETTER/SETTER ====
 
     /**
@@ -94,11 +96,10 @@ final class BookingBatch extends Document {
 
     /**
      * Setzt das Soll/Haben-Kennzeichen einer Buchung.
-     * TODO: Implementierung für Field-Mutation
      */
-    // public function setSollHabenKennzeichen(int $rowIndex, CreditDebit $creditDebit): void {
-    //     $this->setCreditDebit($rowIndex, BookingBatchHeaderField::SollHabenKennzeichen->getPosition(), $creditDebit);
-    // }
+    public function setSollHabenKennzeichen(int $rowIndex, CreditDebit $creditDebit): void {
+        $this->setCreditDebit($rowIndex, BookingBatchHeaderField::SollHabenKennzeichen->getPosition(), $creditDebit);
+    }
 
     /**
      * Gibt die Basiswährung einer Buchung zurück.
@@ -106,14 +107,26 @@ final class BookingBatch extends Document {
     public function getWKZBasisUmsatz(int $rowIndex): ?CurrencyCode {
         return $this->getCurrencyCode($rowIndex, BookingBatchHeaderField::WKZBasisUmsatz->getPosition());
     }
-    
-// NOTE: Setter-Methoden sind vorübergehend deaktiviert, da das Field-System immutable ist
+
+    /**
+     * Setzt die Basiswährung einer Buchung.
+     */
+    public function setWKZBasisUmsatz(int $rowIndex, CurrencyCode $currencyCode): void {
+        $this->setCurrencyCode($rowIndex, BookingBatchHeaderField::WKZBasisUmsatz->getPosition(), $currencyCode);
+    }
 
     /**
      * Gibt die Umsatzwährung einer Buchung zurück.
      */
     public function getWKZUmsatz(int $rowIndex): ?CurrencyCode {
         return $this->getCurrencyCode($rowIndex, BookingBatchHeaderField::WKZUmsatz->getPosition());
+    }
+
+    /**
+     * Setzt die Umsatzwährung einer Buchung.
+     */
+    public function setWKZUmsatz(int $rowIndex, CurrencyCode $currencyCode): void {
+        $this->setCurrencyCode($rowIndex, BookingBatchHeaderField::WKZUmsatz->getPosition(), $currencyCode);
     }
 
     /**
@@ -124,12 +137,27 @@ final class BookingBatch extends Document {
     }
 
     /**
+     * Setzt das EU-Land einer Buchung.
+     */
+    public function setEULandUStID(int $rowIndex, CountryCode $countryCode): void {
+        $this->setCountryCode($rowIndex, BookingBatchHeaderField::EULandUStID->getPosition(), $countryCode);
+    }
+
+    /**
      * Gibt das Land einer Buchung zurück.
      */
     public function getLand(int $rowIndex): ?CountryCode {
         return $this->getCountryCode($rowIndex, BookingBatchHeaderField::Land->getPosition());
     }
-    
+
+    /**
+     * Setzt das Land einer Buchung.
+     */
+    public function setLand(int $rowIndex, CountryCode $countryCode): void {
+        $this->setCountryCode($rowIndex, BookingBatchHeaderField::Land->getPosition(), $countryCode);
+    }
+
+
     // ==== CONVENIENCE METHODS ====
 
     /**
@@ -146,6 +174,69 @@ final class BookingBatch extends Document {
     public function isEuroCurrency(int $rowIndex): bool {
         $currency = $this->getWKZUmsatz($rowIndex) ?? $this->getWKZBasisUmsatz($rowIndex);
         return $currency === CurrencyCode::Euro;
+    }
+
+    /**
+     * Gibt die Zinssperre einer Buchung zurück.
+     */
+    public function getZinssperre(int $rowIndex): ?InterestLock {
+        return $this->getInterestLock($rowIndex, BookingBatchHeaderField::Zinssperre->getPosition());
+    }
+
+    /**
+     * Setzt die Zinssperre einer Buchung.
+     */
+    public function setZinssperre(int $rowIndex, InterestLock $interestLock): void {
+        $this->setInterestLock($rowIndex, BookingBatchHeaderField::Zinssperre->getPosition(), $interestLock);
+    }
+
+    /**
+     * Gibt die Skontosperre einer Buchung zurück.
+     */
+    public function getSkontosperre(int $rowIndex): ?DiscountLock {
+        return $this->getDiscountLock($rowIndex, BookingBatchHeaderField::Skontosperre->getPosition());
+    }
+
+    /**
+     * Setzt die Skontosperre einer Buchung.
+     */
+    public function setSkontosperre(int $rowIndex, DiscountLock $discountLock): void {
+        $this->setDiscountLock($rowIndex, BookingBatchHeaderField::Skontosperre->getPosition(), $discountLock);
+    }
+
+    /**
+     * Gibt den Skontotyp einer Buchung zurück.
+     */
+    public function getSkontoTyp(int $rowIndex): ?DiscountType {
+        return $this->getDiscountType($rowIndex, BookingBatchHeaderField::SkontoTyp->getPosition());
+    }
+
+    /**
+     * Setzt den Skontotyp einer Buchung.
+     */
+    public function setSkontoTyp(int $rowIndex, DiscountType $discountType): void {
+        $this->setDiscountType($rowIndex, BookingBatchHeaderField::SkontoTyp->getPosition(), $discountType);
+    }
+
+    /**
+     * Gibt die Festschreibung einer Buchung zurück.
+     */
+    public function getFestschreibung(int $rowIndex): ?PostingLock {
+        return $this->getPostingLock($rowIndex, BookingBatchHeaderField::Festschreibung->getPosition());
+    }
+
+    /**
+     * Setzt die Festschreibung einer Buchung.
+     */
+    public function setFestschreibung(int $rowIndex, PostingLock $postingLock): void {
+        $this->setPostingLock($rowIndex, BookingBatchHeaderField::Festschreibung->getPosition(), $postingLock);
+    }
+
+    /**
+     * Prüft, ob eine Buchung festgeschrieben ist.
+     */
+    public function isLocked(int $rowIndex): bool {
+        return $this->getFestschreibung($rowIndex)?->isLocked() ?? false;
     }
 
     /**

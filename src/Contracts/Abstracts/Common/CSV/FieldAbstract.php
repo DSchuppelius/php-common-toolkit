@@ -89,18 +89,28 @@ class FieldAbstract implements FieldInterface {
             // Unquoted Field
             $this->quoted = false;
             $this->enclosureRepeat = 0;
-            $this->typedValue = StringHelper::parseToTypedValue($trimmed, $this->country);
+            $this->analyzeUnquotedValue($trimmed);
+        }
+    }
 
-            // Original-Format speichern für alle typisierten Werte (DateTime, Float, etc.)
-            if ($this->typedValue instanceof DateTimeImmutable) {
-                $this->originalFormat = DateHelper::detectDateTimeFormat($trimmed, $this->country);
-            } elseif (is_float($this->typedValue)) {
-                // Float-Format erkennen (z.B. deutsche vs. US Schreibweise)
-                $detectedFormat = NumberHelper::detectNumberFormat($trimmed);
-                if ($detectedFormat !== null) {
-                    // Format-Template speichern für korrekte Ausgabe
-                    $this->originalFormat = $detectedFormat;
-                }
+    /**
+     * Analysiert einen unquoted Wert und setzt typedValue sowie originalFormat.
+     *
+     * @param string $value Der zu analysierende Wert.
+     * @return void
+     */
+    private function analyzeUnquotedValue(string $value): void {
+        $this->typedValue = StringHelper::parseToTypedValue($value, $this->country);
+
+        // Original-Format speichern für alle typisierten Werte (DateTime, Float, etc.)
+        if ($this->typedValue instanceof DateTimeImmutable) {
+            $this->originalFormat = DateHelper::detectDateTimeFormat($value, $this->country);
+        } elseif (is_float($this->typedValue)) {
+            // Float-Format erkennen (z.B. deutsche vs. US Schreibweise)
+            $detectedFormat = NumberHelper::detectNumberFormat($value);
+            if ($detectedFormat !== null) {
+                // Format-Template speichern für korrekte Ausgabe
+                $this->originalFormat = $detectedFormat;
             }
         }
     }
@@ -213,16 +223,7 @@ class FieldAbstract implements FieldInterface {
         if ($this->quoted) {
             $this->typedValue = $value;
         } else {
-            $this->typedValue = StringHelper::parseToTypedValue($value, $this->country);
-            // Format-Templates für korrekte Rekonstruktion speichern
-            if ($this->typedValue instanceof DateTimeImmutable) {
-                $this->originalFormat = DateHelper::detectDateTimeFormat($value, $this->country);
-            } elseif (is_float($this->typedValue)) {
-                $detectedFormat = NumberHelper::detectNumberFormat($value, $this->country);
-                if ($detectedFormat !== null) {
-                    $this->originalFormat = $detectedFormat;
-                }
-            }
+            $this->analyzeUnquotedValue($value);
         }
     }
 
@@ -231,6 +232,43 @@ class FieldAbstract implements FieldInterface {
      */
     public function getRaw(): ?string {
         return $this->raw;
+    }
+
+    /**
+     * Erstellt eine Kopie des Feldes mit einem neuen String-Wert.
+     * Behält alle anderen Eigenschaften (quoted, enclosureRepeat, country) bei.
+     * Bei unquoted Fields wird der Wert analysiert (Typ-Erkennung für Datum, Float, etc.).
+     *
+     * @param string $newValue Der neue Wert für das Feld.
+     * @return static Eine neue Instanz mit dem geänderten Wert.
+     */
+    public function withValue(string $newValue): static {
+        $clone = clone $this;
+        $clone->raw = null;
+        $clone->originalFormat = null;
+
+        if (!$clone->quoted) {
+            $clone->analyzeUnquotedValue($newValue);
+        } else {
+            $clone->typedValue = $newValue;
+        }
+
+        return $clone;
+    }
+
+    /**
+     * Erstellt eine Kopie des Feldes mit einem bereits typisierten Wert.
+     * Übernimmt den Wert direkt ohne Analyse.
+     * Behält alle anderen Eigenschaften (quoted, enclosureRepeat, country) bei.
+     *
+     * @param mixed $newValue Der neue typisierte Wert (int, float, DateTimeImmutable, string, etc.).
+     * @return static Eine neue Instanz mit dem geänderten Wert.
+     */
+    public function withTypedValue(mixed $newValue): static {
+        $clone = clone $this;
+        $clone->raw = null;
+        $clone->typedValue = $newValue;
+        return $clone;
     }
 
     /**

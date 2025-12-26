@@ -19,6 +19,7 @@ use CommonToolkit\Entities\DATEV\MetaHeaderLine;
 use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use CommonToolkit\Enums\DATEV\HeaderFields\V700\NaturalStackHeaderField;
+use RuntimeException;
 
 /**
  * DATEV-Natural-Stapel-Dokument.
@@ -29,11 +30,7 @@ use CommonToolkit\Enums\DATEV\HeaderFields\V700\NaturalStackHeaderField;
  * aus NaturalStackHeaderField::getMaxLength() angewendet.
  */
 final class NaturalStack extends Document {
-    public function __construct(
-        ?MetaHeaderLine $metaHeader,
-        ?HeaderLine $header,
-        array $rows = []
-    ) {
+    public function __construct(?MetaHeaderLine $metaHeader, ?HeaderLine $header, array $rows = []) {
         parent::__construct($metaHeader, $header, $rows);
     }
 
@@ -79,7 +76,7 @@ final class NaturalStack extends Document {
 
         $metaFields = $this->getMetaHeader()?->getFields() ?? [];
         if (count($metaFields) > 2 && (int)$metaFields[2]->getValue() !== 66) {
-            throw new \RuntimeException('Ungültige Kategorie für Natural-Stapel-Dokument. Erwartet: 66');
+            throw new RuntimeException('Ungültige Kategorie für Natural-Stapel-Dokument. Erwartet: 66');
         }
     }
 
