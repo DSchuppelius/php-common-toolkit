@@ -12,9 +12,6 @@
 namespace CommonToolkit\Entities\Common\CSV;
 
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
-use CommonToolkit\Contracts\Interfaces\Common\CSV\HeaderLineInterface;
-use CommonToolkit\Contracts\Abstracts\Common\CSV\DataLineAbstract;
-use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
@@ -41,9 +38,6 @@ class Document {
         $this->columnWidthConfig   = $columnWidthConfig;
         $this->header              = $header;
         $this->rows                = $rows;
-
-        // Verknüpfe DataLines mit HeaderLine
-        $this->linkDataLinesToHeader();
     }
 
     /**
@@ -154,16 +148,71 @@ class Document {
 
         $lines = [];
 
+        // Header wird NIEMALS gekürzt
         if ($this->header && $this->exportWithHeader) {
-            // Header wird NICHT gekürzt - kein columnWidthConfig übergeben
             $lines[] = $this->header->toString($delimiter, $enclosure);
         }
+
+        // DataLines mit ColumnWidth-Verarbeitung
         foreach ($this->rows as $row) {
-            // Nur Datenzeilen bekommen ColumnWidthConfig für Kürzung
-            $lines[] = $row->toString($delimiter, $enclosure, $this->columnWidthConfig);
+            if ($this->columnWidthConfig) {
+                $lines[] = $this->applyColumnWidthToRow($row, $delimiter, $enclosure);
+            } else {
+                $lines[] = $row->toString($delimiter, $enclosure);
+            }
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Wendet ColumnWidthConfig auf eine DataLine an mit korrekter TruncationStrategy.
+     *
+     * @param DataLine $row Die Datenzeile
+     * @param string $delimiter Das Trennzeichen
+     * @param string $enclosure Das Einschlusszeichen
+     * @return string Die formatierte CSV-Zeile
+     */
+    private function applyColumnWidthToRow(DataLine $row, string $delimiter, string $enclosure): string {
+        $parts = [];
+        foreach ($row->getFields() as $index => $field) {
+            $columnKey = $this->getColumnKeyForIndex($index);
+            $value = $field->getValue();
+
+            // ColumnWidthConfig kümmert sich um Kürzung UND Padding
+            if ($this->columnWidthConfig->hasWidthConfig($columnKey)) {
+                $processedValue = $this->columnWidthConfig->truncateValue($value, $columnKey);
+
+                if ($processedValue !== $value) {
+                    // Wert wurde modifiziert - temporäres Field erstellen
+                    $tempField = clone $field;
+                    $tempField->setValue($processedValue);
+                    $parts[] = $tempField->toString($enclosure);
+                } else {
+                    $parts[] = $field->toString($enclosure);
+                }
+            } else {
+                $parts[] = $field->toString($enclosure);
+            }
+        }
+
+        return implode($delimiter, $parts);
+    }
+
+    /**
+     * Bestimmt den ColumnKey für einen Field-Index.
+     *
+     * @param int $index Field-Index
+     * @return string|int Spaltenname (falls Header vorhanden) oder Index
+     */
+    private function getColumnKeyForIndex(int $index): string|int {
+        if ($this->header) {
+            $headerField = $this->header->getField($index);
+            if ($headerField) {
+                return $headerField->getValue();
+            }
+        }
+        return $index;
     }
 
     /**
@@ -311,27 +360,5 @@ class Document {
             if (!$row->equals($other->rows[$i])) return false;
         }
         return true;
-    }
-
-    /**
-     * Baut ein Array der Spaltenbreiten für die toString-Methode auf.
-     *
-     * @param array<string> $columnNames Die Spaltennamen
-     * @return Headerline Spaltenbreiten-Array
-     */
-
-    /**
-     * Verknüpft alle DataLines mit der HeaderLine.
-     */
-    private function linkDataLinesToHeader(): void {
-        if ($this->header === null) {
-            return;
-        }
-
-        foreach ($this->rows as $row) {
-            if ($row instanceof DataLineAbstract) {
-                $row->setHeaderLine($this->header);
-            }
-        }
     }
 }

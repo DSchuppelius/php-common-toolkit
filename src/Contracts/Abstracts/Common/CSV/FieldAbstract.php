@@ -236,16 +236,11 @@ class FieldAbstract implements FieldInterface {
     /**
      * Gibt den Wert als String zurück.
      */
-    public function toString(?string $enclosure = null, ?int $maxWidth = null): string {
+    public function toString(?string $enclosure = null): string {
         $enclosure = $enclosure ?? self::DEFAULT_ENCLOSURE;
 
         $quoteLevel = max(1, $this->enclosureRepeat);
         $value = $this->getValue();
-
-        // Wert kürzen wenn maximale Breite definiert ist
-        if ($maxWidth !== null && $maxWidth > 0 && mb_strlen($value) > $maxWidth) {
-            $value = mb_substr($value, 0, $maxWidth);
-        }
 
         if ($this->quoted) {
             $enc = str_repeat($enclosure, $quoteLevel);

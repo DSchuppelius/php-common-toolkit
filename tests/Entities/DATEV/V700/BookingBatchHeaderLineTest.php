@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace Tests\Entities\DATEV\Header\V700;
 
 use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
-use CommonToolkit\Entities\DATEV\Header\V700\BookingBatchHeaderDefinition;
 use CommonToolkit\Enums\DATEV\HeaderFields\V700\BookingBatchHeaderField;
 use Tests\Contracts\BaseTestCase;
 
@@ -55,17 +54,15 @@ class BookingBatchHeaderLineTest extends BaseTestCase {
         'Adressattyp;Kurzbezeichnung;EU-Land;EU-UStID;Anrede;Titel/Akad. Grad;Adelstitel;Namensvorsatz;' .
         'Adressart;Straße;Postfach;Postleitzahl;Ort;Land;Versandzusatz;Adresszusatz';
 
-    public function testCanCreateWithDefinition(): void {
-        $definition = new BookingBatchHeaderDefinition();
-        $headerLine = new BookingBatchHeaderLine($definition);
+    public function testCanCreateWithEnumClass(): void {
+        $headerLine = new BookingBatchHeaderLine(BookingBatchHeaderField::class);
 
         $this->assertInstanceOf(BookingBatchHeaderLine::class, $headerLine);
-        $this->assertInstanceOf(BookingBatchHeaderDefinition::class, $headerLine->getDefinition());
+        $this->assertEquals(BookingBatchHeaderField::class, $headerLine->getFieldEnumClass());
     }
 
-    public function testCreateDefault(): void {
-        $definition = new BookingBatchHeaderDefinition();
-        $headerLine = new BookingBatchHeaderLine($definition);
+    public function testCreateV700(): void {
+        $headerLine = BookingBatchHeaderLine::createV700();
         $fields = $headerLine->getFields();
 
         $this->assertCount(125, $fields, 'V700 sollte 125 Felder haben');
@@ -78,8 +75,7 @@ class BookingBatchHeaderLineTest extends BaseTestCase {
     }
 
     public function testCreateMinimal(): void {
-        $definition = new BookingBatchHeaderDefinition();
-        $headerLine = BookingBatchHeaderLine::createMinimal($definition);
+        $headerLine = BookingBatchHeaderLine::createMinimal(BookingBatchHeaderField::class);
         $fields = $headerLine->getFields();
 
         // Minimal sollte nur Pflichtfelder haben
@@ -88,8 +84,7 @@ class BookingBatchHeaderLineTest extends BaseTestCase {
     }
 
     public function testFieldAccess(): void {
-        $definition = new BookingBatchHeaderDefinition();
-        $headerLine = new BookingBatchHeaderLine($definition);
+        $headerLine = BookingBatchHeaderLine::createV700();
 
         // Test hasField
         $this->assertTrue($headerLine->hasField(BookingBatchHeaderField::Umsatz));
@@ -102,8 +97,7 @@ class BookingBatchHeaderLineTest extends BaseTestCase {
     }
 
     public function testEnumCompatibility(): void {
-        $definition = new BookingBatchHeaderDefinition();
-        $headerLine = new BookingBatchHeaderLine($definition);
+        $headerLine = BookingBatchHeaderLine::createV700();
 
         // Test V700 Kompatibilität
         $this->assertTrue($headerLine->isV700BookingHeader());
@@ -114,8 +108,7 @@ class BookingBatchHeaderLineTest extends BaseTestCase {
     }
 
     public function testFormatDetection(): void {
-        $definition = new BookingBatchHeaderDefinition();
-        $headerLine = new BookingBatchHeaderLine($definition);
+        $headerLine = BookingBatchHeaderLine::createV700();
 
         // Test Format-Erkennung
         $candidates = [BookingBatchHeaderField::class];
@@ -128,8 +121,7 @@ class BookingBatchHeaderLineTest extends BaseTestCase {
     }
 
     public function testHeaderValidationWithRealDATEVHeaders(): void {
-        $definition = new BookingBatchHeaderDefinition();
-        $headerLine = new BookingBatchHeaderLine($definition);
+        $headerLine = BookingBatchHeaderLine::createV700();
 
         // Test: BookingBatch V700 Header sollte validiert werden
         $BookingBatchFields = explode(';', self::BOOKINGBATCH_V700);
@@ -165,8 +157,7 @@ class BookingBatchHeaderLineTest extends BaseTestCase {
     }
 
     public function testFieldCountConsistency(): void {
-        $definition = new BookingBatchHeaderDefinition();
-        $headerLine = new BookingBatchHeaderLine($definition);
+        $headerLine = BookingBatchHeaderLine::createV700();
 
         // Unser Header sollte 125 Felder haben (wie im Enum definiert)
         $this->assertCount(125, $headerLine->getFields());

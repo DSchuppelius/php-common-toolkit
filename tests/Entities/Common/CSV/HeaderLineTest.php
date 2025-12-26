@@ -5,7 +5,7 @@ namespace Tests\Entities\Common\CSV;
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use Tests\Contracts\BaseTestCase;
 
-class HeaderLineInterfaceTest extends BaseTestCase {
+class HeaderLineTest extends BaseTestCase {
     public function testGetColumnNames(): void {
         $headerLine = new HeaderLine(['Name', 'Age', 'Email']);
 

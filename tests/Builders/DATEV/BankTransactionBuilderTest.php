@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Builders;
+namespace Tests\Builders\DATEV;
 
 use CommonToolkit\Builders\DATEV\BankTransactionBuilder;
 use CommonToolkit\Entities\Common\CSV\{DataLine, DataField};

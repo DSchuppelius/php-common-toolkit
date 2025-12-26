@@ -6,11 +6,11 @@ Dieses System bietet eine **vollautomatische** und **dynamische** Verwaltung fü
 
 ### Automatische Erkennung
 
-Das System durchsucht automatisch das Verzeichnis `src/Entities/DATEV/Header/` nach Versionsverzeichnissen im Format `VXX` (z.B. `V700`, `V800`, etc.) und erkennt:
+Das System durchsucht automatisch das Verzeichnis `src/Enums/DATEV/HeaderFields/` nach Versionsverzeichnissen im Format `VXX` (z.B. `V700`, `V800`, etc.) und erkennt:
 
-- ✅ **MetaHeaderDefinition-Klassen** automatisch
-- ✅ **Format-Header-Definitionen** automatisch
-- ✅ **Unterstützte Formate** pro Version automatisch
+- ✅ **MetaHeaderDefinition-Klassen** aus `src/Entities/DATEV/Header/VXX/`
+- ✅ **HeaderField-Enums** die `FieldHeaderInterface` implementieren
+- ✅ **Format-Kategorien** automatisch über `getCategory()` der Enums
 - ✅ **Klassenvalidierung** zur Laufzeit
 
 ### Vorteile der dynamischen Architektur
@@ -127,7 +127,7 @@ foreach ($validations as $version => $result) {
 ### Schritt 1: Verzeichnisstruktur erstellen
 ```bash
 mkdir -p src/Entities/DATEV/Header/V800/
-mkdir -p src/Enums/DATEV/V800/
+mkdir -p src/Enums/DATEV/HeaderFields/V800/
 ```
 
 ### Schritt 2: MetaHeaderDefinition implementieren
@@ -145,36 +145,133 @@ final class MetaHeaderDefinition extends MetaHeaderDefinitionAbstract {
 }
 ```
 
-### Schritt 3: Format-Definitionen hinzufügen
+### Schritt 3: HeaderField-Enums hinzufügen
 ```php
-// src/Entities/DATEV/Header/V800/BookingBatchHeaderDefinition.php
+// src/Enums/DATEV/HeaderFields/V800/BookingBatchHeaderField.php
+<?php
+namespace CommonToolkit\Enums\DATEV\HeaderFields\V800;
+
+use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
+use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
+
+enum BookingBatchHeaderField: string implements FieldHeaderInterface {
+    case Umsatz = 'Umsatz (ohne Soll/Haben-Kz)';
+    // ... alle Felder
+
+    public static function getCategory(): Category {
+        return Category::Buchungsstapel;
+    }
+
+    public static function getVersion(): int {
+        return 800;
+    }
+
+    // ... weitere Methoden
+}
+```
+
+**Hinweis:** Es gibt keine separaten `HeaderDefinition`-Klassen mehr für Formate! 
+Die HeaderField-Enums (z.B. `BookingBatchHeaderField`) implementieren direkt das 
+`FieldHeaderInterface` und liefern über `getCategory()` und `getVersion()` alle 
+benötigten Informationen.
 // src/Entities/DATEV/Header/V800/DebitorsCreditorsHeaderDefinition.php
 // etc.
 ```
 
 ### Schritt 4: Fertig!
 ```php
-// Das System erkennt die neue Version automatisch
+// Das System erkennt die neue Version automatisch aus den Enum-Verzeichnissen
 $versions = VersionDiscovery::getAvailableVersions(); // [700, 800]
 $supported = HeaderRegistry::getSupportedVersions(); // [700, 800]
 
 // Alle APIs funktionieren automatisch
 $v800Meta = HeaderRegistry::get(800);
 $v800Formats = HeaderRegistry::getSupportedFormats(800);
+
+// Format-Enum direkt abrufen
+$enumClass = HeaderRegistry::getFormatEnum(Category::Buchungsstapel, 800);
+// → "CommonToolkit\Enums\DATEV\HeaderFields\V800\BookingBatchHeaderField"
 ```
 
-### Klassen-Mapping
-Das System mappt automatisch bekannte Klassennamen auf Kategorien:
+### Architektur-Übersicht
 
-| Klassenname | Kategorie |
-|-------------|-----------|
-| `BookingBatchHeaderDefinition` | Buchungsstapel |
-| `DebitorsCreditorsHeaderDefinition` | Debitoren/Kreditoren |
-| `VariousAddressesHeaderDefinition` | Diverse Adressen |
-| `GLAccountDescriptionHeaderDefinition` | Sachkontenbeschriftungen |
-| `RecurringBookingsHeaderDefinition` | Wiederkehrende Buchungen |
-| `PaymentTermsHeaderDefinition` | Zahlungsbedingungen |
-| `NaturalStackHeaderDefinition` | Natural-Stapel |
+```
+src/
+├── Entities/DATEV/Header/
+│   ├── V700/
+│   │   └── MetaHeaderDefinition.php    ← Nur MetaHeader-Definition pro Version
+│   ├── BookingBatchHeaderLine.php      ← HeaderLine-Klassen (versionsneutral)
+│   ├── DebitorsCreditorsHeaderLine.php
+│   └── ...
+│
+└── Enums/DATEV/HeaderFields/
+    └── V700/
+        ├── MetaHeaderField.php         ← MetaHeader-Felder (31 Felder)
+        ├── BookingBatchHeaderField.php ← Format-spezifische Felder
+        ├── DebitorsCreditorsHeaderField.php
+        └── ...
+```
+
+### Enum-zu-Kategorie Mapping
+Das System erkennt automatisch die Kategorie aus den HeaderField-Enums über `getCategory()`:
+
+| Enum-Klasse                       | Kategorie                | Felder (V700) |
+|-----------------------------------|--------------------------|---------------|
+| `BookingBatchHeaderField`         | Buchungsstapel           | 125           |
+| `DebitorsCreditorsHeaderField`    | Debitoren/Kreditoren     | 254           |
+| `VariousAddressesHeaderField`     | Diverse Adressen         | 191           |
+| `GLAccountDescriptionHeaderField` | Sachkontenbeschriftungen | 4             |
+| `RecurringBookingsHeaderField`    | Wiederkehrende Buchungen | 101           |
+| `PaymentTermsHeaderField`         | Zahlungsbedingungen      | 31            |
+| `NaturalStackHeaderField`         | Natural-Stapel           | 15            |
+
+**Hinweis:** Der MetaHeader hat immer 31 Felder (V700).
+
+## MetaHeader Quoting
+
+Die DATEV-Spezifikation definiert, welche MetaHeader-Felder gequotet werden müssen. Dies wird durch die `isQuoted()` Methode der `MetaHeaderFieldInterface` gesteuert:
+
+```php
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\MetaHeaderField;
+
+// Prüfen ob ein Feld gequotet werden muss
+if (MetaHeaderField::Kennzeichen->isQuoted()) {
+    echo "Kennzeichen muss gequotet werden"; // true
+}
+
+if (MetaHeaderField::Versionsnummer->isQuoted()) {
+    echo "Versionsnummer muss gequotet werden"; // false
+}
+```
+
+### Gequotete MetaHeader-Felder (V700)
+Gemäß [DATEV-Spezifikation](https://developer.datev.de/de/file-format/details/datev-format/format-description/header):
+
+| Position | Feld                        | Gequotet |
+|----------|-----------------------------|----------|
+| 1        | Kennzeichen                 | ✅       |
+| 2        | Versionsnummer              | ❌       |
+| 3        | Formatkategorie             | ❌       |
+| 4        | Formatname                  | ✅       |
+| 5        | Formatversion               | ❌       |
+| 6        | Erzeugt am                  | ❌       |
+| 7        | Importiert                  | ❌       |
+| 8        | Herkunft                    | ✅       |
+| 9        | Exportiert von              | ✅       |
+| 10       | Importiert von              | ✅       |
+| 11-16    | Berater-/Mandantendaten     | ❌       |
+| 17       | Bezeichnung                 | ✅       |
+| 18       | Diktatkürzel                | ✅       |
+| 19-21    | Buchungstyp/Rechnungslegung | ❌       |
+| 22       | Währungskennzeichen         | ✅       |
+| 23       | Reserviert                  | ❌       |
+| 24       | Derivatskennzeichen         | ✅       |
+| 25-26    | Reserviert                  | ❌       |
+| 27       | Sachkontenrahmen            | ✅       |
+| 28       | Branchenlösung-ID           | ❌       |
+| 29       | Reserviert                  | ❌       |
+| 30       | Reserviert                  | ✅       |
+| 31       | Anwendungsinformation       | ✅       |
 
 ## Erweiterte Features
 
@@ -183,9 +280,13 @@ Das System mappt automatisch bekannte Klassennamen auf Kategorien:
 $details = VersionDiscovery::getVersionDetails();
 foreach ($details as $version => $info) {
     echo "Version {$version}:\n";
-    echo "- Pfad: {$info['path']}\n";
+    echo "- Enum-Pfad: {$info['path']}\n";
     echo "- MetaHeader: " . ($info['metaHeaderClass'] ? '✅' : '❌') . "\n";
-    echo "- Formate: {$info['formatCount']}\n";
+    echo "- Format-Enums: " . count($info['formatEnums']) . "\n";
+
+    foreach ($info['formatEnums'] as $categoryId => $enumClass) {
+        echo "  - {$enumClass}\n";
+    }
 }
 ```
 
@@ -232,7 +333,7 @@ Das Discovery-System kann auch für Testzwecke verwendet werden, um temporäre V
 
 ### Performance-Optimierung
 - **Singleton-Pattern**: Instanzen werden automatisch wiederverwendet
-- **Lazy Discovery**: Erkennung erfolgt nur bei erster Verwendung  
+- **Lazy Discovery**: Erkennung erfolgt nur bei erster Verwendung
 - **Caching**: Alle Ergebnisse werden gecacht bis zum Refresh
 
 ### Fehlerbehandlung

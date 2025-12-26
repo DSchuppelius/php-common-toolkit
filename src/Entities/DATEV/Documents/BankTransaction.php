@@ -14,6 +14,7 @@ namespace CommonToolkit\Entities\DATEV\Documents;
 
 use CommonToolkit\Entities\Common\CSV\{HeaderField, DataLine, Document as CSVDocument, ColumnWidthConfig};
 use CommonToolkit\Entities\DATEV\Header\ASCII\BankTransactionHeaderLine;
+use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 use CommonToolkit\Enums\DATEV\HeaderFields\ASCII\BankTransactionHeaderField;
 use RuntimeException;
 
@@ -24,6 +25,9 @@ use RuntimeException;
  * Verwendet das einfache CSV-Document als Basis, nicht das DATEV-Document.
  * Diese ASCII-Dateien sind unabhängig vom Standard DATEV V700-System.
  * 
+ * Die Spaltenbreiten werden automatisch basierend auf den DATEV-Spezifikationen
+ * aus BankTransactionHeaderField::getMaxLength() angewendet.
+ * 
  * @package CommonToolkit\Entities\DATEV\Documents
  */
 final class BankTransaction extends CSVDocument {
@@ -32,10 +36,34 @@ final class BankTransaction extends CSVDocument {
         // ASCII-Weiterverarbeitungsdateien haben keinen Header, aber wir erstellen einen internen aus der Definition
         $internalHeader = $this->createInternalHeader($delimiter, $enclosure);
 
+        // Falls keine ColumnWidthConfig übergeben wurde, erstelle eine basierend auf DATEV-Spezifikation
+        $columnWidthConfig ??= self::createDatevColumnWidthConfig();
+
         parent::__construct($internalHeader, $rows, $delimiter, $enclosure, $columnWidthConfig);
 
         // ASCII-Weiterverarbeitungsdateien werden OHNE Header exportiert
         $this->exportWithHeader = false;
+    }
+
+    /**
+     * Erstellt eine ColumnWidthConfig basierend auf den DATEV-Spezifikationen.
+     * Die maximalen Feldlängen werden aus BankTransactionHeaderField::getMaxLength() abgeleitet.
+     * 
+     * @param TruncationStrategy $strategy Abschneidungsstrategie (Standard: TRUNCATE für DATEV-Konformität)
+     * @return ColumnWidthConfig
+     */
+    public static function createDatevColumnWidthConfig(TruncationStrategy $strategy = TruncationStrategy::TRUNCATE): ColumnWidthConfig {
+        $config = new ColumnWidthConfig(null, $strategy);
+
+        foreach (BankTransactionHeaderField::ordered() as $index => $field) {
+            $maxLength = $field->getMaxLength();
+            if ($maxLength !== null) {
+                // Verwende Index-basierte Spaltenbreiten (0-basiert)
+                $config->setColumnWidth($index, $maxLength);
+            }
+        }
+
+        return $config;
     }
 
     /**

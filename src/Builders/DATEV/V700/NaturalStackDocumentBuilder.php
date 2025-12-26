@@ -1,9 +1,9 @@
 <?php
 /*
- * Created on   : Sat Dec 14 2025
+ * Created on   : Thu Dec 26 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : BookingDocumentBuilder.php
+ * Filename     : NaturalStackDocumentBuilder.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -16,32 +16,33 @@ use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\MetaHeaderLine;
-use CommonToolkit\Entities\DATEV\Documents\BookingBatch;
+use CommonToolkit\Entities\DATEV\Documents\NaturalStack;
 use CommonToolkit\Entities\DATEV\Header\V700\MetaHeaderDefinition;
-use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
-use CommonToolkit\Enums\DATEV\HeaderFields\V700\{MetaHeaderField, BookingBatchHeaderField};
+use CommonToolkit\Entities\DATEV\Header\NaturalStackHeaderLine;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\{MetaHeaderField, NaturalStackHeaderField};
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 use DateTimeImmutable;
 
 /**
- * Builder für DATEV BookingBatch-Dokumente (V700).
- * Erstellt komplette DATEV-Export-Dateien mit MetaHeader, FieldHeader und Buchungsdaten.
+ * Builder für DATEV Natural-Stapel (V700).
+ * Erstellt komplette DATEV-Export-Dateien mit MetaHeader, FieldHeader und
+ * Natural-Buchungsdaten für Land-/Forstwirtschaft (SKR14).
  */
-final class BookingDocumentBuilder extends CSVDocumentBuilder {
+final class NaturalStackDocumentBuilder extends CSVDocumentBuilder {
     use ErrorLog;
 
     private ?MetaHeaderLine $metaHeader = null;
-    private ?BookingBatchHeaderLine $fieldHeader = null;
+    private ?NaturalStackHeaderLine $fieldHeader = null;
     /** @var DataLine[] */
-    private array $bookingLines = [];
+    private array $dataLines = [];
 
     public function __construct(string $delimiter = Document::DEFAULT_DELIMITER, string $enclosure = '"') {
         parent::__construct($delimiter, $enclosure);
     }
 
     /**
-     * Setzt den MetaHeader mit Standard-BookingBatch-Konfiguration.
+     * Setzt den MetaHeader mit Standard-NaturalStack-Konfiguration.
      */
     public function setMetaHeader(?MetaHeaderLine $metaHeader = null): self {
         $this->metaHeader = $metaHeader ?? $this->createDefaultMetaHeader();
@@ -51,56 +52,70 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     /**
      * Setzt den FieldHeader (Spaltenbeschreibungen).
      */
-    public function setFieldHeader(?BookingBatchHeaderLine $fieldHeader = null): self {
-        $this->fieldHeader = $fieldHeader ?? BookingBatchHeaderLine::createV700();
+    public function setFieldHeader(?NaturalStackHeaderLine $fieldHeader = null): self {
+        $this->fieldHeader = $fieldHeader ?? NaturalStackHeaderLine::createV700();
         return $this;
     }
 
     /**
-     * Fügt eine Buchungszeile hinzu.
+     * Fügt eine Datenzeile hinzu.
      */
-    public function addBooking(DataLine $booking): self {
-        $this->bookingLines[] = $booking;
+    public function addDataLine(DataLine $dataLine): self {
+        $this->dataLines[] = $dataLine;
         return $this;
     }
 
     /**
-     * Convenience-Methode zum Hinzufügen einer einfachen Buchung.
-     * Erstellt eine DataLine mit den wichtigsten Buchungsfeldern.
+     * Convenience-Methode zum Hinzufügen einer Natural-Buchung (Land-/Forstwirtschaft).
+     * 
+     * @param string $textschluessel Textschlüssel gem. SKR14 (1-9 Stellen)
+     * @param string $art Art der Bewegung (2=Erzeugung, 21=Versetzung, 24=Verfüttert, etc.)
+     * @param string $datum Datum im TTMM-Format
+     * @param int|null $stueck Anzahl Stück (bei Tieren)
+     * @param int|null $gewicht Gewicht (bei anderen Textschlüsseln)
+     * @param string|null $beleg Belegnummer
+     * @param string|null $text Buchungstext
+     * @param string|null $anFuerTextschluessel Ziel-Textschlüssel bei Versetzungen
      */
-    public function addSimpleBooking(
-        float $amount,
-        string $sollHaben,
-        string $account,
-        string $contraAccount,
-        DateTimeImmutable|string $date,
-        string $documentRef,
-        string $text
+    public function addNaturalBooking(
+        string $textschluessel,
+        string $art,
+        string $datum,
+        ?int $stueck = null,
+        ?int $gewicht = null,
+        ?string $beleg = null,
+        ?string $text = null,
+        ?string $anFuerTextschluessel = null
     ): self {
         if (!$this->fieldHeader) {
             $this->setFieldHeader();
         }
 
-        // Datum formatieren
-        $dateStr = $date instanceof DateTimeImmutable
-            ? $date->format('dm')
-            : (new DateTimeImmutable($date))->format('dm');
-
-        // Leeres Array mit allen Feldern initialisieren
         $fieldCount = $this->fieldHeader->countFields();
         $values = array_fill(0, $fieldCount, '');
 
-        // Wichtige Felder setzen
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Umsatz)] = number_format(abs($amount), 2, ',', '');
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::SollHabenKennzeichen)] = $sollHaben;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Konto)] = $account;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Gegenkonto)] = $contraAccount;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Belegdatum)] = $dateStr;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Belegfeld1)] = $documentRef;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Buchungstext)] = $text;
+        $values[$this->fieldHeader->getFieldIndex(NaturalStackHeaderField::Textschluessel)] = $textschluessel;
+        $values[$this->fieldHeader->getFieldIndex(NaturalStackHeaderField::Art)] = $art;
+        $values[$this->fieldHeader->getFieldIndex(NaturalStackHeaderField::Datum)] = $datum;
 
-        $booking = new DataLine($values, $this->delimiter, $this->enclosure);
-        return $this->addBooking($booking);
+        if ($stueck !== null) {
+            $values[$this->fieldHeader->getFieldIndex(NaturalStackHeaderField::Stueck)] = (string) $stueck;
+        }
+        if ($gewicht !== null) {
+            $values[$this->fieldHeader->getFieldIndex(NaturalStackHeaderField::Gewicht)] = (string) $gewicht;
+        }
+        if ($beleg !== null) {
+            $values[$this->fieldHeader->getFieldIndex(NaturalStackHeaderField::Beleg)] = $beleg;
+        }
+        if ($text !== null) {
+            $values[$this->fieldHeader->getFieldIndex(NaturalStackHeaderField::Text)] = $text;
+        }
+        if ($anFuerTextschluessel !== null) {
+            $values[$this->fieldHeader->getFieldIndex(NaturalStackHeaderField::AnFuerTextschluessel)] = $anFuerTextschluessel;
+        }
+
+        $dataLine = new DataLine($values, $this->delimiter, $this->enclosure);
+        return $this->addDataLine($dataLine);
     }
 
     /**
@@ -118,21 +133,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     }
 
     /**
-     * Setzt den Zeitraum der Buchungen im MetaHeader.
-     */
-    public function setDateRange(DateTimeImmutable $from, DateTimeImmutable $to): self {
-        if (!$this->metaHeader) {
-            $this->setMetaHeader();
-        }
-
-        $this->metaHeader->set(MetaHeaderField::DatumVon, $from->format('Ymd'));
-        $this->metaHeader->set(MetaHeaderField::DatumBis, $to->format('Ymd'));
-
-        return $this;
-    }
-
-    /**
-     * Setzt die Beschreibung des BookingBatchs.
+     * Setzt die Beschreibung.
      */
     public function setDescription(string $description): self {
         if (!$this->metaHeader) {
@@ -147,7 +148,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     /**
      * Erstellt das komplette DATEV-Dokument.
      */
-    public function build(): BookingBatch {
+    public function build(): NaturalStack {
         if (!$this->metaHeader) {
             $this->setMetaHeader();
         }
@@ -156,17 +157,16 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
             $this->setFieldHeader();
         }
 
-        if (empty($this->bookingLines)) {
-            static::logWarning('BookingBatch ohne Buchungszeilen erstellt');
+        if (empty($this->dataLines)) {
+            static::logWarning('NaturalStack ohne Datenzeilen erstellt');
         }
 
-        // Validierung
         $this->validate();
 
-        return new BookingBatch(
+        return new NaturalStack(
             $this->metaHeader,
             $this->fieldHeader,
-            $this->bookingLines
+            $this->dataLines
         );
     }
 
@@ -182,26 +182,24 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
             throw new RuntimeException('FieldHeader muss gesetzt sein');
         }
 
-        // Prüfe Feldanzahl der Buchungszeilen
         $expectedFieldCount = $this->fieldHeader->countFields();
-        foreach ($this->bookingLines as $index => $booking) {
-            $actualFieldCount = count($booking->getFields());
+        foreach ($this->dataLines as $index => $dataLine) {
+            $actualFieldCount = count($dataLine->getFields());
             if ($actualFieldCount !== $expectedFieldCount) {
                 throw new RuntimeException(
-                    "Buchungszeile $index hat $actualFieldCount Felder, erwartet: $expectedFieldCount"
+                    "Datenzeile $index hat $actualFieldCount Felder, erwartet: $expectedFieldCount"
                 );
             }
         }
     }
 
     /**
-     * Erstellt einen Standard-MetaHeader für BookingBatch.
+     * Erstellt einen Standard-MetaHeader für NaturalStack.
      */
     private function createDefaultMetaHeader(): MetaHeaderLine {
         $definition = new MetaHeaderDefinition();
         $metaHeader = new MetaHeaderLine($definition);
 
-        // Setze aktuelle Zeit als Erzeugungszeitpunkt
         $metaHeader->set(
             MetaHeaderField::ErzeugtAm,
             (new DateTimeImmutable())->format('YmdHis') . '000'
@@ -217,7 +215,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
         return [
             'metaHeader_set' => $this->metaHeader !== null,
             'fieldHeader_set' => $this->fieldHeader !== null,
-            'booking_count' => count($this->bookingLines),
+            'data_count' => count($this->dataLines),
             'field_count' => $this->fieldHeader?->countFields() ?? 0,
         ];
     }

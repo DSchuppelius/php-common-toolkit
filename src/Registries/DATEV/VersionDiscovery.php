@@ -13,17 +13,21 @@ declare(strict_types=1);
 namespace CommonToolkit\Registries\DATEV;
 
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
-use CommonToolkit\Contracts\Interfaces\DATEV\{HeaderDefinitionInterface, MetaHeaderDefinitionInterface};
+use CommonToolkit\Contracts\Interfaces\DATEV\{FieldHeaderInterface, MetaHeaderDefinitionInterface};
 
 /**
- * Automatische Erkennung verfügbarer DATEV-Versionen aus dem Dateisystem.
- * Durchsucht die Header-Verzeichnisse nach verfügbaren Versionen und deren Definitionen.
+ * Automatische Erkennung verfügbarer DATEV-Versionen aus den Enum-Definitionen.
+ * Durchsucht die HeaderFields-Verzeichnisse nach verfügbaren Versionen und deren Enums.
+ * 
+ * Die Enums implementieren FieldHeaderInterface und liefern über getCategory() und getVersion()
+ * die notwendigen Informationen für die dynamische Format-Erkennung.
  */
 final class VersionDiscovery {
+    private const ENUM_BASE_PATH = __DIR__ . '/../../Enums/DATEV/HeaderFields';
     private const HEADER_BASE_PATH = __DIR__ . '/../../Entities/DATEV/Header';
     private const VERSION_PATTERN = '/^V(\d+)$/';
 
-    /** @var array<int, array{version: int, path: string, metaHeaderClass: ?string, formatDefinitions: array<int, string>}> */
+    /** @var array<int, array{version: int, path: string, metaHeaderClass: ?string, formatEnums: array<int, class-string<FieldHeaderInterface>>}> */
     private static array $discoveredVersions = [];
 
     /** @var bool */
@@ -39,12 +43,12 @@ final class VersionDiscovery {
 
         self::$discoveredVersions = [];
 
-        if (!is_dir(self::HEADER_BASE_PATH)) {
+        if (!is_dir(self::ENUM_BASE_PATH)) {
             self::$discovered = true;
             return;
         }
 
-        $directories = scandir(self::HEADER_BASE_PATH);
+        $directories = scandir(self::ENUM_BASE_PATH);
         if (!$directories) {
             self::$discovered = true;
             return;
@@ -55,7 +59,7 @@ final class VersionDiscovery {
                 continue;
             }
 
-            $fullPath = self::HEADER_BASE_PATH . '/' . $dir;
+            $fullPath = self::ENUM_BASE_PATH . '/' . $dir;
             if (!is_dir($fullPath)) {
                 continue;
             }
@@ -74,22 +78,23 @@ final class VersionDiscovery {
     }
 
     /**
-     * Analysiert eine spezifische Version und ihre verfügbaren Definitionen.
+     * Analysiert eine spezifische Version und ihre verfügbaren Enums.
      * 
      * @param int $version Die Versionsnummer
-     * @param string $versionPath Pfad zum Versionsverzeichnis
-     * @return array{version: int, path: string, metaHeaderClass: ?string, formatDefinitions: array<int, string>}|null
+     * @param string $enumPath Pfad zum Enum-Versionsverzeichnis
+     * @return array{version: int, path: string, metaHeaderClass: ?string, formatEnums: array<int, class-string<FieldHeaderInterface>>}|null
      */
-    private static function analyzeVersion(int $version, string $versionPath): ?array {
+    private static function analyzeVersion(int $version, string $enumPath): ?array {
         $versionInfo = [
             'version' => $version,
-            'path' => $versionPath,
+            'path' => $enumPath,
             'metaHeaderClass' => null,
-            'formatDefinitions' => [],
+            'formatEnums' => [],
         ];
 
-        // Prüfe auf MetaHeaderDefinition
-        $metaHeaderFile = $versionPath . '/MetaHeaderDefinition.php';
+        // Prüfe auf MetaHeaderDefinition im Header-Verzeichnis (weiterhin benötigt)
+        $headerPath = self::HEADER_BASE_PATH . "/V{$version}";
+        $metaHeaderFile = $headerPath . '/MetaHeaderDefinition.php';
         if (file_exists($metaHeaderFile)) {
             $metaHeaderClass = "CommonToolkit\\Entities\\DATEV\\Header\\V{$version}\\MetaHeaderDefinition";
             if (class_exists($metaHeaderClass) && is_subclass_of($metaHeaderClass, MetaHeaderDefinitionInterface::class)) {
@@ -97,47 +102,29 @@ final class VersionDiscovery {
             }
         }
 
-        // Durchsuche nach Format-Definitionen
-        $files = scandir($versionPath);
+        // Durchsuche nach HeaderField-Enums
+        $files = scandir($enumPath);
         if ($files) {
             foreach ($files as $file) {
-                if (pathinfo($file, PATHINFO_EXTENSION) !== 'php' || $file === 'MetaHeaderDefinition.php') {
+                if (pathinfo($file, PATHINFO_EXTENSION) !== 'php' || $file === 'MetaHeaderField.php') {
                     continue;
                 }
 
                 $className = pathinfo($file, PATHINFO_FILENAME);
-                $fullClassName = "CommonToolkit\\Entities\\DATEV\\Header\\V{$version}\\{$className}";
+                $fullClassName = "CommonToolkit\\Enums\\DATEV\\HeaderFields\\V{$version}\\{$className}";
 
-                if (class_exists($fullClassName) && is_subclass_of($fullClassName, HeaderDefinitionInterface::class)) {
-                    // Versuche die Kategorie aus dem Klassennamen zu ermitteln
-                    $category = self::mapClassNameToCategory($className);
-                    if ($category) {
-                        $versionInfo['formatDefinitions'][$category->value] = $fullClassName;
-                    }
+                // Prüfe ob es ein Enum ist, das FieldHeaderInterface implementiert
+                if (enum_exists($fullClassName) && is_subclass_of($fullClassName, FieldHeaderInterface::class)) {
+                    // Hole die Kategorie direkt vom Enum
+                    /** @var class-string<FieldHeaderInterface> $fullClassName */
+                    $category = $fullClassName::getCategory();
+                    $versionInfo['formatEnums'][$category->value] = $fullClassName;
                 }
             }
         }
 
         // Nur Versionen zurückgeben, die zumindest eine MetaHeaderDefinition haben
         return $versionInfo['metaHeaderClass'] ? $versionInfo : null;
-    }
-
-    /**
-     * Mappt Klassennamen auf Kategorien.
-     */
-    private static function mapClassNameToCategory(string $className): ?Category {
-        // Mapping bekannter Klassennamen auf Kategorien
-        $mappings = [
-            'BookingBatchHeaderDefinition' => Category::Buchungsstapel,
-            'DebitorsCreditorsHeaderDefinition' => Category::DebitorenKreditoren,
-            'VariousAddressesHeaderDefinition' => Category::DiverseAdressen,
-            'GLAccountDescriptionHeaderDefinition' => Category::Sachkontenbeschriftungen,
-            'RecurringBookingsHeaderDefinition' => Category::WiederkehrendeBuchungen,
-            'PaymentTermsHeaderDefinition' => Category::Zahlungsbedingungen,
-            'NaturalStackHeaderDefinition' => Category::NaturalStapel,
-        ];
-
-        return $mappings[$className] ?? null;
     }
 
     /**
@@ -183,31 +170,51 @@ final class VersionDiscovery {
     }
 
     /**
-     * Gibt alle Format-Definitionen für eine Version zurück.
+     * Gibt alle Format-Enums für eine Version zurück.
      * 
-     * @return array<int, class-string<HeaderDefinitionInterface>>
+     * @return array<int, class-string<FieldHeaderInterface>>
+     */
+    public static function getFormatEnums(int $version): array {
+        self::discover();
+        return self::$discoveredVersions[$version]['formatEnums'] ?? [];
+    }
+
+    /**
+     * Alias für getFormatEnums für Abwärtskompatibilität.
+     * @deprecated Use getFormatEnums() instead
+     * 
+     * @return array<int, class-string<FieldHeaderInterface>>
      */
     public static function getFormatDefinitions(int $version): array {
-        self::discover();
-        return self::$discoveredVersions[$version]['formatDefinitions'] ?? [];
+        return self::getFormatEnums($version);
     }
 
     /**
      * Prüft, ob ein Format in einer Version unterstützt wird.
      */
     public static function isFormatSupported(Category $category, int $version): bool {
-        $formatDefs = self::getFormatDefinitions($version);
-        return isset($formatDefs[$category->value]);
+        $formatEnums = self::getFormatEnums($version);
+        return isset($formatEnums[$category->value]);
     }
 
     /**
-     * Gibt die Format-Definition für eine Kategorie und Version zurück.
+     * Gibt den Format-Enum für eine Kategorie und Version zurück.
      * 
-     * @return class-string<HeaderDefinitionInterface>|null
+     * @return class-string<FieldHeaderInterface>|null
+     */
+    public static function getFormatEnum(Category $category, int $version): ?string {
+        $formatEnums = self::getFormatEnums($version);
+        return $formatEnums[$category->value] ?? null;
+    }
+
+    /**
+     * Alias für getFormatEnum für Abwärtskompatibilität.
+     * @deprecated Use getFormatEnum() instead
+     * 
+     * @return class-string<FieldHeaderInterface>|null
      */
     public static function getFormatDefinition(Category $category, int $version): ?string {
-        $formatDefs = self::getFormatDefinitions($version);
-        return $formatDefs[$category->value] ?? null;
+        return self::getFormatEnum($category, $version);
     }
 
     /**
@@ -216,11 +223,11 @@ final class VersionDiscovery {
      * @return Category[]
      */
     public static function getSupportedFormats(int $version): array {
-        $formatDefs = self::getFormatDefinitions($version);
+        $formatEnums = self::getFormatEnums($version);
         $supportedFormats = [];
 
         foreach (Category::cases() as $category) {
-            if (isset($formatDefs[$category->value])) {
+            if (isset($formatEnums[$category->value])) {
                 $supportedFormats[] = $category;
             }
         }
@@ -231,14 +238,14 @@ final class VersionDiscovery {
     /**
      * Gibt detaillierte Informationen über alle entdeckten Versionen zurück.
      * 
-     * @return array<int, array{version: int, path: string, metaHeaderClass: ?string, formatDefinitions: array<int, string>, formatCount: int}>
+     * @return array<int, array{version: int, path: string, metaHeaderClass: ?string, formatEnums: array<int, class-string<FieldHeaderInterface>>, formatCount: int}>
      */
     public static function getVersionDetails(): array {
         self::discover();
 
         $details = [];
         foreach (self::$discoveredVersions as $version => $info) {
-            $details[$version] = $info + ['formatCount' => count($info['formatDefinitions'])];
+            $details[$version] = $info + ['formatCount' => count($info['formatEnums'])];
         }
 
         return $details;
@@ -279,9 +286,9 @@ final class VersionDiscovery {
             $issues[] = 'MetaHeaderDefinition fehlt oder ist ungültig';
         }
 
-        // Prüfe auf mindestens eine Format-Definition
-        if (empty($versionInfo['formatDefinitions'])) {
-            $issues[] = 'Keine gültigen Format-Definitionen gefunden';
+        // Prüfe auf mindestens einen Format-Enum
+        if (empty($versionInfo['formatEnums'])) {
+            $issues[] = 'Keine gültigen Format-Enums gefunden';
         }
 
         return [

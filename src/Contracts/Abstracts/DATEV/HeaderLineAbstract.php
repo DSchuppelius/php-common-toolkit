@@ -13,39 +13,50 @@ declare(strict_types=1);
 namespace CommonToolkit\Contracts\Abstracts\DATEV;
 
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
-use CommonToolkit\Contracts\Interfaces\DATEV\{FieldHeaderInterface, HeaderDefinitionInterface};
+use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
 use CommonToolkit\Entities\Common\CSV\{HeaderField, HeaderLine};
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Enums\CountryCode;
+use InvalidArgumentException;
 
 /**
  * Abstrakte Basisklasse für DATEV Header-Zeilen (Spaltenbeschreibungen).
  * Kapselt die gemeinsame Funktionalität aller DATEV-Header-Zeilen.
+ * 
+ * Arbeitet direkt mit den HeaderField-Enums, die FieldHeaderInterface implementieren.
  */
 abstract class HeaderLineAbstract extends HeaderLine {
-    protected HeaderDefinitionInterface $definition;
+    /** @var class-string<FieldHeaderInterface> */
+    protected string $fieldEnumClass;
     protected array $fieldIndex = [];
 
     /**
-     * @param HeaderDefinitionInterface $definition Header-Definition (versionsspezifisch)
+     * @param class-string<FieldHeaderInterface> $fieldEnumClass Der HeaderField-Enum-Klassenname
      * @param string $delimiter CSV-Trennzeichen
      * @param string $enclosure CSV-Textbegrenzer
      */
     public function __construct(
-        HeaderDefinitionInterface $definition,
+        string $fieldEnumClass,
         string $delimiter = Document::DEFAULT_DELIMITER,
         string $enclosure = FieldInterface::DEFAULT_ENCLOSURE
     ) {
-        $this->definition = $definition;
+        if (!enum_exists($fieldEnumClass) || !is_subclass_of($fieldEnumClass, FieldHeaderInterface::class)) {
+            throw new InvalidArgumentException("$fieldEnumClass muss ein Enum sein, das FieldHeaderInterface implementiert.");
+        }
 
-        // Alle Felder aus der Definition als Header setzen
+        $this->fieldEnumClass = $fieldEnumClass;
+
+        // Alle Felder aus dem Enum als Header setzen
         $rawFields = [];
-        $fields = $definition->getFields();
+        /** @var FieldHeaderInterface[] $fields */
+        $fields = $fieldEnumClass::ordered();
 
         foreach ($fields as $index => $field) {
             $this->fieldIndex[$field->value] = $index;
-            // DATEV Header-Felder sind immer in Anführungszeichen
-            $rawFields[$index] = '"' . $field->value . '"';
+            // Quoting basierend auf isQuotedHeader() des Feldes
+            $rawFields[$index] = $field->isQuotedHeader()
+                ? $enclosure . $field->value . $enclosure
+                : $field->value;
         }
 
         parent::__construct($rawFields, $delimiter, $enclosure);
@@ -53,21 +64,27 @@ abstract class HeaderLineAbstract extends HeaderLine {
 
     /**
      * Factory-Methode für minimalen Header (nur Pflichtfelder).
+     * 
+     * @param class-string<FieldHeaderInterface> $fieldEnumClass
      */
     public static function createMinimal(
-        HeaderDefinitionInterface $definition,
+        string $fieldEnumClass,
         string $delimiter = Document::DEFAULT_DELIMITER,
         string $enclosure = FieldInterface::DEFAULT_ENCLOSURE
     ): static {
-        $instance = new static($definition, $delimiter, $enclosure);
+        $instance = new static($fieldEnumClass, $delimiter, $enclosure);
 
         // Nur Pflichtfelder setzen
-        $requiredFields = $definition->getRequiredFields();
+        /** @var FieldHeaderInterface[] $requiredFields */
+        $requiredFields = $fieldEnumClass::required();
         $rawFields = [];
         $fieldIndex = [];
 
         foreach ($requiredFields as $index => $field) {
-            $rawFields[$index] = '"' . $field->value . '"';
+            // Quoting basierend auf isQuotedHeader() des Feldes
+            $rawFields[$index] = $field->isQuotedHeader()
+                ? $enclosure . $field->value . $enclosure
+                : $field->value;
             $fieldIndex[$field->value] = $index;
         }
 
@@ -83,10 +100,12 @@ abstract class HeaderLineAbstract extends HeaderLine {
     }
 
     /**
-     * Liefert die Header-Definition.
+     * Liefert die Enum-Klasse für die Header-Felder.
+     * 
+     * @return class-string<FieldHeaderInterface>
      */
-    public function getDefinition(): HeaderDefinitionInterface {
-        return $this->definition;
+    public function getFieldEnumClass(): string {
+        return $this->fieldEnumClass;
     }
 
     /**
@@ -106,11 +125,21 @@ abstract class HeaderLineAbstract extends HeaderLine {
     }
 
     /**
-     * Validiert den Header gegen die Definition.
+     * Validiert den Header gegen den Enum.
      */
     public function validate(): void {
-        $fieldValues = array_map(fn($f) => trim($f->getValue(), '"'), $this->getFields());
-        $this->definition->validateFields($fieldValues);
+        $fieldEnumClass = $this->fieldEnumClass;
+        $requiredFields = $fieldEnumClass::required();
+        $headerFields = array_map(fn($f) => trim($f->getValue(), '"'), $this->getFields());
+
+        $requiredValues = array_map(fn($f) => $f->value, $requiredFields);
+        $missing = array_diff($requiredValues, $headerFields);
+
+        if (!empty($missing)) {
+            throw new InvalidArgumentException(
+                'Verpflichtende Felder fehlen: ' . implode(', ', $missing)
+            );
+        }
     }
 
     /**

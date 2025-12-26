@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Enums\DATEV\HeaderFields\V700;
 
 use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
+use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 
 /**
  * DATEV BookingBatch - Feldheader (Spaltenbeschreibungen) V700.
@@ -27,8 +28,8 @@ enum BookingBatchHeaderField: string implements FieldHeaderInterface {
     case SollHabenKennzeichen        = 'Soll/Haben-Kennzeichen';                    // 2
     case WKZUmsatz                   = 'WKZ Umsatz';                                // 3
     case Kurs                        = 'Kurs';                                      // 4
-    case BasisUmsatz                 = 'Basisumsatz';                               // 5
-    case WKZBasisUmsatz              = 'WKZ Basisumsatz';                           // 6
+    case BasisUmsatz                 = 'Basis-Umsatz';                             // 5
+    case WKZBasisUmsatz              = 'WKZ Basis-Umsatz';                         // 6
     case Konto                       = 'Konto';                                     // 7
     case Gegenkonto                  = 'Gegenkonto (ohne BU-Schlüssel)';            // 8
     case BUSchluessel                = 'BU-Schlüssel';                              // 9
@@ -66,12 +67,12 @@ enum BookingBatchHeaderField: string implements FieldHeaderInterface {
 
         // Spalten 37-40: Kostenrechnung
     case KOST1                       = 'KOST1 - Kostenstelle';                      // 37
-    case KOST2                       = 'KOST2 - Kostenträger';                      // 38
+    case KOST2                       = 'KOST2 - Kostenstelle';                      // 38
     case KostMenge                   = 'Kost-Menge';                                // 39
-    case EULandUStID                 = 'EU-Land u. UStID';                          // 40
+    case EULandUStID                 = 'EU-Land u. UStID (Bestimmung)';              // 40
 
         // Spalten 41-47: EU/Steuer und BU-Schlüssel
-    case EUSteuer                    = 'EU-Steuersatz';                             // 41
+    case EUSteuer                    = 'EU-Steuersatz (Bestimmung)';                 // 41
     case Abwkonto                    = 'Abw. Versteuerungsart';                     // 42
     case SachverhaltLuL              = 'Sachverhalt L+L';                           // 43
     case FunktionsergaenzungLuL      = 'Funktionsergänzung L+L';                    // 44
@@ -81,48 +82,48 @@ enum BookingBatchHeaderField: string implements FieldHeaderInterface {
 
         // Spalten 48-87: Zusatzinformationen (ZI-Felder) - Art/Inhalt-Paare
     case ZusatzInfo1                 = 'Zusatzinformation - Art 1';                 // 48
-    case ZusatzInfoInhalt1           = 'Zusatzinformation - Inhalt 1';              // 49
+    case ZusatzInfoInhalt1           = 'Zusatzinformation- Inhalt 1';              // 49
     case ZusatzInfo2                 = 'Zusatzinformation - Art 2';                 // 50
-    case ZusatzInfoInhalt2           = 'Zusatzinformation - Inhalt 2';              // 51
+    case ZusatzInfoInhalt2           = 'Zusatzinformation- Inhalt 2';              // 51
     case ZusatzInfo3                 = 'Zusatzinformation - Art 3';                 // 52
-    case ZusatzInfoInhalt3           = 'Zusatzinformation - Inhalt 3';              // 53
+    case ZusatzInfoInhalt3           = 'Zusatzinformation- Inhalt 3';              // 53
     case ZusatzInfo4                 = 'Zusatzinformation - Art 4';                 // 54
-    case ZusatzInfoInhalt4           = 'Zusatzinformation - Inhalt 4';              // 55
+    case ZusatzInfoInhalt4           = 'Zusatzinformation- Inhalt 4';              // 55
     case ZusatzInfo5                 = 'Zusatzinformation - Art 5';                 // 56
-    case ZusatzInfoInhalt5           = 'Zusatzinformation - Inhalt 5';              // 57
+    case ZusatzInfoInhalt5           = 'Zusatzinformation- Inhalt 5';              // 57
     case ZusatzInfo6                 = 'Zusatzinformation - Art 6';                 // 58
-    case ZusatzInfoInhalt6           = 'Zusatzinformation - Inhalt 6';              // 59
+    case ZusatzInfoInhalt6           = 'Zusatzinformation- Inhalt 6';              // 59
     case ZusatzInfo7                 = 'Zusatzinformation - Art 7';                 // 60
-    case ZusatzInfoInhalt7           = 'Zusatzinformation - Inhalt 7';              // 61
+    case ZusatzInfoInhalt7           = 'Zusatzinformation- Inhalt 7';              // 61
     case ZusatzInfo8                 = 'Zusatzinformation - Art 8';                 // 62
-    case ZusatzInfoInhalt8           = 'Zusatzinformation - Inhalt 8';              // 63
+    case ZusatzInfoInhalt8           = 'Zusatzinformation- Inhalt 8';              // 63
     case ZusatzInfo9                 = 'Zusatzinformation - Art 9';                 // 64
-    case ZusatzInfoInhalt9           = 'Zusatzinformation - Inhalt 9';              // 65
+    case ZusatzInfoInhalt9           = 'Zusatzinformation- Inhalt 9';              // 65
     case ZusatzInfo10                = 'Zusatzinformation - Art 10';                // 66
-    case ZusatzInfoInhalt10          = 'Zusatzinformation - Inhalt 10';             // 67
+    case ZusatzInfoInhalt10          = 'Zusatzinformation- Inhalt 10';             // 67
     case ZusatzInfo11                = 'Zusatzinformation - Art 11';                // 68
-    case ZusatzInfoInhalt11          = 'Zusatzinformation - Inhalt 11';             // 69
+    case ZusatzInfoInhalt11          = 'Zusatzinformation- Inhalt 11';             // 69
     case ZusatzInfo12                = 'Zusatzinformation - Art 12';                // 70
-    case ZusatzInfoInhalt12          = 'Zusatzinformation - Inhalt 12';             // 71
+    case ZusatzInfoInhalt12          = 'Zusatzinformation- Inhalt 12';             // 71
     case ZusatzInfo13                = 'Zusatzinformation - Art 13';                // 72
-    case ZusatzInfoInhalt13          = 'Zusatzinformation - Inhalt 13';             // 73
+    case ZusatzInfoInhalt13          = 'Zusatzinformation- Inhalt 13';             // 73
     case ZusatzInfo14                = 'Zusatzinformation - Art 14';                // 74
-    case ZusatzInfoInhalt14          = 'Zusatzinformation - Inhalt 14';             // 75
+    case ZusatzInfoInhalt14          = 'Zusatzinformation- Inhalt 14';             // 75
     case ZusatzInfo15                = 'Zusatzinformation - Art 15';                // 76
-    case ZusatzInfoInhalt15          = 'Zusatzinformation - Inhalt 15';             // 77
+    case ZusatzInfoInhalt15          = 'Zusatzinformation- Inhalt 15';             // 77
     case ZusatzInfo16                = 'Zusatzinformation - Art 16';                // 78
-    case ZusatzInfoInhalt16          = 'Zusatzinformation - Inhalt 16';             // 79
+    case ZusatzInfoInhalt16          = 'Zusatzinformation- Inhalt 16';             // 79
     case ZusatzInfo17                = 'Zusatzinformation - Art 17';                // 80
-    case ZusatzInfoInhalt17          = 'Zusatzinformation - Inhalt 17';             // 81
+    case ZusatzInfoInhalt17          = 'Zusatzinformation- Inhalt 17';             // 81
     case ZusatzInfo18                = 'Zusatzinformation - Art 18';                // 82
-    case ZusatzInfoInhalt18          = 'Zusatzinformation - Inhalt 18';             // 83
+    case ZusatzInfoInhalt18          = 'Zusatzinformation- Inhalt 18';             // 83
     case ZusatzInfo19                = 'Zusatzinformation - Art 19';                // 84
-    case ZusatzInfoInhalt19          = 'Zusatzinformation - Inhalt 19';             // 85
+    case ZusatzInfoInhalt19          = 'Zusatzinformation- Inhalt 19';             // 85
     case ZusatzInfo20                = 'Zusatzinformation - Art 20';                // 86
-    case ZusatzInfoInhalt20          = 'Zusatzinformation - Inhalt 20';             // 87
+    case ZusatzInfoInhalt20          = 'Zusatzinformation- Inhalt 20';             // 87
 
         // Spalten 88-99: Stückzahl, Gewicht und weitere Felder
-    case Stueck                      = 'Stückzahl';                                 // 88
+    case Stueck                      = 'Stück';                                     // 88
     case Gewicht                     = 'Gewicht';                                   // 89
     case Zahlweise                   = 'Zahlweise';                                 // 90
     case Forderungsart               = 'Forderungsart';                             // 91
@@ -132,14 +133,14 @@ enum BookingBatchHeaderField: string implements FieldHeaderInterface {
     case Auftragsnummer              = 'Auftragsnummer';                            // 95
     case Buchungstyp                 = 'Buchungstyp';                               // 96
     case UStSchluessel               = 'USt-Schlüssel (Anzahlungen)';               // 97
-    case EUMitgliedstaatAnzahlung    = 'EU-Mitgliedstaat (Anzahlungen)';            // 98
+    case EUMitgliedstaatAnzahlung    = 'EU-Land (Anzahlungen)';                      // 98
     case SachverhaltLL               = 'Sachverhalt L+L (Anzahlungen)';             // 99
 
         // Spalten 100-109: EU-Herkunft und Mahnung/Sperrung
     case EUSteuersatzAnzahlung       = 'EU-Steuersatz (Anzahlungen)';               // 100
     case ErloeskontoAnzahlung        = 'Erlöskonto (Anzahlungen)';                  // 101
     case HerkunftKZ                  = 'Herkunft-Kz';                               // 102
-    case Leerfeld                    = 'Leerfeld';                                  // 103
+    case Leerfeld                    = 'Buchungs GUID';                              // 103
     case KOSTDatum                   = 'KOST-Datum';                                // 104
     case SEPAMandatsreferenz         = 'SEPA-Mandatsreferenz';                      // 105
     case Skontosperre                = 'Skontosperre';                              // 106
@@ -156,14 +157,14 @@ enum BookingBatchHeaderField: string implements FieldHeaderInterface {
     case Leistungsdatum              = 'Leistungsdatum';                            // 115
     case DatumZuordnungSteuerperiode = 'Datum Zuord. Steuerperiode';                // 116
     case Faelligkeit                 = 'Fälligkeit';                                // 117
-    case Generalumkehr               = 'Generalumkehr';                             // 118
+    case Generalumkehr               = 'Generalumkehr (GU)';                         // 118
     case Steuersatz                  = 'Steuersatz';                                // 119
 
         // Spalten 120-125: Weitere Felder
     case Land                        = 'Land';                                      // 120
     case Abrechnungsreferenz         = 'Abrechnungsreferenz';                       // 121
-    case BVVPosition                 = 'BVV-Position (Betriebsvermögensvergleich)'; // 122
-    case EUMitgliedstaatUstID        = 'EU-Mitgliedstaat u. UStID (Ursprung)';      // 123
+    case BVVPosition                 = 'BVV-Position';                               // 122
+    case EUMitgliedstaatUstID        = 'EU-Land u. UStID (Ursprung)';                // 123
     case EUSteuersatzUrsprung        = 'EU-Steuersatz (Ursprung)';                  // 124
     case AbwSkontokonto              = 'Abw. Skontokonto';                          // 125
 
@@ -782,5 +783,59 @@ enum BookingBatchHeaderField: string implements FieldHeaderInterface {
     public function getPosition(): int {
         $ordered = self::ordered();
         return array_search($this, $ordered, true) ?: 0;
+    }
+
+    /**
+     * Liefert die DATEV-Kategorie für dieses Header-Format.
+     */
+    public static function getCategory(): Category {
+        return Category::Buchungsstapel;
+    }
+
+    /**
+     * Liefert die DATEV-Version für dieses Header-Format.
+     */
+    public static function getVersion(): int {
+        return 700;
+    }
+
+    /**
+     * Liefert die Anzahl der definierten Felder.
+     */
+    public static function getFieldCount(): int {
+        return count(self::ordered());
+    }
+
+    /**
+     * Prüft, ob ein Feldwert gültig ist (im Enum enthalten).
+     */
+    public static function isValidFieldValue(string $value): bool {
+        foreach (self::cases() as $case) {
+            if ($case->value === $value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gibt an, ob das Feld im FieldHeader gequotet werden soll.
+     * DATEV FieldHeader sind standardmäßig nicht gequotet.
+     */
+    public function isQuotedHeader(): bool {
+        return false;
+    }
+
+    /**
+     * Gibt an, ob Datenwerte für dieses Feld gequotet werden sollen.
+     * Basierend auf dem Validierungspattern: Pattern mit ^["]... oder ^(["... = gequotet
+     */
+    public function isQuotedValue(): bool {
+        $pattern = $this->getValidationPattern();
+        if ($pattern === null) {
+            return true; // Default: gequotet (sicherer für Text)
+        }
+        // Prüfe ob Pattern mit Anführungszeichen beginnt
+        return (bool) preg_match('/^\^(\(?\[?"|\(?")/u', $pattern);
     }
 }

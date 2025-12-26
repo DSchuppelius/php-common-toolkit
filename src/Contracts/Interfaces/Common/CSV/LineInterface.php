@@ -13,6 +13,7 @@ namespace CommonToolkit\Contracts\Interfaces\Common\CSV;
 interface LineInterface {
     public const DEFAULT_DELIMITER = ',';
 
+    /** @return FieldInterface[] */
     public function getFields(): array;
     public function getField(int $index): ?FieldInterface;
     public function countFields(): int;

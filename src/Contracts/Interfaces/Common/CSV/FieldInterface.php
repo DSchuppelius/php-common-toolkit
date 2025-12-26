@@ -10,14 +10,14 @@
 
 namespace CommonToolkit\Contracts\Interfaces\Common\CSV;
 
-use DateTimeImmutable;
-
 interface FieldInterface {
     public const DEFAULT_ENCLOSURE = '"';
 
     public function getValue(): string;
     public function getTypedValue(): mixed;
     public function getRaw(): ?string;
+
+    public function setValue(string $value): void;
 
     public function isQuoted(): bool;
     public function getEnclosureRepeat(): int;

@@ -13,72 +13,89 @@ declare(strict_types=1);
 namespace CommonToolkit\Enums\DATEV\HeaderFields\V700;
 
 use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
+use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 
 /**
  * DATEV Zahlungsbedingungen (Payment Terms) - Feldheader V700.
- * Vollständige Implementierung aller 23 DATEV-Felder für Zahlungsbedingungen
- * basierend auf der offiziellen DATEV-Spezifikation.
- * 
+ * Vollständige Implementierung aller 31 DATEV-Felder für Zahlungsbedingungen
+ * basierend auf der offiziellen DATEV-Spezifikation (Formatversion 2).
+ *
  * @see https://developer.datev.de/de/file-format/details/datev-format/format-description/payment-terms
  */
 enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
     // Spalten 1-10: Grunddaten der Zahlungsbedingung
-    case Zahlungsbedingung              = 'Zahlungsbedingung';                     // 1
+    case Nummer                         = 'Nummer';                                // 1
     case Bezeichnung                    = 'Bezeichnung';                           // 2
-    case ZielTage                       = 'Ziel Tage';                             // 3
-    case SkontoProzent1                 = 'Skonto % 1';                            // 4
-    case SkontoTage1                    = 'Skonto Tage 1';                         // 5
-    case SkontoProzent2                 = 'Skonto % 2';                            // 6
-    case SkontoTage2                    = 'Skonto Tage 2';                         // 7
-    case SkontoProzent3                 = 'Skonto % 3';                            // 8
-    case SkontoTage3                    = 'Skonto Tage 3';                         // 9
-    case SkontoProzent4                 = 'Skonto % 4';                            // 10
+    case Faelligkeitstyp                = 'Fälligkeitstyp';                        // 3
+    case Skonto1Prozent                 = 'Skonto 1%';                             // 4
+    case Skonto1Tage                    = 'Skonto 1 Tage';                         // 5
+    case Skonto2Prozent                 = 'Skonto 2 %';                            // 6
+    case Skonto2Tage                    = 'Skonto 2 Tage';                         // 7
+    case FaelligTage                    = 'Fällig Tage';                           // 8
+    case RechnungBisZeitraum1           = 'Rechnung bis / Zeitraum 1';             // 9
+    case Skonto1DatumZeitraum1          = 'Skonto1 Datum / Zeitraum 1';            // 10
 
-        // Spalten 11-20: Weitere Skonto-Stufen und Zahlungsdetails
-    case SkontoTage4                    = 'Skonto Tage 4';                         // 11
-    case SkontoProzent5                 = 'Skonto % 5';                            // 12
-    case SkontoTage5                    = 'Skonto Tage 5';                         // 13
-    case Mindestbetrag                  = 'Mindestbetrag';                         // 14
-    case Hoechstbetrag                  = 'Höchstbetrag';                          // 15
-    case Zahlungsart                    = 'Zahlungsart';                           // 16
-    case Basistage                      = 'Basistage';                             // 17
-    case BasisMonatsende                = 'Basis Monatsende';                      // 18
-    case Feiertage                      = 'Feiertage';                             // 19
-    case Samstag                        = 'Samstag';                               // 20
+        // Spalten 11-20: Zeitraum 1 + 2 Felder
+    case Skonto1MonatZeitraum1          = 'Skonto 1 Monat / Zeitraum 1';           // 11
+    case Skonto2DatumZeitraum1          = 'Skonto 2 Datum / Zeitraum 1';           // 12
+    case Skonto2MonatZeitraum1          = 'Skonto 2 Monat / Zeitraum 1';           // 13
+    case FaelligDatumZeitraum1          = 'Fällig Datum / Zeitraum 1';             // 14
+    case FaelligMonatZeitraum1          = 'Fällig Monat / Zeitraum 1';             // 15
+    case RechnungBisZeitraum2           = 'Rechnung bis / Zeitraum 2';             // 16
+    case Skonto1DatumZeitraum2          = 'Skonto1 Datum / Zeitraum 2';            // 17
+    case Skonto1MonatZeitraum2          = 'Skonto 1 Monat / Zeitraum 2';           // 18
+    case Skonto2DatumZeitraum2          = 'Skonto 2 Datum / Zeitraum 2';           // 19
+    case Skonto2MonatZeitraum2          = 'Skonto 2 Monat / Zeitraum 2';           // 20
 
-        // Spalten 21-23: Sonntag und Zusatzfelder
-    case Sonntag                        = 'Sonntag';                               // 21
-    case Leerfeld1                      = 'Leerfeld 1';                            // 22
-    case Leerfeld2                      = 'Leerfeld 2';                            // 23
+        // Spalten 21-31: Zeitraum 2 + 3 Felder und Sonstiges
+    case FaelligDatumZeitraum2          = 'Fällig Datum / Zeitraum 2';             // 21
+    case FaelligMonatZeitraum2          = 'Fällig Monat / Zeitraum 2';             // 22
+    case RechnungBisZeitraum3           = 'Rechnung bis / Zeitraum 3';             // 23
+    case Skonto1DatumZeitraum3          = 'Skonto1 Datum / Zeitraum 3';            // 24
+    case Skonto1MonatZeitraum3          = 'Skonto1 Monat / Zeitraum 3';            // 25
+    case Skonto2DatumZeitraum3          = 'Skonto 2 Datum / Zeitraum 3';           // 26
+    case Skonto2MonatZeitraum3          = 'Skonto 2 Monat / Zeitraum 3';           // 27
+    case FaelligDatumZeitraum3          = 'Fällig Datum / Zeitraum 3';             // 28
+    case FaelligMonatZeitraum3          = 'Fällig Monat / Zeitraum 3';             // 29
+    case Leerfeld                       = 'Leerfeld';                              // 30
+    case Verwendung                     = 'Verwendung';                            // 31
 
     /**
-     * Liefert alle 23 Felder in der korrekten DATEV-Reihenfolge.
+     * Liefert alle 31 Felder in der korrekten DATEV-Reihenfolge.
      */
     public static function ordered(): array {
         return [
-            self::Zahlungsbedingung,          // 1
+            self::Nummer,                     // 1
             self::Bezeichnung,                // 2
-            self::ZielTage,                   // 3
-            self::SkontoProzent1,             // 4
-            self::SkontoTage1,                // 5
-            self::SkontoProzent2,             // 6
-            self::SkontoTage2,                // 7
-            self::SkontoProzent3,             // 8
-            self::SkontoTage3,                // 9
-            self::SkontoProzent4,             // 10
-            self::SkontoTage4,                // 11
-            self::SkontoProzent5,             // 12
-            self::SkontoTage5,                // 13
-            self::Mindestbetrag,              // 14
-            self::Hoechstbetrag,              // 15
-            self::Zahlungsart,                // 16
-            self::Basistage,                  // 17
-            self::BasisMonatsende,            // 18
-            self::Feiertage,                  // 19
-            self::Samstag,                    // 20
-            self::Sonntag,                    // 21
-            self::Leerfeld1,                  // 22
-            self::Leerfeld2,                  // 23
+            self::Faelligkeitstyp,            // 3
+            self::Skonto1Prozent,             // 4
+            self::Skonto1Tage,                // 5
+            self::Skonto2Prozent,             // 6
+            self::Skonto2Tage,                // 7
+            self::FaelligTage,                // 8
+            self::RechnungBisZeitraum1,       // 9
+            self::Skonto1DatumZeitraum1,      // 10
+            self::Skonto1MonatZeitraum1,      // 11
+            self::Skonto2DatumZeitraum1,      // 12
+            self::Skonto2MonatZeitraum1,      // 13
+            self::FaelligDatumZeitraum1,      // 14
+            self::FaelligMonatZeitraum1,      // 15
+            self::RechnungBisZeitraum2,       // 16
+            self::Skonto1DatumZeitraum2,      // 17
+            self::Skonto1MonatZeitraum2,      // 18
+            self::Skonto2DatumZeitraum2,      // 19
+            self::Skonto2MonatZeitraum2,      // 20
+            self::FaelligDatumZeitraum2,      // 21
+            self::FaelligMonatZeitraum2,      // 22
+            self::RechnungBisZeitraum3,       // 23
+            self::Skonto1DatumZeitraum3,      // 24
+            self::Skonto1MonatZeitraum3,      // 25
+            self::Skonto2DatumZeitraum3,      // 26
+            self::Skonto2MonatZeitraum3,      // 27
+            self::FaelligDatumZeitraum3,      // 28
+            self::FaelligMonatZeitraum3,      // 29
+            self::Leerfeld,                   // 30
+            self::Verwendung,                 // 31
         ];
     }
 
@@ -87,9 +104,9 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
      */
     public static function required(): array {
         return [
-            self::Zahlungsbedingung,          // Pflichtfeld: Eindeutige Nummer
+            self::Nummer,                     // Pflichtfeld: Eindeutige Nummer
             self::Bezeichnung,                // Pflichtfeld: Beschreibung der Zahlungsbedingung
-            self::ZielTage,                   // Pflichtfeld: Zahlungsziel in Tagen
+            self::Faelligkeitstyp,            // Pflichtfeld: Art der Fälligkeit
         ];
     }
 
@@ -105,16 +122,20 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
      */
     public function getDataType(): string {
         return match ($this) {
-            self::Zahlungsbedingung, self::ZielTage,
-            self::SkontoTage1, self::SkontoTage2, self::SkontoTage3, self::SkontoTage4, self::SkontoTage5,
-            self::Zahlungsart, self::Basistage, self::BasisMonatsende,
-            self::Feiertage, self::Samstag, self::Sonntag => 'integer',
+            self::Nummer, self::Faelligkeitstyp,
+            self::Skonto1Tage, self::Skonto2Tage, self::FaelligTage,
+            self::RechnungBisZeitraum1, self::RechnungBisZeitraum2, self::RechnungBisZeitraum3,
+            self::Skonto1DatumZeitraum1, self::Skonto1DatumZeitraum2, self::Skonto1DatumZeitraum3,
+            self::Skonto1MonatZeitraum1, self::Skonto1MonatZeitraum2, self::Skonto1MonatZeitraum3,
+            self::Skonto2DatumZeitraum1, self::Skonto2DatumZeitraum2, self::Skonto2DatumZeitraum3,
+            self::Skonto2MonatZeitraum1, self::Skonto2MonatZeitraum2, self::Skonto2MonatZeitraum3,
+            self::FaelligDatumZeitraum1, self::FaelligDatumZeitraum2, self::FaelligDatumZeitraum3,
+            self::FaelligMonatZeitraum1, self::FaelligMonatZeitraum2, self::FaelligMonatZeitraum3,
+            self::Verwendung => 'integer',
 
-            self::SkontoProzent1, self::SkontoProzent2, self::SkontoProzent3,
-            self::SkontoProzent4, self::SkontoProzent5,
-            self::Mindestbetrag, self::Hoechstbetrag => 'decimal',
+            self::Skonto1Prozent, self::Skonto2Prozent => 'decimal',
 
-            self::Bezeichnung, self::Leerfeld1, self::Leerfeld2 => 'string',
+            self::Bezeichnung, self::Leerfeld => 'string',
         };
     }
 
@@ -123,18 +144,20 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
      */
     public function getMaxLength(): ?int {
         return match ($this) {
-            self::Zahlungsbedingung => 3,         // Max. 999 Zahlungsbedingungen
-            self::Bezeichnung => 40,              // Bezeichnung max. 40 Zeichen
-            self::ZielTage, self::SkontoTage1, self::SkontoTage2,
-            self::SkontoTage3, self::SkontoTage4, self::SkontoTage5 => 3,  // Max. 999 Tage
-            self::SkontoProzent1, self::SkontoProzent2, self::SkontoProzent3,
-            self::SkontoProzent4, self::SkontoProzent5 => 6,      // xx.xx% Format
-            self::Mindestbetrag, self::Hoechstbetrag => 12,       // Betrag mit 2 Nachkommastellen
-            self::Zahlungsart => 1,                               // 1-9 Zahlungsarten
-            self::Basistage => 2,                                 // 1-31 Tage
-            self::BasisMonatsende, self::Feiertage,
-            self::Samstag, self::Sonntag => 1,                    // 0/1 Boolean
-            self::Leerfeld1, self::Leerfeld2 => null,            // Leerfelder ohne Längenbeschränkung
+            self::Nummer => 4,                            // Max. 9999 Zahlungsbedingungen
+            self::Bezeichnung => 60,                      // Bezeichnung max. 60 Zeichen
+            self::Faelligkeitstyp => 1,                   // 0-9 Fälligkeitstypen
+            self::Skonto1Prozent, self::Skonto2Prozent => 6,  // xx.xx% Format
+            self::Skonto1Tage, self::Skonto2Tage, self::FaelligTage => 3,  // Max. 999 Tage
+            self::RechnungBisZeitraum1, self::RechnungBisZeitraum2, self::RechnungBisZeitraum3,
+            self::Skonto1DatumZeitraum1, self::Skonto1DatumZeitraum2, self::Skonto1DatumZeitraum3,
+            self::Skonto2DatumZeitraum1, self::Skonto2DatumZeitraum2, self::Skonto2DatumZeitraum3,
+            self::FaelligDatumZeitraum1, self::FaelligDatumZeitraum2, self::FaelligDatumZeitraum3 => 2,  // 1-31 Tag
+            self::Skonto1MonatZeitraum1, self::Skonto1MonatZeitraum2, self::Skonto1MonatZeitraum3,
+            self::Skonto2MonatZeitraum1, self::Skonto2MonatZeitraum2, self::Skonto2MonatZeitraum3,
+            self::FaelligMonatZeitraum1, self::FaelligMonatZeitraum2, self::FaelligMonatZeitraum3 => 2,  // 0-12 Monate
+            self::Leerfeld => null,                       // Leerfeld ohne Längenbeschränkung
+            self::Verwendung => 1,                        // 0/1 Boolean
         };
     }
 
@@ -143,70 +166,57 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
      */
     public function getValidationPattern(): ?string {
         return match ($this) {
-            // Zahlungsbedingungsnummer: 1-999
-            self::Zahlungsbedingung => '^[1-9]\d{0,2}$',
+            // Nummer: 1-9999
+            self::Nummer => '^\d{1,4}$',
 
-            // Bezeichnung: Pflichtfeld, maximal 40 Zeichen
-            self::Bezeichnung => '^"(.){1,40}"$',
+            // Bezeichnung: Pflichtfeld, maximal 60 Zeichen
+            self::Bezeichnung => '^"(.){1,60}"$',
 
-            // Zieltage: 0-999 Tage
-            self::ZielTage => '^\d{1,3}$',
+            // Fälligkeitstyp: 0-9
+            self::Faelligkeitstyp => '^\d$',
 
             // Skonto-Prozentsätze: 0.00-99.99%
-            self::SkontoProzent1, self::SkontoProzent2, self::SkontoProzent3,
-            self::SkontoProzent4, self::SkontoProzent5 => '^(\d{1,2}[\,\.]\d{2})$',
+            self::Skonto1Prozent, self::Skonto2Prozent => '^(\d{1,4})$',
 
-            // Skonto-Tage: 0-999 Tage
-            self::SkontoTage1, self::SkontoTage2, self::SkontoTage3,
-            self::SkontoTage4, self::SkontoTage5 => '^\d{0,3}$',
+            // Tage-Felder: 0-999 Tage
+            self::Skonto1Tage, self::Skonto2Tage, self::FaelligTage => '^\d{0,3}$',
 
-            // Mindest-/Höchstbetrag: Beträge mit 2 Nachkommastellen
-            self::Mindestbetrag, self::Hoechstbetrag => '^(\d{1,10}[\,\.]\d{2})$',
+            // Datum-Felder (Tag des Monats): 1-31 oder leer
+            self::RechnungBisZeitraum1, self::RechnungBisZeitraum2, self::RechnungBisZeitraum3,
+            self::Skonto1DatumZeitraum1, self::Skonto1DatumZeitraum2, self::Skonto1DatumZeitraum3,
+            self::Skonto2DatumZeitraum1, self::Skonto2DatumZeitraum2, self::Skonto2DatumZeitraum3,
+            self::FaelligDatumZeitraum1, self::FaelligDatumZeitraum2, self::FaelligDatumZeitraum3 => '^\d{0,2}$',
 
-            // Zahlungsart: 1=Bar, 2=Überweisung, 3=Lastschrift, etc.
-            self::Zahlungsart => '^[1-9]$',
+            // Monat-Felder: 0-12 oder leer
+            self::Skonto1MonatZeitraum1, self::Skonto1MonatZeitraum2, self::Skonto1MonatZeitraum3,
+            self::Skonto2MonatZeitraum1, self::Skonto2MonatZeitraum2, self::Skonto2MonatZeitraum3,
+            self::FaelligMonatZeitraum1, self::FaelligMonatZeitraum2, self::FaelligMonatZeitraum3 => '^\d{0,2}$',
 
-            // Basistage: 1-31 (Tage im Monat)
-            self::Basistage => '^([1-9]|[12]\d|3[01])$',
+            // Leerfeld: keine Validierung
+            self::Leerfeld => null,
 
-            // Boolean-Felder: 0=Nein, 1=Ja
-            self::BasisMonatsende, self::Feiertage,
-            self::Samstag, self::Sonntag => '^[01]$',
-
-            // Leerfelder haben keine Validierung
-            self::Leerfeld1, self::Leerfeld2 => null,
+            // Verwendung: 0/1
+            self::Verwendung => '^\d$',
         };
     }
 
     /**
-     * Liefert die unterstützten Zahlungsarten.
+     * Liefert die unterstützten Fälligkeitstypen.
      */
-    public static function getSupportedPaymentTypes(): array {
+    public static function getSupportedDueTypes(): array {
         return [
-            1 => 'Barzahlung',
-            2 => 'Überweisung',
-            3 => 'Lastschrift',
-            4 => 'Scheck',
-            5 => 'Kreditkarte',
-            6 => 'Wechsel',
-            7 => 'Verrechnung',
-            8 => 'Einzug',
-            9 => 'Sonstige',
+            0 => 'Keine Fälligkeit',
+            1 => 'Tage nach Rechnungsdatum',
+            2 => 'Fester Tag im Monat',
+            3 => 'Zeitraum-basiert',
         ];
     }
 
     /**
-     * Prüft, ob eine Zahlungsart gültig ist.
+     * Prüft, ob ein Fälligkeitstyp gültig ist.
      */
-    public static function isValidPaymentType(int $paymentType): bool {
-        return array_key_exists($paymentType, self::getSupportedPaymentTypes());
-    }
-
-    /**
-     * Liefert die Beschreibung einer Zahlungsart.
-     */
-    public static function getPaymentTypeDescription(int $paymentType): ?string {
-        return self::getSupportedPaymentTypes()[$paymentType] ?? null;
+    public static function isValidDueType(int $dueType): bool {
+        return array_key_exists($dueType, self::getSupportedDueTypes());
     }
 
     /**
@@ -214,11 +224,8 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
      */
     public function isPercentageField(): bool {
         return in_array($this, [
-            self::SkontoProzent1,
-            self::SkontoProzent2,
-            self::SkontoProzent3,
-            self::SkontoProzent4,
-            self::SkontoProzent5
+            self::Skonto1Prozent,
+            self::Skonto2Prozent,
         ]);
     }
 
@@ -227,33 +234,47 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
      */
     public function isDaysField(): bool {
         return in_array($this, [
-            self::ZielTage,
-            self::SkontoTage1,
-            self::SkontoTage2,
-            self::SkontoTage3,
-            self::SkontoTage4,
-            self::SkontoTage5,
-            self::Basistage
+            self::Skonto1Tage,
+            self::Skonto2Tage,
+            self::FaelligTage,
         ]);
     }
 
     /**
-     * Prüft, ob ein Feld ein Boolean-Feld ist.
+     * Prüft, ob ein Feld ein Datum-Feld (Tag des Monats) ist.
      */
-    public function isBooleanField(): bool {
+    public function isDateField(): bool {
         return in_array($this, [
-            self::BasisMonatsende,
-            self::Feiertage,
-            self::Samstag,
-            self::Sonntag
+            self::RechnungBisZeitraum1,
+            self::RechnungBisZeitraum2,
+            self::RechnungBisZeitraum3,
+            self::Skonto1DatumZeitraum1,
+            self::Skonto1DatumZeitraum2,
+            self::Skonto1DatumZeitraum3,
+            self::Skonto2DatumZeitraum1,
+            self::Skonto2DatumZeitraum2,
+            self::Skonto2DatumZeitraum3,
+            self::FaelligDatumZeitraum1,
+            self::FaelligDatumZeitraum2,
+            self::FaelligDatumZeitraum3,
         ]);
     }
 
     /**
-     * Prüft, ob ein Feld ein Betrag-Feld ist.
+     * Prüft, ob ein Feld ein Monat-Feld ist.
      */
-    public function isAmountField(): bool {
-        return in_array($this, [self::Mindestbetrag, self::Hoechstbetrag]);
+    public function isMonthField(): bool {
+        return in_array($this, [
+            self::Skonto1MonatZeitraum1,
+            self::Skonto1MonatZeitraum2,
+            self::Skonto1MonatZeitraum3,
+            self::Skonto2MonatZeitraum1,
+            self::Skonto2MonatZeitraum2,
+            self::Skonto2MonatZeitraum3,
+            self::FaelligMonatZeitraum1,
+            self::FaelligMonatZeitraum2,
+            self::FaelligMonatZeitraum3,
+        ]);
     }
 
     /**
@@ -261,5 +282,59 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
      */
     public function isRequired(): bool {
         return in_array($this, self::required());
+    }
+
+    /**
+     * Liefert die DATEV-Kategorie für dieses Header-Format.
+     */
+    public static function getCategory(): Category {
+        return Category::Zahlungsbedingungen;
+    }
+
+    /**
+     * Liefert die DATEV-Version für dieses Header-Format.
+     */
+    public static function getVersion(): int {
+        return 700;
+    }
+
+    /**
+     * Liefert die Anzahl der definierten Felder.
+     */
+    public static function getFieldCount(): int {
+        return count(self::ordered());
+    }
+
+    /**
+     * Prüft, ob ein Feldwert gültig ist (im Enum enthalten).
+     */
+    public static function isValidFieldValue(string $value): bool {
+        foreach (self::cases() as $case) {
+            if ($case->value === $value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gibt an, ob der FieldHeader (Spaltenüberschrift) in Anführungszeichen gesetzt wird.
+     * DATEV-FieldHeaders werden NICHT gequoted.
+     */
+    public function isQuotedHeader(): bool {
+        return false;
+    }
+
+    /**
+     * Gibt an, ob der Feldwert in Anführungszeichen gesetzt wird.
+     * Basierend auf dem Validierungspattern: Pattern mit ^"... = gequotet
+     */
+    public function isQuotedValue(): bool {
+        $pattern = $this->getValidationPattern();
+        if ($pattern === null) {
+            return true; // Default: gequotet (sicherer für Text)
+        }
+        // Prüfe ob Pattern mit Anführungszeichen beginnt
+        return (bool) preg_match('/^\^(\(?\[?"|\(?")/u', $pattern);
     }
 }

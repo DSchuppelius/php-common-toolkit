@@ -174,6 +174,22 @@ class CSVDocumentBuilder {
     }
 
     /**
+     * Aktiviert/Deaktiviert Padding für feste Spaltenbreiten.
+     *
+     * @param bool $enable Padding aktivieren
+     * @param string $char Padding-Zeichen (Standard: Leerzeichen)
+     * @param int $type Padding-Richtung (STR_PAD_RIGHT, STR_PAD_LEFT, STR_PAD_BOTH)
+     * @return $this
+     */
+    public function setPadding(bool $enable, string $char = ' ', int $type = STR_PAD_RIGHT): self {
+        if ($this->columnWidthConfig === null) {
+            $this->columnWidthConfig = new ColumnWidthConfig();
+        }
+        $this->columnWidthConfig->setPadding($enable, $char, $type);
+        return $this;
+    }
+
+    /**
      * Sortiert die Spalten der CSV-Datei neu.
      * @param string[] $newOrder
      * @return $this
@@ -210,7 +226,7 @@ class CSVDocumentBuilder {
                 fn($name) => $fields[$headerMap[$name]],
                 $newOrder
             );
-            $newRows[] = new DataLine($reorderedFields, $this->delimiter, $this->enclosure, $this->header);
+            $newRows[] = new DataLine($reorderedFields, $this->delimiter, $this->enclosure);
         }
         $this->rows = $newRows;
 

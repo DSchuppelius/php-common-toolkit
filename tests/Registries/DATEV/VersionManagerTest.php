@@ -175,7 +175,7 @@ final class VersionManagerTest extends BaseTestCase {
                 $this->assertArrayHasKey('version', $info, 'Version-Info muss version Key haben');
                 $this->assertArrayHasKey('path', $info, 'Version-Info muss path Key haben');
                 $this->assertArrayHasKey('metaHeaderClass', $info, 'Version-Info muss metaHeaderClass Key haben');
-                $this->assertArrayHasKey('formatDefinitions', $info, 'Version-Info muss formatDefinitions Key haben');
+                $this->assertArrayHasKey('formatEnums', $info, 'Version-Info muss formatEnums Key haben');
                 $this->assertArrayHasKey('formatCount', $info, 'Version-Info muss formatCount Key haben');
 
                 // Wenn unterstützt, sollte MetaHeader-Klasse vorhanden sein

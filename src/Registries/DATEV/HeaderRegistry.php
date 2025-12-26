@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Registries\DATEV;
 
-use CommonToolkit\Contracts\Interfaces\DATEV\{HeaderDefinitionInterface, MetaHeaderDefinitionInterface};
+use CommonToolkit\Contracts\Interfaces\DATEV\{FieldHeaderInterface, MetaHeaderDefinitionInterface};
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use RuntimeException;
@@ -21,14 +21,14 @@ use RuntimeException;
  * Zentrale Registry für DATEV-Header-Definitionen.
  * Nutzt das VersionDiscovery-System zur automatischen Erkennung verfügbarer Versionen.
  * 
+ * Die Format-Definitionen sind jetzt direkt über die HeaderField-Enums verfügbar,
+ * die FieldHeaderInterface implementieren.
+ * 
  * @see VersionDiscovery Für automatische Versionserkennung
  */
 final class HeaderRegistry {
     /** @var array<int, MetaHeaderDefinitionInterface> */
     private static array $metaHeaderInstances = [];
-
-    /** @var array<string, HeaderDefinitionInterface> */
-    private static array $formatDefinitionInstances = [];
 
 
     /**
@@ -53,28 +53,35 @@ final class HeaderRegistry {
     }
 
     /**
-     * Liefert die Format-spezifische Header-Definition für eine Kategorie und Version (dynamisch).
+     * Liefert den Format-Enum für eine Kategorie und Version.
+     * 
+     * @return class-string<FieldHeaderInterface>
      */
-    public static function getFormatDefinition(Category $category, int $version): HeaderDefinitionInterface {
+    public static function getFormatEnum(Category $category, int $version): string {
         if (!VersionDiscovery::isFormatSupported($category, $version)) {
             throw new RuntimeException(
                 "Format '{$category->nameValue()}' wird in Version {$version} nicht unterstützt."
             );
         }
 
-        // Singleton-Pattern für Format-Definitionen
-        $cacheKey = "{$version}_{$category->value}";
-        if (!isset(self::$formatDefinitionInstances[$cacheKey])) {
-            $class = VersionDiscovery::getFormatDefinition($category, $version);
-            if (!$class) {
-                throw new RuntimeException(
-                    "Keine Format-Definition für '{$category->nameValue()}' Version {$version} gefunden."
-                );
-            }
-            self::$formatDefinitionInstances[$cacheKey] = new $class();
+        $enumClass = VersionDiscovery::getFormatEnum($category, $version);
+        if (!$enumClass) {
+            throw new RuntimeException(
+                "Kein Format-Enum für '{$category->nameValue()}' Version {$version} gefunden."
+            );
         }
 
-        return self::$formatDefinitionInstances[$cacheKey];
+        return $enumClass;
+    }
+
+    /**
+     * Alias für getFormatEnum für Abwärtskompatibilität.
+     * @deprecated Use getFormatEnum() instead
+     * 
+     * @return class-string<FieldHeaderInterface>
+     */
+    public static function getFormatDefinition(Category $category, int $version): string {
+        return self::getFormatEnum($category, $version);
     }
 
     /**
@@ -185,7 +192,7 @@ final class HeaderRegistry {
     /**
      * Gibt detaillierte Informationen über alle erkannten Versionen zurück.
      * 
-     * @return array<int, array{version: int, path: string, metaHeaderClass: ?string, formatDefinitions: array<int, string>, formatCount: int}>
+     * @return array<int, array{version: int, path: string, metaHeaderClass: ?string, formatEnums: array<int, class-string<FieldHeaderInterface>>, formatCount: int}>
      */
     public static function getVersionDetails(): array {
         return VersionDiscovery::getVersionDetails();
@@ -213,6 +220,5 @@ final class HeaderRegistry {
      */
     public static function clearCache(): void {
         self::$metaHeaderInstances = [];
-        self::$formatDefinitionInstances = [];
     }
 }

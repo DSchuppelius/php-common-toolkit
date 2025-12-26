@@ -10,7 +10,11 @@
 
 namespace CommonToolkit\Entities\Common\CSV;
 
-use CommonToolkit\Contracts\Abstracts\Common\CSV\DataFieldAbstract;
+use CommonToolkit\Contracts\Abstracts\Common\CSV\FieldAbstract;
+use CommonToolkit\Enums\CountryCode;
 
-class DataField extends DataFieldAbstract {
+class DataField extends FieldAbstract {
+    public function __construct(string $raw, string $enclosure = self::DEFAULT_ENCLOSURE, CountryCode $country = CountryCode::Germany) {
+        parent::__construct($raw, $enclosure, $country);
+    }
 }

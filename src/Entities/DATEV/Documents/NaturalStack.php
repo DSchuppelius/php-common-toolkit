@@ -12,15 +12,21 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Entities\DATEV\Documents;
 
+use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\MetaHeaderLine;
+use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\NaturalStackHeaderField;
 
 /**
  * DATEV-Natural-Stapel-Dokument.
  * Spezielle Document-Klasse für Natural-Stapel-Format (Kategorie 66).
  * Verwendet für Land-/Forstwirtschaft.
+ * 
+ * Die Spaltenbreiten werden automatisch basierend auf den DATEV-Spezifikationen
+ * aus NaturalStackHeaderField::getMaxLength() angewendet.
  */
 final class NaturalStack extends Document {
     public function __construct(
@@ -29,6 +35,26 @@ final class NaturalStack extends Document {
         array $rows = []
     ) {
         parent::__construct($metaHeader, $header, $rows);
+    }
+
+    /**
+     * Erstellt eine ColumnWidthConfig basierend auf den DATEV-Spezifikationen.
+     * Die maximalen Feldlängen werden aus NaturalStackHeaderField::getMaxLength() abgeleitet.
+     * 
+     * @param TruncationStrategy $strategy Abschneidungsstrategie (Standard: TRUNCATE für DATEV-Konformität)
+     * @return ColumnWidthConfig
+     */
+    public static function createDatevColumnWidthConfig(TruncationStrategy $strategy = TruncationStrategy::TRUNCATE): ColumnWidthConfig {
+        $config = new ColumnWidthConfig(null, $strategy);
+
+        foreach (NaturalStackHeaderField::ordered() as $index => $field) {
+            $maxLength = $field->getMaxLength();
+            if ($maxLength !== null) {
+                $config->setColumnWidth($index, $maxLength);
+            }
+        }
+
+        return $config;
     }
 
     /**

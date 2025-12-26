@@ -10,20 +10,21 @@
 
 namespace CommonToolkit\Entities\Common\CSV;
 
-use CommonToolkit\Contracts\Abstracts\Common\CSV\DataLineAbstract;
+use CommonToolkit\Contracts\Abstracts\Common\CSV\LineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
-use CommonToolkit\Contracts\Interfaces\Common\CSV\HeaderLineInterface;
-use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
 use CommonToolkit\Enums\CountryCode;
 
-class DataLine extends DataLineAbstract {
+/**
+ * Einfache CSV-Datenzeile ohne Header-Wissen.
+ * Alle Header-bezogenen Operationen werden über Document abgewickelt.
+ */
+class DataLine extends LineAbstract {
     public function __construct(
         array $fields,
         string $delimiter = self::DEFAULT_DELIMITER,
-        string $enclosure = FieldInterface::DEFAULT_ENCLOSURE,
-        ?HeaderLineInterface $headerLine = null
+        string $enclosure = FieldInterface::DEFAULT_ENCLOSURE
     ) {
-        parent::__construct($fields, $delimiter, $enclosure, $headerLine);
+        parent::__construct($fields, $delimiter, $enclosure);
     }
 
     protected static function createField(string $rawValue, string $enclosure): FieldInterface {

@@ -15,12 +15,12 @@ namespace CommonToolkit\Entities\DATEV\Header;
 use CommonToolkit\Contracts\Abstracts\DATEV\HeaderLineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
-use CommonToolkit\Entities\DATEV\Header\V700\RecurringBookingsHeaderDefinition;
 use CommonToolkit\Enums\DATEV\HeaderFields\V700\RecurringBookingsHeaderField;
 
 /**
  * DATEV Wiederkehrende Buchungen Header-Zeile (Spaltenbeschreibungen).
  * Zweite Zeile im DATEV-Format nach dem MetaHeader.
+ * Arbeitet mit FieldHeaderInterface Enums.
  */
 final class RecurringBookingsHeaderLine extends HeaderLineAbstract {
     /**
@@ -30,7 +30,7 @@ final class RecurringBookingsHeaderLine extends HeaderLineAbstract {
         string $delimiter = Document::DEFAULT_DELIMITER,
         string $enclosure = FieldInterface::DEFAULT_ENCLOSURE
     ): self {
-        return new self(new RecurringBookingsHeaderDefinition(), $delimiter, $enclosure);
+        return new self(RecurringBookingsHeaderField::class, $delimiter, $enclosure);
     }
 
     /**

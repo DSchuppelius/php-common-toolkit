@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Enums\DATEV\HeaderFields\V700;
 
 use CommonToolkit\Contracts\Interfaces\DATEV\FieldHeaderInterface;
+use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 
 /**
  * DATEV Sachkontenbeschriftung (GL Account Description) - Feldheader V700.
@@ -147,5 +148,59 @@ enum GLAccountDescriptionHeaderField: string implements FieldHeaderInterface {
      */
     public static function getLanguageDescription(string $languageId): ?string {
         return self::getSupportedLanguages()[$languageId] ?? null;
+    }
+
+    /**
+     * Liefert die DATEV-Kategorie für dieses Header-Format.
+     */
+    public static function getCategory(): Category {
+        return Category::Sachkontenbeschriftungen;
+    }
+
+    /**
+     * Liefert die DATEV-Version für dieses Header-Format.
+     */
+    public static function getVersion(): int {
+        return 700;
+    }
+
+    /**
+     * Liefert die Anzahl der definierten Felder.
+     */
+    public static function getFieldCount(): int {
+        return count(self::ordered());
+    }
+
+    /**
+     * Prüft, ob ein Feldwert gültig ist (im Enum enthalten).
+     */
+    public static function isValidFieldValue(string $value): bool {
+        foreach (self::cases() as $case) {
+            if ($case->value === $value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gibt an, ob der FieldHeader (Spaltenüberschrift) in Anführungszeichen gesetzt wird.
+     * DATEV-FieldHeaders werden NICHT gequoted.
+     */
+    public function isQuotedHeader(): bool {
+        return false;
+    }
+
+    /**
+     * Gibt an, ob der Feldwert in Anführungszeichen gesetzt wird.
+     * Basierend auf dem Validierungspattern: Pattern mit ^["]... oder ^(["... = gequotet
+     */
+    public function isQuotedValue(): bool {
+        $pattern = $this->getValidationPattern();
+        if ($pattern === null) {
+            return true; // Default: gequotet (sicherer für Text)
+        }
+        // Prüfe ob Pattern mit Anführungszeichen beginnt
+        return (bool) preg_match('/^\^(\(?\[?"|\(?")/u', $pattern);
     }
 }

@@ -69,9 +69,15 @@ final class MetaHeaderLine extends DataLine {
         }
 
         $index = $this->fieldIndex[$field->name];
+        $stringValue = (string) $value;
 
-        // Einfache Feld-Erstellung - nutze die Standard-CSV-Logik der Parent-Klasse
-        $this->fields[$index] = static::createField((string) $value, $this->enclosure);
+        // Verwende die isQuoted()-Information aus dem Feld laut DATEV-Spezifikation
+        if ($field->isQuoted()) {
+            $quotedValue = $this->enclosure . $stringValue . $this->enclosure;
+            $this->fields[$index] = new DataField($quotedValue, $this->enclosure);
+        } else {
+            $this->fields[$index] = new DataField($stringValue, $this->enclosure);
+        }
 
         return $this;
     }
@@ -172,6 +178,7 @@ final class MetaHeaderLine extends DataLine {
 
     /**
      * Convenience-Fabrik: aus Werteliste (Index 0..N) MetaHeaderLine bauen.
+     * Verwendet die isQuoted()-Information aus den Feldern für korrektes Quoting.
      *
      * @param MetaHeaderDefinitionInterface $definition
      * @param array<int, string|null>       $values

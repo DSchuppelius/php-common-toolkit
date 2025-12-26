@@ -13,7 +13,6 @@ namespace CommonToolkit\Contracts\Abstracts\Common\CSV;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\LineInterface;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
-use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
@@ -27,7 +26,7 @@ abstract class LineAbstract implements LineInterface {
 
     public function __construct(array $fields, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE) {
         $this->fields = [];
-        foreach ($fields as $index => $field) {
+        foreach ($fields as $field) {
             if ($field instanceof FieldInterface) {
                 $this->fields[] = $field;
             } else {
@@ -110,41 +109,18 @@ abstract class LineAbstract implements LineInterface {
      *
      * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
      * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
-     * @param ColumnWidthConfig|null $columnWidthConfig Optionale Spaltenbreiten-Konfiguration für die Formatierung
      * @return string
      */
-    public function toString(?string $delimiter = null, ?string $enclosure = null, ?ColumnWidthConfig $columnWidthConfig = null): string {
+    public function toString(?string $delimiter = null, ?string $enclosure = null): string {
         $delimiter = $delimiter ?? $this->delimiter;
         $enclosure = $enclosure ?? $this->enclosure;
 
         $parts = [];
         foreach ($this->fields as $field) {
-            // Field-Wert holen - abgeleitete Klassen können getFieldValue überschreiben
-            $value = $this->getFieldValue($field, $columnWidthConfig);
-
-            // Feld mit ggf. gekürztem Wert ausgeben
-            if ($field->isQuoted()) {
-                $quoteLevel = max(1, $field->getEnclosureRepeat());
-                $enc = str_repeat($enclosure, $quoteLevel);
-                $parts[] = $enc . $value . $enc;
-            } else {
-                $parts[] = $value;
-            }
+            $parts[] = $field->toString($enclosure);
         }
 
         return implode($delimiter, $parts);
-    }
-
-    /**
-     * Holt den Feldwert. Kann in abgeleiteten Klassen überschrieben werden 
-     * um spezifische Logik wie Spaltenbreiten-Verarbeitung zu implementieren.
-     *
-     * @param FieldInterface $field Das Feld
-     * @param ColumnWidthConfig|null $columnWidthConfig Optionale Spaltenbreiten-Konfiguration
-     * @return string Der verarbeitete Feldwert
-     */
-    protected function getFieldValue(FieldInterface $field, ?ColumnWidthConfig $columnWidthConfig = null): string {
-        return $field->getValue();
     }
 
     /**

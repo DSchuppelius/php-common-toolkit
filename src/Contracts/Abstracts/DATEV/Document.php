@@ -11,10 +11,12 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Contracts\Abstracts\DATEV;
 
+use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
 use CommonToolkit\Entities\Common\CSV\Document as CSVDocument;
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Entities\DATEV\{DataLine, MetaHeaderLine};
 use CommonToolkit\Enums\{CreditDebit, CurrencyCode, CountryCode};
+use InvalidArgumentException;
 use RuntimeException;
 
 abstract class Document extends CSVDocument {
@@ -23,13 +25,24 @@ abstract class Document extends CSVDocument {
     private ?MetaHeaderLine $metaHeader = null;
 
     /** @param DataLine[] $rows */
-    public function __construct(
-        ?MetaHeaderLine $metaHeader,
-        ?HeaderLine $header,
-        array $rows = []
-    ) {
-        parent::__construct($header, $rows, ';', '"');
+    public function __construct(?MetaHeaderLine $metaHeader, ?HeaderLine $header, array $rows = [], ?ColumnWidthConfig $columnWidthConfig = null) {
+        // Falls keine ColumnWidthConfig übergeben wurde, erstelle eine basierend auf DATEV-Spezifikation
+        $columnWidthConfig ??= static::createDatevColumnWidthConfig();
+
+        parent::__construct($header, $rows, ';', '"', $columnWidthConfig);
         $this->metaHeader  = $metaHeader;
+    }
+
+    /**
+     * Erstellt eine ColumnWidthConfig basierend auf den DATEV-Spezifikationen.
+     * Muss von abgeleiteten Klassen überschrieben werden, um die spezifischen Feldbreiten zu definieren.
+     * 
+     * @return ColumnWidthConfig|null
+     */
+    public static function createDatevColumnWidthConfig(): ?ColumnWidthConfig {
+        // Standardimplementierung gibt null zurück
+        // Abgeleitete Klassen sollten dies überschreiben
+        return null;
     }
 
     public function getMetaHeader(): ?MetaHeaderLine {
@@ -70,8 +83,35 @@ abstract class Document extends CSVDocument {
      * Muss von abgeleiteten Klassen implementiert werden.
      */
     abstract public function getFormatType(): string;
-    
-    // ==== PROTECTED ENUM HELPER METHODS ====
+
+    /**
+     * Wandelt das gesamte DATEV-Dokument in eine rohe CSV-Zeichenkette um.
+     * Überschreibt die Parent-Methode, um den MetaHeader mit einzubeziehen.
+     *
+     * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
+     * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
+     * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
+     * @return string
+     */
+    public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null): string {
+        $delimiter ??= $this->delimiter;
+        $enclosure ??= $this->enclosure;
+
+        $lines = [];
+
+        // MetaHeader als erste Zeile
+        if ($this->metaHeader) {
+            $lines[] = $this->metaHeader->toString($delimiter, $enclosure);
+        }
+
+        // Parent-Logik für Header und Datenzeilen
+        $parentContent = parent::toString($delimiter, $enclosure, $enclosureRepeat);
+        if ($parentContent !== '') {
+            $lines[] = $parentContent;
+        }
+
+        return implode("\n", $lines);
+    }
 
     /**
      * Gibt einen Feldwert als CreditDebit-Enum zurück.
@@ -109,7 +149,7 @@ abstract class Document extends CSVDocument {
         $cleanValue = trim($value, '"');
         try {
             return CurrencyCode::fromCode($cleanValue);
-        } catch (\InvalidArgumentException) {
+        } catch (InvalidArgumentException) {
             return null;
         }
     }
@@ -132,7 +172,7 @@ abstract class Document extends CSVDocument {
         $cleanValue = trim($value, '"');
         try {
             return CountryCode::fromStringValue($cleanValue);
-        } catch (\InvalidArgumentException) {
+        } catch (InvalidArgumentException) {
             return null;
         }
     }

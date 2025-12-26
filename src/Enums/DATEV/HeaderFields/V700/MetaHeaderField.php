@@ -17,6 +17,8 @@ use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderFieldInterface;
 /**
  * DATEV Metaheader (Version 700), Felder der Kopfzeile 1.
  * Die Cases benennen das Feld, die Position ergibt sich aus ordered().
+ * 
+ * @see https://developer.datev.de/de/file-format/details/datev-format/format-description/header
  */
 enum MetaHeaderField: string implements MetaHeaderFieldInterface {
     // 1–5: Formatdefinition
@@ -145,7 +147,30 @@ enum MetaHeaderField: string implements MetaHeaderFieldInterface {
         return array_search($this, self::ordered(), true) + 1;
     }
 
-
+    /**
+     * Gibt an, ob das Feld laut DATEV-Spezifikation gequotet sein muss.
+     *
+     * @see https://developer.datev.de/de/file-format/details/datev-format/format-description/header
+     */
+    public function isQuoted(): bool {
+        return match ($this) {
+            // Felder mit ^[""]...["]$ Pattern in der DATEV-Spezifikation
+            self::Kennzeichen,             // 1: ^["](EXTF|DTVF)["]$
+            self::Formatname,              // 4: ^["](Buchungsstapel|...)["]$
+            self::Herkunft,                // 8: ^["]\w{0,2}["]$
+            self::ExportiertVon,           // 9: ^["]\w{0,25}["]$
+            self::ImportiertVon,           // 10: ^["]\w{0,25}["]$
+            self::Bezeichnung,             // 17: ^["][\w.-/ ]{0,30}["]$
+            self::Diktatkuerzel,           // 18: ^["]([A-Z]{2}){0,2}["]$
+            self::Waehrungskennzeichen,    // 22: ^["]([A-Z]{3})["]$
+            self::Derivatskennzeichen,     // 24: ^["]["]$
+            self::Sachkontenrahmen,        // 27: ^["](\d{2}){0,2}["]$
+            self::Reserviert30,            // 30: ^["]["]$
+            self::Anwendungsinformation    // 31: ^["].{0,16}["]$
+            => true,
+            default => false,
+        };
+    }
 
     /**
      * Reihenfolge 1..31 für Export/Parsing.

@@ -12,9 +12,11 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Entities\DATEV\Documents;
 
+use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\DATEV\MetaHeaderLine;
+use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use CommonToolkit\Enums\DATEV\HeaderFields\V700\DebitorsCreditorsHeaderField;
 use CommonToolkit\Enums\{CurrencyCode, CountryCode};
@@ -23,6 +25,9 @@ use RuntimeException;
 /**
  * DATEV-Debitoren/Kreditoren-Dokument.
  * Spezielle Document-Klasse für Debitoren/Kreditoren-Format (Kategorie 16).
+ * 
+ * Die Spaltenbreiten werden automatisch basierend auf den DATEV-Spezifikationen
+ * aus DebitorsCreditorsHeaderField::getMaxLength() angewendet.
  */
 final class DebitorsCreditors extends Document {
     public function __construct(
@@ -31,6 +36,26 @@ final class DebitorsCreditors extends Document {
         array $rows = []
     ) {
         parent::__construct($metaHeader, $header, $rows);
+    }
+
+    /**
+     * Erstellt eine ColumnWidthConfig basierend auf den DATEV-Spezifikationen.
+     * Die maximalen Feldlängen werden aus DebitorsCreditorsHeaderField::getMaxLength() abgeleitet.
+     * 
+     * @param TruncationStrategy $strategy Abschneidungsstrategie (Standard: TRUNCATE für DATEV-Konformität)
+     * @return ColumnWidthConfig
+     */
+    public static function createDatevColumnWidthConfig(TruncationStrategy $strategy = TruncationStrategy::TRUNCATE): ColumnWidthConfig {
+        $config = new ColumnWidthConfig(null, $strategy);
+
+        foreach (DebitorsCreditorsHeaderField::ordered() as $index => $field) {
+            $maxLength = $field->getMaxLength();
+            if ($maxLength !== null) {
+                $config->setColumnWidth($index, $maxLength);
+            }
+        }
+
+        return $config;
     }
 
     /**

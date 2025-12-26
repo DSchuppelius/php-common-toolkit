@@ -18,6 +18,7 @@ use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Entities\Common\CSV\HeaderField;
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\Common\CSV\DataField;
+use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 
 echo "=== CSV Spaltenbreiten-Funktionalität Demo ===\n\n";
 
@@ -48,7 +49,7 @@ $widthConfig = new ColumnWidthConfig();
 $widthConfig->setColumnWidth('Name', 12);
 $widthConfig->setColumnWidth('Email', 20);
 $widthConfig->setColumnWidth('Stadt', 8);
-$widthConfig->setTruncationStrategy('ellipsis');
+$widthConfig->setTruncationStrategy(TruncationStrategy::ELLIPSIS);
 
 $builder = new CSVDocumentBuilder(',', '"', $widthConfig);
 $document = $builder
@@ -66,7 +67,7 @@ $widthConfig2 = new ColumnWidthConfig();
 $widthConfig2->setColumnWidth('Name', 12);
 $widthConfig2->setColumnWidth('Email', 20);
 $widthConfig2->setColumnWidth('Stadt', 8);
-$widthConfig2->setTruncationStrategy('truncate');
+$widthConfig2->setTruncationStrategy(TruncationStrategy::TRUNCATE);
 
 $builder2 = new CSVDocumentBuilder(',', '"', $widthConfig2);
 $document2 = $builder2
@@ -82,7 +83,7 @@ echo "-" . str_repeat("-", 50) . "\n";
 
 $widthConfig3 = new ColumnWidthConfig();
 $widthConfig3->setDefaultWidth(10);
-$widthConfig3->setTruncationStrategy('ellipsis');
+$widthConfig3->setTruncationStrategy(TruncationStrategy::ELLIPSIS);
 
 $builder3 = new CSVDocumentBuilder();
 $document3 = $builder3
@@ -104,7 +105,7 @@ $document4 = $builder4
     ->setColumnWidth('Name', 15)
     ->setColumnWidth('Email', 25)
     ->setDefaultColumnWidth(10)  // Für nicht explizit konfigurierte Spalten
-    ->setTruncationStrategy('ellipsis')
+    ->setTruncationStrategy(TruncationStrategy::ELLIPSIS)
     ->build();
 
 echo $document4->toString() . "\n\n";
@@ -117,7 +118,7 @@ $widthConfig5 = new ColumnWidthConfig();
 $widthConfig5->setColumnWidth(0, 10);  // Erste Spalte
 $widthConfig5->setColumnWidth(1, 15);  // Zweite Spalte
 $widthConfig5->setColumnWidth(2, 8);   // Dritte Spalte
-$widthConfig5->setTruncationStrategy('ellipsis');
+$widthConfig5->setTruncationStrategy(TruncationStrategy::ELLIPSIS);
 
 $builder5 = new CSVDocumentBuilder(',', '"', $widthConfig5);
 $document5 = $builder5
@@ -126,5 +127,24 @@ $document5 = $builder5
     ->build();
 
 echo $document5->toString() . "\n\n";
+
+// 6. Beispiel: Padding für feste Spaltenbreiten
+echo "6. Feste Spaltenbreiten mit Padding:\n";
+echo "-" . str_repeat("-", 50) . "\n";
+
+$widthConfig6 = new ColumnWidthConfig();
+$widthConfig6->setColumnWidth('Name', 20);
+$widthConfig6->setColumnWidth('Email', 35);
+$widthConfig6->setColumnWidth('Stadt', 12);
+$widthConfig6->setTruncationStrategy(TruncationStrategy::TRUNCATE);
+$widthConfig6->setPadding(true);  // Padding aktivieren
+
+$builder6 = new CSVDocumentBuilder(',', '"', $widthConfig6);
+$document6 = $builder6
+    ->setHeader($header)
+    ->addRows($rows)
+    ->build();
+
+echo $document6->toString() . "\n\n";
 
 echo "=== Demo beendet ===\n";

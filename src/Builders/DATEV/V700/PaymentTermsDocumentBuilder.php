@@ -1,9 +1,9 @@
 <?php
 /*
- * Created on   : Sat Dec 14 2025
+ * Created on   : Thu Dec 26 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : BookingDocumentBuilder.php
+ * Filename     : PaymentTermsDocumentBuilder.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -16,32 +16,32 @@ use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Contracts\Abstracts\DATEV\Document;
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\MetaHeaderLine;
-use CommonToolkit\Entities\DATEV\Documents\BookingBatch;
+use CommonToolkit\Entities\DATEV\Documents\PaymentTerms;
 use CommonToolkit\Entities\DATEV\Header\V700\MetaHeaderDefinition;
-use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
-use CommonToolkit\Enums\DATEV\HeaderFields\V700\{MetaHeaderField, BookingBatchHeaderField};
+use CommonToolkit\Entities\DATEV\Header\PaymentTermsHeaderLine;
+use CommonToolkit\Enums\DATEV\HeaderFields\V700\{MetaHeaderField, PaymentTermsHeaderField};
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 use DateTimeImmutable;
 
 /**
- * Builder für DATEV BookingBatch-Dokumente (V700).
- * Erstellt komplette DATEV-Export-Dateien mit MetaHeader, FieldHeader und Buchungsdaten.
+ * Builder für DATEV Zahlungsbedingungen-Dokumente (V700).
+ * Erstellt komplette DATEV-Export-Dateien mit MetaHeader, FieldHeader und Zahlungsbedingungen.
  */
-final class BookingDocumentBuilder extends CSVDocumentBuilder {
+final class PaymentTermsDocumentBuilder extends CSVDocumentBuilder {
     use ErrorLog;
 
     private ?MetaHeaderLine $metaHeader = null;
-    private ?BookingBatchHeaderLine $fieldHeader = null;
+    private ?PaymentTermsHeaderLine $fieldHeader = null;
     /** @var DataLine[] */
-    private array $bookingLines = [];
+    private array $dataLines = [];
 
     public function __construct(string $delimiter = Document::DEFAULT_DELIMITER, string $enclosure = '"') {
         parent::__construct($delimiter, $enclosure);
     }
 
     /**
-     * Setzt den MetaHeader mit Standard-BookingBatch-Konfiguration.
+     * Setzt den MetaHeader mit Standard-PaymentTerms-Konfiguration.
      */
     public function setMetaHeader(?MetaHeaderLine $metaHeader = null): self {
         $this->metaHeader = $metaHeader ?? $this->createDefaultMetaHeader();
@@ -51,56 +51,55 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     /**
      * Setzt den FieldHeader (Spaltenbeschreibungen).
      */
-    public function setFieldHeader(?BookingBatchHeaderLine $fieldHeader = null): self {
-        $this->fieldHeader = $fieldHeader ?? BookingBatchHeaderLine::createV700();
+    public function setFieldHeader(?PaymentTermsHeaderLine $fieldHeader = null): self {
+        $this->fieldHeader = $fieldHeader ?? PaymentTermsHeaderLine::createV700();
         return $this;
     }
 
     /**
-     * Fügt eine Buchungszeile hinzu.
+     * Fügt eine Datenzeile hinzu.
      */
-    public function addBooking(DataLine $booking): self {
-        $this->bookingLines[] = $booking;
+    public function addDataLine(DataLine $dataLine): self {
+        $this->dataLines[] = $dataLine;
         return $this;
     }
 
     /**
-     * Convenience-Methode zum Hinzufügen einer einfachen Buchung.
-     * Erstellt eine DataLine mit den wichtigsten Buchungsfeldern.
+     * Convenience-Methode zum Hinzufügen einer Zahlungsbedingung.
      */
-    public function addSimpleBooking(
-        float $amount,
-        string $sollHaben,
-        string $account,
-        string $contraAccount,
-        DateTimeImmutable|string $date,
-        string $documentRef,
-        string $text
+    public function addPaymentTerm(
+        string $number,
+        string $description,
+        ?int $dueType = null,
+        ?int $dueDays = null,
+        ?int $discountDays1 = null,
+        ?int $discountPercent1 = null
     ): self {
         if (!$this->fieldHeader) {
             $this->setFieldHeader();
         }
 
-        // Datum formatieren
-        $dateStr = $date instanceof DateTimeImmutable
-            ? $date->format('dm')
-            : (new DateTimeImmutable($date))->format('dm');
-
-        // Leeres Array mit allen Feldern initialisieren
         $fieldCount = $this->fieldHeader->countFields();
         $values = array_fill(0, $fieldCount, '');
 
-        // Wichtige Felder setzen
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Umsatz)] = number_format(abs($amount), 2, ',', '');
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::SollHabenKennzeichen)] = $sollHaben;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Konto)] = $account;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Gegenkonto)] = $contraAccount;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Belegdatum)] = $dateStr;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Belegfeld1)] = $documentRef;
-        $values[$this->fieldHeader->getFieldIndex(BookingBatchHeaderField::Buchungstext)] = $text;
+        $values[$this->fieldHeader->getFieldIndex(PaymentTermsHeaderField::Nummer)] = $number;
+        $values[$this->fieldHeader->getFieldIndex(PaymentTermsHeaderField::Bezeichnung)] = $description;
 
-        $booking = new DataLine($values, $this->delimiter, $this->enclosure);
-        return $this->addBooking($booking);
+        if ($dueType !== null) {
+            $values[$this->fieldHeader->getFieldIndex(PaymentTermsHeaderField::Faelligkeitstyp)] = (string) $dueType;
+        }
+        if ($dueDays !== null) {
+            $values[$this->fieldHeader->getFieldIndex(PaymentTermsHeaderField::FaelligTage)] = (string) $dueDays;
+        }
+        if ($discountDays1 !== null) {
+            $values[$this->fieldHeader->getFieldIndex(PaymentTermsHeaderField::Skonto1Tage)] = (string) $discountDays1;
+        }
+        if ($discountPercent1 !== null) {
+            $values[$this->fieldHeader->getFieldIndex(PaymentTermsHeaderField::Skonto1Prozent)] = (string) $discountPercent1;
+        }
+
+        $dataLine = new DataLine($values, $this->delimiter, $this->enclosure);
+        return $this->addDataLine($dataLine);
     }
 
     /**
@@ -118,21 +117,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     }
 
     /**
-     * Setzt den Zeitraum der Buchungen im MetaHeader.
-     */
-    public function setDateRange(DateTimeImmutable $from, DateTimeImmutable $to): self {
-        if (!$this->metaHeader) {
-            $this->setMetaHeader();
-        }
-
-        $this->metaHeader->set(MetaHeaderField::DatumVon, $from->format('Ymd'));
-        $this->metaHeader->set(MetaHeaderField::DatumBis, $to->format('Ymd'));
-
-        return $this;
-    }
-
-    /**
-     * Setzt die Beschreibung des BookingBatchs.
+     * Setzt die Beschreibung.
      */
     public function setDescription(string $description): self {
         if (!$this->metaHeader) {
@@ -147,7 +132,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
     /**
      * Erstellt das komplette DATEV-Dokument.
      */
-    public function build(): BookingBatch {
+    public function build(): PaymentTerms {
         if (!$this->metaHeader) {
             $this->setMetaHeader();
         }
@@ -156,17 +141,16 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
             $this->setFieldHeader();
         }
 
-        if (empty($this->bookingLines)) {
-            static::logWarning('BookingBatch ohne Buchungszeilen erstellt');
+        if (empty($this->dataLines)) {
+            static::logWarning('PaymentTerms ohne Datenzeilen erstellt');
         }
 
-        // Validierung
         $this->validate();
 
-        return new BookingBatch(
+        return new PaymentTerms(
             $this->metaHeader,
             $this->fieldHeader,
-            $this->bookingLines
+            $this->dataLines
         );
     }
 
@@ -182,26 +166,33 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
             throw new RuntimeException('FieldHeader muss gesetzt sein');
         }
 
-        // Prüfe Feldanzahl der Buchungszeilen
         $expectedFieldCount = $this->fieldHeader->countFields();
-        foreach ($this->bookingLines as $index => $booking) {
-            $actualFieldCount = count($booking->getFields());
+        foreach ($this->dataLines as $index => $dataLine) {
+            $actualFieldCount = count($dataLine->getFields());
             if ($actualFieldCount !== $expectedFieldCount) {
                 throw new RuntimeException(
-                    "Buchungszeile $index hat $actualFieldCount Felder, erwartet: $expectedFieldCount"
+                    "Datenzeile $index hat $actualFieldCount Felder, erwartet: $expectedFieldCount"
                 );
             }
         }
     }
 
     /**
-     * Erstellt einen Standard-MetaHeader für BookingBatch.
+     * Erstellt einen Standard-MetaHeader für PaymentTerms.
      */
     private function createDefaultMetaHeader(): MetaHeaderLine {
         $definition = new MetaHeaderDefinition();
         $metaHeader = new MetaHeaderLine($definition);
 
-        // Setze aktuelle Zeit als Erzeugungszeitpunkt
+        // Setze PaymentTerms-spezifische Werte
+        $category = \CommonToolkit\Enums\DATEV\MetaFields\Format\Category::Zahlungsbedingungen;
+        $metaHeader->set(MetaHeaderField::Formatkategorie, $category->value);
+        $metaHeader->set(MetaHeaderField::Formatname, $category->nameValue());
+        $metaHeader->set(
+            MetaHeaderField::Formatversion,
+            \CommonToolkit\Enums\DATEV\MetaFields\Format\Version::forCategory($category)->value
+        );
+
         $metaHeader->set(
             MetaHeaderField::ErzeugtAm,
             (new DateTimeImmutable())->format('YmdHis') . '000'
@@ -217,7 +208,7 @@ final class BookingDocumentBuilder extends CSVDocumentBuilder {
         return [
             'metaHeader_set' => $this->metaHeader !== null,
             'fieldHeader_set' => $this->fieldHeader !== null,
-            'booking_count' => count($this->bookingLines),
+            'data_count' => count($this->dataLines),
             'field_count' => $this->fieldHeader?->countFields() ?? 0,
         ];
     }

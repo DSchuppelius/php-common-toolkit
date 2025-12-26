@@ -18,7 +18,13 @@ use RuntimeException;
 
 /**
  * Konfiguration für Spaltenbreiten in CSV-Dokumenten.
- * Ermöglicht das Festlegen von maximalen Zeichenbreiten für Spalten.
+ * Ermöglicht das Festlegen von maximalen/festen Zeichenbreiten für Spalten.
+ * 
+ * Features:
+ * - Spaltenweise Breiten (nach Name oder Index)
+ * - Standard-Breite für alle nicht explizit konfigurierten Spalten
+ * - Abschneidungsstrategien (TRUNCATE, ELLIPSIS, NONE)
+ * - Padding-Unterstützung für feste Spaltenbreiten
  */
 class ColumnWidthConfig {
     use ErrorLog;
@@ -32,8 +38,18 @@ class ColumnWidthConfig {
     /** @var TruncationStrategy Abschneidungsstrategie */
     private TruncationStrategy $truncationStrategy = TruncationStrategy::TRUNCATE;
 
-    public function __construct(?int $defaultWidth = null) {
+    /** @var bool Ob Werte mit Leerzeichen aufgefüllt werden sollen (für feste Spaltenbreiten) */
+    private bool $enablePadding = false;
+
+    /** @var string Padding-Zeichen (Standard: Leerzeichen) */
+    private string $paddingChar = ' ';
+
+    /** @var int Padding-Richtung: STR_PAD_RIGHT, STR_PAD_LEFT, STR_PAD_BOTH */
+    private int $paddingType = STR_PAD_RIGHT;
+
+    public function __construct(?int $defaultWidth = null, TruncationStrategy $strategy = TruncationStrategy::TRUNCATE) {
         $this->defaultWidth = $defaultWidth;
+        $this->truncationStrategy = $strategy;
     }
 
     /**
@@ -127,21 +143,60 @@ class ColumnWidthConfig {
      * 
      * @param string $value Zu kürzender Wert
      * @param string|int $column Spaltenname oder Index
-     * @return string Gekürzter Wert
+     * @return string Gekürzter (und ggf. gepadter) Wert
      */
     public function truncateValue(string $value, string|int $column): string {
         $maxWidth = $this->getColumnWidth($column);
 
-        // Wenn keine Breite definiert oder NONE Strategie, keine Kürzung
-        if ($maxWidth === null || $this->truncationStrategy === TruncationStrategy::NONE || mb_strlen($value) <= $maxWidth) {
+        // Wenn keine Breite definiert, Wert unverändert zurückgeben
+        if ($maxWidth === null) {
             return $value;
         }
 
-        if ($this->truncationStrategy === TruncationStrategy::ELLIPSIS && $maxWidth > 3) {
-            return mb_substr($value, 0, $maxWidth - 3) . '...';
+        $currentLength = mb_strlen($value);
+
+        // Kürzung anwenden falls nötig
+        if ($currentLength > $maxWidth && $this->truncationStrategy !== TruncationStrategy::NONE) {
+            $value = match ($this->truncationStrategy) {
+                TruncationStrategy::ELLIPSIS => $maxWidth > 3
+                    ? mb_substr($value, 0, $maxWidth - 3) . '...'
+                    : mb_substr($value, 0, $maxWidth),
+                TruncationStrategy::TRUNCATE => mb_substr($value, 0, $maxWidth),
+                default => $value,
+            };
+            $currentLength = mb_strlen($value);
         }
 
-        return mb_substr($value, 0, $maxWidth);
+        // Padding anwenden falls aktiviert
+        if ($this->enablePadding && $currentLength < $maxWidth) {
+            $value = mb_str_pad($value, $maxWidth, $this->paddingChar, $this->paddingType);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Aktiviert/Deaktiviert Padding für feste Spaltenbreiten.
+     * 
+     * @param bool $enable Padding aktivieren
+     * @param string $char Padding-Zeichen (Standard: Leerzeichen)
+     * @param int $type Padding-Richtung (STR_PAD_RIGHT, STR_PAD_LEFT, STR_PAD_BOTH)
+     * @return $this
+     */
+    public function setPadding(bool $enable, string $char = ' ', int $type = STR_PAD_RIGHT): self {
+        $this->enablePadding = $enable;
+        $this->paddingChar = $char;
+        $this->paddingType = $type;
+        return $this;
+    }
+
+    /**
+     * Gibt zurück, ob Padding aktiviert ist.
+     * 
+     * @return bool
+     */
+    public function isPaddingEnabled(): bool {
+        return $this->enablePadding;
     }
 
     /**
@@ -161,5 +216,28 @@ class ColumnWidthConfig {
      */
     public function getAllColumnWidths(): array {
         return $this->columnWidths;
+    }
+
+    /**
+     * Prüft ob überhaupt eine Breitenkonfiguration vorhanden ist.
+     * 
+     * @return bool
+     */
+    public function hasAnyConfig(): bool {
+        return !empty($this->columnWidths) || $this->defaultWidth !== null;
+    }
+
+    /**
+     * Erstellt eine Kopie der Konfiguration.
+     * 
+     * @return self
+     */
+    public function clone(): self {
+        $clone = new self($this->defaultWidth, $this->truncationStrategy);
+        $clone->columnWidths = $this->columnWidths;
+        $clone->enablePadding = $this->enablePadding;
+        $clone->paddingChar = $this->paddingChar;
+        $clone->paddingType = $this->paddingType;
+        return $clone;
     }
 }

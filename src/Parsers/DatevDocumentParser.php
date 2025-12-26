@@ -366,15 +366,10 @@ class DatevDocumentParser extends CSVDocumentParser {
         DataLine $dataLine,
         MetaHeaderDefinitionInterface $definition
     ): MetaHeaderLine {
-        // Feldwerte direkt aus bereits geparster DataLine extrahieren - kein doppeltes Parsing!
-        $rawFieldValues = [];
-        foreach ($dataLine->getFields() as $field) {
-            $rawFieldValues[] = $field->getValue();
-        }
-
         // Validate field count against expected MetaHeader structure
+        $actualFields = $dataLine->getFields();
+        $actualFieldCount = count($actualFields);
         $expectedFields = $definition->getFields();
-        $actualFieldCount = count($rawFieldValues);
 
         if ($actualFieldCount !== $definition->countFields()) {
             static::logError(sprintf('MetaHeader field count mismatch: expected %d fields, got %d fields', $definition->countFields(), $actualFieldCount));
@@ -383,11 +378,15 @@ class DatevDocumentParser extends CSVDocumentParser {
         // Create MetaHeaderLine with definition and populate with parsed values
         $metaHeaderLine = new MetaHeaderLine($definition, $dataLine->getDelimiter(), $dataLine->getEnclosure());
 
-        // Transfer values from parsed fields to structured MetaHeaderLine
+        // Transfer ALL values from parsed fields to structured MetaHeaderLine with quote info
+        // Dies überschreibt Default-Werte mit den tatsächlichen Werten aus der Datei
         foreach ($expectedFields as $index => $fieldDef) {
-            if (isset($rawFieldValues[$index]) && $rawFieldValues[$index] !== '') {
+            if (isset($actualFields[$index])) {
+                $field = $actualFields[$index];
+                $value = $field->getValue();
                 try {
-                    $metaHeaderLine->set($fieldDef, $rawFieldValues[$index]);
+                    // Verwende setWithQuoteInfo für ALLE Felder um korrektes Roundtrip zu gewährleisten
+                    $metaHeaderLine->setWithQuoteInfo($fieldDef, $value, $field->isQuoted());
                 } catch (Exception $e) {
                     // Log parsing errors but continue - parsing robustness is important
                     static::logError("Field {$fieldDef->name} could not be set: " . $e->getMessage());

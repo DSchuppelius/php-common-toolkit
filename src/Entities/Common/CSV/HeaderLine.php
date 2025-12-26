@@ -12,10 +12,9 @@ namespace CommonToolkit\Entities\Common\CSV;
 
 use CommonToolkit\Contracts\Abstracts\Common\CSV\LineAbstract;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
-use CommonToolkit\Contracts\Interfaces\Common\CSV\HeaderLineInterface;
 use CommonToolkit\Enums\CountryCode;
 
-class HeaderLine extends LineAbstract implements HeaderLineInterface {
+class HeaderLine extends LineAbstract {
     public function __construct(array $fields, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE) {
         // HeaderLine erbt direkt von LineAbstract
         parent::__construct($fields, $delimiter, $enclosure);
