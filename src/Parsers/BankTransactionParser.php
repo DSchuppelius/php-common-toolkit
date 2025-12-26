@@ -17,6 +17,7 @@ use CommonToolkit\Entities\DATEV\Documents\BankTransaction;
 use CommonToolkit\Entities\DATEV\Header\ASCII\BankTransactionHeaderLine;
 use CommonToolkit\Entities\DATEV\Header\ASCII\BankTransactionHeaderDefinition;
 use CommonToolkit\Enums\DATEV\HeaderFields\ASCII\BankTransactionHeaderField;
+use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Parsers\CSVDocumentParser;
 use RuntimeException;
 
@@ -140,16 +141,7 @@ class BankTransactionParser {
         string $enclosure = '"',
         bool $hasHeader = false
     ): BankTransaction {
-        if (!file_exists($filePath)) {
-            static::logError("Datei nicht gefunden: $filePath");
-            throw new RuntimeException("Datei nicht gefunden: $filePath");
-        }
-
-        $content = file_get_contents($filePath);
-        if ($content === false) {
-            static::logError("Fehler beim Lesen der Datei: $filePath");
-            throw new RuntimeException("Fehler beim Lesen der Datei: $filePath");
-        }
+        $content = File::read($filePath);
 
         return self::fromString($content, $delimiter, $enclosure, $hasHeader);
     }
@@ -254,9 +246,10 @@ class BankTransactionParser {
         foreach ($document->getRows() as $row) {
             $fieldValues = [];
             foreach ($row->getFields() as $field) {
-                $fieldValues[] = $field->getValue();
+                // Verwende toString() um Original-Quoting beizubehalten
+                $fieldValues[] = $field->toString($enclosure);
             }
-            $lines[] = implode($delimiter, array_map(fn($v) => $enclosure . str_replace($enclosure, $enclosure . $enclosure, $v) . $enclosure, $fieldValues));
+            $lines[] = implode($delimiter, $fieldValues);
         }
 
         return implode("\n", $lines);

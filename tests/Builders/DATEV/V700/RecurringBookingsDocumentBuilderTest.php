@@ -133,31 +133,26 @@ class RecurringBookingsDocumentBuilderTest extends BaseTestCase {
     public function testRoundTripParsedDocumentOutputMatchesOriginal(): void {
         $this->assertFileExists(self::SAMPLE_FILE, 'Sample-Datei muss existieren');
 
+        // Lese Original-Datei mit automatischer Encoding-Erkennung
+        $document = DatevDocumentParser::fromFile(self::SAMPLE_FILE);
+        $this->assertInstanceOf(RecurringBookings::class, $document);
+
+        // Original-Content in normalisierten UTF-8 konvertieren für Vergleich
         $originalContent = file_get_contents(self::SAMPLE_FILE);
+        $originalContent = mb_convert_encoding($originalContent, 'UTF-8', 'ISO-8859-1');
         $originalContent = str_replace("\r\n", "\n", $originalContent);
         $originalContent = rtrim($originalContent, "\n");
 
-        $document = DatevDocumentParser::fromString($originalContent);
-        $this->assertInstanceOf(RecurringBookings::class, $document);
-
-        $outputContent = $document->toString();
+        // Output ist bereits UTF-8 intern
+        $outputContent = $document->toString(null, null, null, 'UTF-8');
         $outputContent = rtrim($outputContent, "\n");
 
-        $originalLines = explode("\n", $originalContent);
-        $outputLines = explode("\n", $outputContent);
-
-        $this->assertCount(count($originalLines), $outputLines, 'Zeilenanzahl sollte übereinstimmen');
-        $this->assertEquals($originalLines[0], $outputLines[0], 'MetaHeader sollte übereinstimmen');
-
-        $originalHeaderFields = count(explode(';', $originalLines[1]));
-        $outputHeaderFields = count(explode(';', $outputLines[1]));
-        $this->assertEquals($originalHeaderFields, $outputHeaderFields, 'Header-Feldanzahl sollte übereinstimmen');
-
-        for ($i = 2; $i < count($originalLines); $i++) {
-            $originalFieldCount = count(explode(';', $originalLines[$i]));
-            $outputFieldCount = count(explode(';', $outputLines[$i]));
-            $this->assertEquals($originalFieldCount, $outputFieldCount, "Zeile " . ($i + 1) . ": Feldanzahl sollte übereinstimmen");
-        }
+        // Direkter String-Vergleich: Output muss exakt mit konvertierten Original übereinstimmen
+        $this->assertEquals(
+            $originalContent,
+            $outputContent,
+            'Round-Trip: Generierter Output sollte exakt mit Original übereinstimmen'
+        );
     }
 
     public function testRoundTripDataValuesArePreserved(): void {

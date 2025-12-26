@@ -99,6 +99,74 @@ class StringHelper {
     }
 
     /**
+     * Gibt das BOM (Byte Order Mark) für ein bestimmtes Encoding zurück.
+     *
+     * @param string $encoding Das Encoding
+     * @return string|null Das BOM als Byte-String oder null wenn kein BOM für dieses Encoding existiert
+     */
+    public static function getBomForEncoding(string $encoding): ?string {
+        $encoding = strtoupper($encoding);
+
+        return match ($encoding) {
+            'UTF-8'                         => "\xEF\xBB\xBF",
+            'UTF-16BE', 'UTF-16-BE'         => "\xFE\xFF",
+            'UTF-16LE', 'UTF-16-LE'         => "\xFF\xFE",
+            'UTF-16'                        => "\xFF\xFE",           // Little-Endian als Default
+            'UTF-32BE', 'UTF-32-BE'         => "\x00\x00\xFE\xFF",
+            'UTF-32LE', 'UTF-32-LE'         => "\xFF\xFE\x00\x00",
+            'UTF-32'                        => "\xFF\xFE\x00\x00",   // Little-Endian als Default
+            default                         => null,
+        };
+    }
+
+    /**
+     * Prüft ob ein String mit einem BOM (Byte Order Mark) beginnt und gibt das erkannte Encoding zurück.
+     *
+     * @param string $content Der zu prüfende String
+     * @return string|null Das erkannte Encoding oder null wenn kein BOM gefunden wurde
+     */
+    public static function detectBomEncoding(string $content): ?string {
+        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+            return 'UTF-8';
+        }
+        if (str_starts_with($content, "\xFF\xFE\x00\x00")) {
+            return 'UTF-32LE';
+        }
+        if (str_starts_with($content, "\x00\x00\xFE\xFF")) {
+            return 'UTF-32BE';
+        }
+        if (str_starts_with($content, "\xFF\xFE")) {
+            return 'UTF-16LE';
+        }
+        if (str_starts_with($content, "\xFE\xFF")) {
+            return 'UTF-16BE';
+        }
+        return null;
+    }
+
+    /**
+     * Entfernt ein BOM (Byte Order Mark) vom Anfang eines Strings.
+     *
+     * @param string $content Der zu bereinigende String
+     * @return string Der String ohne BOM
+     */
+    public static function stripBom(string $content): string {
+        // UTF-32 zuerst prüfen (4 Bytes)
+        if (str_starts_with($content, "\xFF\xFE\x00\x00") || str_starts_with($content, "\x00\x00\xFE\xFF")) {
+            return substr($content, 4);
+        }
+        // UTF-8 (3 Bytes)
+        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+            return substr($content, 3);
+        }
+        // UTF-16 (2 Bytes)
+        if (str_starts_with($content, "\xFF\xFE") || str_starts_with($content, "\xFE\xFF")) {
+            return substr($content, 2);
+        }
+        return $content;
+    }
+
+    /**
      * Entfernt nicht druckbare Zeichen aus einem String.
      *
      * @param string $input Der zu bereinigende String.
@@ -611,6 +679,4 @@ class StringHelper {
     public static function isDateTime(string $value, ?string $format = null): bool {
         return DateHelper::isDateTime($value, $format);
     }
-
-
 }

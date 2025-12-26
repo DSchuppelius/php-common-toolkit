@@ -56,7 +56,7 @@ class GLAccountDescriptionDocumentBuilderTest extends BaseTestCase {
         $kontoField = $document->getFieldsByName('Konto')[0];
         $this->assertEquals('1000', $kontoField->getValue());
 
-        $beschriftungField = $document->getFieldsByName('Kontenbeschriftung')[0];
+        $beschriftungField = $document->getFieldsByName('Kontobeschriftung')[0];
         $this->assertEquals('Kasse', $beschriftungField->getValue());
     }
 
@@ -161,21 +161,12 @@ class GLAccountDescriptionDocumentBuilderTest extends BaseTestCase {
         $outputContent = $document->toString();
         $outputContent = rtrim($outputContent, "\n");
 
-        $originalLines = explode("\n", $originalContent);
-        $outputLines = explode("\n", $outputContent);
-
-        $this->assertCount(count($originalLines), $outputLines, 'Zeilenanzahl sollte übereinstimmen');
-        $this->assertEquals($originalLines[0], $outputLines[0], 'MetaHeader sollte übereinstimmen');
-
-        $originalHeaderFields = count(explode(';', $originalLines[1]));
-        $outputHeaderFields = count(explode(';', $outputLines[1]));
-        $this->assertEquals($originalHeaderFields, $outputHeaderFields, 'Header-Feldanzahl sollte übereinstimmen');
-
-        for ($i = 2; $i < count($originalLines); $i++) {
-            $originalFieldCount = count(explode(';', $originalLines[$i]));
-            $outputFieldCount = count(explode(';', $outputLines[$i]));
-            $this->assertEquals($originalFieldCount, $outputFieldCount, "Zeile " . ($i + 1) . ": Feldanzahl sollte übereinstimmen");
-        }
+        // Direkter String-Vergleich: Output muss exakt mit Original übereinstimmen
+        $this->assertEquals(
+            $originalContent,
+            $outputContent,
+            'Round-Trip: Generierter Output sollte exakt mit Original übereinstimmen'
+        );
     }
 
     public function testRoundTripDataValuesArePreserved(): void {

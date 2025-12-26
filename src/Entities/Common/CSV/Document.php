@@ -12,11 +12,16 @@
 namespace CommonToolkit\Entities\Common\CSV;
 
 use CommonToolkit\Contracts\Interfaces\Common\CSV\FieldInterface;
+use CommonToolkit\Helper\Data\StringHelper;
+use CommonToolkit\Helper\FileSystem\File;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
 class Document {
     use ErrorLog;
+
+    /** Standard-Encoding für CSV-Dokumente */
+    public const DEFAULT_ENCODING = 'UTF-8';
 
     protected ?HeaderLine $header;
     /** @var DataLine[] */
@@ -27,15 +32,22 @@ class Document {
     protected ?ColumnWidthConfig $columnWidthConfig = null;
 
     /**
+     * Die Zeichenkodierung des Dokuments.
+     * Wird beim Parsen erkannt und beim Export verwendet.
+     */
+    protected string $encoding = self::DEFAULT_ENCODING;
+
+    /**
      * Steuert ob beim CSV-Export der Header mit ausgegeben werden soll.
      * Standard ist true - kann in Subklassen überschrieben werden.
      */
     protected bool $exportWithHeader = true;
 
-    public function __construct(?HeaderLine $header = null, array $rows = [], string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null) {
+    public function __construct(?HeaderLine $header = null, array $rows = [], string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null, string $encoding = self::DEFAULT_ENCODING) {
         $this->delimiter           = $delimiter;
         $this->enclosure           = $enclosure;
         $this->columnWidthConfig   = $columnWidthConfig;
+        $this->encoding            = $encoding;
         $this->header              = $header;
         $this->rows                = $rows;
     }
@@ -90,6 +102,25 @@ class Document {
     }
 
     /**
+     * Gibt die Zeichenkodierung des Dokuments zurück.
+     *
+     * @return string Die Zeichenkodierung (z.B. 'UTF-8', 'ISO-8859-1')
+     */
+    public function getEncoding(): string {
+        return $this->encoding;
+    }
+
+    /**
+     * Setzt die Zeichenkodierung des Dokuments.
+     *
+     * @param string $encoding Die Zeichenkodierung (z.B. 'UTF-8', 'ISO-8859-1')
+     * @return void
+     */
+    public function setEncoding(string $encoding): void {
+        $this->encoding = $encoding;
+    }
+
+    /**
      * Setzt die Spaltenbreiten-Konfiguration.
      *
      * @param ColumnWidthConfig|null $config
@@ -132,11 +163,13 @@ class Document {
      * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
      * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
      * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
+     * @param string|null $targetEncoding Das Ziel-Encoding. Wenn null, wird das Dokument-Encoding verwendet.
      * @return string
      */
-    public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null): string {
+    public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null): string {
         $delimiter ??= $this->delimiter;
         $enclosure ??= $this->enclosure;
+        $targetEncoding ??= $this->encoding;
 
         if ($enclosureRepeat !== null) {
             foreach (array_merge($this->rows, $this->header ? [$this->header] : []) as $line) {
@@ -162,7 +195,14 @@ class Document {
             }
         }
 
-        return implode("\n", $lines);
+        $result = implode("\n", $lines);
+
+        // Encoding-Konvertierung falls nötig - nutze StringHelper
+        if ($targetEncoding !== self::DEFAULT_ENCODING) {
+            return StringHelper::convertEncoding($result, self::DEFAULT_ENCODING, $targetEncoding);
+        }
+
+        return $result;
     }
 
     /**
@@ -218,25 +258,32 @@ class Document {
     /**
      * Schreibt das gesamte CSV-Dokument in eine Datei.
      *
-     * @param string      $file      Der Pfad zur Zieldatei.
-     * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
-     * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
-     * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
+     * @param string      $file            Der Pfad zur Zieldatei.
+     * @param string|null $delimiter       Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
+     * @param string|null $enclosure       Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
+     * @param int|null    $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
+     * @param string|null $targetEncoding  Das Ziel-Encoding. Wenn null, wird das Dokument-Encoding verwendet.
+     * @param bool        $withBom         Ob ein BOM (Byte Order Mark) am Anfang der Datei geschrieben werden soll (Standard: true für bessere Encoding-Erkennung).
      * @return void
      *
      * @throws RuntimeException
      */
-    public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null): void {
+    public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null, bool $withBom = true): void {
         $delimiter ??= $this->delimiter;
         $enclosure ??= $this->enclosure;
+        $targetEncoding ??= $this->encoding;
 
-        $csv = $this->toString($delimiter, $enclosure, $enclosureRepeat);
+        $csv = $this->toString($delimiter, $enclosure, $enclosureRepeat, $targetEncoding);
 
-        $result = @file_put_contents($file, $csv);
-        if ($result === false) {
-            static::logError("Fehler beim Schreiben der CSV-Datei: $file");
-            throw new RuntimeException("Fehler beim Schreiben der CSV-Datei: $file");
+        // BOM (Byte Order Mark) hinzufügen wenn gewünscht
+        if ($withBom) {
+            $bom = StringHelper::getBomForEncoding($targetEncoding);
+            if ($bom !== null) {
+                $csv = $bom . $csv;
+            }
         }
+
+        File::write($file, $csv);
     }
 
     /**

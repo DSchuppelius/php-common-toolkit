@@ -926,4 +926,27 @@ enum DebitorsCreditorsHeaderField: string implements FieldHeaderInterface {
         // Prüfe ob Pattern mit Anführungszeichen beginnt
         return (bool) preg_match('/^\^(\(?\[?"|\(?")/u', $pattern);
     }
+
+    /**
+     * Liefert den tatsächlichen Header-Namen für die CSV-Ausgabe.
+     * Weicht ggf. vom Enum-Wert ab, um Kompatibilität mit DATEV-Sample-Dateien zu gewährleisten.
+     */
+    public function headerName(): string {
+        return match ($this) {
+            // Leerfeld: Sample hat keine Nummern
+            self::Leerfeld1 => 'Leerfeld',
+            self::Leerfeld2 => 'Leerfeld',
+            self::Leerfeld3 => 'Leerfeld',
+            self::Leerfeld4 => 'Leerfeld',
+            self::Leerfeld5 => 'Leerfeld',
+            self::Leerfeld6 => 'Leerfeld',
+            self::Leerfeld7 => 'Leerfeld',
+            self::Leerfeld8 => 'Leerfeld',
+            self::Leerfeld9 => 'Leerfeld',
+            self::Leerfeld10 => 'Leerfeld',
+            self::Leerfeld11 => 'Leerfeld',
+            self::Leerfeld12 => 'Leerfeld',
+            default => $this->value,
+        };
+    }
 }

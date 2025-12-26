@@ -26,11 +26,11 @@ enum DateTimeFormatGroup: string {
      */
     public function getFormats(): array {
         return match ($this) {
-            self::American => ['m/d/Y', 'm/d/Y H:i:s', 'm-d-Y', 'm-d-Y H:i:s'],
-            self::Asian    => ['Y/m/d', 'Y/m/d H:i:s', 'Y-m-d', 'Y-m-d H:i:s', 'd/m/Y'],
-            self::European => ['d/m/Y', 'd/m/Y H:i:s', 'd-m-Y', 'd-m-Y H:i:s'],
-            self::Mixed    => ['d/m/Y', 'd/m/Y H:i:s', 'd.m.Y', 'd.m.Y H:i:s'],
-            self::Russian  => ['d.m.Y', 'd.m.Y H:i:s', 'd/m/Y', 'd-m-Y'],
+            self::American => ['m/d/Y', 'm/d/Y H:i:s', 'm-d-Y', 'm-d-Y H:i:s', 'm/d/y', 'm-d-y'],
+            self::Asian    => ['Y/m/d', 'Y/m/d H:i:s', 'Y-m-d', 'Y-m-d H:i:s', 'd/m/Y', 'y/m/d', 'y-m-d'],
+            self::European => ['d/m/Y', 'd/m/Y H:i:s', 'd-m-Y', 'd-m-Y H:i:s', 'd/m/y', 'd-m-y'],
+            self::Mixed    => ['d/m/Y', 'd/m/Y H:i:s', 'd.m.Y', 'd.m.Y H:i:s', 'd.m.y', 'd.m.y H:i:s', 'd/m/y'],
+            self::Russian  => ['d.m.Y', 'd.m.Y H:i:s', 'd/m/Y', 'd-m-Y', 'd.m.y', 'd/m/y', 'd-m-y'],
         };
     }
 

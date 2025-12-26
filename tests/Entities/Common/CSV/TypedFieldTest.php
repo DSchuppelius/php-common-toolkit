@@ -67,23 +67,28 @@ final class TypedFieldTest extends BaseTestCase {
     }
 
     public function testDateTimeDetectionAndConversion(): void {
-        $testCases = [
+        // ISO und deutsche Formate mit Standard (Germany)
+        $germanTestCases = [
             '2025-12-22 15:30:00' => 'Y-m-d H:i:s',
             '2025-12-22T15:30:00' => 'Y-m-d\TH:i:s',
             '2025-12-22' => 'Y-m-d',
             '22.12.2025' => 'd.m.Y',
             '22.12.2025 15:30:00' => 'd.m.Y H:i:s',
             '22/12/2025' => 'd/m/Y',
-            '12/22/2025' => 'm/d/Y'
         ];
 
-        foreach ($testCases as $value => $expectedFormat) {
+        foreach ($germanTestCases as $value => $expectedFormat) {
             $field = new DataField($value);
             $this->assertTrue($field->isDateTime(), "'{$value}' should be detected as datetime");
 
             $dateTime = $field->getTypedValue();
             $this->assertInstanceOf(DateTimeImmutable::class, $dateTime);
         }
+
+        // US-Format (m/d/Y) benötigt CountryCode::UnitedStatesOfAmerica
+        $usField = new DataField('12/22/2025', '"', \CommonToolkit\Enums\CountryCode::UnitedStatesOfAmerica);
+        $this->assertTrue($usField->isDateTime(), "'12/22/2025' should be detected as datetime with US locale");
+        $this->assertInstanceOf(DateTimeImmutable::class, $usField->getTypedValue());
     }
 
     public function testUnixTimestampDetection(): void {

@@ -37,6 +37,8 @@ use CommonToolkit\Registries\DATEV\HeaderRegistry;
 use CommonToolkit\Contracts\Interfaces\DATEV\MetaHeaderDefinitionInterface;
 use CommonToolkit\Enums\DATEV\MetaFields\Format\Category;
 use CommonToolkit\Helper\FileSystem\File;
+use CommonToolkit\Entities\Common\CSV\Document as CSVDocument;
+use CommonToolkit\Helper\Data\StringHelper;
 use Exception;
 use RuntimeException;
 
@@ -52,10 +54,17 @@ class DatevDocumentParser extends CSVDocumentParser {
      * @param string $delimiter CSV-Trennzeichen (Standard: Semikolon)
      * @param string $enclosure CSV-Textbegrenzer (Standard: Anführungszeichen)
      * @param bool $hasHeader Ob ein Header vorhanden ist (bei DATEV immer true)
+     * @param string|null $encoding Das Quell-Encoding. Wenn null, wird UTF-8 angenommen.
      * @return Document Das geparste DATEV-Dokument
      * @throws RuntimeException Bei Parsing-Fehlern oder unbekannten Formaten
      */
-    public static function fromString(string $csv, string $delimiter = ';', string $enclosure = '"', bool $hasHeader = true): Document {
+    public static function fromString(string $csv, string $delimiter = ';', string $enclosure = '"', bool $hasHeader = true, ?string $encoding = null): Document {
+        // Encoding-Erkennung und Konvertierung nach UTF-8 für internes Parsing
+        $sourceEncoding = $encoding ?? CSVDocument::DEFAULT_ENCODING;
+        if ($sourceEncoding !== CSVDocument::DEFAULT_ENCODING) {
+            $csv = StringHelper::convertEncoding($csv, $sourceEncoding, CSVDocument::DEFAULT_ENCODING);
+        }
+
         $lines = explode("\n", trim($csv));
 
         if (count($lines) < 2) {
@@ -84,7 +93,7 @@ class DatevDocumentParser extends CSVDocumentParser {
         $formatHeader = self::createFormatHeaderLine($metaHeaderLine, $csvDocument->getHeader(), $delimiter, $enclosure);
 
         // 5. DATEV-spezifisches Document mit MetaHeader und Format-Header erstellen
-        return self::createDocument($category, $metaHeaderLine, $formatHeader, $csvDocument->getRows());
+        return self::createDocument($category, $metaHeaderLine, $formatHeader, $csvDocument->getRows(), $sourceEncoding);
     }
 
     /**
@@ -169,6 +178,8 @@ class DatevDocumentParser extends CSVDocumentParser {
     /**
      * Parst eine DATEV-CSV-Datei aus einer Datei.
      * Nutzt File Helper für effizienten und sicheren Dateizugriff.
+     *
+     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
      */
     public static function fromFile(
         string $file,
@@ -177,7 +188,8 @@ class DatevDocumentParser extends CSVDocumentParser {
         bool $hasHeader = true,
         int $startLine = 1,
         ?int $maxLines = null,
-        bool $skipEmpty = false
+        bool $skipEmpty = false,
+        bool $detectEncoding = true
     ): Document {
         // File Helper für Validierung und Zugriff nutzen
         if (!File::isReadable($file)) {
@@ -194,12 +206,27 @@ class DatevDocumentParser extends CSVDocumentParser {
         }
 
         $content = implode("\n", $lines);
-        return self::fromString($content, $delimiter, $enclosure);
+
+        // Encoding-Erkennung wenn aktiviert - nutze File::chardet für Datei-basierte Erkennung
+        $encoding = null;
+        if ($detectEncoding) {
+            $encoding = File::chardet($file);
+            if ($encoding === false) {
+                $encoding = null;
+                static::logWarning("Encoding konnte nicht erkannt werden für: $file");
+            } else {
+                static::logDebug("Erkanntes Encoding für $file: $encoding");
+            }
+        }
+
+        return self::fromString($content, $delimiter, $enclosure, $hasHeader, $encoding);
     }
 
     /**
      * Parst einen Bereich einer DATEV-CSV-Datei.
      * Nutzt File Helper für effizienten Bereichs-Zugriff.
+     *
+     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
      */
     public static function fromFileRange(
         string $file,
@@ -207,7 +234,8 @@ class DatevDocumentParser extends CSVDocumentParser {
         int $toLine,
         string $delimiter = ';',
         string $enclosure = '"',
-        bool $includeHeader = true
+        bool $includeHeader = true,
+        bool $detectEncoding = true
     ): Document {
         if ($fromLine < 3) {
             throw new RuntimeException("DATEV-Dateien benötigen MetaHeader (Zeile 1) und FieldHeader (Zeile 2). Startzeile muss >= 3 sein.");
@@ -233,7 +261,19 @@ class DatevDocumentParser extends CSVDocumentParser {
             throw new RuntimeException("Keine Zeilen im angegebenen Bereich gefunden");
         }
 
-        return self::fromString(implode("\n", $selectedLines), $delimiter, $enclosure);
+        $content = implode("\n", $selectedLines);
+
+        // Encoding-Erkennung wenn aktiviert - nutze File::chardet für Datei-basierte Erkennung
+        $encoding = null;
+        if ($detectEncoding) {
+            $encoding = File::chardet($file);
+            if ($encoding === false) {
+                $encoding = null;
+                static::logWarning("Encoding konnte nicht erkannt werden für: $file");
+            }
+        }
+
+        return self::fromString($content, $delimiter, $enclosure, $includeHeader, $encoding);
     }
 
     /**
@@ -404,18 +444,19 @@ class DatevDocumentParser extends CSVDocumentParser {
      * @param MetaHeaderLine $metaHeader Der MetaHeader
      * @param HeaderLine $header Der Format-spezifische Header
      * @param array $rows Die Datenzeilen
+     * @param string $encoding Das Encoding des Dokuments
      * @return Document Das korrekte Document-Objekt
      * @throws RuntimeException Wenn die Kategorie nicht unterstützt wird
      */
-    private static function createDocument(?Category $category, MetaHeaderLine $metaHeader, HeaderLine $header, array $rows): Document {
+    private static function createDocument(?Category $category, MetaHeaderLine $metaHeader, HeaderLine $header, array $rows, string $encoding = CSVDocument::DEFAULT_ENCODING): Document {
         return match ($category) {
-            Category::Buchungsstapel => new BookingBatch($metaHeader, $header, $rows),
-            Category::DebitorenKreditoren => new DebitorsCreditors($metaHeader, $header, $rows),
-            Category::DiverseAdressen => new VariousAddresses($metaHeader, $header, $rows),
-            Category::Sachkontenbeschriftungen => new GLAccountDescription($metaHeader, $header, $rows),
-            Category::WiederkehrendeBuchungen => new RecurringBookings($metaHeader, $header, $rows),
-            Category::Zahlungsbedingungen => new PaymentTerms($metaHeader, $header, $rows),
-            Category::NaturalStapel => new NaturalStack($metaHeader, $header, $rows),
+            Category::Buchungsstapel => new BookingBatch($metaHeader, $header, $rows, null, $encoding),
+            Category::DebitorenKreditoren => new DebitorsCreditors($metaHeader, $header, $rows, null, $encoding),
+            Category::DiverseAdressen => new VariousAddresses($metaHeader, $header, $rows, null, $encoding),
+            Category::Sachkontenbeschriftungen => new GLAccountDescription($metaHeader, $header, $rows, null, $encoding),
+            Category::WiederkehrendeBuchungen => new RecurringBookings($metaHeader, $header, $rows, null, $encoding),
+            Category::Zahlungsbedingungen => new PaymentTerms($metaHeader, $header, $rows, null, $encoding),
+            Category::NaturalStapel => new NaturalStack($metaHeader, $header, $rows, null, $encoding),
             default => throw new RuntimeException(sprintf('Unsupported DATEV category: %s', $category?->nameValue() ?? 'null')),
         };
     }

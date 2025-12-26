@@ -30,11 +30,13 @@ class CSVDocumentBuilder {
     protected string $delimiter;
     protected string $enclosure;
     protected ?ColumnWidthConfig $columnWidthConfig = null;
+    protected string $encoding = Document::DEFAULT_ENCODING;
 
-    public function __construct(string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null) {
+    public function __construct(string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null, string $encoding = Document::DEFAULT_ENCODING) {
         $this->delimiter           = $delimiter;
         $this->enclosure           = $enclosure;
         $this->columnWidthConfig   = $columnWidthConfig;
+        $this->encoding            = $encoding;
     }
 
     /**
@@ -111,12 +113,33 @@ class CSVDocumentBuilder {
         $builder = new self(
             $delimiter ?? $document->getDelimiter(),
             $enclosure ?? $document->getEnclosure(),
-            $document->getColumnWidthConfig()
+            $document->getColumnWidthConfig(),
+            $document->getEncoding()
         );
 
         $builder->header = $document->getHeader() ? clone $document->getHeader() : null;
         $builder->rows   = array_map(fn($row) => clone $row, $document->getRows());
         return $builder;
+    }
+
+    /**
+     * Setzt die Zeichenkodierung des Dokuments.
+     *
+     * @param string $encoding Die Zeichenkodierung (z.B. 'UTF-8', 'ISO-8859-1')
+     * @return $this
+     */
+    public function setEncoding(string $encoding): self {
+        $this->encoding = $encoding;
+        return $this;
+    }
+
+    /**
+     * Gibt die aktuelle Zeichenkodierung zurück.
+     *
+     * @return string
+     */
+    public function getEncoding(): string {
+        return $this->encoding;
     }
 
     /**
@@ -243,7 +266,8 @@ class CSVDocumentBuilder {
             $this->rows,
             $this->delimiter,
             $this->enclosure,
-            $this->columnWidthConfig
+            $this->columnWidthConfig,
+            $this->encoding
         );
     }
 }

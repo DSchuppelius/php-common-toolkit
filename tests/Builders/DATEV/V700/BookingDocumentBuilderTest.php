@@ -16,7 +16,6 @@ use CommonToolkit\Builders\DATEV\V700\BookingDocumentBuilder;
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\Documents\BookingBatch;
 use CommonToolkit\Entities\DATEV\Header\BookingBatchHeaderLine;
-use CommonToolkit\Enums\DATEV\HeaderFields\V700\BookingBatchHeaderField;
 use CommonToolkit\Parsers\DatevDocumentParser;
 use DateTimeImmutable;
 use RuntimeException;
@@ -208,44 +207,12 @@ class BookingDocumentBuilderTest extends BaseTestCase {
         $outputContent = $document->toString();
         $outputContent = rtrim($outputContent, "\n");
 
-        // Teile in Zeilen auf
-        $originalLines = explode("\n", $originalContent);
-        $outputLines = explode("\n", $outputContent);
-
-        // Prüfe Zeilenanzahl
-        $this->assertCount(
-            count($originalLines),
-            $outputLines,
-            sprintf('Zeilenanzahl sollte übereinstimmen: Original=%d, Output=%d', count($originalLines), count($outputLines))
-        );
-
-        // Zeile 1: MetaHeader - muss exakt übereinstimmen
+        // Direkter String-Vergleich: Output muss exakt mit Original übereinstimmen
         $this->assertEquals(
-            $originalLines[0],
-            $outputLines[0],
-            'MetaHeader (Zeile 1) sollte exakt übereinstimmen'
+            $originalContent,
+            $outputContent,
+            'Round-Trip: Generierter Output sollte exakt mit Original übereinstimmen'
         );
-
-        // Zeile 2: FieldHeader - Feldanzahl prüfen, nicht exakten String
-        // (Feldnamen können zwischen DATEV-Versionen variieren)
-        $originalHeaderFields = count(explode(';', $originalLines[1]));
-        $outputHeaderFields = count(explode(';', $outputLines[1]));
-        $this->assertEquals(
-            $originalHeaderFields,
-            $outputHeaderFields,
-            sprintf('Header-Feldanzahl sollte übereinstimmen: Original=%d, Output=%d', $originalHeaderFields, $outputHeaderFields)
-        );
-
-        // Datenzeilen (3+): Feldanzahl pro Zeile prüfen
-        for ($i = 2; $i < count($originalLines); $i++) {
-            $originalFieldCount = count(explode(';', $originalLines[$i]));
-            $outputFieldCount = count(explode(';', $outputLines[$i]));
-            $this->assertEquals(
-                $originalFieldCount,
-                $outputFieldCount,
-                sprintf('Zeile %d: Feldanzahl sollte übereinstimmen: Original=%d, Output=%d', $i + 1, $originalFieldCount, $outputFieldCount)
-            );
-        }
     }
 
     public function testRoundTripDataValuesArePreserved(): void {

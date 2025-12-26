@@ -17,6 +17,7 @@ use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\FileSystem\Folder;
 use ConfigToolkit\ConfigLoader;
 use ERRORToolkit\Traits\ErrorLog;
+use Exception;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -270,7 +271,11 @@ class BankHelper {
 
         if (!file_exists($path) || filemtime($path) < strtotime("-$expiry days")) {
             if (!empty($url)) {
-                @file_put_contents($path, file_get_contents($url));
+                try {
+                    File::write($path, File::read($url));
+                } catch (Exception) {
+                    // URL nicht erreichbar - bestehende Datei behalten falls vorhanden
+                }
             }
         }
 

@@ -636,4 +636,89 @@ enum VariousAddressesHeaderField: string implements FieldHeaderInterface {
         // Prüfe ob Pattern mit Anführungszeichen beginnt
         return (bool) preg_match('/^\^(\(?\[?"|\(?")/u', $pattern);
     }
+
+    /**
+     * Liefert den tatsächlichen Header-Namen für die CSV-Ausgabe.
+     * Weicht ggf. vom Enum-Wert ab, um Kompatibilität mit DATEV-Sample-Dateien zu gewährleisten.
+     */
+    public function headerName(): string {
+        return match ($this) {
+            // Zustellbezeichnung 2: Sample hat kein Leerzeichen
+            self::AbwZustellbezeichnung2 => 'Abw. Zustellbezeichnung 2',
+            // Rechnungsadresse Zustellbezeichnungen: Sample schreibt "Zustellbezeichnung" ohne 'n'
+            self::AbwZustellbezeichnung1Rechnungsadresse => 'Abw. Zustellbezeichnung 1 (Rechnungsadresse)',
+            self::AbwZustellbezeichnung2Rechnungsadresse => 'Abw. Zustellbezeichnung 2 (Rechnungsadresse)',
+            // Telefon Geschäftsleitung
+            self::TelefonGeschaeftsleitung => 'Telefon GL',
+            self::BemerkungTelefonGL => 'Bemerkung (Telefon GL)',
+            // Bemerkung Sonstige
+            self::BemerkungSonstige => 'Bemerkung (Sonstige)',
+            // Bankbezeichnungen: Sample schreibt "Bankbezeichnung" mit 'n'
+            self::Bankbezeichnung1 => 'Bankbezeichnung 1',
+            self::Bankbezeichnung2 => 'Bankbezeichnung 2',
+            self::Bankbezeichnung3 => 'Bankbezeichnung 3',
+            self::Bankbezeichnung4 => 'Bankbezeichnung 4',
+            self::Bankbezeichnung5 => 'Bankbezeichnung 5',
+            self::Bankbezeichnung6 => 'Bankbezeichnung 6',
+            self::Bankbezeichnung7 => 'Bankbezeichnung 7',
+            self::Bankbezeichnung8 => 'Bankbezeichnung 8',
+            self::Bankbezeichnung9 => 'Bankbezeichnung 9',
+            self::Bankbezeichnung10 => 'Bankbezeichnung 10',
+            // Bankkonto-Nummer: Sample schreibt "Bank-Kontonummer"
+            self::BankkontoNummer1 => 'Bank-Kontonummer 1',
+            self::BankkontoNummer2 => 'Bank-Kontonummer 2',
+            self::BankkontoNummer3 => 'Bank-Kontonummer 3',
+            self::BankkontoNummer4 => 'Bank-Kontonummer 4',
+            self::BankkontoNummer5 => 'Bank-Kontonummer 5',
+            self::BankkontoNummer6 => 'Bank-Kontonummer 6',
+            self::BankkontoNummer7 => 'Bank-Kontonummer 7',
+            self::BankkontoNummer8 => 'Bank-Kontonummer 8',
+            self::BankkontoNummer9 => 'Bank-Kontonummer 9',
+            self::BankkontoNummer10 => 'Bank-Kontonummer 10',
+            // Leerfeld: Sample hat keine Nummer
+            self::Leerfeld1 => 'Leerfeld',
+            self::Leerfeld2 => 'Leerfeld',
+            self::Leerfeld3 => 'Leerfeld',
+            self::Leerfeld4 => 'Leerfeld',
+            self::Leerfeld5 => 'Leerfeld',
+            self::Leerfeld6 => 'Leerfeld',
+            self::Leerfeld7 => 'Leerfeld',
+            self::Leerfeld8 => 'Leerfeld',
+            self::Leerfeld9 => 'Leerfeld',
+            self::Leerfeld10 => 'Leerfeld',
+            // Bankverb: Sample ohne Punkt nach "Bankverb"
+            self::Bankverb1GueltigVon => 'Bankverb 1 Gültig von',
+            self::Bankverb1GueltigBis => 'Bankverb 1 Gültig bis',
+            self::Bankverb2GueltigVon => 'Bankverb 2 Gültig von',
+            self::Bankverb2GueltigBis => 'Bankverb 2 Gültig bis',
+            self::Bankverb3GueltigVon => 'Bankverb 3 Gültig von',
+            self::Bankverb3GueltigBis => 'Bankverb 3 Gültig bis',
+            self::Bankverb4GueltigVon => 'Bankverb 4 Gültig von',
+            self::Bankverb4GueltigBis => 'Bankverb 4 Gültig bis',
+            self::Bankverb5GueltigVon => 'Bankverb 5 Gültig von',
+            self::Bankverb5GueltigBis => 'Bankverb 5 Gültig bis',
+            self::Bankverb6GueltigVon => 'Bankverb 6 Gültig von',
+            self::Bankverb6GueltigBis => 'Bankverb 6 Gültig bis',
+            self::Bankverb7GueltigVon => 'Bankverb 7 Gültig von',
+            self::Bankverb7GueltigBis => 'Bankverb 7 Gültig bis',
+            self::Bankverb8GueltigVon => 'Bankverb 8 Gültig von',
+            self::Bankverb8GueltigBis => 'Bankverb 8 Gültig bis',
+            self::Bankverb9GueltigVon => 'Bankverb 9 Gültig von',
+            self::Bankverb9GueltigBis => 'Bankverb 9 Gültig bis',
+            self::Bankverb10GueltigVon => 'Bankverb 10 Gültig von',
+            self::Bankverb10GueltigBis => 'Bankverb 10 Gültig bis',
+            // SEPA-Mandatsreferenz: Sample hat kein "SEPA-" Präfix
+            self::SEPAMandatsreferenz1 => 'Mandatsreferenz 1',
+            self::SEPAMandatsreferenz2 => 'Mandatsreferenz 2',
+            self::SEPAMandatsreferenz3 => 'Mandatsreferenz 3',
+            self::SEPAMandatsreferenz4 => 'Mandatsreferenz 4',
+            self::SEPAMandatsreferenz5 => 'Mandatsreferenz 5',
+            self::SEPAMandatsreferenz6 => 'Mandatsreferenz 6',
+            self::SEPAMandatsreferenz7 => 'Mandatsreferenz 7',
+            self::SEPAMandatsreferenz8 => 'Mandatsreferenz 8',
+            self::SEPAMandatsreferenz9 => 'Mandatsreferenz 9',
+            self::SEPAMandatsreferenz10 => 'Mandatsreferenz 10',
+            default => $this->value,
+        };
+    }
 }

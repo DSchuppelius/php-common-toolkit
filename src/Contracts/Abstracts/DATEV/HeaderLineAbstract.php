@@ -54,9 +54,10 @@ abstract class HeaderLineAbstract extends HeaderLine {
         foreach ($fields as $index => $field) {
             $this->fieldIndex[$field->value] = $index;
             // Quoting basierend auf isQuotedHeader() des Feldes
+            // headerName() für tatsächlichen CSV-Header-Namen verwenden
             $rawFields[$index] = $field->isQuotedHeader()
-                ? $enclosure . $field->value . $enclosure
-                : $field->value;
+                ? $enclosure . $field->headerName() . $enclosure
+                : $field->headerName();
         }
 
         parent::__construct($rawFields, $delimiter, $enclosure);
@@ -82,9 +83,10 @@ abstract class HeaderLineAbstract extends HeaderLine {
 
         foreach ($requiredFields as $index => $field) {
             // Quoting basierend auf isQuotedHeader() des Feldes
+            // headerName() für tatsächlichen CSV-Header-Namen verwenden
             $rawFields[$index] = $field->isQuotedHeader()
-                ? $enclosure . $field->value . $enclosure
-                : $field->value;
+                ? $enclosure . $field->headerName() . $enclosure
+                : $field->headerName();
             $fieldIndex[$field->value] = $index;
         }
 

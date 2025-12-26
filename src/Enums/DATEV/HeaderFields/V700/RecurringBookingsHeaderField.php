@@ -616,4 +616,51 @@ enum RecurringBookingsHeaderField: string implements FieldHeaderInterface {
         // Prüfe ob Pattern mit Anführungszeichen beginnt
         return (bool) preg_match('/^\^(\(?\[?"|\(?")/u', $pattern);
     }
+
+    /**
+     * Liefert den tatsächlichen Header-Namen für die CSV-Ausgabe.
+     * Weicht ggf. vom Enum-Wert ab, um Kompatibilität mit DATEV-Sample-Dateien zu gewährleisten.
+     */
+    public function headerName(): string {
+        return match ($this) {
+            self::WKZUmsatz => 'WKZ (Umsatz)',
+            self::Umsatz => 'Umsatz (ohne Soll/Haben-Kz)',
+            self::SollHabenKennzeichen => 'Soll/Haben-Kennzeichen',
+            self::BasisUmsatz => 'Basis-Umsatz',
+            self::WKZBasisUmsatz => 'WKZ Basis-Umsatz',
+            self::BUSchluessel => 'BU-Schlüssel',
+            self::Belegfeld1 => 'Belegfeld1',
+            self::Belegfeld2 => 'Belegfeld2',
+            self::Konto => 'Kontonummer',
+            self::KOST1 => 'KOST1-Kostenstelle',
+            self::KOST2 => 'KOST2-Kostenstelle',
+            self::EULandUStIDBestimmung => 'EU-Land u. UStId (Bestimmung)',
+            self::ZusatzinformationInhalt1 => 'Zusatzinformation- Inhalt 1',
+            self::ZusatzinformationInhalt2 => 'Zusatzinformation- Inhalt 2',
+            self::ZusatzinformationInhalt3 => 'Zusatzinformation- Inhalt 3',
+            self::ZusatzinformationInhalt4 => 'Zusatzinformation- Inhalt 4',
+            self::ZusatzinformationInhalt5 => 'Zusatzinformation- Inhalt 5',
+            self::ZusatzinformationInhalt6 => 'Zusatzinformation- Inhalt 6',
+            self::ZusatzinformationInhalt7 => 'Zusatzinformation- Inhalt 7',
+            self::ZusatzinformationInhalt8 => 'Zusatzinformation- Inhalt 8',
+            self::ZusatzinformationInhalt9 => 'Zusatzinformation- Inhalt 9',
+            self::ZusatzinformationInhalt10 => 'Zusatzinformation- Inhalt 10',
+            self::ZusatzinformationInhalt11 => 'Zusatzinformation- Inhalt 11',
+            self::ZusatzinformationInhalt12 => 'Zusatzinformation- Inhalt 12',
+            self::ZusatzinformationInhalt13 => 'Zusatzinformation- Inhalt 13',
+            self::ZusatzinformationInhalt14 => 'Zusatzinformation- Inhalt 14',
+            self::ZusatzinformationInhalt15 => 'Zusatzinformation- Inhalt 15',
+            self::ZusatzinformationInhalt16 => 'Zusatzinformation- Inhalt 16',
+            self::ZusatzinformationInhalt17 => 'Zusatzinformation- Inhalt 17',
+            self::ZusatzinformationInhalt18 => 'Zusatzinformation- Inhalt 18',
+            self::ZusatzinformationInhalt19 => 'Zusatzinformation- Inhalt 19',
+            self::ZusatzinformationInhalt20 => 'Zusatzinformation- Inhalt 20',
+            self::Zahlungsweise => 'Zahlweise',
+            self::OrdnungszahlTagImMonat => 'Ordnungszahl Tag im Monat',
+            self::OrdnungszahlWochentag => 'Ordnungszahl Wochentag',
+            self::Endetyp => 'EndeTyp',
+            self::Generalumkehr => 'Generalumkehr (GU)',
+            default => $this->value,
+        };
+    }
 }

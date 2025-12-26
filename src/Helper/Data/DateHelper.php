@@ -610,17 +610,23 @@ class DateHelper {
             'Y-m-d',        // ISO Format: YYYY-MM-DD
             'd.m.Y',        // Deutsch: DD.MM.YYYY (sicherer als DD-MM-YYYY)
             'd.m.Y H:i:s',  // Deutsch mit Zeit
+            'd.m.y',        // Deutsch 2-stellig: DD.MM.YY
+            'd.m.y H:i:s',  // Deutsch 2-stellig mit Zeit
         ];
 
         // Länder-spezifische Formate hinzufügen
         $countryFormats = $country->getDateTimeFormatGroup()->getFormats();
         $formats = array_merge($formats, $countryFormats);
 
-        // Formate durchprobieren
+        // Formate durchprobieren mit Round-Trip-Validierung
         foreach ($formats as $fmt) {
             $date = DateTimeImmutable::createFromFormat($fmt, $value);
             if ($date !== false) {
-                return $fmt;
+                // Prüfe, ob das Format korrekt rück-formatiert wird (Round-Trip)
+                // Dies verhindert, dass d.m.Y für "29.12.15" matched (ergibt "29.12.0015")
+                if ($date->format($fmt) === $value) {
+                    return $fmt;
+                }
             }
         }
 

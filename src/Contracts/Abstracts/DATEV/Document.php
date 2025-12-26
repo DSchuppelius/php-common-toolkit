@@ -16,6 +16,7 @@ use CommonToolkit\Entities\Common\CSV\Document as CSVDocument;
 use CommonToolkit\Entities\Common\CSV\HeaderLine;
 use CommonToolkit\Entities\DATEV\{DataLine, MetaHeaderLine};
 use CommonToolkit\Enums\{CreditDebit, CurrencyCode, CountryCode};
+use CommonToolkit\Helper\Data\StringHelper;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -25,11 +26,11 @@ abstract class Document extends CSVDocument {
     private ?MetaHeaderLine $metaHeader = null;
 
     /** @param DataLine[] $rows */
-    public function __construct(?MetaHeaderLine $metaHeader, ?HeaderLine $header, array $rows = [], ?ColumnWidthConfig $columnWidthConfig = null) {
+    public function __construct(?MetaHeaderLine $metaHeader, ?HeaderLine $header, array $rows = [], ?ColumnWidthConfig $columnWidthConfig = null, string $encoding = CSVDocument::DEFAULT_ENCODING) {
         // Falls keine ColumnWidthConfig übergeben wurde, erstelle eine basierend auf DATEV-Spezifikation
         $columnWidthConfig ??= static::createDatevColumnWidthConfig();
 
-        parent::__construct($header, $rows, ';', '"', $columnWidthConfig);
+        parent::__construct($header, $rows, ';', '"', $columnWidthConfig, $encoding);
         $this->metaHeader  = $metaHeader;
     }
 
@@ -91,11 +92,13 @@ abstract class Document extends CSVDocument {
      * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
      * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
      * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
+     * @param string|null $targetEncoding Das Ziel-Encoding. Wenn null, wird das Dokument-Encoding verwendet.
      * @return string
      */
-    public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null): string {
+    public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null): string {
         $delimiter ??= $this->delimiter;
         $enclosure ??= $this->enclosure;
+        $targetEncoding ??= $this->encoding;
 
         $lines = [];
 
@@ -104,13 +107,20 @@ abstract class Document extends CSVDocument {
             $lines[] = $this->metaHeader->toString($delimiter, $enclosure);
         }
 
-        // Parent-Logik für Header und Datenzeilen
-        $parentContent = parent::toString($delimiter, $enclosure, $enclosureRepeat);
+        // Parent-Logik für Header und Datenzeilen (immer UTF-8, Konvertierung am Ende)
+        $parentContent = parent::toString($delimiter, $enclosure, $enclosureRepeat, CSVDocument::DEFAULT_ENCODING);
         if ($parentContent !== '') {
             $lines[] = $parentContent;
         }
 
-        return implode("\n", $lines);
+        $result = implode("\n", $lines);
+
+        // Encoding-Konvertierung falls nötig - nutze StringHelper
+        if ($targetEncoding !== CSVDocument::DEFAULT_ENCODING) {
+            return StringHelper::convertEncoding($result, CSVDocument::DEFAULT_ENCODING, $targetEncoding);
+        }
+
+        return $result;
     }
 
     /**

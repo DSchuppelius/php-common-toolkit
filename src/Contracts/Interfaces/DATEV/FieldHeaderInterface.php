@@ -69,4 +69,11 @@ interface FieldHeaderInterface {
      * Basiert auf dem Datentyp: Text-Felder = gequotet, numerische Felder = nicht gequotet.
      */
     public function isQuotedValue(): bool;
+
+    /**
+     * Liefert den tatsächlichen Header-Namen für die CSV-Ausgabe.
+     * Kann vom Enum-Wert abweichen, wenn die DATEV-Sample-Dateien andere Namen verwenden.
+     * Standardmäßig wird der Enum-Wert zurückgegeben.
+     */
+    public function headerName(): string;
 }

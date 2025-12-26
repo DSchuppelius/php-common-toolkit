@@ -15,6 +15,7 @@ namespace CommonToolkit\Parsers;
 use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Entities\Common\CSV\{HeaderLine, DataLine};
 use CommonToolkit\Helper\Data\CSV\StringHelper;
+use CommonToolkit\Helper\Data\StringHelper as DataStringHelper;
 use CommonToolkit\Contracts\Interfaces\Common\CSV\{LineInterface, FieldInterface};
 use CommonToolkit\Entities\Common\CSV\Document;
 use CommonToolkit\Helper\FileSystem\File;
@@ -32,13 +33,20 @@ class CSVDocumentParser {
      * @param string $delimiter CSV-Trennzeichen
      * @param string $enclosure CSV-Textbegrenzer
      * @param bool $hasHeader Ob ein Header vorhanden ist
+     * @param string|null $encoding Das Quell-Encoding. Wenn null, wird UTF-8 angenommen.
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Parsing-Fehlern
      */
-    public static function fromString(string $csv, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true): Document {
+    public static function fromString(string $csv, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, ?string $encoding = null): Document {
         $csv = trim($csv);
         if ($csv === '') {
             throw new RuntimeException('Leere CSV-Zeichenkette');
+        }
+
+        // Encoding-Erkennung und Konvertierung nach UTF-8 für internes Parsing
+        $sourceEncoding = $encoding ?? Document::DEFAULT_ENCODING;
+        if ($sourceEncoding !== Document::DEFAULT_ENCODING) {
+            $csv = DataStringHelper::convertEncoding($csv, $sourceEncoding, Document::DEFAULT_ENCODING);
         }
 
         $lines = StringHelper::splitCsvByLogicalLine($csv, $enclosure);
@@ -47,7 +55,7 @@ class CSVDocumentParser {
             throw new RuntimeException('Keine gültigen CSV-Zeilen erkannt');
         }
 
-        $builder = new CSVDocumentBuilder($delimiter, $enclosure);
+        $builder = new CSVDocumentBuilder($delimiter, $enclosure, null, $sourceEncoding);
 
         try {
             if ($hasHeader) {
@@ -94,10 +102,11 @@ class CSVDocumentParser {
      * @param int $startLine Ab welcher Zeile gelesen werden soll (1-basiert)
      * @param int|null $maxLines Maximale Anzahl zu lesender Zeilen (null = alle)
      * @param bool $skipEmpty Leere Zeilen überspringen
+     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
-    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, int $startLine = 1, ?int $maxLines = null, bool $skipEmpty = false): Document {
+    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, int $startLine = 1, ?int $maxLines = null, bool $skipEmpty = false, bool $detectEncoding = true): Document {
         if (!File::isReadable($file)) {
             static::logError("CSV-Datei nicht lesbar: $file");
             throw new RuntimeException("CSV-Datei nicht lesbar: $file");
@@ -112,7 +121,20 @@ class CSVDocumentParser {
         }
 
         $content = implode("\n", $lines);
-        return self::fromString($content, $delimiter, $enclosure, $hasHeader);
+
+        // Encoding-Erkennung wenn aktiviert - nutze File::chardet für Datei-basierte Erkennung
+        $encoding = null;
+        if ($detectEncoding) {
+            $encoding = File::chardet($file);
+            if ($encoding === false) {
+                $encoding = null;
+                static::logWarning("Encoding konnte nicht erkannt werden für: $file");
+            } else {
+                static::logDebug("Erkanntes Encoding für $file: $encoding");
+            }
+        }
+
+        return self::fromString($content, $delimiter, $enclosure, $hasHeader, $encoding);
     }
 
     /**
@@ -124,10 +146,11 @@ class CSVDocumentParser {
      * @param string $delimiter CSV-Trennzeichen
      * @param string $enclosure CSV-Textbegrenzer
      * @param bool $includeHeader Ob Header-Zeile aus Zeile 1 mit einbezogen werden soll
+     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
-    public static function fromFileRange(string $file, int $fromLine, int $toLine, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $includeHeader = true): Document {
+    public static function fromFileRange(string $file, int $fromLine, int $toLine, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $includeHeader = true, bool $detectEncoding = true): Document {
         if ($fromLine > $toLine) {
             throw new RuntimeException("Startzeile ($fromLine) darf nicht größer als Endzeile ($toLine) sein");
         }
@@ -158,6 +181,17 @@ class CSVDocumentParser {
         }
 
         $content = implode("\n", $lines);
-        return self::fromString($content, $delimiter, $enclosure, $includeHeader);
+
+        // Encoding-Erkennung wenn aktiviert - nutze File::chardet für Datei-basierte Erkennung
+        $encoding = null;
+        if ($detectEncoding) {
+            $encoding = File::chardet($file);
+            if ($encoding === false) {
+                $encoding = null;
+                static::logWarning("Encoding konnte nicht erkannt werden für: $file");
+            }
+        }
+
+        return self::fromString($content, $delimiter, $enclosure, $includeHeader, $encoding);
     }
 }

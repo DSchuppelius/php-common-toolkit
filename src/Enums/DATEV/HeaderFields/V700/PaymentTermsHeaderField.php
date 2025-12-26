@@ -337,4 +337,12 @@ enum PaymentTermsHeaderField: string implements FieldHeaderInterface {
         // Prüfe ob Pattern mit Anführungszeichen beginnt
         return (bool) preg_match('/^\^(\(?\[?"|\(?")/u', $pattern);
     }
+
+    /**
+     * Liefert den tatsächlichen Header-Namen für die CSV-Ausgabe.
+     * Weicht ggf. vom Enum-Wert ab, um Kompatibilität mit DATEV-Sample-Dateien zu gewährleisten.
+     */
+    public function headerName(): string {
+        return $this->value;
+    }
 }

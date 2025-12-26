@@ -212,12 +212,23 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     /**
      * Liest den Inhalt der angegebenen Datei.
      *
-     * @param string $file Der Pfad zur Datei.
-     * @return string Der Inhalt der Datei.
+     * @param string $file Der Pfad zur Datei oder eine URL (http/https).
+     * @return string Der Inhalt der Datei oder URL.
      * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
      * @throws Exception Wenn ein Fehler beim Lesen auftritt.
      */
     public static function read(string $file): string {
+        // URL-Unterstützung: http:// und https:// Protokolle
+        if (preg_match('#^https?://#i', $file)) {
+            $content = @file_get_contents($file);
+            if ($content === false) {
+                self::logError("Fehler beim Abrufen der URL: $file");
+                throw new Exception("Fehler beim Abrufen der URL: $file");
+            }
+            self::logDebug("URL erfolgreich abgerufen: $file");
+            return $content;
+        }
+
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
             self::logError("Datei nicht gefunden: $file");

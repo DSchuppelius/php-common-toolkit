@@ -11,6 +11,8 @@ namespace CommonToolkit\Enums\DATEV\HeaderFields\ASCII;
  * Format basiert auf der offiziellen DATEV-Dokumentation (Dok.-Nr. 9226961).
  * Mindestens 7 Felder sind erforderlich, maximal 34 Felder sind möglich.
  * 
+ * @see https://help-center.apps.datev.de/documents/9226961
+ * 
  * @since 1.0.0
  * @package CommonToolkit\Enums\DATEV\ASCII
  */
@@ -213,6 +215,63 @@ enum BankTransactionHeaderField: string {
             self::VERWENDUNGSZWECK_12 => 27,               // Max. 27 Zeichen
             self::VERWENDUNGSZWECK_13 => 27,               // Max. 27 Zeichen
             self::VERWENDUNGSZWECK_14 => 27,               // Max. 27 Zeichen
+        };
+    }
+
+    /**
+     * Gibt zurück, ob das Feld in Anführungszeichen gesetzt werden muss.
+     * 
+     * Nach DATEV-Dokumentation (Dok.-Nr. 9226961):
+     * - Format "A" (alphanumerisch): Anführungszeichen erforderlich
+     * - Format "N" (numerisch): Keine Anführungszeichen
+     * - Format "D" (Datum): Keine Anführungszeichen (optional erlaubt)
+     * 
+     * HINWEIS: In der Praxis werden einige "N"-Felder trotzdem gequotet (z.B. Geschäftsvorgangscode).
+     * Diese Implementierung orientiert sich an der tatsächlichen DATEV-Praxis.
+     * 
+     * @return bool True wenn das Feld gequotet werden muss
+     */
+    public function isQuoted(): bool {
+        return match ($this) {
+            // Alphanumerische Felder (Format A) - müssen gequotet werden
+            self::BLZ_BIC_KONTOINHABER,              // Feld 1: A (BLZ oder BIC)
+            self::KONTONUMMER_IBAN_KONTOINHABER,     // Feld 2: A (Kontonummer oder IBAN)
+            self::AUFTRAGGEBERNAME_1,                // Feld 8: A
+            self::AUFTRAGGEBERNAME_2,                // Feld 9: A
+            self::BLZ_BIC_AUFTRAGGEBER,              // Feld 10: A (BLZ oder BIC)
+            self::KONTONUMMER_IBAN_AUFTRAGGEBER,     // Feld 11: A (Kontonummer oder IBAN)
+            self::VERWENDUNGSZWECK_1,                // Feld 12: A
+            self::VERWENDUNGSZWECK_2,                // Feld 13: A
+            self::VERWENDUNGSZWECK_3,                // Feld 14: A
+            self::VERWENDUNGSZWECK_4,                // Feld 15: A
+            self::GESCHAEFTSVORGANGSCODE,            // Feld 16: A
+            self::WAEHRUNG,                          // Feld 17: A (Währungscode)
+            self::BUCHUNGSTEXT,                      // Feld 18: A
+            self::VERWENDUNGSZWECK_5,                // Feld 19: A
+            self::VERWENDUNGSZWECK_6,                // Feld 20: A
+            self::VERWENDUNGSZWECK_7,                // Feld 21: A
+            self::VERWENDUNGSZWECK_8,                // Feld 22: A
+            self::VERWENDUNGSZWECK_9,                // Feld 23: A
+            self::VERWENDUNGSZWECK_10,               // Feld 24: A
+            self::WAEHRUNG_URSPRUNGSBETRAG,          // Feld 26: A (Währungscode)
+            self::WAEHRUNG_AEQUIVALENZBETRAG,        // Feld 28: A (Währungscode)
+            self::WAEHRUNG_GEBUEHR,                  // Feld 30: A (Währungscode)
+            self::VERWENDUNGSZWECK_11,               // Feld 31: A
+            self::VERWENDUNGSZWECK_12,               // Feld 32: A
+            self::VERWENDUNGSZWECK_13,               // Feld 33: A
+            self::VERWENDUNGSZWECK_14                // Feld 34: A
+                => true,
+
+            // Numerische Felder (Format N) und Datumsfelder (Format D) - nicht gequotet
+            self::AUSZUGSNUMMER,                     // Feld 3: N
+            self::AUSZUGSDATUM,                      // Feld 4: D
+            self::VALUTA,                            // Feld 5: D
+            self::BUCHUNGSDATUM,                     // Feld 6: D
+            self::UMSATZ,                            // Feld 7: N
+            self::URSPRUNGSBETRAG,                   // Feld 25: N
+            self::AEQUIVALENZBETRAG,                 // Feld 27: N
+            self::GEBUEHR                            // Feld 29: N
+                => false,
         };
     }
 }

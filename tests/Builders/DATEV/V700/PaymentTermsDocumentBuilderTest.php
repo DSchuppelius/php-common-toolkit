@@ -155,30 +155,19 @@ class PaymentTermsDocumentBuilderTest extends BaseTestCase {
         $originalContent = file_get_contents(self::SAMPLE_FILE);
         $originalContent = str_replace("\r\n", "\n", $originalContent);
         $originalContent = rtrim($originalContent, "\n");
-        $originalLines = explode("\n", $originalContent);
-
-        // Die Sample-Datei hat 31 Felder (Zeitraum-basiert)
-        $originalHeaderFields = count(explode(';', $originalLines[1]));
-        $this->assertEquals(31, $originalHeaderFields, 'PaymentTerms V700 Sample-Datei sollte 31 Felder haben');
 
         $document = DatevDocumentParser::fromString($originalContent);
         $this->assertInstanceOf(PaymentTerms::class, $document);
 
         $outputContent = $document->toString();
         $outputContent = rtrim($outputContent, "\n");
-        $outputLines = explode("\n", $outputContent);
 
-        $this->assertCount(count($originalLines), $outputLines, 'Zeilenanzahl sollte übereinstimmen');
-        $this->assertEquals($originalLines[0], $outputLines[0], 'MetaHeader sollte übereinstimmen');
-
-        $outputHeaderFields = count(explode(';', $outputLines[1]));
-        $this->assertEquals($originalHeaderFields, $outputHeaderFields, 'Header-Feldanzahl sollte übereinstimmen');
-
-        for ($i = 2; $i < count($originalLines); $i++) {
-            $originalFieldCount = count(explode(';', $originalLines[$i]));
-            $outputFieldCount = count(explode(';', $outputLines[$i]));
-            $this->assertEquals($originalFieldCount, $outputFieldCount, "Zeile " . ($i + 1) . ": Feldanzahl sollte übereinstimmen");
-        }
+        // Direkter String-Vergleich: Output muss exakt mit Original übereinstimmen
+        $this->assertEquals(
+            $originalContent,
+            $outputContent,
+            'Round-Trip: Generierter Output sollte exakt mit Original übereinstimmen'
+        );
     }
 
     public function testRoundTripDataValuesArePreserved(): void {
