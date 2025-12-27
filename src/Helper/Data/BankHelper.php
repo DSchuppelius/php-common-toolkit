@@ -168,25 +168,22 @@ class BankHelper {
      * @throws InvalidArgumentException Bei ungültiger BLZ oder Kontonummer.
      */
     public static function generateGermanIBAN(string $blz, string $kto): string {
-        // Entferne nicht-numerische Zeichen
+        // Entferne nicht-numerische Zeichen und normalisiere
         $blzClean = preg_replace('/[^0-9]/', '', $blz);
         $ktoClean = preg_replace('/[^0-9]/', '', $kto);
 
-        // Validiere BLZ (muss 1-8 Ziffern sein)
-        if (strlen($blzClean) === 0 || strlen($blzClean) > 8) {
-            self::logError("Ungültige BLZ: '$blz' (erwartet: 1-8 Ziffern)");
-            throw new InvalidArgumentException("Ungültige BLZ: '$blz' (erwartet: 1-8 Ziffern)");
-        }
-
-        // Validiere Kontonummer (muss 1-10 Ziffern sein)
-        if (strlen($ktoClean) === 0 || strlen($ktoClean) > 10) {
-            self::logError("Ungültige Kontonummer: '$kto' (erwartet: 1-10 Ziffern)");
-            throw new InvalidArgumentException("Ungültige Kontonummer: '$kto' (erwartet: 1-10 Ziffern)");
-        }
-
-        // Normalisiere auf exakte Längen: BLZ 8 Zeichen, KTO 10 Zeichen
+        // Padding auf Standardlängen
         $blzPadded = str_pad($blzClean, 8, '0', STR_PAD_LEFT);
         $ktoPadded = str_pad($ktoClean, 10, '0', STR_PAD_LEFT);
+
+        // Validierung mit Helper-Funktionen
+        if (!self::isBLZ($blzPadded)) {
+            self::logError("Ungültige BLZ: '$blz' (nach Normalisierung: '$blzPadded')");
+            throw new InvalidArgumentException("Ungültige BLZ: '$blz'");
+        } elseif (!self::isKTO($ktoPadded)) {
+            self::logError("Ungültige Kontonummer: '$kto' (nach Normalisierung: '$ktoPadded')");
+            throw new InvalidArgumentException("Ungültige Kontonummer: '$kto'");
+        }
 
         $account = $blzPadded . $ktoPadded;
         return self::generateIBAN('DE', $account);
