@@ -29,6 +29,9 @@ use Generator;
 class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     protected const CONFIG_FILE = __DIR__ . '/../../../config/common_executables.json';
 
+    /** @var array<string, string|false> Cache für chardet-Ergebnisse (Pfad → Encoding) */
+    private static array $chardetCache = [];
+
     /**
      * Gibt den konfigurierten Shell-Befehl zurück.
      *
@@ -132,13 +135,19 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::getRealExistingFile($file);
         if ($file === false) return false;
 
-        $content = file_get_contents($file, false, null, 0, 4096);
+        if (array_key_exists($file, self::$chardetCache)) {
+            self::logDebug("Chardet Cache-Hit für $file");
+            return self::$chardetCache[$file];
+        }
+
+        $content = self::readPartial($file);
         if ($content !== false) {
             $encodings = ['UTF-8', 'ISO-8859-1', 'ISO-8859-15', 'Windows-1252', 'ASCII'];
             $detected = mb_detect_encoding($content, $encodings, true);
             if ($detected !== false) {
                 self::logInfo("Zeichencodierung via PHP erkannt: $detected für $file");
                 self::adjustLocaleBasedOnEncoding($detected);
+                self::$chardetCache[$file] = $detected;
                 return $detected;
             }
         }
@@ -157,7 +166,17 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             self::logDebug("Shell-basierte Zeichencodierung erkannt: $detected für $file");
         }
 
+        // Ergebnis cachen (auch false für Fehlschläge)
+        self::$chardetCache[$file] = $detected;
         return $detected;
+    }
+
+    /**
+     * Leert den chardet-Cache.
+     * Nützlich für Tests oder nach Dateiänderungen.
+     */
+    public static function clearChardetCache(): void {
+        self::$chardetCache = [];
     }
 
     /**
@@ -240,6 +259,27 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             throw new Exception("Fehler beim Lesen: $file");
         }
         self::logDebug("Datei erfolgreich gelesen: $file");
+        return $content;
+    }
+
+    /**
+     * Liest einen Teil einer Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param int $length Maximale Anzahl Bytes (Standard: 4096).
+     * @param int $offset Startposition in Bytes (Standard: 0).
+     * @return string|false Der gelesene Inhalt oder false bei Fehler.
+     */
+    public static function readPartial(string $file, int $length = 4096, int $offset = 0): string|false {
+        $file = self::getRealExistingFile($file);
+        if ($file === false) return false;
+
+        $content = file_get_contents($file, false, null, $offset, $length);
+        if ($content === false) {
+            self::logError("Fehler beim partiellen Lesen der Datei: $file");
+            return false;
+        }
+        self::logDebug("Datei partiell gelesen ($length Bytes ab $offset): $file");
         return $content;
     }
 
