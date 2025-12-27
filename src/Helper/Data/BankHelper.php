@@ -165,9 +165,30 @@ class BankHelper {
      * @param string $blz Die Bankleitzahl (BLZ).
      * @param string $kto Die Kontonummer (KTO).
      * @return string Die generierte IBAN.
+     * @throws InvalidArgumentException Bei ungültiger BLZ oder Kontonummer.
      */
     public static function generateGermanIBAN(string $blz, string $kto): string {
-        $account = $blz . str_pad($kto, 10, '0', STR_PAD_LEFT);
+        // Entferne nicht-numerische Zeichen
+        $blzClean = preg_replace('/[^0-9]/', '', $blz);
+        $ktoClean = preg_replace('/[^0-9]/', '', $kto);
+
+        // Validiere BLZ (muss 1-8 Ziffern sein)
+        if (strlen($blzClean) === 0 || strlen($blzClean) > 8) {
+            self::logError("Ungültige BLZ: '$blz' (erwartet: 1-8 Ziffern)");
+            throw new InvalidArgumentException("Ungültige BLZ: '$blz' (erwartet: 1-8 Ziffern)");
+        }
+
+        // Validiere Kontonummer (muss 1-10 Ziffern sein)
+        if (strlen($ktoClean) === 0 || strlen($ktoClean) > 10) {
+            self::logError("Ungültige Kontonummer: '$kto' (erwartet: 1-10 Ziffern)");
+            throw new InvalidArgumentException("Ungültige Kontonummer: '$kto' (erwartet: 1-10 Ziffern)");
+        }
+
+        // Normalisiere auf exakte Längen: BLZ 8 Zeichen, KTO 10 Zeichen
+        $blzPadded = str_pad($blzClean, 8, '0', STR_PAD_LEFT);
+        $ktoPadded = str_pad($ktoClean, 10, '0', STR_PAD_LEFT);
+
+        $account = $blzPadded . $ktoPadded;
         return self::generateIBAN('DE', $account);
     }
 
@@ -190,12 +211,13 @@ class BankHelper {
         $chars = self::ibanCharMap();
 
         if (!isset($countries[$countryCode])) {
+            self::logError("Ungültiger Ländercode: '$countryCode'");
             throw new InvalidArgumentException("Invalid country code: $countryCode");
         }
 
         $expectedLength = $countries[$countryCode] - 4; // ohne Prüfziffer und Länderkennung
         if (strlen($accountNumber) !== $expectedLength) {
-            self::logDebug("Die Kontonummer hat nicht die richtige Länge ($expectedLength) für $countryCode. Eingabe: '$accountNumber'");
+            self::logError("Die Kontonummer hat nicht die richtige Länge ($expectedLength) für $countryCode. Eingabe: '$accountNumber'");
             throw new InvalidArgumentException("Ungültige Kontonummer-Länge für $countryCode");
         }
 
