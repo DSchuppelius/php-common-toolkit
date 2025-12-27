@@ -24,6 +24,12 @@ use RuntimeException;
 class BankHelper {
     use ErrorLog;
 
+    /** @var array<string, string>|null Cache für BLZ-Index (BLZ => Zeile) */
+    private static ?array $blzIndex = null;
+
+    /** @var array<string, string>|null Cache für BIC-Index (BIC8 => Zeile) */
+    private static ?array $bicIndex = null;
+
     /**
      * Überprüft die Bankleitzahl (BLZ) auf Gültigkeit.
      *
@@ -232,36 +238,79 @@ class BankHelper {
     /**
      * Gibt die BIC aus einer IBAN zurück.
      *
+     * Nutzt einen BLZ-Index für O(1) Lookups statt linearer Suche.
+     *
      * @param string $iban Die IBAN.
      * @return string Die BIC oder ein leerer String, wenn keine BIC gefunden wurde.
      */
     public static function bicFromIBAN(string $iban): string {
         $blz = substr($iban, 4, 8);
-        $data = self::loadBundesbankBLZData();
-        foreach ($data as $entry) {
-            if (substr($entry, 0, 8) === $blz) {
-                return trim(substr($entry, 139, 11));
+        $index = self::getBlzIndex();
+
+        if (isset($index[$blz])) {
+            return trim(substr($index[$blz], 139, 11));
+        }
+
+        return '';
+    }
+
+    /**
+     * Gibt den BLZ-Index zurück (lazy-loaded und gecached).
+     *
+     * @return array<string, string> BLZ => Bundesbank-Zeile
+     */
+    private static function getBlzIndex(): array {
+        if (self::$blzIndex === null) {
+            self::$blzIndex = [];
+            foreach (self::loadBundesbankBLZData() as $entry) {
+                $blz = substr($entry, 0, 8);
+                // Nur erste Zeile pro BLZ speichern (Hauptstelle)
+                if (!isset(self::$blzIndex[$blz])) {
+                    self::$blzIndex[$blz] = $entry;
+                }
             }
         }
-        return '';
+        return self::$blzIndex;
     }
 
     /**
      * Überprüft die BIC und gibt die BIC inkl. Banknamen zurück.
      *
+     * Nutzt einen BIC-Index für O(1) Lookups statt linearer Suche.
+     *
      * @param string $bic Die BIC.
      * @return string|false Der Bankname oder false bei ungültiger BIC.
      */
     public static function checkBIC(string $bic): string|false {
-        $bic = strtoupper(substr(trim($bic), 0, 8));
-        $data = self::loadBundesbankBICData();
-        foreach ($data as $entry) {
-            $fields = explode(";", $entry);
-            if (strtoupper(substr($fields[0], 0, 8)) === $bic) {
-                return $bic . "XXX " . $fields[1];
+        $bic8 = strtoupper(substr(trim($bic), 0, 8));
+        $index = self::getBicIndex();
+
+        if (isset($index[$bic8])) {
+            return $bic8 . "XXX " . $index[$bic8];
+        }
+
+        return false;
+    }
+
+    /**
+     * Gibt den BIC-Index zurück (lazy-loaded und gecached).
+     *
+     * @return array<string, string> BIC8 => Bankname
+     */
+    private static function getBicIndex(): array {
+        if (self::$bicIndex === null) {
+            self::$bicIndex = [];
+            foreach (self::loadBundesbankBICData() as $entry) {
+                $fields = explode(";", $entry);
+                if (count($fields) >= 2) {
+                    $bic8 = strtoupper(substr($fields[0], 0, 8));
+                    if (!isset(self::$bicIndex[$bic8])) {
+                        self::$bicIndex[$bic8] = $fields[1];
+                    }
+                }
             }
         }
-        return false;
+        return self::$bicIndex;
     }
 
     /**
@@ -432,5 +481,15 @@ class BankHelper {
             self::logError("bcmath nicht verfügbar.");
             throw new RuntimeException("Die PHP-Erweiterung 'bcmath' ist erforderlich, aber nicht aktiviert.");
         }
+    }
+
+    /**
+     * Leert alle gecachten Daten.
+     *
+     * Nützlich für Tests oder wenn Bundesbank-Daten aktualisiert wurden.
+     */
+    public static function clearCache(): void {
+        self::$blzIndex = null;
+        self::$bicIndex = null;
     }
 }

@@ -3,20 +3,26 @@
  * Created on   : Thu Apr 17 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : Validator.php
+ * Filename     : DataValidator.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
 
 declare(strict_types=1);
 
-namespace CommonToolkit\Helper\Validation;
+namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Helper\Data\DateHelper;
-use CommonToolkit\Helper\Data\CurrencyHelper;
-use CommonToolkit\Helper\Data\BankHelper;
-
-class Validator {
+/**
+ * Zentrale Validierungsklasse für Finanzdaten.
+ *
+ * Bietet einheitliche Validierungsmethoden für:
+ * - Bankdaten (IBAN, BIC, BLZ, Kontonummer)
+ * - Währungsbeträge
+ * - Datumsformate
+ *
+ * @package CommonToolkit\Helper\Data
+ */
+class DataValidator {
     /**
      * Prüft, ob der Wert ein gültiges Datum ist.
      *

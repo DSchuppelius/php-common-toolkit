@@ -104,6 +104,17 @@ class CurrencyHelper {
         return round(abs($a - $b), 10) <= $tolerance;
     }
 
+    /**
+     * Erkennt das Währungsformat eines Betrags.
+     *
+     * @param string $input Der zu prüfende Betrag
+     * @return string|null 'US', 'DE' oder null wenn kein gültiges Format erkannt wurde
+     */
+    public static function detectCurrencyFormat(string $input): ?string {
+        $format = null;
+        self::isCurrency($input, $format);
+        return $format;
+    }
 
     /**
      * Überprüft, ob der Betrag im US- oder DE-Format vorliegt
