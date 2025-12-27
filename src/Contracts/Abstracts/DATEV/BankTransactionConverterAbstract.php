@@ -326,17 +326,6 @@ abstract class BankTransactionConverterAbstract {
     }
 
     /**
-     * Generiert eine Pseudo-IBAN aus BLZ und Kontonummer.
-     * 
-     * @param string $blz Bankleitzahl
-     * @param string $accountNumber Kontonummer
-     * @return string Pseudo-IBAN
-     */
-    protected static function generatePseudoIban(string $blz, string $accountNumber): string {
-        return 'DE00' . str_pad($blz, 8, '0', STR_PAD_LEFT) . str_pad($accountNumber, 10, '0', STR_PAD_LEFT);
-    }
-
-    /**
      * Befüllt alle Verwendungszweck-Felder in einem Werte-Array.
      * 
      * @param string[] $values Referenz auf Feld-Array

@@ -191,7 +191,7 @@ final class BankTransactionToCamt053Converter extends BankTransactionConverterAb
         // IBAN ermitteln (direkt oder aus Kontonummer)
         $accountIban = $accountNumber;
         if (!BankHelper::isIBAN($accountNumber)) {
-            $accountIban = self::generatePseudoIban($blzBic, $accountNumber);
+            $accountIban = BankHelper::generateGermanIBAN($blzBic, $accountNumber);
         }
 
         // BIC ermitteln via BankHelper
@@ -347,7 +347,7 @@ final class BankTransactionToCamt053Converter extends BankTransactionConverterAb
             return $payerAccount;
         }
         if (!empty($payerBlz)) {
-            return self::generatePseudoIban($payerBlz, $payerAccount);
+            return BankHelper::generateGermanIBAN($payerBlz, $payerAccount);
         }
         return null;
     }
