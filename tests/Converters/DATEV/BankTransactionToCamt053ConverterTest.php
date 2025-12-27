@@ -3,7 +3,7 @@
  * Created on   : Sat Dec 27 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : AsciiToCamt053ConverterTest.php
+ * Filename     : BankTransactionToCamt053ConverterTest.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace Tests\Converters\DATEV;
 
 use CommonToolkit\Builders\DATEV\BankTransactionBuilder;
-use CommonToolkit\Converters\DATEV\AsciiToCamt053Converter;
+use CommonToolkit\Converters\DATEV\BankTransactionToCamt053Converter;
 use CommonToolkit\Entities\Common\Banking\Camt\Type53\Document as Camt053Document;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
@@ -22,11 +22,11 @@ use Tests\Contracts\BaseTestCase;
 use RuntimeException;
 
 /**
- * Tests für AsciiToCamt053Converter.
+ * Tests für BankTransactionToCamt053Converter.
  * 
  * @package Tests\Converters\DATEV
  */
-final class AsciiToCamt053ConverterTest extends BaseTestCase {
+final class BankTransactionToCamt053ConverterTest extends BaseTestCase {
 
     public function testConvertSingleTransaction(): void {
         $builder = new BankTransactionBuilder();
@@ -51,7 +51,7 @@ final class AsciiToCamt053ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::WAEHRUNG->value => 'EUR',
         ])->build();
 
-        $camt053 = AsciiToCamt053Converter::convert($document);
+        $camt053 = BankTransactionToCamt053Converter::convert($document);
 
         // Grunddaten prüfen
         $this->assertInstanceOf(Camt053Document::class, $camt053);
@@ -90,7 +90,7 @@ final class AsciiToCamt053ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::WAEHRUNG->value => 'EUR',
         ])->build();
 
-        $camt053 = AsciiToCamt053Converter::convert($document);
+        $camt053 = BankTransactionToCamt053Converter::convert($document);
         $txn = $camt053->getEntries()[0];
 
         $this->assertEquals(500.50, $txn->getAmount());
@@ -128,7 +128,7 @@ final class AsciiToCamt053ConverterTest extends BaseTestCase {
             ->build();
 
         // Mit Anfangssaldo von 500
-        $camt053 = AsciiToCamt053Converter::convert($document, 500.0, CreditDebit::CREDIT);
+        $camt053 = BankTransactionToCamt053Converter::convert($document, 500.0, CreditDebit::CREDIT);
 
         // Opening Balance
         $opening = $camt053->getOpeningBalance();
@@ -164,7 +164,7 @@ final class AsciiToCamt053ConverterTest extends BaseTestCase {
         ])->build();
 
         // Anfangssaldo 500, Abgang 1500 = -1000
-        $camt053 = AsciiToCamt053Converter::convert($document, 500.0, CreditDebit::CREDIT);
+        $camt053 = BankTransactionToCamt053Converter::convert($document, 500.0, CreditDebit::CREDIT);
 
         $closing = $camt053->getClosingBalance();
         $this->assertNotNull($closing);
@@ -212,7 +212,7 @@ final class AsciiToCamt053ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::VERWENDUNGSZWECK_1->value => 'Test 3',
         ])->build();
 
-        $results = AsciiToCamt053Converter::convertMultiple([$doc1, $doc2, $doc3], 1000.0);
+        $results = BankTransactionToCamt053Converter::convertMultiple([$doc1, $doc2, $doc3], 1000.0);
 
         $this->assertCount(3, $results);
 
@@ -236,7 +236,7 @@ final class AsciiToCamt053ConverterTest extends BaseTestCase {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('keine Transaktionen');
 
-        AsciiToCamt053Converter::convert($document);
+        BankTransactionToCamt053Converter::convert($document);
     }
 
     public function testXmlGeneration(): void {
@@ -254,7 +254,7 @@ final class AsciiToCamt053ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::VERWENDUNGSZWECK_1->value => 'Test Zweck',
         ])->build();
 
-        $camt053 = AsciiToCamt053Converter::convert($document, 100.0, CreditDebit::CREDIT);
+        $camt053 = BankTransactionToCamt053Converter::convert($document, 100.0, CreditDebit::CREDIT);
         $xml = $camt053->toXml();
 
         // XML-Struktur prüfen
@@ -289,7 +289,7 @@ final class AsciiToCamt053ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::WAEHRUNG->value => 'EUR',
         ])->build();
 
-        $camt053 = AsciiToCamt053Converter::convert($document, 500.0, CreditDebit::CREDIT);
+        $camt053 = BankTransactionToCamt053Converter::convert($document, 500.0, CreditDebit::CREDIT);
         $xml = $camt053->toXml();
 
         // XML muss valide sein

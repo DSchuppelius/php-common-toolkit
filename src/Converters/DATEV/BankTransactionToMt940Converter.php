@@ -3,7 +3,7 @@
  * Created on   : Sat Dec 27 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : AsciiToMt940Converter.php
+ * Filename     : BankTransactionToMt940Converter.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -24,6 +24,7 @@ use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Helper\Data\CurrencyHelper;
 use DateTimeImmutable;
 use RuntimeException;
+use Throwable;
 
 /**
  * Konvertiert DATEV ASCII-Weiterverarbeitungsdateien (Banktransaktionen) in das MT940-Format.
@@ -44,7 +45,7 @@ use RuntimeException;
  * 
  * @package CommonToolkit\Converters\DATEV
  */
-final class AsciiToMt940Converter {
+final class BankTransactionToMt940Converter {
 
     private const DEFAULT_TRANSACTION_CODE = 'NTRF';
     private const DEFAULT_CURRENCY = 'EUR';
@@ -266,7 +267,7 @@ final class AsciiToMt940Converter {
 
         try {
             $reference = new Reference($transactionCode, $referenceStr);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Fallback bei ungültiger Referenz
             $reference = new Reference('NTRF', 'NONREF');
         }
@@ -329,7 +330,7 @@ final class AsciiToMt940Converter {
             if ($doc instanceof BankTransaction) {
                 try {
                     $results[] = self::convert($doc);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // Überspringe fehlerhafte Dokumente
                 }
             }

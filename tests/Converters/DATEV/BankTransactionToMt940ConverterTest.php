@@ -3,7 +3,7 @@
  * Created on   : Sat Dec 27 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : AsciiToMt940ConverterTest.php
+ * Filename     : BankTransactionToMt940ConverterTest.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -13,13 +13,13 @@ declare(strict_types=1);
 namespace Tests\Converters\DATEV;
 
 use CommonToolkit\Builders\DATEV\BankTransactionBuilder;
-use CommonToolkit\Converters\DATEV\AsciiToMt940Converter;
+use CommonToolkit\Converters\DATEV\BankTransactionToMt940Converter;
 use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Document as Mt940Document;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\DATEV\HeaderFields\ASCII\BankTransactionHeaderField;
 use Tests\Contracts\BaseTestCase;
 
-class AsciiToMt940ConverterTest extends BaseTestCase {
+class BankTransactionToMt940ConverterTest extends BaseTestCase {
 
     public function testConvertSingleTransaction(): void {
         $builder = new BankTransactionBuilder();
@@ -44,7 +44,7 @@ class AsciiToMt940ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::WAEHRUNG->value => 'EUR',
         ])->build();
 
-        $mt940 = AsciiToMt940Converter::convert($document, 1000.00, CreditDebit::CREDIT);
+        $mt940 = BankTransactionToMt940Converter::convert($document, 1000.00, CreditDebit::CREDIT);
 
         $this->assertInstanceOf(Mt940Document::class, $mt940);
         $this->assertCount(1, $mt940->getTransactions());
@@ -82,7 +82,7 @@ class AsciiToMt940ConverterTest extends BaseTestCase {
             ])
             ->build();
 
-        $mt940 = AsciiToMt940Converter::convert($document, 1000.00, CreditDebit::CREDIT);
+        $mt940 = BankTransactionToMt940Converter::convert($document, 1000.00, CreditDebit::CREDIT);
 
         $this->assertInstanceOf(Mt940Document::class, $mt940);
         $this->assertCount(2, $mt940->getTransactions());
@@ -111,7 +111,7 @@ class AsciiToMt940ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::VERWENDUNGSZWECK_1->value => 'Lastschrift',
         ])->build();
 
-        $mt940 = AsciiToMt940Converter::convert($document);
+        $mt940 = BankTransactionToMt940Converter::convert($document);
 
         $this->assertCount(1, $mt940->getTransactions());
 
@@ -135,7 +135,7 @@ class AsciiToMt940ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::AUFTRAGGEBERNAME_1->value => 'Test',
         ])->build();
 
-        $mt940 = AsciiToMt940Converter::convert($document, 500.00);
+        $mt940 = BankTransactionToMt940Converter::convert($document, 500.00);
         $output = (string) $mt940;
 
         // Prüfe MT940-Struktur
@@ -154,7 +154,7 @@ class AsciiToMt940ConverterTest extends BaseTestCase {
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('keine Transaktionen');
 
-        AsciiToMt940Converter::convert($document);
+        BankTransactionToMt940Converter::convert($document);
     }
 
     public function testConvertMultipleDocuments(): void {
@@ -174,7 +174,7 @@ class AsciiToMt940ConverterTest extends BaseTestCase {
             BankTransactionHeaderField::UMSATZ->value => '+200,00',
         ])->build();
 
-        $results = AsciiToMt940Converter::convertMultiple([$doc1, $doc2]);
+        $results = BankTransactionToMt940Converter::convertMultiple([$doc1, $doc2]);
 
         $this->assertCount(2, $results);
         $this->assertInstanceOf(Mt940Document::class, $results[0]);

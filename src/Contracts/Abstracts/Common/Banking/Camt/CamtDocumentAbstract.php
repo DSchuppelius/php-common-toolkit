@@ -15,6 +15,7 @@ namespace CommonToolkit\Contracts\Abstracts\Common\Banking\Camt;
 use CommonToolkit\Enums\Common\Banking\CamtType;
 use CommonToolkit\Enums\Common\Banking\CamtVersion;
 use CommonToolkit\Enums\CurrencyCode;
+use CommonToolkit\Helper\Data\BankHelper;
 use DateTimeImmutable;
 use InvalidArgumentException;
 

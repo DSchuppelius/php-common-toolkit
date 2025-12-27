@@ -17,6 +17,7 @@ use CommonToolkit\Contracts\Abstracts\Common\Banking\Camt\CamtDocumentAbstract;
 use CommonToolkit\Enums\Common\Banking\CamtType;
 use CommonToolkit\Enums\Common\Banking\CamtVersion;
 use CommonToolkit\Enums\CurrencyCode;
+use CommonToolkit\Helper\Data\BankHelper;
 use DateTimeImmutable;
 use DOMDocument;
 
@@ -136,8 +137,8 @@ class Document extends CamtDocumentAbstract {
         $acctId = $dom->createElement('Id');
         $acct->appendChild($acctId);
 
-        // IBAN oder andere ID
-        if (preg_match('/^[A-Z]{2}\d{2}/', $this->accountIdentifier)) {
+        // IBAN oder andere ID - mit Logging bei ungültiger IBAN
+        if (BankHelper::shouldFormatAsIBAN($this->accountIdentifier)) {
             $acctId->appendChild($dom->createElement('IBAN', htmlspecialchars($this->accountIdentifier)));
         } else {
             $othr = $dom->createElement('Othr');

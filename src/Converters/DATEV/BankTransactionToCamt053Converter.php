@@ -3,7 +3,7 @@
  * Created on   : Sat Dec 27 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : AsciiToCamt053Converter.php
+ * Filename     : BankTransactionToCamt053Converter.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -20,6 +20,7 @@ use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\Documents\BankTransaction;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
+use CommonToolkit\Helper\Data\BankHelper;
 use CommonToolkit\Helper\Data\CurrencyHelper;
 use DateTimeImmutable;
 use RuntimeException;
@@ -45,7 +46,7 @@ use RuntimeException;
  * 
  * @package CommonToolkit\Converters\DATEV
  */
-final class AsciiToCamt053Converter {
+final class BankTransactionToCamt053Converter {
 
     private const DEFAULT_TRANSACTION_CODE = 'NTRF';
     private const DEFAULT_CURRENCY = 'EUR';
@@ -191,22 +192,19 @@ final class AsciiToCamt053Converter {
 
         // IBAN ermitteln (direkt oder aus Kontonummer)
         $accountIban = $accountNumber;
-        if (!str_starts_with(strtoupper($accountNumber), 'DE') && strlen($accountNumber) < 22) {
+        if (!BankHelper::isIBAN($accountNumber)) {
             // Kein IBAN - als Platzhalter formatieren
             $accountIban = 'DE00' . str_pad($blzBic, 8, '0', STR_PAD_LEFT) . str_pad($accountNumber, 10, '0', STR_PAD_LEFT);
         }
 
-        // BIC ermitteln
-        $accountBic = strlen($blzBic) === 11 ? $blzBic : null;
+        // BIC ermitteln via BankHelper
+        $accountBic = BankHelper::isBIC($blzBic) ? $blzBic : null;
 
         // Feld 3: Auszugsnummer
         $statementNumber = count($fields) > 2 ? trim($fields[2]->getValue()) : '00001';
         if (empty($statementNumber)) {
             $statementNumber = '00001';
         }
-
-        // Feld 4: Auszugsdatum
-        $statementDate = count($fields) > 3 ? trim($fields[3]->getValue()) : date('Ymd');
 
         // Statement-ID generieren
         $statementId = 'CAMT053' . preg_replace('/[^A-Z0-9]/i', '', $accountNumber . $statementNumber);
@@ -324,8 +322,8 @@ final class AsciiToCamt053Converter {
 
         // Auftraggeber-Konto (Felder 10-11, Index 9-10)
         if (!empty($payerAccount)) {
-            // Prüfen ob IBAN oder Kontonummer
-            if (strlen($payerAccount) >= 15 && preg_match('/^[A-Z]{2}/', $payerAccount)) {
+            // Prüfen ob IBAN oder Kontonummer via BankHelper
+            if (BankHelper::isIBAN($payerAccount)) {
                 $counterpartyIban = $payerAccount;
             } else if (!empty($payerBlz)) {
                 // Pseudo-IBAN aus BLZ + Kontonummer
@@ -333,8 +331,8 @@ final class AsciiToCamt053Converter {
             }
         }
 
-        // BIC falls BLZ 11-stellig
-        if (strlen($payerBlz) === 11) {
+        // BIC via BankHelper validieren
+        if (BankHelper::isBIC($payerBlz)) {
             $counterpartyBic = $payerBlz;
         }
 

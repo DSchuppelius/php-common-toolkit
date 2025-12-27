@@ -24,6 +24,7 @@ use CommonToolkit\Entities\Common\Banking\Mt9\Balance as Mt9Balance;
 use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Document as Mt940Document;
 use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Transaction as Mt940Transaction;
 use CommonToolkit\Enums\Common\Banking\CamtType;
+use CommonToolkit\Helper\Data\BankHelper;
 use DateTimeImmutable;
 
 /**
@@ -282,9 +283,10 @@ final class Mt940ToCamtConverter {
      * - BLZ/Kontonummer (37040044/532013000)
      */
     private static function extractBicFromAccountId(string $accountId): ?string {
-        // BIC-Format: 8 oder 11 alphanumerische Zeichen
-        if (preg_match('/^([A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)[\/\s]/', $accountId, $matches)) {
-            return $matches[1];
+        // Prüfe auf BIC am Anfang (vor / oder Leerzeichen)
+        $parts = preg_split('/[\/\s]/', $accountId, 2);
+        if (!empty($parts[0]) && BankHelper::isBIC($parts[0])) {
+            return $parts[0];
         }
 
         return null;
@@ -353,16 +355,20 @@ final class Mt940ToCamtConverter {
             return $result;
         }
 
-        // IBAN (deutsches Format: DE + 20 Zeichen)
+        // IBAN via BankHelper extrahieren
         if (preg_match('/([A-Z]{2}\d{2}[A-Z0-9]{4}\d{7}[A-Z0-9]*)/', $purpose, $matches)) {
-            $result['iban'] = $matches[1];
+            $potentialIban = $matches[1];
+            if (BankHelper::isIBAN($potentialIban)) {
+                $result['iban'] = $potentialIban;
+            }
         }
 
-        // BIC (8 oder 11 Zeichen)
+        // BIC via BankHelper validieren
         if (preg_match('/\b([A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)\b/', $purpose, $matches)) {
-            // Nur wenn es nicht die IBAN ist
-            if (!str_contains($purpose, $matches[1] . '/') && strlen($matches[1]) <= 11) {
-                $result['bic'] = $matches[1];
+            $potentialBic = $matches[1];
+            // Nur wenn es nicht die IBAN ist und ein gültiger BIC
+            if (!str_contains($purpose, $potentialBic . '/') && BankHelper::isBIC($potentialBic)) {
+                $result['bic'] = $potentialBic;
             }
         }
 

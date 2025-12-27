@@ -57,6 +57,46 @@ class BankHelper {
     }
 
     /**
+     * Prüft, ob der String wie eine IBAN formatiert ist (beginnt mit 2 Buchstaben + 2 Ziffern).
+     * 
+     * Diese Methode ist weniger strikt als isIBAN() und prüft nur das Anfangsformat,
+     * nicht die vollständige IBAN-Struktur oder Prüfsumme. Geeignet für XML-Generierung,
+     * wo auch Platzhalter-IBANs als <IBAN>-Element formatiert werden sollen.
+     *
+     * @param string|null $value Der zu prüfende String.
+     * @return bool True, wenn der String wie eine IBAN aussieht.
+     */
+    public static function hasIBANFormat(?string $value): bool {
+        if ($value === null || $value === '') {
+            return false;
+        }
+        return preg_match('/^[A-Z]{2}\d{2}/', $value) === 1;
+    }
+
+    /**
+     * Prüft, ob der String wie eine IBAN formatiert ist und ob diese gültig ist.
+     * 
+     * Loggt eine Warnung, wenn das Format einer IBAN entspricht, aber die IBAN nicht gültig ist.
+     * Gibt true zurück, wenn der String als IBAN formatiert werden soll (auch wenn ungültig).
+     *
+     * @param string|null $value Der zu prüfende String.
+     * @return bool True, wenn der Identifier als IBAN formatiert werden soll (auch wenn ungültig).
+     */
+    public static function shouldFormatAsIBAN(?string $value): bool {
+        if (!self::hasIBANFormat($value)) {
+            return false;
+        }
+
+        if (self::isIBANAnon($value)) {
+            self::logWarning("'{$value}' ist eine anonymisierte IBAN.");
+        } elseif (!self::isIBAN($value)) {
+            self::logWarning("'{$value}' hat IBAN-Format, ist aber keine gültige IBAN.");
+        }
+
+        return true;
+    }
+
+    /**
      * Überprüft, ob die IBAN anonymisiert ist.
      *
      * @param string|null $value Die IBAN.

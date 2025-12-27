@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Entities\Common\Banking\Mt1;
 
+use CommonToolkit\Helper\Data\BankHelper;
+
 /**
  * Partei in einer MT10x-Nachricht.
  * 
@@ -166,8 +168,8 @@ final readonly class Party {
                 continue;
             }
 
-            // BIC-Erkennung (8 oder 11 Zeichen, alphanumerisch)
-            if (preg_match('/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?$/', $line)) {
+            // BIC-Erkennung via BankHelper
+            if (BankHelper::isBIC($line)) {
                 $bic = $line;
                 continue;
             }
