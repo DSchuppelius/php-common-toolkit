@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.08">
+	<BkToCstmrDbtCdtNtfctn>
+		<GrpHdr>
+			<MsgId>NONREF</MsgId>
+			<CreDtTm>2022-07-08T10:17:54.996+02:00</CreDtTm>
+		</GrpHdr>
+		<Ntfctn>
+			<Id>4619703</Id>
+			<Acct>
+				<Id>
+					<Othr>
+						<Id>RDEEURZYBUDEFFSEK</Id>
+					</Othr>
+				</Id>
+				<Ownr>
+					<Id>
+						<OrgId>
+							<AnyBIC>ZYBUDEFFSEK</AnyBIC>
+						</OrgId>
+					</Id>
+				</Ownr>
+			</Acct>
+			<Ntry>
+				<NtryRef>972089</NtryRef>
+				<Amt Ccy="EUR">4.50</Amt>
+				<CdtDbtInd>CRDT</CdtDbtInd>
+				<Sts>
+					<Cd>BOOK</Cd>
+				</Sts>
+				<BookgDt>
+					<DtTm>2022-07-08T10:17:54.828+00:00</DtTm>
+				</BookgDt>
+				<ValDt>
+					<Dt>2022-07-08</Dt>
+				</ValDt>
+				<BkTxCd>
+					<Prtry>
+						<Cd>LIQT</Cd>
+					</Prtry>
+				</BkTxCd>
+				<NtryDtls>
+					<TxDtls>
+						<Refs>
+							<InstrId>1898473</InstrId>
+							<EndToEndId>SCP202207053CP65</EndToEndId>
+							
+<!-- interne Referenz, die stets mit der Konstante „SCP“ beginnt -->							
+							
+						</Refs>
+						<Amt Ccy="EUR">4.50</Amt>
+						<RltdPties>
+							<DbtrAcct>
+								<Id>
+									<Othr>
+										<Id>UDEEURZYBUDEFFSEKDE1SCL1</Id>
+									</Othr>
+								</Id>
+							</DbtrAcct>
+							<CdtrAcct>
+								<Id>
+									<Othr>
+										<Id>RDEEURZYBUDEFFSEK</Id>
+									</Othr>
+								</Id>
+							</CdtrAcct>
+						</RltdPties>
+						<LclInstrm>
+							<Prtry>LIIA</Prtry>
+						</LclInstrm>
+					</TxDtls>
+				</NtryDtls>
+			</Ntry>
+		</Ntfctn>
+	</BkToCstmrDbtCdtNtfctn>
+</Document>

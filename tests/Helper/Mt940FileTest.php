@@ -10,16 +10,16 @@
 
 declare(strict_types=1);
 
-use CommonToolkit\Entities\Banking\Mt940\Document;
-use CommonToolkit\Entities\Banking\Mt940\Transaction;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Document;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Transaction;
 use CommonToolkit\Helper\FileSystem\FileTypes\Mt940File;
 use Tests\Contracts\BaseTestCase;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 
 class Mt940FileTest extends BaseTestCase {
-    private string $testValidFile = __DIR__ . '/../../.samples/example.mt940';
-    private string $testInvalidFile = __DIR__ . '/../../.samples/invalid.mt940';
-    private string $testEmptyFile = __DIR__ . '/../../.samples/empty.mt940';
+    private string $testValidFile = __DIR__ . '/../../.samples/Banking/MT/example.mt940';
+    private string $testInvalidFile = __DIR__ . '/../../.samples/Banking/MT/invalid.mt940';
+    private string $testEmptyFile = __DIR__ . '/../../.samples/Banking/MT/empty.mt940';
 
     public function testGetBlocksReturnsExpectedCount() {
         $blocks = Mt940File::getBlocks($this->testValidFile);
@@ -36,8 +36,6 @@ class Mt940FileTest extends BaseTestCase {
     }
 
     public function testCountTransactionsReturnsCorrectNumber() {
-        $this->markTestIncomplete('Die Implementierung von Mt940File::countTransactions muss noch abgeschlossen werden.');
-
         $count = Mt940File::countTransactions($this->testValidFile);
         $this->assertEquals(2, $count); // 2 Buchungen mit :61:
     }
@@ -61,8 +59,6 @@ class Mt940FileTest extends BaseTestCase {
     }
 
     public function testGetDocumentsReturnsArrayOfMt940Document() {
-        $this->markTestIncomplete('Die Implementierung von Mt940File::getDocuments muss noch abgeschlossen werden.');
-
         $documents = Mt940File::getDocuments($this->testValidFile);
 
         $this->assertIsArray($documents);
@@ -75,8 +71,6 @@ class Mt940FileTest extends BaseTestCase {
     }
 
     public function testGetTransactionsReturnsArrayOfTransactions() {
-        $this->markTestIncomplete('Die Implementierung von Mt940File::getDocuments muss noch abgeschlossen werden.');
-
         $transactions = Mt940File::getTransactions($this->testValidFile);
 
         $this->assertIsArray($transactions);

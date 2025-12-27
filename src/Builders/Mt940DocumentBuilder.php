@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Builders;
 
-use CommonToolkit\Entities\Banking\Mt940\Document;
-use CommonToolkit\Entities\Banking\Mt940\Transaction;
-use CommonToolkit\Entities\Banking\Mt940\Balance;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Document;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Transaction;
+use CommonToolkit\Entities\Common\Banking\Mt9\Balance;
 use CommonToolkit\Enums\CreditDebit;
 use InvalidArgumentException;
 use RuntimeException;

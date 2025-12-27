@@ -292,4 +292,11 @@ class FieldAbstract implements FieldInterface {
 
         return $value;
     }
+
+    /**
+     * Gibt den Wert des Feldes als String zurück.
+     */
+    public function __toString(): string {
+        return $this->toString();
+    }
 }

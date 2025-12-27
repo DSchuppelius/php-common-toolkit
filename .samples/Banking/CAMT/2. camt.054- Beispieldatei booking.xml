@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.08">
+	<BkToCstmrDbtCdtNtfctn>
+		<GrpHdr>
+			<MsgId>NONREF</MsgId>
+			<CreDtTm>2022-07-08T07:06:58.176+02:00</CreDtTm>
+		</GrpHdr>
+		<Ntfctn>
+			<Id>4691311</Id>
+			<Acct>
+				<Id>
+					<Othr>
+						<Id>UDEEURZYBUDEFFSEKDE1SCL1</Id>
+					</Othr>
+				</Id>
+				<Ownr>
+					<Id>
+						<OrgId>
+							<AnyBIC>ZYBUDEFFSEK</AnyBIC>
+						</OrgId>
+					</Id>
+				</Ownr>
+			</Acct>
+			<Ntry>
+				<NtryRef>983892</NtryRef>
+				<Amt Ccy="EUR">87505.75</Amt>
+				<CdtDbtInd>DBIT</CdtDbtInd>
+				<Sts>
+					<Cd>BOOK</Cd>
+				</Sts>
+				<BookgDt>
+					<DtTm>2022-07-08T07:06:57.810+00:00</DtTm>
+				</BookgDt>
+				<ValDt>
+					<Dt>2022-07-08</Dt>
+				</ValDt>
+				<BkTxCd>
+					<Prtry>
+						<Cd>ASTI</Cd>
+					</Prtry>
+				</BkTxCd>
+				<NtryDtls>
+					<TxDtls>
+						<Refs>
+							<InstrId>0708900006800010</InstrId>
+							<EndToEndId>SIA0800004100100</EndToEndId>
+							
+<!--
+„S“ (SEPA-Clearer) bzw.
+„E“ (Scheckabwicklung)
+1. Stelle: I, O oder X
+I = Input (eingeliefertes Bulk)
+O = Output (ausgeliefertes Bulk)
+X = fehlerhafte Transaktionen aus Einlieferungen
+2. Stelle: 
+A = SCT-Dienst des SCL
+B = SDD-Dienst des SCL
+C = SCC-Dienst des SCL
+E = Scheckabwicklungsdienst
+Aktueller Tag im Monat
+Interne File-ID
+Bulk innerhalb des Files
+Laufende Nummer-->														
+							
+						</Refs>
+						<Amt Ccy="EUR">87505.75</Amt>
+						<RltdAgts>
+							<InstgAgt>
+								<FinInstnId>
+									<BICFI>ZYBUDEFFSEK</BICFI>
+								</FinInstnId>
+							</InstgAgt>
+							<InstdAgt>
+								<FinInstnId>
+									<BICFI>MARKDEFFSCL</BICFI>
+								</FinInstnId>
+							</InstdAgt>
+							<DbtrAgt>
+								<FinInstnId>
+									<BICFI>MARKDEFFSCL</BICFI>
+								</FinInstnId>
+							</DbtrAgt>
+						</RltdAgts>
+						<LclInstrm>
+							<Cd>ASTI</Cd>
+						</LclInstrm>
+						<RmtInf>
+							<Ustrd>ZYBUDEFFSEK0260001465               080722 ZYBUDEFFSEKF</Ustrd>
+						</RmtInf>
+						
+<!-- 
+Message Identification (<MsgID>) des Group Headers des gebuchten Bulks
+TTMMJJ
+
+Aus dem Group Header des gebuchten Bulks
+Eingelieferte Bulks: Instructing Agent 
+Ausgelieferte Bulks: Instructed Agent
+
+F (= Full) P (= partielle Buchung) -->
+						
+						
+					</TxDtls>
+				</NtryDtls>
+			</Ntry>
+		</Ntfctn>
+	</BkToCstmrDbtCdtNtfctn>
+</Document>

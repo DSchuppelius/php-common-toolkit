@@ -44,8 +44,8 @@ enum CreditDebit: string {
 
     public static function fromMt940Code(string $code): self {
         return match (strtoupper($code)) {
-            'C' => self::CREDIT,
-            'D' => self::DEBIT,
+            'C', 'RC' => self::CREDIT,  // C = Credit, RC = Reversal Credit (Storno Gutschrift)
+            'D', 'RD' => self::DEBIT,   // D = Debit, RD = Reversal Debit (Storno Lastschrift)
             default => throw new InvalidArgumentException("Ungültiger MT940-Code: $code"),
         };
     }

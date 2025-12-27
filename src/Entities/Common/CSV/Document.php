@@ -460,4 +460,11 @@ class Document {
             $this->enclosure
         );
     }
+
+    /**
+     * Gibt das CSV-Dokument als String zurück.
+     */
+    public function __toString(): string {
+        return $this->toString();
+    }
 }

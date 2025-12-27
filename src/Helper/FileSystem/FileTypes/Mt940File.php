@@ -13,8 +13,8 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Entities\Banking\Mt940\Mt940Document;
-use CommonToolkit\Entities\Banking\Mt940\Mt940Transaction;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Document;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Transaction;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Parsers\Mt940DocumentParser;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
@@ -42,10 +42,10 @@ class Mt940File extends HelperAbstract {
     }
 
     /**
-     * Gibt alle `Mt940Document`-Objekte zurück.
+     * Gibt alle `Document`-Objekte zurück.
      *
      * @param string $file
-     * @return Mt940Document[]
+     * @return Document[]
      */
     public static function getDocuments(string $file): array {
         $documents = [];
@@ -63,7 +63,7 @@ class Mt940File extends HelperAbstract {
      * Gibt alle Transaktionen aus allen Blöcken zurück.
      *
      * @param string $file Pfad zur MT940-Datei.
-     * @return Mt940Transaction[]
+     * @return Transaction[]
      */
     public static function getTransactions(string $file): array {
         $transactions = [];

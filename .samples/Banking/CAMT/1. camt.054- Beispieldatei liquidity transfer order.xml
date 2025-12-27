@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.08">
+	<BkToCstmrDbtCdtNtfctn>
+		<GrpHdr>
+			<MsgId>NONREF</MsgId>
+			<CreDtTm>2022-07-08T07:05:58.371+02:00</CreDtTm>
+		</GrpHdr>
+		<Ntfctn>
+			<Id>4691237</Id>
+			<Acct>
+				<Id>
+					<Othr>
+						<Id>RDEEURZYBUDEFFSEK</Id>
+					</Othr>
+				</Id>
+				<Ownr>
+					<Id>
+						<OrgId>
+							<AnyBIC>ZYBUDEFFSEK</AnyBIC>
+						</OrgId>
+					</Id>
+				</Ownr>
+			</Acct>
+			<Ntry>
+				<NtryRef>983879</NtryRef>
+				<Amt Ccy="EUR">258808.98</Amt>
+				<CdtDbtInd>DBIT</CdtDbtInd>
+				<Sts>
+					<Cd>BOOK</Cd>
+				</Sts>
+				<BookgDt>
+					<DtTm>2022-07-08T07:05:58.118+00:00</DtTm>
+				</BookgDt>
+				<ValDt>
+					<Dt>2022-07-08</Dt>
+				</ValDt>
+				<BkTxCd>
+					<Prtry>
+						<Cd>LIQT</Cd>
+					</Prtry>
+				</BkTxCd>
+				<NtryDtls>
+					<TxDtls>
+						<Refs>
+							<InstrId>0708900006600003</InstrId>
+							<EndToEndId>SC10800000600003</EndToEndId>
+							
+<!--
+„S“ (SEPA-Clearer) bzw. „E“ (Scheckabwicklung)
+„C“ (Current Order) 
+Nr. des Cycles
+„TT“ (Bearbeitungstag)
+Konstante „00“
+Eindeutige laufende Nummer innerhalb der vorangehenden Referenzangaben.-->							
+							
+						</Refs>
+						<Amt Ccy="EUR">258808.98</Amt>
+						<RltdAgts>
+							<InstgAgt>
+								<FinInstnId>
+									<BICFI>ZYBUDEFFSEK</BICFI>
+								</FinInstnId>
+							</InstgAgt>
+							<InstdAgt>
+								<FinInstnId>
+									<BICFI>ZYBUDEFFSEK</BICFI>
+								</FinInstnId>
+							</InstdAgt>
+							<DbtrAgt>
+								<FinInstnId>
+									<BICFI>MARKDEFFSCL</BICFI>
+								</FinInstnId>
+							</DbtrAgt>
+						</RltdAgts>
+						<LclInstrm>
+							<Prtry>LIAS</Prtry>
+						</LclInstrm>
+						<RmtInf>
+							<Ustrd>CUO 90 IA</Ustrd>
+							
+<!--„CUO“ (Current Order)
+Phase 90 bis 99 (SCL) bzw.
+Phase 05 bis 07 (Scheckabwicklung)
+1.Stelle: I, O oder X
+I = Input (eingeliefertes Bulk)
+O = Output (ausgeliefertes Bulk)
+X = fehlerhafte Transaktionen aus Einlieferungen
+2.Stelle: 
+A = SCT-Dienst des SCL
+B = SDD-Dienst des SCL
+C = SCC-Dienst des SCL
+E = Scheckabwicklungsdienst-->							
+							
+						</RmtInf>
+					</TxDtls>
+				</NtryDtls>
+			</Ntry>
+		</Ntfctn>
+	</BkToCstmrDbtCdtNtfctn>
+</Document>

@@ -89,4 +89,12 @@ abstract class ExecutableAbstract {
     }
 
     abstract public function execute(array $overrideArgs = []): string;
+
+    /**
+     * Gibt den vollständigen Befehl als String zurück.
+     */
+    public function __toString(): string {
+        $args = implode(' ', $this->args);
+        return trim($this->path . ' ' . $args);
+    }
 }

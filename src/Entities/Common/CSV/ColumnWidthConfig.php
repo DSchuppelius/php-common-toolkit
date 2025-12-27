@@ -1,6 +1,6 @@
 <?php
 /*
- * Created on   : Mon Dec 23 2025
+ * Created on   : Tue Dec 23 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
  * Filename     : ColumnWidthConfig.php
@@ -239,5 +239,28 @@ class ColumnWidthConfig {
         $clone->paddingChar = $this->paddingChar;
         $clone->paddingType = $this->paddingType;
         return $clone;
+    }
+
+    /**
+     * Gibt eine String-Repräsentation der Konfiguration zurück.
+     */
+    public function __toString(): string {
+        $parts = [];
+
+        if ($this->defaultWidth !== null) {
+            $parts[] = "default: {$this->defaultWidth}";
+        }
+
+        foreach ($this->columnWidths as $column => $width) {
+            $parts[] = "{$column}: {$width}";
+        }
+
+        $parts[] = "strategy: {$this->truncationStrategy->value}";
+
+        if ($this->enablePadding) {
+            $parts[] = "padding: on";
+        }
+
+        return 'ColumnWidthConfig[' . implode(', ', $parts) . ']';
     }
 }

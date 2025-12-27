@@ -147,6 +147,13 @@ abstract class Document extends CSVDocument {
     }
 
     /**
+     * Gibt das Dokument als String zurück (DATEV-CSV-Format).
+     */
+    public function __toString(): string {
+        return $this->toString();
+    }
+
+    /**
      * Gibt einen Feldwert als CreditDebit-Enum zurück.
      */
     protected function getCreditDebit(int $rowIndex, int $fieldIndex): ?CreditDebit {

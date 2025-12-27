@@ -13,10 +13,11 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Builders\Mt940DocumentBuilder;
-use CommonToolkit\Entities\Banking\Mt940\Balance;
-use CommonToolkit\Entities\Banking\Mt940\Document;
-use CommonToolkit\Entities\Banking\Mt940\Transaction;
-use CommonToolkit\Entities\Banking\Mt940\Reference;
+use CommonToolkit\Entities\Common\Banking\Mt9\Balance;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Document;
+use CommonToolkit\Entities\Common\Banking\Mt9\Purpose;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Transaction;
+use CommonToolkit\Entities\Common\Banking\Mt9\Reference;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Helper\Data\CurrencyHelper;
@@ -66,24 +67,47 @@ final class Mt940DocumentParser {
                 $purpose = implode(' ', $purposeLines);
 
                 try {
-                    if (preg_match('/^:61:(\d{6})(\d{4})?([CD])(\d+,\d+)([A-Z]{3,4})([A-Z0-9]*)\/\/(.*)$/', $bookingLine, $match)) {
-                        $date = DateTimeImmutable::createFromFormat('ymd', $match[1]) ?: throw new RuntimeException("Ungültiges Buchungsdatum");
-                        $valutaDate = isset($match[2])
-                            ? DateTimeImmutable::createFromFormat('Ymd', $date->format('Y') . $match[2])
-                            : null;
+                    // MT940 :61: Format laut DATEV-Spezifikation (Dok.-Nr. 9226962):
+                    // :61:[Valuta JJMMTT][Buchungsdatum MMTT optional][Soll/Haben C|D|RC|RD][Währung 1 Zeichen optional][Betrag][Buchungsschlüssel N+3][Referenz]//[Bankreferenz]
+                    // Beispiel: 2201010101C100,00NTRFNONREF//123456
+                    // - 220101 = Valutadatum (JJMMTT) - Pflicht
+                    // - 0101 = Buchungsdatum (MMTT) - optional
+                    // - C = Credit (oder D, RC, RD)
+                    // - 100,00 = Betrag mit Komma
+                    // - N = Kennzeichen (immer N für SWIFT)
+                    // - TRF = Transaktionscode (3 Zeichen)
+                    // - NONREF = Kundenreferenz
+                    // - // = Separator
+                    // - 123456 = Bankreferenz
+
+                    // Erweitertes Regex für alle Fälle (mit und ohne //, mit RC/RD)
+                    if (preg_match('/^:61:(\d{6})(\d{4})?(R?[CD])([A-Z])?([0-9,]+)N([A-Z]{3})([^\/]*?)(?:\/\/(.*))?$/i', $bookingLine, $match)) {
+                        // Valutadatum ist immer das erste Datum (JJMMTT)
+                        $valutaDate = DateTimeImmutable::createFromFormat('ymd', $match[1]) ?: throw new RuntimeException("Ungültiges Valutadatum");
+
+                        // Buchungsdatum ist optional (MMTT), wenn vorhanden mit Jahr von Valuta ergänzen
+                        $bookingDate = !empty($match[2])
+                            ? DateTimeImmutable::createFromFormat('Ymd', $valutaDate->format('Y') . $match[2])
+                            : $valutaDate; // Falls kein Buchungsdatum, verwende Valuta
+
+                        if ($bookingDate === false) {
+                            $bookingDate = $valutaDate;
+                        }
 
                         $creditDebit = CreditDebit::fromMt940Code($match[3]);
-                        $amount = (float) CurrencyHelper::deToUs($match[4]);
-                        $transactionCode = $match[5];
-                        $reference = trim($match[6]);
+                        // $match[4] wäre der optionale Währungsbuchstabe (letzte Stelle ISO-Code)
+                        $amount = (float) CurrencyHelper::deToUs($match[5]);
+                        $transactionCode = 'N' . $match[6]; // N + 3-stelliger Code
+                        $reference = trim($match[7] ?? '');
+                        $bankReference = trim($match[8] ?? '');
 
                         $transactions[] = new Transaction(
-                            date: $date,
+                            bookingDate: $bookingDate,
                             valutaDate: $valutaDate,
                             amount: $amount,
                             creditDebit: $creditDebit,
                             currency: $openingBalance?->getCurrency() ?? CurrencyCode::Euro,
-                            reference: new Reference($transactionCode, $reference),
+                            reference: new Reference($transactionCode, $reference ?: 'NONREF'),
                             purpose: $purpose
                         );
                     }

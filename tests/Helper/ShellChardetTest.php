@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace CommonToolkit\Tests\Helper;
+namespace Tests\Helper;
 
 use CommonToolkit\Helper\Shell\ShellChardet;
 use Tests\Contracts\BaseTestCase;

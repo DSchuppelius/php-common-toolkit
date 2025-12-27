@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Beispielnachricht_camt.052_BankToCustomerAccountReport_via_EBICS_nach_Abführung_an_RTGS_mittels_pacs.008-->
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.052.001.08">
+	<BkToCstmrAcctRpt>
+		<GrpHdr>
+			<MsgId>20240313C0098170</MsgId>
+			<CreDtTm>2024-03-13T14:26:47.5734121+01:00</CreDtTm>
+		</GrpHdr>
+		<Rpt>
+			<Id>20240313C0098170</Id>
+			<RptPgntn>
+				<PgNb>00001</PgNb>
+				<LastPgInd>true</LastPgInd>
+			</RptPgntn>
+			<ElctrncSeqNb>10</ElctrncSeqNb>
+			<CreDtTm>2024-03-13T14:26:47.5734121+01:00</CreDtTm>
+			<Acct>
+				<Id>
+					<IBAN>DE00IBANdesDotationskontos</IBAN>
+				</Id>
+				<Tp>
+					<Cd>CACC</Cd>
+				</Tp>
+				<Ccy>EUR</Ccy>
+				<Nm>Testbank, Hamburg</Nm>
+				<Ownr>
+					<Nm>Testbank-Inhaber</Nm>
+				</Ownr>
+				<Svcr>
+					<FinInstnId>
+						<BICFI>MARKDEF1200</BICFI>
+						<ClrSysMmbId>
+							<ClrSysId>
+								<Cd>DEBLZ</Cd>
+							</ClrSysId>
+							<MmbId>20000000</MmbId>
+						</ClrSysMmbId>
+						<Nm>Deutsche Bundesbank</Nm>
+						<Othr>
+							<Id>DE114103555</Id>
+							<Issr>UmsStId</Issr>
+						</Othr>
+					</FinInstnId>
+					<BrnchId>
+						<Nm>Filiale Hamburg</Nm>
+					</BrnchId>
+				</Svcr>
+			</Acct>
+			<Bal>
+				<Tp>
+					<CdOrPrtry>
+						<Cd>OPBD</Cd>
+					</CdOrPrtry>
+				</Tp>
+				<Amt Ccy="EUR">280000.00</Amt>
+				<CdtDbtInd>CRDT</CdtDbtInd>
+				<Dt>
+					<Dt>2024-03-13</Dt>
+				</Dt>
+			</Bal>
+			<Bal>
+				<Tp>
+					<CdOrPrtry>
+						<Cd>CLBD</Cd>
+					</CdOrPrtry>
+				</Tp>
+				<Amt Ccy="EUR">0.00</Amt>
+				<CdtDbtInd>CRDT</CdtDbtInd>
+				<Dt>
+					<Dt>2024-03-13</Dt>
+				</Dt>
+			</Bal>
+			<Ntry>
+				<NtryRef>pacs008-InstrId-00007</NtryRef>
+				<Amt Ccy="EUR">280000.00</Amt>
+				<CdtDbtInd>DBIT</CdtDbtInd>
+				<Sts>
+					<Cd>BOOK</Cd>
+				</Sts>
+				<BookgDt>
+					<Dt>2024-03-13</Dt>
+				</BookgDt>
+				<ValDt>
+					<Dt>2024-03-13</Dt>
+				</ValDt>
+				<AcctSvcrRef>010300005153/0019000007</AcctSvcrRef>
+				<BkTxCd>
+					<Domn>
+						<Cd>PMNT</Cd>
+						<Fmly>
+							<Cd>ICDT</Cd>
+							<SubFmlyCd>SDVA</SubFmlyCd>
+						</Fmly>
+					</Domn>
+					<Prtry>
+						<Cd>NTRF+087+0019000007</Cd>
+						<Issr>DK</Issr>
+					</Prtry>
+				</BkTxCd>
+				<NtryDtls>
+					<TxDtls>
+						<Refs>
+							<AcctSvcrRef>pacs008-InstrId-00007</AcctSvcrRef>
+							<InstrId>pacs008-InstrId-00007</InstrId>
+						</Refs>
+						<Amt Ccy="EUR">280000.00</Amt>
+						<BkTxCd>
+							<Domn>
+								<Cd>PMNT</Cd>
+								<Fmly>
+									<Cd>ICDT</Cd>
+									<SubFmlyCd>SDVA</SubFmlyCd>
+								</Fmly>
+							</Domn>
+							<Prtry>
+								<Cd>NTRF+087+0019000007</Cd>
+								<Issr>DK</Issr>
+							</Prtry>
+						</BkTxCd>
+						<RltdPties>
+							<Cdtr>
+								<Pty>
+									<Nm>Testbank, Hamburg</Nm>
+								</Pty>
+							</Cdtr>
+							<CdtrAcct>
+								<Id>
+									<IBAN>DE00IBANbeiTestbank</IBAN>
+								</Id>
+							</CdtrAcct>
+						</RltdPties>
+						<Purp>
+							<Prtry>Überw Prior1/SWI</Prtry>
+						</Purp>
+						<RmtInf>
+							<Ustrd>VWZ pacs008 DOTA nach RTGS</Ustrd>
+						</RmtInf>
+						<AddtlTxInf>Eilüberweisung</AddtlTxInf>
+					</TxDtls>
+				</NtryDtls>
+				<AddtlNtryInf>Eilüberweisung</AddtlNtryInf>
+			</Ntry>
+		</Rpt>
+	</BkToCstmrAcctRpt>
+</Document>

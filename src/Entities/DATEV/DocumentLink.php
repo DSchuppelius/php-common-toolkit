@@ -44,4 +44,11 @@ final class DocumentLink {
             $m[2]
         );
     }
+
+    /**
+     * Gibt den Beleglink als DATEV-String zurück.
+     */
+    public function __toString(): string {
+        return $this->toDatevString();
+    }
 }

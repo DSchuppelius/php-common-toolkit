@@ -9,6 +9,38 @@ This is a banking/financial data processing toolkit with a layered architecture:
 - **Contracts**: Abstract base classes following PSR patterns with consistent error handling
 - **Enums**: Comprehensive financial standards with typed factory methods
 
+## Directory Structure (Critical - Preserve!)
+
+The directory structure is essential and must be maintained:
+```
+src/
+├── Builders/           # Fluent document builders (CSV, MT940, DATEV)
+├── Contracts/          # Abstract base classes and Interfaces
+│   ├── Abstracts/      # Base classes (HelperAbstract, ExecutableAbstract, etc.)
+│   └── Interfaces/     # Interface definitions
+├── Converters/         # Format converters (DATEV)
+├── Entities/           # Immutable domain models
+│   ├── Common/         # Banking (CAMT, MT9, Swift), CSV entities
+│   ├── DATEV/          # DATEV-specific entities (Documents, Headers)
+│   └── Executables/    # Shell/Java executable wrappers
+├── Enums/              # Typed enums with factory methods
+│   ├── Common/         # CSV, Banking enums
+│   └── DATEV/          # DATEV-specific enums (HeaderFields, MetaFields)
+├── Helper/             # Utility classes
+│   ├── Data/           # BankHelper, CurrencyHelper, etc.
+│   ├── FileSystem/     # File, PdfFile, TiffFile, XmlFile
+│   └── Shell/          # Process execution utilities
+├── Parsers/            # Document parsers (CAMT, MT940, CSV, DATEV)
+├── Registries/         # DATEV version registries
+└── Traits/             # Reusable traits (LockFlagTrait, etc.)
+
+tests/                  # Mirrors src/ structure exactly
+config/                 # JSON configurations (executables, helper settings)
+data/                   # Bundesbank data, XSD schemas
+```
+
+**Important**: When adding new classes, place them in the correct subdirectory matching their domain and responsibility.
+
 ## Critical Architectural Patterns
 
 ### Helper Hierarchy & Configuration Management

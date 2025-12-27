@@ -17,6 +17,7 @@ use CommonToolkit\Enums\DATEV\ItemLock;
 use CommonToolkit\Enums\DATEV\InterestLock;
 use CommonToolkit\Enums\DATEV\SoBilFlag;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Contracts\BaseTestCase;
 
 final class LockFlagTraitTest extends BaseTestCase {
@@ -29,9 +30,7 @@ final class LockFlagTraitTest extends BaseTestCase {
         ];
     }
 
-    /**
-     * @dataProvider lockEnumsProvider
-     */
+    #[DataProvider('lockEnumsProvider')]
     public function testNoneIsRecognizedAsNone(string $enumClass): void {
         $enum = $enumClass::NONE;
 
@@ -40,9 +39,7 @@ final class LockFlagTraitTest extends BaseTestCase {
         $this->assertSame(0, $enum->value);
     }
 
-    /**
-     * @dataProvider lockEnumsProvider
-     */
+    #[DataProvider('lockEnumsProvider')]
     public function testLockedIsRecognizedAsLocked(string $enumClass): void {
         $enum = $enumClass::LOCKED;
 
@@ -51,17 +48,13 @@ final class LockFlagTraitTest extends BaseTestCase {
         $this->assertSame(1, $enum->value);
     }
 
-    /**
-     * @dataProvider lockEnumsProvider
-     */
+    #[DataProvider('lockEnumsProvider')]
     public function testFromIntReturnsCorrectEnum(string $enumClass): void {
         $this->assertSame($enumClass::NONE,   $enumClass::fromInt(0));
         $this->assertSame($enumClass::LOCKED, $enumClass::fromInt(1));
     }
 
-    /**
-     * @dataProvider lockEnumsProvider
-     */
+    #[DataProvider('lockEnumsProvider')]
     public function testFromIntThrowsOnInvalidValue(string $enumClass): void {
         $this->expectException(InvalidArgumentException::class);
         $enumClass::fromInt(2);
