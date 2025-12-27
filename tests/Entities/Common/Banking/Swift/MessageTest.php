@@ -44,6 +44,7 @@ MT103;
         $this->assertTrue($message->isPaymentOrder());
         $this->assertFalse($message->isStatement());
 
+        /** @var Mt103Document $document */
         $document = $message->parseDocument();
 
         $this->assertInstanceOf(Mt103Document::class, $document);
@@ -74,6 +75,7 @@ MT101;
         $this->assertTrue($message->isPaymentOrder());
         $this->assertFalse($message->isStatement());
 
+        /** @var Mt101Document $document */
         $document = $message->parseDocument();
 
         $this->assertInstanceOf(Mt101Document::class, $document);
@@ -101,6 +103,7 @@ MT940;
         $this->assertFalse($message->isPaymentOrder());
         $this->assertTrue($message->isStatement());
 
+        /** @var Mt940Document $document */
         $document = $message->parseDocument();
 
         $this->assertInstanceOf(Mt940Document::class, $document);
