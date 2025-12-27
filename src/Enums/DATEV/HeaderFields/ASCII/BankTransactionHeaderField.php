@@ -168,9 +168,18 @@ enum BankTransactionHeaderField: string {
      * Gibt die Position des Felds zurück (1-basiert).
      */
     public function position(): int {
+        return $this->index() + 1;
+    }
+
+    /**
+     * Gibt den Array-Index des Felds zurück (0-basiert).
+     * 
+     * Zum direkten Zugriff auf Feld-Arrays: $fields[$field->index()]
+     */
+    public function index(): int {
         $ordered = self::ordered();
         $index = array_search($this, $ordered, true);
-        return $index !== false ? $index + 1 : 0;
+        return $index !== false ? $index : -1;
     }
 
     /**
@@ -260,7 +269,7 @@ enum BankTransactionHeaderField: string {
             self::VERWENDUNGSZWECK_12,               // Feld 32: A
             self::VERWENDUNGSZWECK_13,               // Feld 33: A
             self::VERWENDUNGSZWECK_14                // Feld 34: A
-                => true,
+            => true,
 
             // Numerische Felder (Format N) und Datumsfelder (Format D) - nicht gequotet
             self::AUSZUGSNUMMER,                     // Feld 3: N
@@ -271,7 +280,7 @@ enum BankTransactionHeaderField: string {
             self::URSPRUNGSBETRAG,                   // Feld 25: N
             self::AEQUIVALENZBETRAG,                 // Feld 27: N
             self::GEBUEHR                            // Feld 29: N
-                => false,
+            => false,
         };
     }
 }

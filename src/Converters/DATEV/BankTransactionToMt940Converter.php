@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Converters\DATEV;
 
 use CommonToolkit\Builders\Mt940DocumentBuilder;
+use CommonToolkit\Contracts\Abstracts\DATEV\BankTransactionConverterAbstract;
 use CommonToolkit\Entities\Common\Banking\Mt9\Balance;
 use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Document as Mt940Document;
 use CommonToolkit\Entities\Common\Banking\Mt9\Reference;
@@ -21,7 +22,7 @@ use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\Documents\BankTransaction;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
-use CommonToolkit\Helper\Data\CurrencyHelper;
+use CommonToolkit\Enums\DATEV\HeaderFields\ASCII\BankTransactionHeaderField as F;
 use DateTimeImmutable;
 use RuntimeException;
 use Throwable;
@@ -45,10 +46,7 @@ use Throwable;
  * 
  * @package CommonToolkit\Converters\DATEV
  */
-final class BankTransactionToMt940Converter {
-
-    private const DEFAULT_TRANSACTION_CODE = 'NTRF';
-    private const DEFAULT_CURRENCY = 'EUR';
+final class BankTransactionToMt940Converter extends BankTransactionConverterAbstract {
 
     /**
      * Konvertiert ein DATEV BankTransaction-Dokument in ein MT940-Dokument.
@@ -139,8 +137,8 @@ final class BankTransactionToMt940Converter {
         $fields = $row->getFields();
 
         // Feld 1: BLZ/BIC, Feld 2: Kontonummer/IBAN
-        $blzBic = count($fields) > 0 ? trim($fields[0]->getValue()) : '';
-        $accountNumber = count($fields) > 1 ? trim($fields[1]->getValue()) : '';
+        $blzBic = self::getField($fields, F::BLZ_BIC_KONTOINHABER);
+        $accountNumber = self::getField($fields, F::KONTONUMMER_IBAN_KONTOINHABER);
 
         // Kombiniere zu accountId (Format: BLZ/Kontonummer oder IBAN)
         $accountId = !empty($blzBic) && !empty($accountNumber)
@@ -148,13 +146,13 @@ final class BankTransactionToMt940Converter {
             : ($accountNumber ?: $blzBic);
 
         // Feld 3: Auszugsnummer
-        $statementNumber = count($fields) > 2 ? trim($fields[2]->getValue()) : '00001';
+        $statementNumber = self::getField($fields, F::AUSZUGSNUMMER);
         if (empty($statementNumber)) {
             $statementNumber = '00001';
         }
 
         // Generiere Referenz-ID aus Auszugsnummer und Datum
-        $statementDate = count($fields) > 3 ? trim($fields[3]->getValue()) : '';
+        $statementDate = self::getField($fields, F::AUSZUGSDATUM);
         $referenceId = 'DATEV' . preg_replace('/[^A-Z0-9]/i', '', $statementNumber . $statementDate);
 
         // Kürze auf max. 16 Zeichen (MT940-Limit)
@@ -178,36 +176,29 @@ final class BankTransactionToMt940Converter {
             return null;
         }
 
-        // Feld 6: Buchungsdatum (Index 5)
-        $bookingDateStr = trim($fields[5]->getValue());
+        // Buchungsdatum (Pflichtfeld)
+        $bookingDateStr = self::getField($fields, F::BUCHUNGSDATUM);
         $bookingDate = self::parseDate($bookingDateStr);
         if ($bookingDate === null) {
             return null;
         }
 
-        // Feld 5: Valutadatum (Index 4) - optional
-        $valutaDateStr = count($fields) > 4 ? trim($fields[4]->getValue()) : '';
+        // Valutadatum (optional)
+        $valutaDateStr = self::getField($fields, F::VALUTA);
         $valutaDate = !empty($valutaDateStr) ? self::parseDate($valutaDateStr) : null;
 
-        // Feld 7: Umsatz (Index 6)
-        $amountStr = trim($fields[6]->getValue());
+        // Umsatz (Pflichtfeld)
+        $amountStr = self::getField($fields, F::UMSATZ);
         if (empty($amountStr)) {
             return null;
         }
 
-        // Betrag parsen (deutsches Format mit Vorzeichen)
-        $amount = (float) CurrencyHelper::deToUs(ltrim($amountStr, '+'));
-        $creditDebit = str_starts_with($amountStr, '-') ? CreditDebit::DEBIT : CreditDebit::CREDIT;
-        $amount = abs($amount);
+        // Betrag und Richtung parsen
+        $amountData = self::parseAmount($amountStr);
+        $currency = self::parseCurrency(self::getField($fields, F::WAEHRUNG));
 
-        // Feld 17: Währung (Index 16) - optional
-        $currencyStr = count($fields) > 16 ? trim($fields[16]->getValue()) : self::DEFAULT_CURRENCY;
-        $currency = !empty($currencyStr)
-            ? (CurrencyCode::tryFrom(strtoupper($currencyStr)) ?? CurrencyCode::Euro)
-            : CurrencyCode::Euro;
-
-        // Feld 16: Geschäftsvorgangscode (Index 15) - optional
-        $transactionCode = count($fields) > 15 ? trim($fields[15]->getValue()) : '';
+        // Geschäftsvorgangscode (optional)
+        $transactionCode = self::getField($fields, F::GESCHAEFTSVORGANGSCODE);
         if (empty($transactionCode) || strlen($transactionCode) < 3) {
             $transactionCode = self::DEFAULT_TRANSACTION_CODE;
         } else {
@@ -216,8 +207,8 @@ final class BankTransactionToMt940Converter {
         }
 
         // Referenz aus Auftraggeber-Daten zusammenstellen
-        $payerBlz = count($fields) > 9 ? trim($fields[9]->getValue()) : '';
-        $payerAccount = count($fields) > 10 ? trim($fields[10]->getValue()) : '';
+        $payerBlz = self::getField($fields, F::BLZ_BIC_AUFTRAGGEBER);
+        $payerAccount = self::getField($fields, F::KONTONUMMER_IBAN_AUFTRAGGEBER);
         $referenceStr = trim($payerBlz . $payerAccount);
         if (strlen($referenceStr) > 12) {
             $referenceStr = substr($referenceStr, 0, 12);
@@ -229,37 +220,21 @@ final class BankTransactionToMt940Converter {
         // Purpose aus Auftraggeber-Name und Verwendungszweck zusammenstellen
         $purposeParts = [];
 
-        // Auftraggeber-Name (Felder 8-9, Index 7-8)
-        if (count($fields) > 7) {
-            $name1 = trim($fields[7]->getValue());
-            if (!empty($name1)) {
-                $purposeParts[] = $name1;
-            }
+        // Auftraggeber-Name (Felder 8-9)
+        $name1 = self::getField($fields, F::AUFTRAGGEBERNAME_1);
+        if (!empty($name1)) {
+            $purposeParts[] = $name1;
         }
-        if (count($fields) > 8) {
-            $name2 = trim($fields[8]->getValue());
-            if (!empty($name2)) {
-                $purposeParts[] = $name2;
-            }
+        $name2 = self::getField($fields, F::AUFTRAGGEBERNAME_2);
+        if (!empty($name2)) {
+            $purposeParts[] = $name2;
         }
 
-        // Verwendungszweck (Felder 12-14, Index 11-13)
-        for ($i = 11; $i <= 13; $i++) {
-            if (count($fields) > $i) {
-                $vz = trim($fields[$i]->getValue());
-                if (!empty($vz)) {
-                    $purposeParts[] = $vz;
-                }
-            }
-        }
-
-        // Erweiterte Verwendungszwecke (Felder 19-24, Index 18-23)
-        for ($i = 18; $i <= 23; $i++) {
-            if (count($fields) > $i) {
-                $vz = trim($fields[$i]->getValue());
-                if (!empty($vz)) {
-                    $purposeParts[] = $vz;
-                }
+        // Alle Verwendungszweck-Felder sammeln
+        foreach (self::getVerwendungszweckFelder() as $vzFeld) {
+            $vz = self::getField($fields, $vzFeld);
+            if (!empty($vz)) {
+                $purposeParts[] = $vz;
             }
         }
 
@@ -275,47 +250,12 @@ final class BankTransactionToMt940Converter {
         return new Mt940Transaction(
             bookingDate: $bookingDate,
             valutaDate: $valutaDate,
-            amount: $amount,
-            creditDebit: $creditDebit,
+            amount: $amountData['amount'],
+            creditDebit: $amountData['creditDebit'],
             currency: $currency,
             reference: $reference,
             purpose: $purpose ?: null
         );
-    }
-
-    /**
-     * Parst ein Datum aus verschiedenen deutschen Formaten.
-     */
-    private static function parseDate(string $dateStr): ?DateTimeImmutable {
-        if (empty($dateStr)) {
-            return null;
-        }
-
-        // Versuche verschiedene Formate
-        $formats = [
-            'd.m.Y',      // 27.12.2025
-            'd.m.y',      // 27.12.25
-            'Y-m-d',      // 2025-12-27
-            'Ymd',        // 20251227
-            'ymd',        // 251227
-            'd/m/Y',      // 27/12/2025
-            'd-m-Y',      // 27-12-2025
-        ];
-
-        foreach ($formats as $format) {
-            $date = DateTimeImmutable::createFromFormat($format, $dateStr);
-            if ($date !== false) {
-                return $date;
-            }
-        }
-
-        // Versuche mit strtotime als Fallback
-        $timestamp = strtotime($dateStr);
-        if ($timestamp !== false) {
-            return (new DateTimeImmutable())->setTimestamp($timestamp);
-        }
-
-        return null;
     }
 
     /**

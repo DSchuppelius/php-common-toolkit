@@ -12,14 +12,13 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Converters\DATEV;
 
+use CommonToolkit\Contracts\Abstracts\DATEV\BankTransactionConverterAbstract;
 use CommonToolkit\Entities\Common\Banking\Camt\Type53\Document as Camt053Document;
 use CommonToolkit\Entities\Common\Banking\Camt\Type53\Transaction as Camt053Transaction;
-use CommonToolkit\Entities\Common\CSV\DataField;
 use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\Documents\BankTransaction;
-use CommonToolkit\Enums\CreditDebit;
-use CommonToolkit\Helper\Data\BankHelper;
-use CommonToolkit\Helper\Data\CurrencyHelper;
+use CommonToolkit\Enums\DATEV\HeaderFields\ASCII\BankTransactionHeaderField as F;
+use Throwable;
 
 /**
  * Konvertiert CAMT.053 ISO 20022 Kontoauszüge in das DATEV ASCII-Weiterverarbeitungsformat.
@@ -37,9 +36,7 @@ use CommonToolkit\Helper\Data\CurrencyHelper;
  * 
  * @package CommonToolkit\Converters\DATEV
  */
-final class Camt053ToBankTransactionConverter {
-    private const VERWENDUNGSZWECK_MAX_LENGTH = 27;
-    private const DATE_FORMAT = 'd.m.Y';
+final class Camt053ToBankTransactionConverter extends BankTransactionConverterAbstract {
 
     /**
      * Konvertiert ein CAMT.053-Dokument in ein DATEV BankTransaction-Dokument.
@@ -73,86 +70,47 @@ final class Camt053ToBankTransactionConverter {
      * Konvertiert eine CAMT.053-Transaktion in eine DATEV-Datenzeile.
      */
     private static function convertTransaction(Camt053Transaction $txn, string $bic, string $iban, string $statementNumber, string $statementDate, string $defaultCurrency): DataLine {
-        $fields = [];
+        $values = self::initializeFieldValues();
 
-        // Feld 1: BIC des Kontoinhabers
-        $fields[] = new DataField($bic);
+        // Grundfelder befüllen
+        $values[F::BLZ_BIC_KONTOINHABER->index()] = $bic;
+        $values[F::KONTONUMMER_IBAN_KONTOINHABER->index()] = $iban;
+        $values[F::AUSZUGSNUMMER->index()] = $statementNumber;
+        $values[F::AUSZUGSDATUM->index()] = $statementDate;
 
-        // Feld 2: IBAN des Kontoinhabers
-        $fields[] = new DataField($iban);
-
-        // Feld 3: Auszugsnummer
-        $fields[] = new DataField($statementNumber);
-
-        // Feld 4: Auszugsdatum
-        $fields[] = new DataField($statementDate);
-
-        // Feld 5: Valuta
+        // Datums- und Betragsfelder
         $valutaDate = $txn->getValutaDate() ?? $txn->getBookingDate();
-        $fields[] = new DataField($valutaDate->format(self::DATE_FORMAT));
+        $values[F::VALUTA->index()] = $valutaDate->format(self::DATE_FORMAT);
+        $values[F::BUCHUNGSDATUM->index()] = $txn->getBookingDate()->format(self::DATE_FORMAT);
+        $values[F::UMSATZ->index()] = self::formatAmount($txn->getAmount(), $txn->getCreditDebit());
 
-        // Feld 6: Buchungsdatum
-        $fields[] = new DataField($txn->getBookingDate()->format(self::DATE_FORMAT));
-
-        // Feld 7: Umsatz (mit Vorzeichen, deutsches Format) - quoted um Parsing zu verhindern
-        $sign = $txn->getCreditDebit() === CreditDebit::CREDIT ? '+' : '-';
-        $amountStr = '"' . $sign . CurrencyHelper::usToDe(number_format($txn->getAmount(), 2, '.', '')) . '"';
-        $fields[] = new DataField($amountStr);
-
-        // Feld 8-9: Auftraggeber Name
+        // Auftraggeber (Counterparty)
         $counterparty = self::extractCounterparty($txn);
-        $counterpartyLines = self::splitText($counterparty['name'], self::VERWENDUNGSZWECK_MAX_LENGTH);
-        $fields[] = new DataField($counterpartyLines[0] ?? '');
-        $fields[] = new DataField($counterpartyLines[1] ?? '');
+        $counterpartyLines = self::splitText($counterparty['name']);
+        $values[F::AUFTRAGGEBERNAME_1->index()] = $counterpartyLines[0] ?? '';
+        $values[F::AUFTRAGGEBERNAME_2->index()] = $counterpartyLines[1] ?? '';
+        $values[F::BLZ_BIC_AUFTRAGGEBER->index()] = $counterparty['bic'];
+        $values[F::KONTONUMMER_IBAN_AUFTRAGGEBER->index()] = $counterparty['iban'];
 
-        // Feld 10: BIC Auftraggeber
-        $fields[] = new DataField($counterparty['bic']);
-
-        // Feld 11: IBAN Auftraggeber
-        $fields[] = new DataField($counterparty['iban']);
-
-        // Feld 12-15: Verwendungszweck 1-4
+        // Verwendungszweck aufteilen
         $purposeText = self::buildPurposeText($txn);
         $purposeLines = self::splitPurpose($purposeText);
-        $fields[] = new DataField($purposeLines[0] ?? '');
-        $fields[] = new DataField($purposeLines[1] ?? '');
-        $fields[] = new DataField($purposeLines[2] ?? '');
-        $fields[] = new DataField($purposeLines[3] ?? '');
+        self::fillVerwendungszweckFelder($values, $purposeLines);
 
-        // Feld 16: Geschäftsvorgangscode (Bank Transaction Code)
-        $bankTxnCode = $txn->getTransactionCode() ?? '';
-        $fields[] = new DataField($bankTxnCode);
-
-        // Feld 17: Währung
+        // Geschäftsvorgangscode und Metadaten
+        $values[F::GESCHAEFTSVORGANGSCODE->index()] = $txn->getTransactionCode() ?? '';
         $currency = $txn->getCurrency() ? $txn->getCurrency()->value : $defaultCurrency;
-        $fields[] = new DataField($currency);
+        $values[F::WAEHRUNG->index()] = $currency;
 
-        // Feld 18: Buchungstext (additionalInfo)
+        // Buchungstext (additionalInfo)
         $additionalInfo = $txn->getAdditionalInfo() ?? '';
-        $fields[] = new DataField(substr($additionalInfo, 0, self::VERWENDUNGSZWECK_MAX_LENGTH));
+        $values[F::BUCHUNGSTEXT->index()] = substr($additionalInfo, 0, self::VERWENDUNGSZWECK_MAX_LENGTH);
 
-        // Feld 19-24: Verwendungszweck 5-10
-        for ($i = 4; $i <= 9; $i++) {
-            $fields[] = new DataField($purposeLines[$i] ?? '');
-        }
-
-        // Felder 25-30: Ursprungsbetrag, Äquivalenzbetrag, Gebühr (leer)
-        for ($i = 0; $i < 6; $i++) {
-            $fields[] = new DataField('');
-        }
-
-        // Felder 31-34: Verwendungszweck 11-14
-        for ($i = 10; $i <= 13; $i++) {
-            $fields[] = new DataField($purposeLines[$i] ?? '');
-        }
-
-        return new DataLine($fields);
+        return self::createDataLine($values);
     }
 
     /**
      * Extrahiert Gegenpartei-Informationen aus einer CAMT.053-Transaktion.
-     * 
-     * Die Gegenpartei-Informationen sind in Transaction direkt verfügbar.
      * 
      * @return array{name: string, bic: string, iban: string}
      */
@@ -171,7 +129,7 @@ final class Camt053ToBankTransactionConverter {
         $reference = $txn->getReference();
         $parts = [];
 
-        // End-to-End-Reference aus Reference
+        // End-to-End-Reference
         $endToEndId = $reference->getEndToEndId();
         if ($endToEndId !== null && $endToEndId !== '' && $endToEndId !== 'NOTPROVIDED') {
             $parts[] = 'EREF+' . $endToEndId;
@@ -203,81 +161,6 @@ final class Camt053ToBankTransactionConverter {
     }
 
     /**
-     * Extrahiert die BLZ oder BIC aus einer IBAN.
-     * 
-     * Nutzt BankHelper für IBAN-Validierung und BIC-Lookup aus der Bundesbank-Datenbank.
-     * Fallback auf BLZ-Extraktion, wenn kein BIC gefunden wird.
-     */
-    private static function extractBlzFromIban(string $iban): string {
-        // Prüfe zunächst, ob eine gültige IBAN vorliegt
-        if (!BankHelper::isIBAN($iban)) {
-            return '';
-        }
-
-        // Versuche BIC aus der Bundesbank-Datenbank zu ermitteln
-        $bic = BankHelper::bicFromIBAN($iban);
-        if (!empty($bic)) {
-            return $bic;
-        }
-
-        // Fallback: BLZ aus IBAN extrahieren (für deutsche IBANs)
-        $ibanParts = BankHelper::splitIBAN($iban);
-        if ($ibanParts !== false) {
-            return $ibanParts['BLZ'];
-        }
-
-        return '';
-    }
-
-    /**
-     * Teilt Text in Zeilen mit maximaler Länge.
-     * 
-     * @return string[]
-     */
-    private static function splitText(string $text, int $maxLength): array {
-        if ($text === '') {
-            return [];
-        }
-
-        $lines = [];
-        $words = explode(' ', $text);
-        $currentLine = '';
-
-        foreach ($words as $word) {
-            if ($currentLine === '') {
-                $currentLine = $word;
-            } elseif (strlen($currentLine . ' ' . $word) <= $maxLength) {
-                $currentLine .= ' ' . $word;
-            } else {
-                $lines[] = $currentLine;
-                $currentLine = $word;
-            }
-        }
-
-        if ($currentLine !== '') {
-            $lines[] = $currentLine;
-        }
-
-        return array_map(fn($line) => substr($line, 0, $maxLength), $lines);
-    }
-
-    /**
-     * Teilt den Verwendungszweck in Zeilen mit max. 27 Zeichen.
-     * 
-     * @return string[]
-     */
-    private static function splitPurpose(?string $purpose): array {
-        if ($purpose === null || $purpose === '') {
-            return [];
-        }
-
-        // Normalisiere Whitespace
-        $purpose = preg_replace('/\s+/', ' ', trim($purpose)) ?? $purpose;
-
-        return self::splitText($purpose, self::VERWENDUNGSZWECK_MAX_LENGTH);
-    }
-
-    /**
      * Konvertiert mehrere CAMT.053-Dokumente.
      * 
      * @param Camt053Document[] $documents
@@ -289,7 +172,7 @@ final class Camt053ToBankTransactionConverter {
             if ($doc instanceof Camt053Document) {
                 try {
                     $results[] = self::convert($doc);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     // Überspringe fehlerhafte Dokumente
                 }
             }

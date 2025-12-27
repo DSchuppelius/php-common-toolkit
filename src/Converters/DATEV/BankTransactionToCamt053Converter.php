@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Converters\DATEV;
 
+use CommonToolkit\Contracts\Abstracts\DATEV\BankTransactionConverterAbstract;
 use CommonToolkit\Entities\Common\Banking\Camt\Balance;
 use CommonToolkit\Entities\Common\Banking\Camt\Type53\Document as Camt053Document;
 use CommonToolkit\Entities\Common\Banking\Camt\Type53\Reference;
@@ -20,8 +21,8 @@ use CommonToolkit\Entities\Common\CSV\DataLine;
 use CommonToolkit\Entities\DATEV\Documents\BankTransaction;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
+use CommonToolkit\Enums\DATEV\HeaderFields\ASCII\BankTransactionHeaderField as F;
 use CommonToolkit\Helper\Data\BankHelper;
-use CommonToolkit\Helper\Data\CurrencyHelper;
 use DateTimeImmutable;
 use RuntimeException;
 
@@ -46,10 +47,7 @@ use RuntimeException;
  * 
  * @package CommonToolkit\Converters\DATEV
  */
-final class BankTransactionToCamt053Converter {
-
-    private const DEFAULT_TRANSACTION_CODE = 'NTRF';
-    private const DEFAULT_CURRENCY = 'EUR';
+final class BankTransactionToCamt053Converter extends BankTransactionConverterAbstract {
 
     /**
      * Konvertiert ein DATEV BankTransaction-Dokument in ein CAMT.053-Dokument.
@@ -187,21 +185,20 @@ final class BankTransactionToCamt053Converter {
         $fields = $row->getFields();
 
         // Feld 1: BLZ/BIC, Feld 2: Kontonummer/IBAN
-        $blzBic = count($fields) > 0 ? trim($fields[0]->getValue()) : '';
-        $accountNumber = count($fields) > 1 ? trim($fields[1]->getValue()) : '';
+        $blzBic = self::getField($fields, F::BLZ_BIC_KONTOINHABER);
+        $accountNumber = self::getField($fields, F::KONTONUMMER_IBAN_KONTOINHABER);
 
         // IBAN ermitteln (direkt oder aus Kontonummer)
         $accountIban = $accountNumber;
         if (!BankHelper::isIBAN($accountNumber)) {
-            // Kein IBAN - als Platzhalter formatieren
-            $accountIban = 'DE00' . str_pad($blzBic, 8, '0', STR_PAD_LEFT) . str_pad($accountNumber, 10, '0', STR_PAD_LEFT);
+            $accountIban = self::generatePseudoIban($blzBic, $accountNumber);
         }
 
         // BIC ermitteln via BankHelper
         $accountBic = BankHelper::isBIC($blzBic) ? $blzBic : null;
 
         // Feld 3: Auszugsnummer
-        $statementNumber = count($fields) > 2 ? trim($fields[2]->getValue()) : '00001';
+        $statementNumber = self::getField($fields, F::AUSZUGSNUMMER);
         if (empty($statementNumber)) {
             $statementNumber = '00001';
         }
@@ -234,60 +231,43 @@ final class BankTransactionToCamt053Converter {
             return null;
         }
 
-        // Feld 6: Buchungsdatum (Index 5)
-        $bookingDateStr = trim($fields[5]->getValue());
+        // Buchungsdatum (Pflichtfeld)
+        $bookingDateStr = self::getField($fields, F::BUCHUNGSDATUM);
         $bookingDate = self::parseDate($bookingDateStr);
         if ($bookingDate === null) {
             return null;
         }
 
-        // Feld 5: Valutadatum (Index 4) - optional
-        $valutaDateStr = count($fields) > 4 ? trim($fields[4]->getValue()) : '';
+        // Valutadatum (optional)
+        $valutaDateStr = self::getField($fields, F::VALUTA);
         $valutaDate = !empty($valutaDateStr) ? self::parseDate($valutaDateStr) : null;
 
-        // Feld 7: Umsatz (Index 6)
-        $amountStr = trim($fields[6]->getValue());
+        // Umsatz (Pflichtfeld)
+        $amountStr = self::getField($fields, F::UMSATZ);
         if (empty($amountStr)) {
             return null;
         }
 
-        // Betrag parsen (deutsches Format mit Vorzeichen)
-        $amount = (float) CurrencyHelper::deToUs(ltrim($amountStr, '+'));
-        $creditDebit = str_starts_with($amountStr, '-') ? CreditDebit::DEBIT : CreditDebit::CREDIT;
-        $amount = abs($amount);
+        // Betrag und Währung parsen
+        $amountData = self::parseAmount($amountStr);
+        $currency = self::parseCurrency(self::getField($fields, F::WAEHRUNG));
 
-        // Feld 17: Währung (Index 16) - optional
-        $currencyStr = count($fields) > 16 ? trim($fields[16]->getValue()) : self::DEFAULT_CURRENCY;
-        $currency = !empty($currencyStr)
-            ? (CurrencyCode::tryFrom(strtoupper($currencyStr)) ?? CurrencyCode::Euro)
-            : CurrencyCode::Euro;
-
-        // Feld 16: Geschäftsvorgangscode (Index 15) - optional
-        $transactionCode = count($fields) > 15 ? trim($fields[15]->getValue()) : '';
+        // Geschäftsvorgangscode (optional)
+        $transactionCode = self::getField($fields, F::GESCHAEFTSVORGANGSCODE);
         if (empty($transactionCode) || strlen($transactionCode) < 3) {
             $transactionCode = self::DEFAULT_TRANSACTION_CODE;
         }
 
-        // Referenz aus verschiedenen Quellen zusammenstellen
-        $payerBlz = count($fields) > 9 ? trim($fields[9]->getValue()) : '';
-        $payerAccount = count($fields) > 10 ? trim($fields[10]->getValue()) : '';
+        // Auftraggeber-Daten
+        $payerBlz = self::getField($fields, F::BLZ_BIC_AUFTRAGGEBER);
+        $payerAccount = self::getField($fields, F::KONTONUMMER_IBAN_AUFTRAGGEBER);
 
         // EntryReference generieren
         $entryReference = date('dmy') . sprintf('%010d', abs(crc32($bookingDateStr . $amountStr)));
         $entryReference = substr($entryReference, 0, 25);
 
-        // End-to-End-ID aus Referenzfeld wenn vorhanden
-        $endToEndId = null;
-        // Prüfe auf strukturierte Daten in Verwendungszweck
-        for ($i = 11; $i <= 13; $i++) {
-            if (count($fields) > $i) {
-                $vz = trim($fields[$i]->getValue());
-                if (preg_match('/EREF\+([^\s+]+)/', $vz, $matches)) {
-                    $endToEndId = $matches[1];
-                    break;
-                }
-            }
-        }
+        // End-to-End-ID aus Verwendungszweck-Feldern
+        $endToEndId = self::extractEndToEndId($fields);
 
         $reference = new Reference(
             endToEndId: $endToEndId,
@@ -298,68 +278,20 @@ final class BankTransactionToCamt053Converter {
         );
 
         // Counterparty aus Auftraggeber-Daten
-        $counterpartyName = null;
-        $counterpartyIban = null;
-        $counterpartyBic = null;
+        $counterpartyName = self::buildCounterpartyName($fields);
+        $counterpartyIban = self::buildCounterpartyIban($payerBlz, $payerAccount);
+        $counterpartyBic = BankHelper::isBIC($payerBlz) ? $payerBlz : null;
 
-        // Auftraggeber-Name (Felder 8-9, Index 7-8)
-        $nameParts = [];
-        if (count($fields) > 7) {
-            $name1 = trim($fields[7]->getValue());
-            if (!empty($name1)) {
-                $nameParts[] = $name1;
-            }
-        }
-        if (count($fields) > 8) {
-            $name2 = trim($fields[8]->getValue());
-            if (!empty($name2)) {
-                $nameParts[] = $name2;
-            }
-        }
-        if (!empty($nameParts)) {
-            $counterpartyName = implode(' ', $nameParts);
-        }
-
-        // Auftraggeber-Konto (Felder 10-11, Index 9-10)
-        if (!empty($payerAccount)) {
-            // Prüfen ob IBAN oder Kontonummer via BankHelper
-            if (BankHelper::isIBAN($payerAccount)) {
-                $counterpartyIban = $payerAccount;
-            } else if (!empty($payerBlz)) {
-                // Pseudo-IBAN aus BLZ + Kontonummer
-                $counterpartyIban = 'DE00' . str_pad($payerBlz, 8, '0', STR_PAD_LEFT) . str_pad($payerAccount, 10, '0', STR_PAD_LEFT);
-            }
-        }
-
-        // BIC via BankHelper validieren
-        if (BankHelper::isBIC($payerBlz)) {
-            $counterpartyBic = $payerBlz;
-        }
-
-        // Purpose aus Verwendungszweck zusammenstellen (Felder 12-14, Index 11-13)
-        $purposeParts = [];
-        for ($i = 11; $i <= 13; $i++) {
-            if (count($fields) > $i) {
-                $vz = trim($fields[$i]->getValue());
-                if (!empty($vz)) {
-                    $purposeParts[] = $vz;
-                }
-            }
-        }
-        $purpose = !empty($purposeParts) ? implode(' ', $purposeParts) : null;
-
-        // Additional Info aus Buchungstext wenn vorhanden (Feld 15, Index 14)
-        $additionalInfo = count($fields) > 14 ? trim($fields[14]->getValue()) : null;
-        if (empty($additionalInfo)) {
-            $additionalInfo = null;
-        }
+        // Purpose und AdditionalInfo
+        $purpose = self::buildPurpose($fields);
+        $additionalInfo = self::getField($fields, F::BUCHUNGSTEXT) ?: null;
 
         return new Camt053Transaction(
             bookingDate: $bookingDate,
             valutaDate: $valutaDate,
-            amount: $amount,
+            amount: $amountData['amount'],
             currency: $currency,
-            creditDebit: $creditDebit,
+            creditDebit: $amountData['creditDebit'],
             reference: $reference,
             entryReference: $entryReference,
             accountServicerReference: null,
@@ -375,41 +307,63 @@ final class BankTransactionToCamt053Converter {
     }
 
     /**
-     * Parst ein Datum in verschiedenen Formaten.
+     * Extrahiert End-to-End-ID aus Verwendungszweck-Feldern.
      */
-    private static function parseDate(string $dateStr): ?DateTimeImmutable {
-        $dateStr = trim($dateStr);
-
-        if (empty($dateStr)) {
-            return null;
-        }
-
-        // Verschiedene Formate probieren
-        $formats = [
-            'Y-m-d',      // ISO Format
-            'd.m.Y',      // Deutsches Format
-            'd.m.y',      // Deutsches Format kurz
-            'Ymd',        // Kompakt
-            'ymd',        // Kompakt kurz
-            'dmY',        // Kompakt deutsch
-            'dmy',        // Kompakt deutsch kurz
-        ];
-
-        foreach ($formats as $format) {
-            $date = DateTimeImmutable::createFromFormat($format, $dateStr);
-            if ($date !== false) {
-                // Bei 2-stelligem Jahr: 00-30 = 20XX, 31-99 = 19XX
-                if (in_array($format, ['ymd', 'dmy', 'd.m.y'])) {
-                    $year = (int) $date->format('Y');
-                    if ($year < 100) {
-                        $year = $year <= 30 ? 2000 + $year : 1900 + $year;
-                        $date = $date->setDate($year, (int) $date->format('m'), (int) $date->format('d'));
-                    }
-                }
-                return $date;
+    private static function extractEndToEndId(array $fields): ?string {
+        $verwendungszweckFelder = [F::VERWENDUNGSZWECK_1, F::VERWENDUNGSZWECK_2, F::VERWENDUNGSZWECK_3];
+        foreach ($verwendungszweckFelder as $vzFeld) {
+            $vz = self::getField($fields, $vzFeld);
+            if (preg_match('/EREF\+([^\s+]+)/', $vz, $matches)) {
+                return $matches[1];
             }
         }
-
         return null;
+    }
+
+    /**
+     * Baut den Counterparty-Namen aus Auftraggeber-Feldern.
+     */
+    private static function buildCounterpartyName(array $fields): ?string {
+        $nameParts = [];
+        $name1 = self::getField($fields, F::AUFTRAGGEBERNAME_1);
+        if (!empty($name1)) {
+            $nameParts[] = $name1;
+        }
+        $name2 = self::getField($fields, F::AUFTRAGGEBERNAME_2);
+        if (!empty($name2)) {
+            $nameParts[] = $name2;
+        }
+        return !empty($nameParts) ? implode(' ', $nameParts) : null;
+    }
+
+    /**
+     * Baut die Counterparty-IBAN aus BLZ und Kontonummer.
+     */
+    private static function buildCounterpartyIban(string $payerBlz, string $payerAccount): ?string {
+        if (empty($payerAccount)) {
+            return null;
+        }
+        if (BankHelper::isIBAN($payerAccount)) {
+            return $payerAccount;
+        }
+        if (!empty($payerBlz)) {
+            return self::generatePseudoIban($payerBlz, $payerAccount);
+        }
+        return null;
+    }
+
+    /**
+     * Baut den Purpose aus Verwendungszweck-Feldern.
+     */
+    private static function buildPurpose(array $fields): ?string {
+        $verwendungszweckFelder = [F::VERWENDUNGSZWECK_1, F::VERWENDUNGSZWECK_2, F::VERWENDUNGSZWECK_3];
+        $purposeParts = [];
+        foreach ($verwendungszweckFelder as $vzFeld) {
+            $vz = self::getField($fields, $vzFeld);
+            if (!empty($vz)) {
+                $purposeParts[] = $vz;
+            }
+        }
+        return !empty($purposeParts) ? implode(' ', $purposeParts) : null;
     }
 }
