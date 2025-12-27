@@ -63,6 +63,24 @@ class BankHelper {
     }
 
     /**
+     * Validiert eine IBAN mit optionaler Prüfsummenvalidierung.
+     *
+     * Diese Methode kombiniert Format- und Prüfsummenvalidierung:
+     * - $strict = false: Nur Format-Check (schnell)
+     * - $strict = true: Format + Prüfsumme + Länderlänge (vollständig)
+     *
+     * @param string|null $value Die zu validierende IBAN.
+     * @param bool $strict Bei true wird auch die Prüfsumme validiert.
+     * @return bool True, wenn die IBAN gültig ist.
+     */
+    public static function validateIBAN(?string $value, bool $strict = false): bool {
+        if (!self::isIBAN($value)) {
+            return false;
+        }
+        return $strict ? self::checkIBAN($value) : true;
+    }
+
+    /**
      * Prüft, ob der String wie eine IBAN formatiert ist (beginnt mit 2 Buchstaben + 2 Ziffern).
      * 
      * Diese Methode ist weniger strikt als isIBAN() und prüft nur das Anfangsformat,
