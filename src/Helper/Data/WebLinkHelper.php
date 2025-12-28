@@ -691,6 +691,78 @@ class WebLinkHelper {
     }
 
     /**
+     * Prüft, ob der Host einer URL online ist.
+     *
+     * Verwendet DNS-Lookup und optional einen Socket-Verbindungstest.
+     * Im Gegensatz zu isReachable() wird nur geprüft, ob der Server erreichbar ist,
+     * nicht ob die spezifische URL antwortet.
+     *
+     * @param string|null $url Die zu prüfende URL.
+     * @param int $timeout Timeout in Sekunden für den Socket-Test.
+     * @param bool $checkSocket Bei true wird zusätzlich ein Socket-Verbindungstest durchgeführt.
+     * @return bool True, wenn der Host online ist.
+     */
+    public static function isOnline(?string $url, int $timeout = 3, bool $checkSocket = true): bool {
+        $host = self::getHost($url);
+        if ($host === null || $host === '') {
+            return false;
+        }
+
+        // DNS-Lookup prüfen
+        if (!self::hasValidDns($host)) {
+            return false;
+        }
+
+        if (!$checkSocket) {
+            return true;
+        }
+
+        // Socket-Verbindungstest
+        $port = self::getPort($url);
+        if ($port === null) {
+            $scheme = self::getScheme($url);
+            $port = match ($scheme) {
+                'https' => 443,
+                'http' => 80,
+                'ftp' => 21,
+                'ftps' => 990,
+                default => 80,
+            };
+        }
+
+        $socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
+        if ($socket === false) {
+            self::logDebug("Socket-Verbindung zu $host:$port fehlgeschlagen: $errstr ($errno)");
+            return false;
+        }
+
+        fclose($socket);
+        return true;
+    }
+
+    /**
+     * Prüft, ob ein Host gültige DNS-Einträge hat.
+     *
+     * @param string $host Der zu prüfende Hostname.
+     * @return bool True, wenn DNS-Einträge vorhanden sind.
+     */
+    public static function hasValidDns(string $host): bool {
+        // IP-Adressen sind immer "gültig" für DNS-Zwecke
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return true;
+        }
+
+        // Prüfe auf A oder AAAA Records
+        if (function_exists('checkdnsrr')) {
+            return @checkdnsrr($host, 'A') || @checkdnsrr($host, 'AAAA');
+        }
+
+        // Fallback: gethostbyname
+        $ip = @gethostbyname($host);
+        return $ip !== $host;
+    }
+
+    /**
      * Generiert eine Slug-URL aus einem Text.
      *
      * @param string $text Der Text.

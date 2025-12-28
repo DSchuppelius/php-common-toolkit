@@ -300,4 +300,31 @@ class WebLinkHelperTest extends BaseTestCase {
         $decoded = WebLinkHelper::decode($encoded);
         $this->assertEquals('https://example.com/path with spaces/file name.html', $decoded);
     }
+
+    public function testIsOnlineWithInvalidUrl(): void {
+        $this->assertFalse(WebLinkHelper::isOnline(null));
+        $this->assertFalse(WebLinkHelper::isOnline(''));
+        $this->assertFalse(WebLinkHelper::isOnline('not a url'));
+    }
+
+    public function testIsOnlineWithDnsOnlyCheck(): void {
+        // google.com sollte immer DNS-Einträge haben
+        $this->assertTrue(WebLinkHelper::isOnline('https://google.com', 3, false));
+
+        // Nicht existierende Domain
+        $this->assertFalse(WebLinkHelper::isOnline('https://this-domain-does-not-exist-12345.com', 3, false));
+    }
+
+    public function testHasValidDns(): void {
+        // Bekannte Domains
+        $this->assertTrue(WebLinkHelper::hasValidDns('google.com'));
+        $this->assertTrue(WebLinkHelper::hasValidDns('github.com'));
+
+        // IP-Adressen
+        $this->assertTrue(WebLinkHelper::hasValidDns('8.8.8.8'));
+        $this->assertTrue(WebLinkHelper::hasValidDns('127.0.0.1'));
+
+        // Nicht existierende Domain
+        $this->assertFalse(WebLinkHelper::hasValidDns('this-domain-does-not-exist-12345.com'));
+    }
 }
