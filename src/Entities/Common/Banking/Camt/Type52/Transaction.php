@@ -13,6 +13,11 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\Common\Banking\Camt\Type52;
 
 use CommonToolkit\Contracts\Abstracts\Common\Banking\Camt\CamtTransactionAbstract;
+use CommonToolkit\Enums\Common\Banking\Camt\ReturnReason;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionDomain;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionFamily;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionPurpose;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionSubFamily;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use DateTimeImmutable;
@@ -27,11 +32,13 @@ use DateTimeImmutable;
  */
 final class Transaction extends CamtTransactionAbstract {
     private ?string $purpose;
+    private ?TransactionPurpose $purposeCode;
     private ?string $additionalInfo;
     private ?string $bankTransactionCode;
-    private ?string $domainCode;
-    private ?string $familyCode;
-    private ?string $subFamilyCode;
+    private ?TransactionDomain $domainCode;
+    private ?TransactionFamily $familyCode;
+    private ?TransactionSubFamily $subFamilyCode;
+    private ?ReturnReason $returnReason;
 
     public function __construct(
         DateTimeImmutable $bookingDate,
@@ -44,11 +51,13 @@ final class Transaction extends CamtTransactionAbstract {
         ?string $status = 'BOOK',
         bool $isReversal = false,
         ?string $purpose = null,
+        TransactionPurpose|string|null $purposeCode = null,
         ?string $additionalInfo = null,
         ?string $bankTransactionCode = null,
-        ?string $domainCode = null,
-        ?string $familyCode = null,
-        ?string $subFamilyCode = null
+        TransactionDomain|string|null $domainCode = null,
+        TransactionFamily|string|null $familyCode = null,
+        TransactionSubFamily|string|null $subFamilyCode = null,
+        ReturnReason|string|null $returnReason = null
     ) {
         parent::__construct(
             $bookingDate,
@@ -63,34 +72,44 @@ final class Transaction extends CamtTransactionAbstract {
         );
 
         $this->purpose = $purpose;
+        $this->purposeCode = $purposeCode instanceof TransactionPurpose ? $purposeCode : TransactionPurpose::tryFrom($purposeCode ?? '');
         $this->additionalInfo = $additionalInfo;
         $this->bankTransactionCode = $bankTransactionCode;
-        $this->domainCode = $domainCode;
-        $this->familyCode = $familyCode;
-        $this->subFamilyCode = $subFamilyCode;
+        $this->domainCode = $domainCode instanceof TransactionDomain ? $domainCode : TransactionDomain::tryFrom($domainCode ?? '');
+        $this->familyCode = $familyCode instanceof TransactionFamily ? $familyCode : TransactionFamily::tryFrom($familyCode ?? '');
+        $this->subFamilyCode = $subFamilyCode instanceof TransactionSubFamily ? $subFamilyCode : TransactionSubFamily::tryFrom($subFamilyCode ?? '');
+        $this->returnReason = $returnReason instanceof ReturnReason ? $returnReason : ReturnReason::tryFrom($returnReason ?? '');
     }
 
     public function getPurpose(): ?string {
         return $this->purpose;
     }
 
+    public function getPurposeCode(): ?TransactionPurpose {
+        return $this->purposeCode;
+    }
+
     public function getAdditionalInfo(): ?string {
         return $this->additionalInfo;
+    }
+
+    public function getReturnReason(): ?ReturnReason {
+        return $this->returnReason;
     }
 
     public function getBankTransactionCode(): ?string {
         return $this->bankTransactionCode;
     }
 
-    public function getDomainCode(): ?string {
+    public function getDomainCode(): ?TransactionDomain {
         return $this->domainCode;
     }
 
-    public function getFamilyCode(): ?string {
+    public function getFamilyCode(): ?TransactionFamily {
         return $this->familyCode;
     }
 
-    public function getSubFamilyCode(): ?string {
+    public function getSubFamilyCode(): ?TransactionSubFamily {
         return $this->subFamilyCode;
     }
 
@@ -102,11 +121,11 @@ final class Transaction extends CamtTransactionAbstract {
             return $this->bankTransactionCode;
         }
 
-        $code = $this->domainCode;
+        $code = $this->domainCode->value;
         if ($this->familyCode !== null) {
-            $code .= '/' . $this->familyCode;
+            $code .= '/' . $this->familyCode->value;
             if ($this->subFamilyCode !== null) {
-                $code .= '/' . $this->subFamilyCode;
+                $code .= '/' . $this->subFamilyCode->value;
             }
         }
 

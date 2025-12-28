@@ -67,9 +67,9 @@ class CamtParserTest extends BaseTestCase {
         $firstEntry = $document->getEntries()[0];
         $this->assertEquals(100000.0, $firstEntry->getAmount());
         $this->assertTrue($firstEntry->isCredit());
-        $this->assertEquals('PMNT', $firstEntry->getDomainCode());
-        $this->assertEquals('CNTR', $firstEntry->getFamilyCode());
-        $this->assertEquals('CDPT', $firstEntry->getSubFamilyCode());
+        $this->assertEquals(\CommonToolkit\Enums\Common\Banking\Camt\TransactionDomain::PMNT, $firstEntry->getDomainCode());
+        $this->assertEquals(\CommonToolkit\Enums\Common\Banking\Camt\TransactionFamily::CNTR, $firstEntry->getFamilyCode());
+        $this->assertEquals(\CommonToolkit\Enums\Common\Banking\Camt\TransactionSubFamily::CDPT, $firstEntry->getSubFamilyCode());
     }
 
     public function testParseCamt052Barscheckauszahlung(): void {

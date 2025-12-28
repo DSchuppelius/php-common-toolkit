@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Entities\Common\Banking\Camt;
 
+use CommonToolkit\Enums\Common\Banking\Camt\BalanceSubType;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use DateTimeImmutable;
@@ -35,6 +36,7 @@ class Balance {
     private CurrencyCode $currency;
     private float $amount;
     private string $type;
+    private ?BalanceSubType $subType;
 
     /**
      * @param CreditDebit $creditDebit Soll/Haben-Kennzeichen
@@ -42,13 +44,15 @@ class Balance {
      * @param CurrencyCode|string $currency Währung
      * @param float $amount Betrag (positiv)
      * @param string $type Balance-Typ (OPBD, CLBD, PRCD, CLAV, FWAV)
+     * @param BalanceSubType|string|null $subType ISO 20022 Balance Untertyp
      */
     public function __construct(
         CreditDebit $creditDebit,
         DateTimeImmutable|string $date,
         CurrencyCode|string $currency,
         float $amount,
-        string $type = 'CLBD'
+        string $type = 'CLBD',
+        BalanceSubType|string|null $subType = null
     ) {
         $this->creditDebit = $creditDebit;
 
@@ -63,6 +67,7 @@ class Balance {
 
         $this->amount = abs($amount);
         $this->type = strtoupper($type);
+        $this->subType = $subType instanceof BalanceSubType ? $subType : BalanceSubType::tryFrom($subType ?? '');
     }
 
     public function getCreditDebit(): CreditDebit {
@@ -83,6 +88,10 @@ class Balance {
 
     public function getType(): string {
         return $this->type;
+    }
+
+    public function getSubType(): ?BalanceSubType {
+        return $this->subType;
     }
 
     public function isCredit(): bool {

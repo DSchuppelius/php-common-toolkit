@@ -39,8 +39,13 @@ class Camt053ToBankTransactionConverterTest extends BaseTestCase {
             'BOOK',
             false,
             'Rechnung 12345',
-            null,
+            null, // purposeCode
+            null, // additionalInfo
             'NTRF',
+            null,
+            null,
+            null,
+            null, // returnReason
             'Max Mustermann',
             'DE123456',
             'DEUTDEDB'
@@ -88,8 +93,13 @@ class Camt053ToBankTransactionConverterTest extends BaseTestCase {
             'BOOK',
             false,
             'Lastschrift Strom',
-            null,
+            null, // purposeCode
+            null, // additionalInfo
             '020',
+            null,
+            null,
+            null,
+            null, // returnReason
             'Stadtwerke GmbH',
             'DE555444333222111',
             'GENODES1'

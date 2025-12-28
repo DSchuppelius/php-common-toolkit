@@ -86,6 +86,7 @@ class Camt054DocumentBuilderTest extends BaseTestCase {
             'INSTR-001',
             'E2E-001',
             'Liquiditätstransfer',
+            null, // purposeCode
             'LIQT'
         );
 
@@ -161,7 +162,12 @@ class Camt054DocumentBuilderTest extends BaseTestCase {
             'INSTR-001',
             'E2E-001',
             'Zahlung',
+            null, // purposeCode
             'PMNT',
+            null, // domainCode
+            null, // familyCode
+            null, // subFamilyCode
+            null, // returnReason
             null, // localInstrumentCode
             'ZYBUDEFFSEK', // instructingAgentBic
             'MARKDEFFSCL', // instructedAgentBic

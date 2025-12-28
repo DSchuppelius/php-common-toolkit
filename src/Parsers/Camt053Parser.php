@@ -254,6 +254,8 @@ class Camt053Parser {
 
         // Verwendungszweck
         $purpose = null;
+        $purposeCode = null;
+        $returnReason = null;
         if ($txDtls) {
             // Unstrukturiert
             $ustrd = $xpath->evaluate("string({$prefix}RmtInf/{$prefix}Ustrd)", $txDtls);
@@ -265,13 +267,22 @@ class Camt053Parser {
             if (!empty($strd)) {
                 $purpose = $purpose ? $purpose . ' / ' . $strd : $strd;
             }
+            // ISO 20022 Purpose Code
+            $purposeCode = $xpath->evaluate("string({$prefix}Purp/{$prefix}Cd)", $txDtls) ?: null;
+            // Return Reason
+            $returnReason = $xpath->evaluate("string({$prefix}RtrInf/{$prefix}Rsn/{$prefix}Cd)", $txDtls) ?: null;
         }
 
         // Zusatzinfo (Buchungstext)
         $additionalInfo = $xpath->evaluate("string({$prefix}AddtlNtryInf)", $entry) ?: null;
 
-        // Transaktionscode
+        // Transaktionscode (proprietär)
         $transactionCode = $xpath->evaluate("string({$prefix}BkTxCd/{$prefix}Prtry/{$prefix}Cd)", $entry) ?: null;
+
+        // ISO 20022 Domain/Family/SubFamily Codes
+        $domainCode = $xpath->evaluate("string({$prefix}BkTxCd/{$prefix}Domn/{$prefix}Cd)", $entry) ?: null;
+        $familyCode = $xpath->evaluate("string({$prefix}BkTxCd/{$prefix}Domn/{$prefix}Fmly/{$prefix}Cd)", $entry) ?: null;
+        $subFamilyCode = $xpath->evaluate("string({$prefix}BkTxCd/{$prefix}Domn/{$prefix}Fmly/{$prefix}SubFmlyCd)", $entry) ?: null;
 
         // Gegenseite ermitteln (Debtor bei CRDT, Creditor bei DBIT)
         $counterpartyName = null;
@@ -314,8 +325,13 @@ class Camt053Parser {
             status: 'BOOK',
             isReversal: $isReversal,
             purpose: $purpose,
+            purposeCode: $purposeCode,
             additionalInfo: $additionalInfo,
             transactionCode: $transactionCode,
+            domainCode: $domainCode,
+            familyCode: $familyCode,
+            subFamilyCode: $subFamilyCode,
+            returnReason: $returnReason,
             counterpartyName: $counterpartyName,
             counterpartyIban: $counterpartyIban,
             counterpartyBic: $counterpartyBic

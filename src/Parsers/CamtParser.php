@@ -241,6 +241,7 @@ class CamtParser {
         $dateStr = $xpath->evaluate('string(ns:Dt/ns:Dt)', $balNode)
             ?: $xpath->evaluate('string(ns:Dt/ns:DtTm)', $balNode);
         $balanceType = $xpath->evaluate('string(ns:Tp/ns:CdOrPrtry/ns:Cd)', $balNode);
+        $balanceSubType = $xpath->evaluate('string(ns:Tp/ns:SubTp/ns:Cd)', $balNode) ?: null;
 
         if (empty($dateStr)) {
             return null;
@@ -257,7 +258,8 @@ class CamtParser {
             date: $dateStr,
             currency: $currency,
             amount: $amount,
-            type: $balanceType ?: 'CLBD'
+            type: $balanceType ?: 'CLBD',
+            subType: $balanceSubType
         );
     }
 
@@ -306,11 +308,15 @@ class CamtParser {
         // Purpose und Additional Info
         $txDtls = $xpath->query('ns:NtryDtls/ns:TxDtls', $entry)->item(0);
         $purpose = null;
+        $purposeCode = null;
         $additionalInfo = null;
+        $returnReason = null;
 
         if ($txDtls) {
             $purpose = $xpath->evaluate('string(ns:Purp/ns:Prtry)', $txDtls) ?: null;
+            $purposeCode = $xpath->evaluate('string(ns:Purp/ns:Cd)', $txDtls) ?: null;
             $additionalInfo = $xpath->evaluate('string(ns:AddtlTxInf)', $txDtls) ?: null;
+            $returnReason = $xpath->evaluate('string(ns:RtrInf/ns:Rsn/ns:Cd)', $txDtls) ?: null;
         }
 
         if ($additionalInfo === null) {
@@ -328,11 +334,13 @@ class CamtParser {
             status: $status,
             isReversal: $isReversal,
             purpose: $purpose,
+            purposeCode: $purposeCode,
             additionalInfo: $additionalInfo,
             bankTransactionCode: $bankTxCode,
             domainCode: $domainCode,
             familyCode: $familyCode,
-            subFamilyCode: $subFamilyCode
+            subFamilyCode: $subFamilyCode,
+            returnReason: $returnReason
         );
     }
 
@@ -372,14 +380,21 @@ class CamtParser {
         $entryRef = $xpath->evaluate('string(ns:NtryRef)', $entry) ?: null;
         $acctSvcrRef = $xpath->evaluate('string(ns:AcctSvcrRef)', $entry) ?: null;
 
-        // Bank Transaction Code
+        // Bank Transaction Code (proprietär)
         $bankTxCode = $xpath->evaluate('string(ns:BkTxCd/ns:Prtry/ns:Cd)', $entry) ?: null;
+
+        // ISO 20022 Domain/Family/SubFamily Codes
+        $domainCode = $xpath->evaluate('string(ns:BkTxCd/ns:Domn/ns:Cd)', $entry) ?: null;
+        $familyCode = $xpath->evaluate('string(ns:BkTxCd/ns:Domn/ns:Fmly/ns:Cd)', $entry) ?: null;
+        $subFamilyCode = $xpath->evaluate('string(ns:BkTxCd/ns:Domn/ns:Fmly/ns:SubFmlyCd)', $entry) ?: null;
 
         // TxDtls
         $txDtls = $xpath->query('ns:NtryDtls/ns:TxDtls', $entry)->item(0);
         $instructionId = null;
         $endToEndId = null;
         $remittanceInfo = null;
+        $purposeCode = null;
+        $returnReason = null;
         $localInstrumentCode = null;
         $instructingAgentBic = null;
         $instructedAgentBic = null;
@@ -390,6 +405,8 @@ class CamtParser {
             $instructionId = $xpath->evaluate('string(ns:Refs/ns:InstrId)', $txDtls) ?: null;
             $endToEndId = $xpath->evaluate('string(ns:Refs/ns:EndToEndId)', $txDtls) ?: null;
             $remittanceInfo = $xpath->evaluate('string(ns:RmtInf/ns:Ustrd)', $txDtls) ?: null;
+            $purposeCode = $xpath->evaluate('string(ns:Purp/ns:Cd)', $txDtls) ?: null;
+            $returnReason = $xpath->evaluate('string(ns:RtrInf/ns:Rsn/ns:Cd)', $txDtls) ?: null;
             $localInstrumentCode = $xpath->evaluate('string(ns:LclInstrm/ns:Prtry)', $txDtls)
                 ?: $xpath->evaluate('string(ns:LclInstrm/ns:Cd)', $txDtls) ?: null;
 
@@ -412,7 +429,12 @@ class CamtParser {
             instructionId: $instructionId,
             endToEndId: $endToEndId,
             remittanceInfo: $remittanceInfo,
+            purposeCode: $purposeCode,
             bankTransactionCode: $bankTxCode,
+            domainCode: $domainCode,
+            familyCode: $familyCode,
+            subFamilyCode: $subFamilyCode,
+            returnReason: $returnReason,
             localInstrumentCode: $localInstrumentCode,
             instructingAgentBic: $instructingAgentBic,
             instructedAgentBic: $instructedAgentBic,

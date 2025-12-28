@@ -13,6 +13,11 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\Common\Banking\Camt\Type53;
 
 use CommonToolkit\Contracts\Abstracts\Common\Banking\Camt\CamtTransactionAbstract;
+use CommonToolkit\Enums\Common\Banking\Camt\ReturnReason;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionDomain;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionFamily;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionPurpose;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionSubFamily;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use DateTimeImmutable;
@@ -31,8 +36,13 @@ use DateTimeImmutable;
 final class Transaction extends CamtTransactionAbstract {
     private Reference $reference;
     private ?string $purpose;
+    private ?TransactionPurpose $purposeCode;
     private ?string $additionalInfo;
     private ?string $transactionCode;
+    private ?TransactionDomain $domainCode;
+    private ?TransactionFamily $familyCode;
+    private ?TransactionSubFamily $subFamilyCode;
+    private ?ReturnReason $returnReason;
     private ?string $counterpartyName;
     private ?string $counterpartyIban;
     private ?string $counterpartyBic;
@@ -49,8 +59,13 @@ final class Transaction extends CamtTransactionAbstract {
      * @param string|null $status Buchungsstatus (BOOK, PDNG, INFO)
      * @param bool $isReversal Storno-Kennzeichen
      * @param string|null $purpose Verwendungszweck (unstrukturiert)
+     * @param TransactionPurpose|string|null $purposeCode ISO 20022 Verwendungszweck-Code
      * @param string|null $additionalInfo Zusätzliche Buchungsinformationen
      * @param string|null $transactionCode Transaktionscode (GVC)
+     * @param TransactionDomain|string|null $domainCode ISO 20022 Domain Code
+     * @param TransactionFamily|string|null $familyCode ISO 20022 Family Code
+     * @param TransactionSubFamily|string|null $subFamilyCode ISO 20022 SubFamily Code
+     * @param ReturnReason|string|null $returnReason ISO 20022 Rückbuchungsgrund
      * @param string|null $counterpartyName Name der Gegenseite
      * @param string|null $counterpartyIban IBAN der Gegenseite
      * @param string|null $counterpartyBic BIC der Gegenseite
@@ -67,8 +82,13 @@ final class Transaction extends CamtTransactionAbstract {
         ?string $status = 'BOOK',
         bool $isReversal = false,
         ?string $purpose = null,
+        TransactionPurpose|string|null $purposeCode = null,
         ?string $additionalInfo = null,
         ?string $transactionCode = null,
+        TransactionDomain|string|null $domainCode = null,
+        TransactionFamily|string|null $familyCode = null,
+        TransactionSubFamily|string|null $subFamilyCode = null,
+        ReturnReason|string|null $returnReason = null,
         ?string $counterpartyName = null,
         ?string $counterpartyIban = null,
         ?string $counterpartyBic = null
@@ -87,8 +107,13 @@ final class Transaction extends CamtTransactionAbstract {
 
         $this->reference = $reference;
         $this->purpose = $purpose;
+        $this->purposeCode = $purposeCode instanceof TransactionPurpose ? $purposeCode : TransactionPurpose::tryFrom($purposeCode ?? '');
         $this->additionalInfo = $additionalInfo;
         $this->transactionCode = $transactionCode;
+        $this->domainCode = $domainCode instanceof TransactionDomain ? $domainCode : TransactionDomain::tryFrom($domainCode ?? '');
+        $this->familyCode = $familyCode instanceof TransactionFamily ? $familyCode : TransactionFamily::tryFrom($familyCode ?? '');
+        $this->subFamilyCode = $subFamilyCode instanceof TransactionSubFamily ? $subFamilyCode : TransactionSubFamily::tryFrom($subFamilyCode ?? '');
+        $this->returnReason = $returnReason instanceof ReturnReason ? $returnReason : ReturnReason::tryFrom($returnReason ?? '');
         $this->counterpartyName = $counterpartyName;
         $this->counterpartyIban = $counterpartyIban;
         $this->counterpartyBic = $counterpartyBic;
@@ -102,12 +127,51 @@ final class Transaction extends CamtTransactionAbstract {
         return $this->purpose;
     }
 
+    public function getPurposeCode(): ?TransactionPurpose {
+        return $this->purposeCode;
+    }
+
     public function getAdditionalInfo(): ?string {
         return $this->additionalInfo;
     }
 
+    public function getReturnReason(): ?ReturnReason {
+        return $this->returnReason;
+    }
+
     public function getTransactionCode(): ?string {
         return $this->transactionCode;
+    }
+
+    public function getDomainCode(): ?TransactionDomain {
+        return $this->domainCode;
+    }
+
+    public function getFamilyCode(): ?TransactionFamily {
+        return $this->familyCode;
+    }
+
+    public function getSubFamilyCode(): ?TransactionSubFamily {
+        return $this->subFamilyCode;
+    }
+
+    /**
+     * Gibt den vollständigen Transaktionscode zurück (Domain/Family/SubFamily).
+     */
+    public function getFullTransactionCode(): ?string {
+        if ($this->domainCode === null) {
+            return $this->transactionCode;
+        }
+
+        $code = $this->domainCode->value;
+        if ($this->familyCode !== null) {
+            $code .= '/' . $this->familyCode->value;
+            if ($this->subFamilyCode !== null) {
+                $code .= '/' . $this->subFamilyCode->value;
+            }
+        }
+
+        return $code;
     }
 
     public function getCounterpartyName(): ?string {

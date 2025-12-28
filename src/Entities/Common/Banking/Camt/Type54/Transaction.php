@@ -13,6 +13,11 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\Common\Banking\Camt\Type54;
 
 use CommonToolkit\Contracts\Abstracts\Common\Banking\Camt\CamtTransactionAbstract;
+use CommonToolkit\Enums\Common\Banking\Camt\ReturnReason;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionDomain;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionFamily;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionPurpose;
+use CommonToolkit\Enums\Common\Banking\Camt\TransactionSubFamily;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use DateTimeImmutable;
@@ -32,7 +37,12 @@ final class Transaction extends CamtTransactionAbstract {
     private ?string $instructionId;
     private ?string $endToEndId;
     private ?string $remittanceInfo;
+    private ?TransactionPurpose $purposeCode;
     private ?string $bankTransactionCode;
+    private ?TransactionDomain $domainCode;
+    private ?TransactionFamily $familyCode;
+    private ?TransactionSubFamily $subFamilyCode;
+    private ?ReturnReason $returnReason;
     private ?string $localInstrumentCode;
     private ?string $instructingAgentBic;
     private ?string $instructedAgentBic;
@@ -52,7 +62,12 @@ final class Transaction extends CamtTransactionAbstract {
         ?string $instructionId = null,
         ?string $endToEndId = null,
         ?string $remittanceInfo = null,
+        TransactionPurpose|string|null $purposeCode = null,
         ?string $bankTransactionCode = null,
+        TransactionDomain|string|null $domainCode = null,
+        TransactionFamily|string|null $familyCode = null,
+        TransactionSubFamily|string|null $subFamilyCode = null,
+        ReturnReason|string|null $returnReason = null,
         ?string $localInstrumentCode = null,
         ?string $instructingAgentBic = null,
         ?string $instructedAgentBic = null,
@@ -74,7 +89,12 @@ final class Transaction extends CamtTransactionAbstract {
         $this->instructionId = $instructionId;
         $this->endToEndId = $endToEndId;
         $this->remittanceInfo = $remittanceInfo;
+        $this->purposeCode = $purposeCode instanceof TransactionPurpose ? $purposeCode : TransactionPurpose::tryFrom($purposeCode ?? '');
         $this->bankTransactionCode = $bankTransactionCode;
+        $this->domainCode = $domainCode instanceof TransactionDomain ? $domainCode : TransactionDomain::tryFrom($domainCode ?? '');
+        $this->familyCode = $familyCode instanceof TransactionFamily ? $familyCode : TransactionFamily::tryFrom($familyCode ?? '');
+        $this->subFamilyCode = $subFamilyCode instanceof TransactionSubFamily ? $subFamilyCode : TransactionSubFamily::tryFrom($subFamilyCode ?? '');
+        $this->returnReason = $returnReason instanceof ReturnReason ? $returnReason : ReturnReason::tryFrom($returnReason ?? '');
         $this->localInstrumentCode = $localInstrumentCode;
         $this->instructingAgentBic = $instructingAgentBic;
         $this->instructedAgentBic = $instructedAgentBic;
@@ -94,8 +114,47 @@ final class Transaction extends CamtTransactionAbstract {
         return $this->remittanceInfo;
     }
 
+    public function getPurposeCode(): ?TransactionPurpose {
+        return $this->purposeCode;
+    }
+
+    public function getReturnReason(): ?ReturnReason {
+        return $this->returnReason;
+    }
+
     public function getBankTransactionCode(): ?string {
         return $this->bankTransactionCode;
+    }
+
+    public function getDomainCode(): ?TransactionDomain {
+        return $this->domainCode;
+    }
+
+    public function getFamilyCode(): ?TransactionFamily {
+        return $this->familyCode;
+    }
+
+    public function getSubFamilyCode(): ?TransactionSubFamily {
+        return $this->subFamilyCode;
+    }
+
+    /**
+     * Gibt den vollständigen Transaktionscode zurück (Domain/Family/SubFamily).
+     */
+    public function getFullTransactionCode(): ?string {
+        if ($this->domainCode === null) {
+            return $this->bankTransactionCode;
+        }
+
+        $code = $this->domainCode->value;
+        if ($this->familyCode !== null) {
+            $code .= '/' . $this->familyCode->value;
+            if ($this->subFamilyCode !== null) {
+                $code .= '/' . $this->subFamilyCode->value;
+            }
+        }
+
+        return $code;
     }
 
     public function getLocalInstrumentCode(): ?string {
