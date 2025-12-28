@@ -14,7 +14,7 @@ namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
-use CommonToolkit\Helper\Data\DataValidator;
+use CommonToolkit\Helper\Data\Validator;
 use CommonToolkit\Helper\FileSystem\File;
 use Exception;
 use Generator;
@@ -324,7 +324,7 @@ class CsvFile extends HelperAbstract {
                 continue;
             }
 
-            if (!DataValidator::validateBySymbol($symbol, $wert)) {
+            if (!Validator::validateBySymbol($symbol, $wert)) {
                 self::logDebug("Spalte $index entspricht nicht dem erwarteten Musterzeichen '$symbol' – Wert: '$wert'");
                 return false;
             }

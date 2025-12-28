@@ -3,7 +3,7 @@
  * Created on   : Thu Apr 17 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : DataValidator.php
+ * Filename     : Validator.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -22,7 +22,7 @@ namespace CommonToolkit\Helper\Data;
  *
  * @package CommonToolkit\Helper\Data
  */
-class DataValidator {
+class Validator {
     /**
      * Prüft, ob der Wert ein gültiges Datum ist.
      *
@@ -107,13 +107,33 @@ class DataValidator {
     }
 
     /**
+     * Prüft, ob der Wert eine gültige USt-ID (VAT-ID) ist.
+     *
+     * @param string $value
+     * @return boolean
+     */
+    public static function isVatId(string $value): bool {
+        return VatNumberHelper::isVatId($value);
+    }
+
+    /**
+     * Prüft, ob der Wert eine gültige USt-ID mit korrekter Prüfsumme ist.
+     *
+     * @param string $value
+     * @return boolean
+     */
+    public static function isValidVatId(string $value): bool {
+        return VatNumberHelper::validateVatId($value, true);
+    }
+
+    /**
      * Prüft, ob der Wert ein Text ist.
      *
      * @param string $value
      * @return boolean
      */
     public static function isText(string $value): bool {
-        return !self::isAccountNumber($value) && !self::isBankCode($value) && !self::isIBAN($value) && !self::isBIC($value) && !self::isAmount($value) && !self::isDate($value);
+        return !self::isAccountNumber($value) && !self::isBankCode($value) && !self::isIBAN($value) && !self::isBIC($value) && !self::isAmount($value) && !self::isDate($value) && !self::isVatId($value);
     }
 
     /**
