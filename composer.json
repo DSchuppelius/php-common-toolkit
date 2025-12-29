@@ -21,7 +21,7 @@
     "ext-bcmath": "*",
     "ext-intl": "*",
     "psr/log": "^3.0@dev",
-    "dschuppelius/php-config-toolkit": "^0.2.7"
+    "dschuppelius/php-config-toolkit": "^0.2.15"
   },
 
   "autoload-dev": {
