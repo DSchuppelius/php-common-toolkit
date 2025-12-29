@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c8a9ea2916ea492b3c65bc5ce5bc539a",
+    "content-hash": "cd9f1af72b0d8cb0cca9af0a46803a67",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
@@ -53,20 +53,20 @@
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v1.3.5",
+            "version": "v1.3.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "ff1b971ab937d4fb79075c6cbb7194b47bf32b4b"
+                "reference": "030d1c544ef31d67f01a3c202b471ada58f0994e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/ff1b971ab937d4fb79075c6cbb7194b47bf32b4b",
-                "reference": "ff1b971ab937d4fb79075c6cbb7194b47bf32b4b",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/030d1c544ef31d67f01a3c202b471ada58f0994e",
+                "reference": "030d1c544ef31d67f01a3c202b471ada58f0994e",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.2 || ^8.3",
+                "php": ">=8.2 <8.5",
                 "psr/log": "^3.0@dev"
             },
             "require-dev": {
@@ -91,9 +91,9 @@
             "description": "Reused codes for my api php sdks",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v1.3.5"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v1.3.5.1"
             },
-            "time": "2025-12-22T09:34:33+00:00"
+            "time": "2025-12-29T11:46:28+00:00"
         },
         {
             "name": "psr/log",
@@ -1925,7 +1925,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.2 || ^8.3 || ^8.4",
+        "php": ">=8.2 <8.5",
         "ext-bcmath": "*",
         "ext-intl": "*"
     },
