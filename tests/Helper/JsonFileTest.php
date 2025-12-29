@@ -64,11 +64,6 @@ class JsonFileTest extends BaseTestCase {
         parent::tearDown();
     }
 
-    public function testSetLogger(): void {
-        // Skip logger test if factory method is not available
-        $this->markTestSkipped('Logger factory method not available in this version');
-    }
-
     public function testIsValid(): void {
         $this->assertTrue(JsonFile::isValid($this->testJsonFile));
         $this->assertFalse(JsonFile::isValid($this->invalidJsonFile));

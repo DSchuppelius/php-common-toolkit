@@ -44,8 +44,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      * @throws Exception Wenn ein Fehler beim Kopieren auftritt.
      */
     public static function copy(string $sourceDirectory, string $destinationDirectory, bool $recursive = false): void {
-        $sourceDirectory = File::getRealPath($sourceDirectory);
-        $destinationDirectory = File::getRealPath($destinationDirectory);
+        $sourceDirectory = self::getRealPath($sourceDirectory);
+        $destinationDirectory = self::getRealPath($destinationDirectory);
 
         if (!self::exists($sourceDirectory)) {
             self::logError("Das Verzeichnis $sourceDirectory existiert nicht");
@@ -85,7 +85,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      * @throws Exception Wenn ein Fehler beim Erstellen des Verzeichnisses auftritt.
      */
     public static function create(string $directory, int $permissions = 0755, bool $recursive = false): void {
-        $directory = File::getRealPath($directory);
+        $directory = self::getRealPath($directory);
 
         if (!self::exists($directory)) {
             if (!mkdir($directory, $permissions, $recursive)) {
@@ -107,8 +107,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      * @throws Exception Wenn ein Fehler beim Umbenennen auftritt.
      */
     public static function rename(string $oldName, string $newName): void {
-        $oldName = File::getRealPath($oldName);
-        $newName = File::getRealPath($newName);
+        $oldName = self::getRealPath($oldName);
+        $newName = self::getRealPath($newName);
 
         if (!self::exists($oldName)) {
             self::logError("Das Verzeichnis $oldName existiert nicht");
@@ -132,7 +132,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      * @throws Exception Wenn ein Fehler beim Löschen auftritt.
      */
     public static function delete(string $directory, bool $recursive = false): void {
-        $directory = File::getRealPath($directory);
+        $directory = self::getRealPath($directory);
 
         if (!self::exists($directory)) {
             self::logError("Das Verzeichnis $directory existiert nicht");
@@ -169,8 +169,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      * @throws Exception Wenn ein Fehler beim Verschieben auftritt.
      */
     public static function move(string $sourceDirectory, string $destinationDirectory): void {
-        $sourceDirectory = File::getRealPath($sourceDirectory);
-        $destinationDirectory = File::getRealPath($destinationDirectory);
+        $sourceDirectory = self::getRealPath($sourceDirectory);
+        $destinationDirectory = self::getRealPath($destinationDirectory);
 
         if (!self::exists($sourceDirectory)) {
             self::logError("Das Verzeichnis $sourceDirectory existiert nicht");
@@ -193,17 +193,23 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      * @return array Ein Array mit den gefundenen Unterverzeichnissen.
      */
     public static function get(string $directory, bool $recursive = false): array {
-        $directory = File::getRealPath($directory);
+        $directory = self::getRealPath($directory);
+        
+        if (!self::exists($directory)) {
+            self::logError("Das Verzeichnis $directory existiert nicht");
+            return [];
+        }
+        
         $result = [];
         $files = array_diff(scandir($directory), ['.', '..']);
 
         foreach ($files as $file) {
             $path = $directory . DIRECTORY_SEPARATOR . $file;
             if (is_dir($path)) {
+                $result[] = $path;
                 if ($recursive) {
                     $result = array_merge($result, self::get($path, true));
                 }
-                $result[] = $path;
             }
         }
 
@@ -218,5 +224,27 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      */
     public static function isAbsolutePath(string $path): bool {
         return File::isAbsolutePath($path);
+    }
+
+    /**
+     * Gibt den realen Pfad des Verzeichnisses zurück.
+     *
+     * @param string $directory Der Pfad zum Verzeichnis.
+     * @return string Der reale Pfad des Verzeichnisses.
+     */
+    private static function getRealPath(string $directory): string {
+        if (self::exists($directory)) {
+            $realPath = realpath($directory);
+            if ($realPath === false) {
+                self::logDebug("Konnte Verzeichnispfad nicht auflösen: $directory");
+                return $directory;
+            }
+            if ($realPath !== $directory) {
+                self::logDebug("Verzeichnispfad wurde normalisiert: $directory -> $realPath");
+            }
+            return $realPath;
+        }
+        self::logDebug("Verzeichnis existiert nicht, unverändert zurückgeben: $directory");
+        return $directory;
     }
 }

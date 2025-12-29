@@ -430,6 +430,11 @@ class DatevDocumentParser extends CSVDocumentParser {
                 } catch (Exception $e) {
                     // Log parsing errors but continue - parsing robustness is important
                     static::logError("Field {$fieldDef->name} could not be set: " . $e->getMessage());
+
+                    // For critical fields like Formatkategorie, throw exception if validation fails
+                    if ($fieldDef->name === 'Formatkategorie') {
+                        throw new RuntimeException("Format 'Unbekannt' v{$metaHeaderLine->getVersionsnummer()} ist noch nicht implementiert");
+                    }
                 }
             }
         }

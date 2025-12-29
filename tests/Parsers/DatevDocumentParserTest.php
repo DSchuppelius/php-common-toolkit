@@ -142,8 +142,6 @@ class DatevDocumentParserTest extends BaseTestCase {
     }
 
     public function testParseUnknownFormat(): void {
-        $this->markTestSkipped('Dieser Test wird übersprungen, da er eine Exception testet für die eine Implementierung fehlt.');
-
         $csvContent = '"EXTF";700;"99";"UnknownFormat";7;20191001000000;7;"";"";"";"SV";"";"";"";0;""' . "\n" .
             '"Field1";"Field2"' . "\n" .
             '"Value1";"Value2"';

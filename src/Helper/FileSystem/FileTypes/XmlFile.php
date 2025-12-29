@@ -84,6 +84,9 @@ class XmlFile extends HelperAbstract {
         try {
             $content = File::read(self::resolveFile($file));
             return XmlHelper::isValid($content);
+        } catch (FileNotFoundException $e) {
+            // Re-throw FileNotFoundException to maintain expected contract
+            throw $e;
         } catch (Exception $e) {
             self::logError("Fehler beim Lesen der Datei {$file}: " . $e->getMessage());
             return false;
