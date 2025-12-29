@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cd9f1af72b0d8cb0cca9af0a46803a67",
+    "content-hash": "bad2aca03cf86c2a1e514be3374cc601",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
@@ -1930,8 +1930,5 @@
         "ext-intl": "*"
     },
     "platform-dev": [],
-    "platform-overrides": {
-        "php": "8.2.0"
-    },
     "plugin-api-version": "2.6.0"
 }
