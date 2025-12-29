@@ -18,6 +18,7 @@
   "require": {
     "php": ">=8.2 <8.5",
     "ext-bcmath": "*",
+    "ext-dom": "*",
     "ext-intl": "*",
     "dschuppelius/php-config-toolkit": "^0.2.15"
   },

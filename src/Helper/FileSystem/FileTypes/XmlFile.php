@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Helper\Data\XmlHelper;
 use CommonToolkit\Helper\FileSystem\File;
 use Exception;
 use DOMDocument;
@@ -35,23 +36,29 @@ class XmlFile extends HelperAbstract {
     /**
      * Liest Metadaten aus einer XML-Datei.
      *
+     * @param string $file Der Dateipfad
+     * @return array{RootElement: string, Encoding: string, Version: string} Metadaten
      * @throws FileNotFoundException Falls die Datei nicht existiert.
      * @throws Exception Falls das XML nicht geladen werden kann.
      */
     public static function getMetaData(string $file): array {
         self::checkDomExtension();
 
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
-        }
-
+        $resolvedFile = self::resolveFile($file);
         $xml = new DOMDocument();
 
         libxml_use_internal_errors(true);
-        if (!$xml->load($file)) {
-            self::logLibxmlErrors("Fehler beim Laden der XML-Datei: $file");
-            throw new Exception("Fehler beim Laden der XML-Datei: $file");
+        if (!$xml->load($resolvedFile)) {
+            $errors = libxml_get_errors();
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = trim($error->message);
+            }
+            libxml_clear_errors();
+
+            $errorMsg = "Fehler beim Laden der XML-Datei: $file - " . implode(', ', $errorMessages);
+            self::logError($errorMsg);
+            throw new Exception($errorMsg);
         }
 
         $metadata = [
@@ -67,78 +74,53 @@ class XmlFile extends HelperAbstract {
     /**
      * Prüft, ob eine XML-Datei wohlgeformt ist.
      *
-     * @param string $file
-     * @return boolean
+     * @param string $file Der Dateipfad
+     * @return bool True wenn wohlgeformt, false andernfalls
+     * @throws FileNotFoundException Wenn die Datei nicht existiert
      */
     public static function isWellFormed(string $file): bool {
         self::checkDomExtension();
 
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
+        try {
+            $content = File::read(self::resolveFile($file));
+            return XmlHelper::isValid($content);
+        } catch (Exception $e) {
+            self::logError("Fehler beim Lesen der Datei {$file}: " . $e->getMessage());
+            return false;
         }
-
-        $xml = new DOMDocument();
-        libxml_use_internal_errors(true);
-        $isWellFormed = $xml->load($file);
-
-        if (!$isWellFormed) {
-            self::logLibxmlErrors("XML ist nicht wohlgeformt: $file");
-        }
-
-        libxml_clear_errors();
-        return $isWellFormed;
     }
 
     /**
      * Validiert eine XML-Datei gegen ein XSD-Schema.
      *
-     * @param string $file
-     * @param string $xsdSchema
-     * @return boolean
+     * @param string $file Der Dateipfad
+     * @param string $xsdSchema Pfad zur XSD-Schema-Datei
+     * @return bool True wenn gültig, false andernfalls
+     * @throws FileNotFoundException Wenn eine der Dateien nicht existiert
      */
     public static function isValid(string $file, string $xsdSchema): bool {
         self::checkDomExtension();
 
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
-        }
+        // Beide Dateien validieren
+        $resolvedFile = self::resolveFile($file);
+        $resolvedSchema = self::resolveFile($xsdSchema);
 
-        if (!File::exists($xsdSchema)) {
-            self::logError("XSD-Schema $xsdSchema nicht gefunden.");
-            throw new FileNotFoundException("XSD-Schema $xsdSchema nicht gefunden.");
-        }
+        try {
+            $content = File::read($resolvedFile);
+            $result = XmlHelper::validateAgainstXsd($content, $resolvedSchema);
 
-        $xml = new DOMDocument();
-        libxml_use_internal_errors(true);
+            if (!$result['valid']) {
+                foreach ($result['errors'] as $error) {
+                    self::logError("XML-Validierung $file: $error");
+                }
+            } else {
+                self::logInfo("XML-Datei $file entspricht dem XSD-Schema $xsdSchema.");
+            }
 
-        if (!$xml->load($file)) {
-            self::logLibxmlErrors("Fehler beim Laden der XML-Datei für Validierung: $file");
+            return $result['valid'];
+        } catch (Exception $e) {
+            self::logError("Fehler bei XML-Validierung {$file}: " . $e->getMessage());
             return false;
-        }
-
-        $isValid = $xml->schemaValidate($xsdSchema);
-
-        if (!$isValid) {
-            self::logLibxmlErrors("XML-Datei $file entspricht nicht dem XSD-Schema $xsdSchema");
-        } else {
-            self::logInfo("XML-Datei $file entspricht dem XSD-Schema $xsdSchema.");
-        }
-
-        libxml_clear_errors();
-        return $isValid;
-    }
-
-    /**
-     * Protokolliert libxml-Fehler.
-     *
-     * @param string $errorMessage
-     */
-    private static function logLibxmlErrors(string $errorMessage): void {
-        $errors = libxml_get_errors();
-        foreach ($errors as $error) {
-            self::logError("$errorMessage - libxml Fehler: " . trim($error->message));
         }
     }
 
@@ -155,17 +137,21 @@ class XmlFile extends HelperAbstract {
     public static function countRecords(string $file, ?string $elementName = null): int {
         self::checkDomExtension();
 
-        if (!File::exists($file)) {
-            self::logError("Datei $file nicht gefunden.");
-            throw new FileNotFoundException("Datei $file nicht gefunden.");
-        }
-
+        $resolvedFile = self::resolveFile($file);
         $xml = new DOMDocument();
         libxml_use_internal_errors(true);
 
-        if (!$xml->load($file)) {
-            self::logLibxmlErrors("Fehler beim Laden der XML-Datei: $file");
-            throw new Exception("Fehler beim Laden der XML-Datei: $file");
+        if (!$xml->load($resolvedFile)) {
+            $errors = libxml_get_errors();
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = trim($error->message);
+            }
+            libxml_clear_errors();
+
+            $errorMsg = "Fehler beim Laden der XML-Datei: $file - " . implode(', ', $errorMessages);
+            self::logError($errorMsg);
+            throw new Exception($errorMsg);
         }
 
         $root = $xml->documentElement;
@@ -189,5 +175,107 @@ class XmlFile extends HelperAbstract {
 
         libxml_clear_errors();
         return $count;
+    }
+
+    /**
+     * Formatiert eine XML-Datei für bessere Lesbarkeit (Pretty-Print).
+     *
+     * @param string $file Der Dateipfad
+     * @return string Der formatierte XML-Inhalt
+     * @throws FileNotFoundException Wenn die Datei nicht existiert
+     * @throws Exception Bei Lesefehlern
+     */
+    public static function prettyFormat(string $file): string {
+        $content = File::read(self::resolveFile($file));
+        return XmlHelper::prettyFormat($content);
+    }
+
+    /**
+     * Extrahiert alle Namespaces aus einer XML-Datei.
+     *
+     * @param string $file Der Dateipfad
+     * @return array<string, string> Namespace-Mappings (prefix => uri)
+     * @throws FileNotFoundException Wenn die Datei nicht existiert
+     */
+    public static function extractNamespaces(string $file): array {
+        try {
+            $content = File::read(self::resolveFile($file));
+            return XmlHelper::extractNamespaces($content);
+        } catch (Exception $e) {
+            self::logError("Fehler beim Extrahieren der Namespaces aus {$file}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Konvertiert eine XML-Datei zu einem assoziativen Array.
+     *
+     * @param string $file Der Dateipfad
+     * @param bool $preserveAttributes Ob Attribute beibehalten werden sollen
+     * @return array Das konvertierte Array
+     * @throws FileNotFoundException Wenn die Datei nicht existiert
+     */
+    public static function toArray(string $file, bool $preserveAttributes = true): array {
+        try {
+            $content = File::read(self::resolveFile($file));
+            return XmlHelper::xmlToArray($content, $preserveAttributes);
+        } catch (Exception $e) {
+            self::logError("Fehler beim Konvertieren der XML-Datei {$file} zu Array: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Führt eine XPath-Abfrage auf einer XML-Datei aus.
+     *
+     * @param string $file Der Dateipfad
+     * @param string $xpath Der XPath-Ausdruck
+     * @param array<string, string> $namespaces Namespace-Registrierungen
+     * @return array Array von gefundenen Werten
+     * @throws FileNotFoundException Wenn die Datei nicht existiert
+     */
+    public static function xpath(string $file, string $xpath, array $namespaces = []): array {
+        try {
+            $content = File::read(self::resolveFile($file));
+            return XmlHelper::xpath($content, $xpath, $namespaces);
+        } catch (Exception $e) {
+            self::logError("Fehler bei XPath-Abfrage auf {$file}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Validiert SEPA XML-Datei gegen entsprechende XSD-Schemas.
+     *
+     * @param string $file Der Dateipfad
+     * @param string $schemaDir Verzeichnis mit XSD-Schema-Dateien
+     * @return array{valid: bool, errors: string[], messageType: string|null}
+     * @throws FileNotFoundException Wenn die Datei nicht existiert
+     */
+    public static function validateSepaXml(string $file, string $schemaDir): array {
+        try {
+            $content = File::read(self::resolveFile($file));
+            return XmlHelper::validateSepaXml($content, $schemaDir);
+        } catch (Exception $e) {
+            self::logError("Fehler bei SEPA-Validierung von {$file}: " . $e->getMessage());
+            return ['valid' => false, 'errors' => [$e->getMessage()], 'messageType' => null];
+        }
+    }
+
+    /**
+     * Extrahiert SEPA Message ID aus XML-Datei.
+     *
+     * @param string $file Der Dateipfad
+     * @return string|null Die Message ID oder null wenn nicht gefunden
+     * @throws FileNotFoundException Wenn die Datei nicht existiert
+     */
+    public static function extractSepaMessageId(string $file): ?string {
+        try {
+            $content = File::read(self::resolveFile($file));
+            return XmlHelper::extractSepaMessageId($content);
+        } catch (Exception $e) {
+            self::logError("Fehler beim Extrahieren der SEPA Message ID aus {$file}: " . $e->getMessage());
+            return null;
+        }
     }
 }
