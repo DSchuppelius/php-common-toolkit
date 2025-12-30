@@ -14,10 +14,13 @@ namespace CommonToolkit\Helper\FileSystem;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
+use CommonToolkit\Traits\RealPathTrait;
 use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
+use InvalidArgumentException;
 
 class Folder extends HelperAbstract implements FileSystemInterface {
+    use RealPathTrait;
     /**
      * Überprüft, ob ein Verzeichnis existiert.
      *
@@ -25,6 +28,12 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      * @return bool True, wenn das Verzeichnis existiert, andernfalls false.
      */
     public static function exists(string $directory): bool {
+        // Windows-reservierte Gerätenamen ignorieren (auch auf Linux für Samba-Kompatibilität)
+        if (File::isWindowsReservedName($directory)) {
+            self::logDebug("Windows-reservierter Gerätename ignoriert: $directory");
+            return false;
+        }
+
         $result = is_dir($directory);
 
         if (!$result) {
@@ -46,6 +55,11 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function copy(string $sourceDirectory, string $destinationDirectory, bool $recursive = false): void {
         $sourceDirectory = self::getRealPath($sourceDirectory);
         $destinationDirectory = self::getRealPath($destinationDirectory);
+
+        if (File::isWindowsReservedName($destinationDirectory)) {
+            self::logError("Ungültiger Zielverzeichnisname (Windows-reservierter Name): $destinationDirectory");
+            throw new InvalidArgumentException("Ungültiger Verzeichnisname: " . basename($destinationDirectory) . " ist ein Windows-reservierter Gerätename");
+        }
 
         if (!self::exists($sourceDirectory)) {
             self::logError("Das Verzeichnis $sourceDirectory existiert nicht");
@@ -87,6 +101,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function create(string $directory, int $permissions = 0755, bool $recursive = false): void {
         $directory = self::getRealPath($directory);
 
+        self::validateNotReservedName($directory);
+
         if (!self::exists($directory)) {
             if (!mkdir($directory, $permissions, $recursive)) {
                 self::logError("Fehler beim Erstellen des Verzeichnisses: $directory");
@@ -109,6 +125,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function rename(string $oldName, string $newName): void {
         $oldName = self::getRealPath($oldName);
         $newName = self::getRealPath($newName);
+
+        self::validateNotReservedName($newName);
 
         if (!self::exists($oldName)) {
             self::logError("Das Verzeichnis $oldName existiert nicht");
@@ -172,6 +190,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $sourceDirectory = self::getRealPath($sourceDirectory);
         $destinationDirectory = self::getRealPath($destinationDirectory);
 
+        self::validateNotReservedName($destinationDirectory);
+
         if (!self::exists($sourceDirectory)) {
             self::logError("Das Verzeichnis $sourceDirectory existiert nicht");
             throw new FolderNotFoundException("Das Verzeichnis $sourceDirectory existiert nicht");
@@ -194,12 +214,12 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      */
     public static function get(string $directory, bool $recursive = false): array {
         $directory = self::getRealPath($directory);
-        
+
         if (!self::exists($directory)) {
             self::logError("Das Verzeichnis $directory existiert nicht");
             return [];
         }
-        
+
         $result = [];
         $files = array_diff(scandir($directory), ['.', '..']);
 
@@ -224,27 +244,5 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      */
     public static function isAbsolutePath(string $path): bool {
         return File::isAbsolutePath($path);
-    }
-
-    /**
-     * Gibt den realen Pfad des Verzeichnisses zurück.
-     *
-     * @param string $directory Der Pfad zum Verzeichnis.
-     * @return string Der reale Pfad des Verzeichnisses.
-     */
-    private static function getRealPath(string $directory): string {
-        if (self::exists($directory)) {
-            $realPath = realpath($directory);
-            if ($realPath === false) {
-                self::logDebug("Konnte Verzeichnispfad nicht auflösen: $directory");
-                return $directory;
-            }
-            if ($realPath !== $directory) {
-                self::logDebug("Verzeichnispfad wurde normalisiert: $directory -> $realPath");
-            }
-            return $realPath;
-        }
-        self::logDebug("Verzeichnis existiert nicht, unverändert zurückgeben: $directory");
-        return $directory;
     }
 }

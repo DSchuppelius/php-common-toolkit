@@ -18,6 +18,7 @@ use CommonToolkit\Enums\SearchMode;
 use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\Platform;
 use CommonToolkit\Helper\Shell;
+use CommonToolkit\Traits\RealPathTrait;
 use ERRORToolkit\Exceptions\FileSystem\FileExistsException;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use ERRORToolkit\Exceptions\FileSystem\FileNotWrittenException;
@@ -25,9 +26,15 @@ use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
 use finfo;
 use Generator;
+use InvalidArgumentException;
 
 class File extends ConfiguredHelperAbstract implements FileSystemInterface {
+    use RealPathTrait;
+
     protected const CONFIG_FILE = __DIR__ . '/../../../config/common_executables.json';
+
+    /** @var array<int, string> Windows-reservierte Gerätenamen, die nicht als Dateinamen verwendet werden können */
+    public const WINDOWS_RESERVED_NAMES = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'];
 
     /** @var array<string, string|false> Cache für chardet-Ergebnisse (Pfad → Encoding) */
     private static array $chardetCache = [];
@@ -199,33 +206,17 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @return bool True, wenn die Datei existiert, andernfalls false.
      */
     public static function exists(string $file): bool {
+        // Windows-reservierte Gerätenamen ignorieren (auch auf Linux für Samba-Kompatibilität)
+        if (self::isWindowsReservedName($file)) {
+            self::logDebug("Windows-reservierter Gerätename ignoriert: $file");
+            return false;
+        }
+
         $result = file_exists($file);
         if (!$result) {
             self::logDebug("Existenzprüfung der Datei: $file -> false");
         }
         return $result;
-    }
-
-    /**
-     * Gibt den realen Pfad der Datei zurück.
-     *
-     * @param string $file Der Pfad zur Datei.
-     * @return string Der reale Pfad der Datei.
-     */
-    public static function getRealPath(string $file): string {
-        if (self::exists($file)) {
-            $realPath = realpath($file);
-            if ($realPath === false) {
-                self::logDebug("Konnte Pfad nicht auflösen: $file");
-                return $file;
-            }
-            if ($realPath !== $file) {
-                self::logInfo("Pfad wurde normalisiert: ... -> $realPath");
-            }
-            return $realPath;
-        }
-        self::logDebug("Pfad existiert nicht, unverändert zurückgeben: $file");
-        return $file;
     }
 
     /**
@@ -348,6 +339,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @throws FileNotWrittenException Wenn die Datei nicht geschrieben werden kann.
      */
     public static function write(string $file, string $data): void {
+        self::validateNotReservedName($file);
+
         $file = self::getRealPath($file);
         if (file_put_contents($file, $data) === false) {
             self::logError("Fehler beim Schreiben in die Datei: $file");
@@ -470,6 +463,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $sourceFile = self::getRealPath($sourceFile);
         $destinationFile = self::getRealPath($destinationFile);
 
+        self::validateNotReservedName($destinationFile);
+
         if (!self::exists($sourceFile)) {
             self::logError("Quelldatei existiert nicht: $sourceFile");
             throw new FileNotFoundException("Datei nicht gefunden: $sourceFile");
@@ -501,15 +496,18 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function move(string $sourceFile, string $destinationFolder, ?string $destinationFileName = null, bool $overwrite = true): void {
         $sourceFile = self::getRealPath($sourceFile);
-        $destinationFolder = self::getRealPath($destinationFolder);
+        $destinationFolder = Folder::getRealPath($destinationFolder);
         $destinationFile = $destinationFolder . DIRECTORY_SEPARATOR . ($destinationFileName ?? basename($sourceFile));
+
+        self::validateNotReservedName($destinationFolder);
+        self::validateNotReservedName($destinationFile);
 
         if (!self::exists($sourceFile)) {
             self::logError("Quelldatei existiert nicht: $sourceFile");
             throw new FileNotFoundException("Datei nicht gefunden: $sourceFile");
         }
 
-        if (!self::exists($destinationFolder)) {
+        if (!Folder::exists($destinationFolder)) {
             self::logError("Zielverzeichnis existiert nicht: $destinationFolder");
             throw new FolderNotFoundException("Zielordner nicht gefunden: $destinationFolder");
         }
@@ -541,6 +539,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function rename(string $oldName, string $newName): void {
         $oldName = self::getRealPath($oldName);
         $newName = self::getRealPath($newName);
+
+        self::validateNotReservedName($newName);
 
         if (!self::exists($oldName)) {
             self::logError("Datei zum Umbenennen nicht gefunden: $oldName");
@@ -575,6 +575,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @throws Exception Wenn ein Fehler beim Setzen der Berechtigungen auftritt.
      */
     public static function create(string $file, int $permissions = 0644, string $content = ''): void {
+        self::validateNotReservedName($file);
+
         if (self::exists($file)) {
             self::logError("Datei existiert bereits: $file");
             throw new FileExistsException("Datei existiert bereits: $file");
@@ -830,5 +832,18 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return in_array($fileMimeType, $mimeTypes, true);
         }
         return $fileMimeType === $mimeTypes;
+    }
+
+    /**
+     * Prüft ob der Dateiname ein Windows-reservierter Gerätename ist.
+     * Diese Namen existieren unter Windows "virtuell" und file_exists() gibt fälschlicherweise true zurück.
+     * Diese Prüfung ist auch auf Linux für Samba-Kompatibilität relevant.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return bool True wenn es ein reservierter Name ist.
+     */
+    public static function isWindowsReservedName(string $file): bool {
+        $basename = pathinfo($file, PATHINFO_FILENAME);
+        return in_array(strtoupper($basename), self::WINDOWS_RESERVED_NAMES, true);
     }
 }

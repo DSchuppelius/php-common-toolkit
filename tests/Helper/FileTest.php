@@ -151,4 +151,49 @@ class FileTest extends BaseTestCase {
         file_put_contents($this->testFile, "abc123");
         $this->assertEquals(6, File::charCount($this->testFile));
     }
+
+    public function testIsWindowsReservedNameDetectsNUL() {
+        $this->assertTrue(File::isWindowsReservedName('/path/to/NUL'));
+        $this->assertTrue(File::isWindowsReservedName('/path/to/nul'));
+        $this->assertTrue(File::isWindowsReservedName('/path/to/NUL.txt'));
+        $this->assertTrue(File::isWindowsReservedName('NUL'));
+    }
+
+    public function testIsWindowsReservedNameDetectsAllReservedNames() {
+        foreach (File::WINDOWS_RESERVED_NAMES as $name) {
+            $this->assertTrue(File::isWindowsReservedName("/path/to/$name"), "Failed for $name");
+            $this->assertTrue(File::isWindowsReservedName("/path/to/$name.txt"), "Failed for $name.txt");
+        }
+    }
+
+    public function testIsWindowsReservedNameReturnsFalseForNormalFiles() {
+        $this->assertFalse(File::isWindowsReservedName('/path/to/normal.txt'));
+        $this->assertFalse(File::isWindowsReservedName('/path/to/file'));
+        $this->assertFalse(File::isWindowsReservedName('/path/to/NULLABLE.txt'));
+        $this->assertFalse(File::isWindowsReservedName('/path/to/connect.log'));
+    }
+
+    public function testExistsReturnsFalseForWindowsReservedNames() {
+        $this->assertFalse(File::exists('/tmp/NUL'));
+        $this->assertFalse(File::exists('/tmp/CON'));
+        $this->assertFalse(File::exists('/tmp/PRN'));
+    }
+
+    public function testWriteThrowsExceptionForWindowsReservedName() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Windows-reservierter Gerätename');
+        File::write('/tmp/NUL', 'test');
+    }
+
+    public function testCreateThrowsExceptionForWindowsReservedName() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Windows-reservierter Gerätename');
+        File::create('/tmp/NUL.txt');
+    }
+
+    public function testRenameThrowsExceptionForWindowsReservedName() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Windows-reservierter Gerätename');
+        File::rename($this->testFile, '/tmp/NUL');
+    }
 }
