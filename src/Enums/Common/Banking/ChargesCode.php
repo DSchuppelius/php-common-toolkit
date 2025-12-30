@@ -34,6 +34,11 @@ enum ChargesCode: string {
     case SHA = 'SHA';
 
     /**
+     * SLEV - Service Level (gemäß SEPA-Vereinbarung)
+     */
+    case SLEV = 'SLEV';
+
+    /**
      * Gibt die deutsche Beschreibung zurück.
      */
     public function description(): string {
@@ -41,6 +46,7 @@ enum ChargesCode: string {
             self::BEN => 'Begünstigter trägt alle Gebühren',
             self::OUR => 'Auftraggeber trägt alle Gebühren',
             self::SHA => 'Gebühren werden geteilt',
+            self::SLEV => 'Gemäß Service-Level-Vereinbarung (SEPA)',
         };
     }
 
@@ -52,7 +58,22 @@ enum ChargesCode: string {
             self::BEN => 'All charges borne by beneficiary',
             self::OUR => 'All charges borne by ordering customer',
             self::SHA => 'Charges shared',
+            self::SLEV => 'Following service level agreement (SEPA)',
         };
+    }
+
+    /**
+     * Prüft, ob der Code SEPA-konform ist.
+     */
+    public function isSepaCompliant(): bool {
+        return in_array($this, [self::SHA, self::SLEV]);
+    }
+
+    /**
+     * Gibt den Standard-SEPA-Code zurück.
+     */
+    public static function defaultSepa(): self {
+        return self::SLEV;
     }
 
     /**

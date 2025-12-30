@@ -524,6 +524,243 @@ final class ConverterRoundtripTest extends BaseTestCase {
         $this->assertEquals(500.00, $roundtripMt940->getClosingBalance()->getAmount());
     }
 
+    /**
+     * Test: Summenprüfung - Opening Balance + Transaktionen = Closing Balance
+     * 
+     * Überprüft, dass die rechnerische Konsistenz nach der Konvertierung
+     * erhalten bleibt: Anfangssaldo + Gutschriften - Belastungen = Endsaldo
+     */
+    public function testBalanceConsistencyAfterConversion(): void {
+        // Dokument mit rechnerisch konsistenten Werten
+        // Opening: 1000 EUR
+        // + 500 (Credit)
+        // - 200 (Debit)
+        // - 50 (Debit)
+        // = 1250 EUR (Closing)
+
+        $openingBalance = new Mt9Balance(
+            CreditDebit::CREDIT,
+            new DateTimeImmutable('2025-02-01'),
+            CurrencyCode::Euro,
+            1000.00
+        );
+
+        $closingBalance = new Mt9Balance(
+            CreditDebit::CREDIT,
+            new DateTimeImmutable('2025-02-28'),
+            CurrencyCode::Euro,
+            1250.00
+        );
+
+        $transactions = [
+            new Mt940Transaction(
+                new DateTimeImmutable('2025-02-05'),
+                new DateTimeImmutable('2025-02-05'),
+                500.00,
+                CreditDebit::CREDIT,
+                CurrencyCode::Euro,
+                new Mt9Reference('TRF', 'CREDIT-001')
+            ),
+            new Mt940Transaction(
+                new DateTimeImmutable('2025-02-10'),
+                new DateTimeImmutable('2025-02-10'),
+                200.00,
+                CreditDebit::DEBIT,
+                CurrencyCode::Euro,
+                new Mt9Reference('TRF', 'DEBIT-001')
+            ),
+            new Mt940Transaction(
+                new DateTimeImmutable('2025-02-15'),
+                new DateTimeImmutable('2025-02-15'),
+                50.00,
+                CreditDebit::DEBIT,
+                CurrencyCode::Euro,
+                new Mt9Reference('TRF', 'DEBIT-002')
+            ),
+        ];
+
+        $mt940 = new Mt940Document(
+            'DE89370400440532013000',
+            'BALANCE-CHECK',
+            '00001',
+            $openingBalance,
+            $closingBalance,
+            $transactions
+        );
+
+        // Konvertiere zu CAMT.053
+        $camt053 = Mt940ToCamtConverter::toCamt053($mt940);
+
+        // Prüfe die Summen im CAMT.053
+        $this->assertEquals(1000.00, $camt053->getOpeningBalance()->getAmount());
+        $this->assertEquals(1250.00, $camt053->getClosingBalance()->getAmount());
+
+        // Berechne die Summe der Transaktionen
+        $totalCredits = 0.0;
+        $totalDebits = 0.0;
+        foreach ($camt053->getEntries() as $entry) {
+            if ($entry->getCreditDebit() === CreditDebit::CREDIT) {
+                $totalCredits += $entry->getAmount();
+            } else {
+                $totalDebits += $entry->getAmount();
+            }
+        }
+
+        $this->assertEquals(500.00, $totalCredits, 'Summe Gutschriften');
+        $this->assertEquals(250.00, $totalDebits, 'Summe Belastungen');
+
+        // Rechnerische Konsistenz prüfen
+        $calculatedClosing = $camt053->getOpeningBalance()->getAmount() + $totalCredits - $totalDebits;
+        $this->assertEquals(
+            $camt053->getClosingBalance()->getAmount(),
+            $calculatedClosing,
+            'Opening + Credits - Debits muss dem Closing Balance entsprechen'
+        );
+
+        // Zurück zu MT940 und nochmal prüfen
+        $roundtripMt940 = CamtToMt940Converter::fromCamt053($camt053);
+
+        $totalCreditsRt = 0.0;
+        $totalDebitsRt = 0.0;
+        foreach ($roundtripMt940->getTransactions() as $txn) {
+            if ($txn->getCreditDebit() === CreditDebit::CREDIT) {
+                $totalCreditsRt += $txn->getAmount();
+            } else {
+                $totalDebitsRt += $txn->getAmount();
+            }
+        }
+
+        $calculatedClosingRt = $roundtripMt940->getOpeningBalance()->getAmount() + $totalCreditsRt - $totalDebitsRt;
+        $this->assertEquals(
+            $roundtripMt940->getClosingBalance()->getAmount(),
+            $calculatedClosingRt,
+            'Balance-Konsistenz muss nach Roundtrip erhalten bleiben'
+        );
+    }
+
+    /**
+     * Test: CAMT.054 Summenbildung (Einzelumsätze ohne Salden)
+     * 
+     * CAMT.054 enthält Einzelumsätze ohne Salden. Bei der Konvertierung
+     * nach MT940 werden Zero-Balances verwendet, außer sie werden explizit übergeben.
+     */
+    public function testCamt054TransactionSumsWithoutBalances(): void {
+        $camt054 = new Camt054Document(
+            id: 'CAMT054-SUM-TEST',
+            creationDateTime: new DateTimeImmutable('2025-03-01'),
+            accountIdentifier: 'DE89370400440532013000',
+            currency: CurrencyCode::Euro
+        );
+
+        // Mehrere Einzelumsätze
+        $camt054->addEntry(new Camt054Transaction(
+            bookingDate: new DateTimeImmutable('2025-03-01'),
+            valutaDate: new DateTimeImmutable('2025-03-01'),
+            amount: 100.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT
+        ));
+
+        $camt054->addEntry(new Camt054Transaction(
+            bookingDate: new DateTimeImmutable('2025-03-01'),
+            valutaDate: new DateTimeImmutable('2025-03-01'),
+            amount: 75.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::DEBIT
+        ));
+
+        $camt054->addEntry(new Camt054Transaction(
+            bookingDate: new DateTimeImmutable('2025-03-01'),
+            valutaDate: new DateTimeImmutable('2025-03-01'),
+            amount: 25.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT
+        ));
+
+        // Konvertiere zu MT940 ohne Salden
+        $mt940 = CamtToMt940Converter::fromCamt054($camt054);
+
+        // Zero-Balances erwartet
+        $this->assertEquals(0.00, $mt940->getOpeningBalance()->getAmount());
+        $this->assertEquals(0.00, $mt940->getClosingBalance()->getAmount());
+
+        // Transaktionen müssen vollständig sein
+        $this->assertCount(3, $mt940->getTransactions());
+
+        // Summen prüfen
+        $totalCredits = 0.0;
+        $totalDebits = 0.0;
+        foreach ($mt940->getTransactions() as $txn) {
+            if ($txn->getCreditDebit() === CreditDebit::CREDIT) {
+                $totalCredits += $txn->getAmount();
+            } else {
+                $totalDebits += $txn->getAmount();
+            }
+        }
+
+        $this->assertEquals(125.00, $totalCredits, 'CAMT.054 Credits summiert');
+        $this->assertEquals(75.00, $totalDebits, 'CAMT.054 Debits summiert');
+
+        // Mit berechneten Salden konvertieren
+        $calculatedOpening = new Mt9Balance(
+            CreditDebit::CREDIT,
+            new DateTimeImmutable('2025-03-01'),
+            CurrencyCode::Euro,
+            1000.00
+        );
+
+        $calculatedClosing = new Mt9Balance(
+            CreditDebit::CREDIT,
+            new DateTimeImmutable('2025-03-01'),
+            CurrencyCode::Euro,
+            1050.00 // 1000 + 125 - 75
+        );
+
+        $mt940WithBalances = CamtToMt940Converter::fromCamt054(
+            $camt054,
+            null,
+            $calculatedOpening,
+            $calculatedClosing
+        );
+
+        $this->assertEquals(1000.00, $mt940WithBalances->getOpeningBalance()->getAmount());
+        $this->assertEquals(1050.00, $mt940WithBalances->getClosingBalance()->getAmount());
+    }
+
+    /**
+     * Test: CAMT.052 vs CAMT.053 - Unterschied bei Intraday vs Tagesauszug
+     * 
+     * CAMT.052 ist untertägig, CAMT.053 ist der Tagesabschluss.
+     * Die Balance-Typen unterscheiden sich.
+     */
+    public function testCamt052VsCamt053BalanceTypes(): void {
+        $mt940 = $this->createMt940Document();
+
+        $camt052 = Mt940ToCamtConverter::toCamt052($mt940);
+        $camt053 = Mt940ToCamtConverter::toCamt053($mt940);
+
+        // CAMT.052 Closing Balance ist CLAV (Closing Available)
+        $this->assertEquals('CLAV', $camt052->getClosingBalance()->getType());
+
+        // CAMT.053 Closing Balance ist CLBD (Closing Booked)
+        $this->assertEquals('CLBD', $camt053->getClosingBalance()->getType());
+
+        // Opening Balance ist bei beiden PRCD (Previous Closing Date)
+        $this->assertEquals('PRCD', $camt052->getOpeningBalance()->getType());
+        $this->assertEquals('PRCD', $camt053->getOpeningBalance()->getType());
+
+        // Aber die Beträge sollten identisch sein
+        $this->assertEquals(
+            $camt052->getOpeningBalance()->getAmount(),
+            $camt053->getOpeningBalance()->getAmount()
+        );
+
+        $this->assertEquals(
+            $camt052->getClosingBalance()->getAmount(),
+            $camt053->getClosingBalance()->getAmount()
+        );
+    }
+
     // =========================================================================
     // Helper-Methoden
     // =========================================================================
@@ -639,5 +876,121 @@ final class ConverterRoundtripTest extends BaseTestCase {
         $document->addEntry($transaction2);
 
         return $document;
+    }
+
+    /**
+     * Test: CAMT.053 → MT940 → CAMT.052 (Inter-CAMT-Konvertierung)
+     * 
+     * Die Konvertierung zwischen CAMT-Formaten erfolgt über MT940 als Zwischenformat.
+     * Kernwerte müssen erhalten bleiben, Balance-Typen ändern sich entsprechend.
+     */
+    public function testCamt053ToMt940ToCamt052Conversion(): void {
+        $camt053 = $this->createCamt053Document();
+
+        // CAMT.053 → MT940 → CAMT.052
+        $mt940 = CamtToMt940Converter::fromCamt053($camt053);
+        $camt052 = Mt940ToCamtConverter::toCamt052($mt940);
+
+        // Kontodaten müssen erhalten bleiben
+        $this->assertEquals($camt053->getAccountIdentifier(), $camt052->getAccountIdentifier());
+
+        // Transaktionsanzahl muss übereinstimmen
+        $this->assertCount(count($camt053->getEntries()), $camt052->getEntries());
+
+        // Salden-Beträge müssen identisch sein
+        $this->assertEquals(
+            $camt053->getOpeningBalance()->getAmount(),
+            $camt052->getOpeningBalance()->getAmount()
+        );
+        $this->assertEquals(
+            $camt053->getClosingBalance()->getAmount(),
+            $camt052->getClosingBalance()->getAmount()
+        );
+
+        // CAMT.053 hat CLBD, CAMT.052 hat CLAV als Closing-Balance-Type
+        $this->assertEquals('CLBD', $camt053->getClosingBalance()->getType());
+        $this->assertEquals('CLAV', $camt052->getClosingBalance()->getType());
+
+        // Transaktionsbeträge prüfen
+        $originalAmounts = array_map(fn($e) => $e->getAmount(), $camt053->getEntries());
+        $convertedAmounts = array_map(fn($e) => $e->getAmount(), $camt052->getEntries());
+        $this->assertEquals($originalAmounts, $convertedAmounts);
+    }
+
+    /**
+     * Test: CAMT.054 → MT940 → CAMT.053 (mit Salden)
+     * 
+     * CAMT.054 hat keine Salden. Bei Konvertierung zu CAMT.053 werden die 
+     * übergebenen Salden verwendet.
+     */
+    public function testCamt054ToMt940ToCamt053WithBalances(): void {
+        // CAMT.054 erstellen (ohne Salden)
+        $camt054 = new Camt054Document(
+            id: 'CAMT054-CONVERT-TEST',
+            creationDateTime: new DateTimeImmutable('2025-04-01'),
+            accountIdentifier: 'DE89370400440532013000',
+            currency: CurrencyCode::Euro
+        );
+
+        $camt054->addEntry(new Camt054Transaction(
+            bookingDate: new DateTimeImmutable('2025-04-01'),
+            valutaDate: new DateTimeImmutable('2025-04-01'),
+            amount: 300.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT
+        ));
+
+        $camt054->addEntry(new Camt054Transaction(
+            bookingDate: new DateTimeImmutable('2025-04-01'),
+            valutaDate: new DateTimeImmutable('2025-04-01'),
+            amount: 100.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::DEBIT
+        ));
+
+        // Salden für die Konvertierung
+        $openingBalance = new Mt9Balance(
+            CreditDebit::CREDIT,
+            new DateTimeImmutable('2025-04-01'),
+            CurrencyCode::Euro,
+            5000.00
+        );
+
+        // Erwarteter Endsaldo: 5000 + 300 - 100 = 5200
+        $closingBalance = new Mt9Balance(
+            CreditDebit::CREDIT,
+            new DateTimeImmutable('2025-04-01'),
+            CurrencyCode::Euro,
+            5200.00
+        );
+
+        // CAMT.054 → MT940 (mit Salden)
+        $mt940 = CamtToMt940Converter::fromCamt054($camt054, null, $openingBalance, $closingBalance);
+
+        // MT940 → CAMT.053
+        $camt053 = Mt940ToCamtConverter::toCamt053($mt940);
+
+        // Salden im CAMT.053 prüfen
+        $this->assertEquals(5000.00, $camt053->getOpeningBalance()->getAmount());
+        $this->assertEquals(5200.00, $camt053->getClosingBalance()->getAmount());
+        $this->assertEquals('PRCD', $camt053->getOpeningBalance()->getType());
+        $this->assertEquals('CLBD', $camt053->getClosingBalance()->getType());
+
+        // Transaktionen müssen vollständig sein
+        $this->assertCount(2, $camt053->getEntries());
+
+        // Rechnerische Konsistenz prüfen
+        $totalCredits = 0.0;
+        $totalDebits = 0.0;
+        foreach ($camt053->getEntries() as $entry) {
+            if ($entry->getCreditDebit() === CreditDebit::CREDIT) {
+                $totalCredits += $entry->getAmount();
+            } else {
+                $totalDebits += $entry->getAmount();
+            }
+        }
+
+        $calculatedClosing = $camt053->getOpeningBalance()->getAmount() + $totalCredits - $totalDebits;
+        $this->assertEquals($camt053->getClosingBalance()->getAmount(), $calculatedClosing);
     }
 }
