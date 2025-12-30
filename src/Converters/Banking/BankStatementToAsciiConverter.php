@@ -463,7 +463,22 @@ final class BankStatementToAsciiConverter {
      */
     private function formatCamtTransaction(mixed $entry): string {
         $direction = $entry->getCreditDebit() === CreditDebit::CREDIT ? '+' : '-';
-        $reference = $entry->getReference()?->getEndToEndId() ?? $entry->getReference()?->getAccountServicerRef() ?? '';
+
+        // CAMT.053 hat ein Reference-Objekt, CAMT.052/054 haben direkte Methoden
+        $reference = '';
+        if (method_exists($entry, 'getReference') && $entry->getReference() !== null) {
+            $reference = $entry->getReference()->getEndToEndId()
+                ?? $entry->getReference()->getAccountServicerReference()
+                ?? '';
+        } elseif (method_exists($entry, 'getEndToEndId')) {
+            $reference = $entry->getEndToEndId() ?? '';
+        }
+        if (empty($reference) && method_exists($entry, 'getAccountServicerReference')) {
+            $reference = $entry->getAccountServicerReference() ?? '';
+        }
+        if (empty($reference) && method_exists($entry, 'getEntryReference')) {
+            $reference = $entry->getEntryReference() ?? '';
+        }
 
         return sprintf(
             '%-10s %-10s  %s  %15s  %-s',
@@ -482,17 +497,28 @@ final class BankStatementToAsciiConverter {
      */
     private function formatSepaDetails(mixed $entry): array {
         $details = [];
-        $ref = $entry->getReference();
 
-        if ($ref !== null) {
-            if ($ref->getEndToEndId() !== null && $ref->getEndToEndId() !== 'NOTPROVIDED') {
-                $details[] = 'End-to-End-ID: ' . $ref->getEndToEndId();
+        // CAMT.053 hat ein Reference-Objekt
+        if (method_exists($entry, 'getReference')) {
+            $ref = $entry->getReference();
+            if ($ref !== null) {
+                if ($ref->getEndToEndId() !== null && $ref->getEndToEndId() !== 'NOTPROVIDED') {
+                    $details[] = 'End-to-End-ID: ' . $ref->getEndToEndId();
+                }
+                if (method_exists($ref, 'getMandateId') && $ref->getMandateId() !== null) {
+                    $details[] = 'Mandats-ID: ' . $ref->getMandateId();
+                }
+                if (method_exists($ref, 'getCreditorId') && $ref->getCreditorId() !== null) {
+                    $details[] = 'Gläubiger-ID: ' . $ref->getCreditorId();
+                }
             }
-            if ($ref->getMandateId() !== null) {
-                $details[] = 'Mandats-ID: ' . $ref->getMandateId();
+        } else {
+            // CAMT.052/054 haben direkte Methoden
+            if (method_exists($entry, 'getEndToEndId') && $entry->getEndToEndId() !== null && $entry->getEndToEndId() !== 'NOTPROVIDED') {
+                $details[] = 'End-to-End-ID: ' . $entry->getEndToEndId();
             }
-            if ($ref->getCreditorId() !== null) {
-                $details[] = 'Gläubiger-ID: ' . $ref->getCreditorId();
+            if (method_exists($entry, 'getAccountServicerReference') && $entry->getAccountServicerReference() !== null) {
+                $details[] = 'Servicer-Ref: ' . $entry->getAccountServicerReference();
             }
         }
 

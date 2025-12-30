@@ -14,13 +14,20 @@ namespace Tests\Converters\Banking;
 
 use CommonToolkit\Converters\Banking\BankStatementToAsciiConverter;
 use CommonToolkit\Entities\Common\Banking\Camt\Balance;
+use CommonToolkit\Entities\Common\Banking\Camt\Type52\Document as Camt052Document;
+use CommonToolkit\Entities\Common\Banking\Camt\Type52\Transaction as Camt052Transaction;
 use CommonToolkit\Entities\Common\Banking\Camt\Type53\Document as Camt053Document;
 use CommonToolkit\Entities\Common\Banking\Camt\Type53\Reference as Camt053Reference;
 use CommonToolkit\Entities\Common\Banking\Camt\Type53\Transaction as Camt053Transaction;
+use CommonToolkit\Entities\Common\Banking\Camt\Type54\Document as Camt054Document;
+use CommonToolkit\Entities\Common\Banking\Camt\Type54\Transaction as Camt054Transaction;
 use CommonToolkit\Entities\Common\Banking\Mt9\Balance as Mt9Balance;
 use CommonToolkit\Entities\Common\Banking\Mt9\Reference as Mt9Reference;
 use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Document as Mt940Document;
 use CommonToolkit\Entities\Common\Banking\Mt9\Type940\Transaction as Mt940Transaction;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type941\Document as Mt941Document;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type942\Document as Mt942Document;
+use CommonToolkit\Entities\Common\Banking\Mt9\Type942\Transaction as Mt942Transaction;
 use CommonToolkit\Enums\CreditDebit;
 use CommonToolkit\Enums\CurrencyCode;
 use DateTimeImmutable;
@@ -327,5 +334,225 @@ final class BankStatementToAsciiConverterTest extends BaseTestCase {
         $this->assertStringContainsString('500,00', $ascii);
         $this->assertStringContainsString('Summe Belastungen', $ascii);
         $this->assertStringContainsString('150,00', $ascii);
+    }
+
+    public function testConvertCamt052ToAscii(): void {
+        $openingBalance = new Balance(
+            type: 'PRCD',
+            date: new DateTimeImmutable('2025-06-01'),
+            amount: 2500.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT
+        );
+
+        $closingBalance = new Balance(
+            type: 'CLBD',
+            date: new DateTimeImmutable('2025-06-01'),
+            amount: 2750.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT
+        );
+
+        $document = new Camt052Document(
+            id: 'CAMT052-20250601',
+            creationDateTime: new DateTimeImmutable('2025-06-01 10:30:00'),
+            accountIdentifier: 'DE89370400440532013000',
+            currency: CurrencyCode::Euro,
+            accountOwner: 'Test GmbH',
+            openingBalance: $openingBalance,
+            closingBalance: $closingBalance
+        );
+
+        $transaction = new Camt052Transaction(
+            bookingDate: new DateTimeImmutable('2025-06-01'),
+            valutaDate: new DateTimeImmutable('2025-06-01'),
+            amount: 250.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT
+        );
+
+        $document->addEntry($transaction);
+
+        $converter = new BankStatementToAsciiConverter();
+        $ascii = $converter->fromCamt052($document);
+
+        // Prüfe Header
+        $this->assertStringContainsString('UNTERTÄGIGER KONTOAUSZUG (CAMT.052)', $ascii);
+
+        // Prüfe Kontoinformationen
+        $this->assertStringContainsString('DE89370400440532013000', $ascii);
+
+        // Prüfe Transaktion
+        $this->assertStringContainsString('250,00', $ascii);
+
+        // Prüfe Summen
+        $this->assertStringContainsString('Summe Gutschriften', $ascii);
+        $this->assertStringContainsString('Summe Belastungen', $ascii);
+    }
+
+    public function testConvertCamt054ToAscii(): void {
+        $document = new Camt054Document(
+            id: 'CAMT054-20250601',
+            creationDateTime: new DateTimeImmutable('2025-06-01 14:00:00'),
+            accountIdentifier: 'DE89370400440532013000',
+            currency: CurrencyCode::Euro
+        );
+
+        $transaction = new Camt054Transaction(
+            bookingDate: new DateTimeImmutable('2025-06-01'),
+            valutaDate: new DateTimeImmutable('2025-06-01'),
+            amount: 99.99,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::DEBIT
+        );
+
+        $document->addEntry($transaction);
+
+        $converter = new BankStatementToAsciiConverter();
+        $ascii = $converter->fromCamt054($document);
+
+        // Prüfe Header
+        $this->assertStringContainsString('EINZELUMSATZBENACHRICHTIGUNG (CAMT.054)', $ascii);
+
+        // Prüfe Kontoinformationen
+        $this->assertStringContainsString('DE89370400440532013000', $ascii);
+        $this->assertStringContainsString('CAMT054-20250601', $ascii);
+
+        // Prüfe Transaktion
+        $this->assertStringContainsString('99,99', $ascii);
+    }
+
+    public function testConvertMt941ToAscii(): void {
+        $openingBalance = new Mt9Balance(
+            date: new DateTimeImmutable('2025-07-01'),
+            amount: 50000.00,
+            creditDebit: CreditDebit::CREDIT,
+            currency: CurrencyCode::Euro
+        );
+
+        $closingBalance = new Mt9Balance(
+            date: new DateTimeImmutable('2025-07-01'),
+            amount: 52500.00,
+            creditDebit: CreditDebit::CREDIT,
+            currency: CurrencyCode::Euro
+        );
+
+        $document = new Mt941Document(
+            accountId: 'DE89370400440532013000',
+            referenceId: 'STMT20250701',
+            statementNumber: '001',
+            openingBalance: $openingBalance,
+            closingBalance: $closingBalance
+        );
+
+        $converter = new BankStatementToAsciiConverter();
+        $ascii = $converter->fromMt941($document);
+
+        // Prüfe Header
+        $this->assertStringContainsString('SALDENREPORT (MT941)', $ascii);
+
+        // Prüfe Kontoinformationen
+        $this->assertStringContainsString('DE89370400440532013000', $ascii);
+        $this->assertStringContainsString('STMT20250701', $ascii);
+        $this->assertStringContainsString('001', $ascii);
+
+        // Prüfe Salden
+        $this->assertStringContainsString('50.000,00', $ascii);
+        $this->assertStringContainsString('52.500,00', $ascii);
+    }
+
+    public function testConvertMt942ToAscii(): void {
+        $closingBalance = new Mt9Balance(
+            date: new DateTimeImmutable('2025-07-02'),
+            amount: 15000.00,
+            creditDebit: CreditDebit::CREDIT,
+            currency: CurrencyCode::Euro
+        );
+
+        $transaction = new Mt942Transaction(
+            bookingDate: new DateTimeImmutable('2025-07-02'),
+            valutaDate: new DateTimeImmutable('2025-07-02'),
+            amount: 750.00,
+            creditDebit: CreditDebit::CREDIT,
+            currency: CurrencyCode::Euro,
+            reference: new Mt9Reference('TRF', 'INTRADAY001'),
+            purpose: '?20Untertägige Zahlung?21Eingang um 11:30'
+        );
+
+        $document = new Mt942Document(
+            accountId: 'DE89370400440532013000',
+            referenceId: 'INTRA20250702',
+            statementNumber: '002',
+            closingBalance: $closingBalance,
+            transactions: [$transaction]
+        );
+
+        $converter = new BankStatementToAsciiConverter();
+        $ascii = $converter->fromMt942($document);
+
+        // Prüfe Header
+        $this->assertStringContainsString('UNTERTÄGIGER KONTOAUSZUG (MT942)', $ascii);
+
+        // Prüfe Kontoinformationen
+        $this->assertStringContainsString('DE89370400440532013000', $ascii);
+        $this->assertStringContainsString('INTRA20250702', $ascii);
+
+        // Prüfe Transaktion
+        $this->assertStringContainsString('750,00', $ascii);
+        $this->assertStringContainsString('Untertägige Zahlung', $ascii);
+
+        // Prüfe Summen
+        $this->assertStringContainsString('Summe Gutschriften', $ascii);
+    }
+
+    public function testAccountServicerReferenceInCamt053(): void {
+        // Test für den Bug-Fix: getAccountServicerReference statt getAccountServicerRef
+        $openingBalance = new Balance(
+            type: 'PRCD',
+            date: new DateTimeImmutable('2025-08-01'),
+            amount: 1000.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT
+        );
+
+        $closingBalance = new Balance(
+            type: 'CLBD',
+            date: new DateTimeImmutable('2025-08-01'),
+            amount: 1500.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT
+        );
+
+        $document = new Camt053Document(
+            id: 'CAMT053-ASR-TEST',
+            creationDateTime: new DateTimeImmutable('2025-08-01 12:00:00'),
+            accountIdentifier: 'DE89370400440532013000',
+            currency: CurrencyCode::Euro,
+            openingBalance: $openingBalance,
+            closingBalance: $closingBalance
+        );
+
+        // Reference mit nur AccountServicerReference (ohne EndToEndId)
+        $reference = new Camt053Reference(
+            endToEndId: null,
+            accountServicerReference: 'ASR-12345678'
+        );
+
+        $transaction = new Camt053Transaction(
+            bookingDate: new DateTimeImmutable('2025-08-01'),
+            valutaDate: new DateTimeImmutable('2025-08-01'),
+            amount: 500.00,
+            currency: CurrencyCode::Euro,
+            creditDebit: CreditDebit::CREDIT,
+            reference: $reference
+        );
+
+        $document->addEntry($transaction);
+
+        $converter = new BankStatementToAsciiConverter();
+        $ascii = $converter->fromCamt053($document);
+
+        // Die AccountServicerReference sollte in der Ausgabe erscheinen
+        $this->assertStringContainsString('ASR-12345678', $ascii);
     }
 }
