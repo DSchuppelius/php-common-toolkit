@@ -52,6 +52,11 @@ enum CamtVersion: string {
     case V12 = '12';
 
     /**
+     * Version 13 - Neueste Version (2024/2025)
+     */
+    case V13 = '13';
+
+    /**
      * Gibt den vollständigen Namespace für einen CAMT-Typ zurück.
      */
     public function getNamespace(CamtType $type): string {
@@ -91,7 +96,8 @@ enum CamtVersion: string {
             self::V06 => 'ISO 20022 Version 06',
             self::V08 => 'ISO 20022 Version 08 (Standard)',
             self::V10 => 'ISO 20022 Version 10',
-            self::V12 => 'ISO 20022 Version 12 (Aktuell)',
+            self::V12 => 'ISO 20022 Version 12',
+            self::V13 => 'ISO 20022 Version 13 (Aktuell)',
         };
     }
 
