@@ -2,41 +2,39 @@
 
 ## Architecture Overview
 
-This is a banking/financial data processing toolkit with a layered architecture:
-- **Entities**: Immutable domain models for Banking (MT940/CAMT053), DATEV accounting, and CSV processing
+This is a general-purpose PHP utility toolkit with a layered architecture:
+- **Entities**: Immutable domain models for CSV processing and executable wrappers
 - **Builders/Parsers**: Document construction and parsing with strict validation
 - **Helpers**: Platform-agnostic utilities with external executable integration via JSON configs
 - **Contracts**: Abstract base classes following PSR patterns with consistent error handling
-- **Enums**: Comprehensive financial standards with typed factory methods
+- **Enums**: Typed enums with factory methods (CurrencyCode, CountryCode, CreditDebit)
+
+**Note**: Banking formats (CAMT, MT940, Pain, Swift) and DATEV accounting have been moved to `php-financial-formats`.
 
 ## Directory Structure (Critical - Preserve!)
 
 The directory structure is essential and must be maintained:
 ```
 src/
-├── Builders/           # Fluent document builders (CSV, MT940, DATEV)
+├── Builders/           # Fluent document builders (CSV)
 ├── Contracts/          # Abstract base classes and Interfaces
 │   ├── Abstracts/      # Base classes (HelperAbstract, ExecutableAbstract, etc.)
 │   └── Interfaces/     # Interface definitions
-├── Converters/         # Format converters (DATEV)
 ├── Entities/           # Immutable domain models
-│   ├── Common/         # Banking (CAMT, MT9, Swift), CSV entities
-│   ├── DATEV/          # DATEV-specific entities (Documents, Headers)
+│   ├── Common/         # CSV entities
 │   └── Executables/    # Shell/Java executable wrappers
 ├── Enums/              # Typed enums with factory methods
-│   ├── Common/         # CSV, Banking enums
-│   └── DATEV/          # DATEV-specific enums (HeaderFields, MetaFields)
+│   └── Common/         # CSV enums
 ├── Helper/             # Utility classes
-│   ├── Data/           # BankHelper, CurrencyHelper, etc.
+│   ├── Data/           # BankHelper, CurrencyHelper, StringHelper, etc.
 │   ├── FileSystem/     # File, PdfFile, TiffFile, XmlFile
 │   └── Shell/          # Process execution utilities
-├── Parsers/            # Document parsers (CAMT, MT940, CSV, DATEV)
-├── Registries/         # DATEV version registries
-└── Traits/             # Reusable traits (LockFlagTrait, etc.)
+├── Parsers/            # Document parsers (CSV)
+└── Traits/             # Reusable traits
 
 tests/                  # Mirrors src/ structure exactly
 config/                 # JSON configurations (executables, helper settings)
-data/                   # Bundesbank data, XSD schemas
+data/                   # Bundesbank data (BLZ/BIC)
 ```
 
 **Important**: When adding new classes, place them in the correct subdirectory matching their domain and responsibility.
@@ -57,8 +55,8 @@ class PdfFile extends ConfiguredHelperAbstract
 
 ### Data Flow Architecture: Builder → Entity → Parser
 1. **Builders** create documents fluently: `CSVDocumentBuilder->addLine()->build()`
-2. **Entities** are immutable with validation: MT940/CAMT053 banking transactions, DATEV bookings
-3. **Parsers** handle complex formats: multi-line CSV parsing, banking format regex extraction
+2. **Entities** are immutable with validation
+3. **Parsers** handle complex formats: multi-line CSV parsing
 4. **Key pattern**: Use `match()` expressions for type-safe branching in PHP 8.1+
 
 ### Configuration-Driven External Dependencies
@@ -67,27 +65,11 @@ class PdfFile extends ConfiguredHelperAbstract
 - **Required tools**: ImageMagick, TIFF tools, Xpdf, muPDF (install via `installscript/install-dependencies.sh`)
 - **Config pattern**: `getResolvedExecutableConfig()` with parameter substitution
 
-### Entity Design: Immutable Value Objects
-Banking entities follow strict patterns:
-```php
-// Constructor validation with typed enums
-new Transaction($date, $valutaDate, $amount, CreditDebit::DEBIT, CurrencyCode::EUR)
-// Date handling: DateTimeImmutable with flexible string parsing
-// Enum factories: CurrencyCode::fromSymbol('€'), DocumentLinkType::fromString('BEDI')
-```
-
 ## Essential Development Patterns
 
 ### Enum Design with Traits
-Financial enums use consistent patterns:
+Enums use consistent patterns:
 ```php
-// Binary state enums (0/1 flags)
-enum PostingLock: int { 
-    use LockFlagTrait;
-    case NONE = 0; case LOCKED = 1; 
-}
-// Factory methods: fromInt(), fromStringValue(), isLocked()
-
 // Complex enums with validation
 CurrencyCode::fromSymbol('€') // → CurrencyCode::EUR
 CountryCode::fromAlpha2('DE') // → CountryCode::Germany
@@ -100,12 +82,13 @@ CSV processing uses strict field typing:
 - **Document**: Immutable container with header + data rows
 - **Key method**: `StringHelper::splitCsvByLogicalLine()` for multi-line CSV parsing
 
-### DATEV Integration Specifics
-German accounting format with rigid structure:
-- **MetaHeader**: 31-field header with regex validation patterns
-- **Field validation**: Each field has specific regex via `MetaHeaderField::pattern()`
-- **DocumentLink**: GUID-based document references with type validation
-- **Builder pattern**: Fluent API with automatic field header generation
+### BankHelper Utilities
+The `BankHelper` provides banking validation utilities:
+```php
+BankHelper::isValidIBAN('DE89370400440532013000') // true
+BankHelper::isValidBIC('COBADEFFXXX') // true
+BankHelper::getBankNameByBLZ('37040044') // "Commerzbank"
+```
 
 ## Development Workflows
 
