@@ -72,7 +72,7 @@ Enums use consistent patterns:
 ```php
 // Complex enums with validation
 CurrencyCode::fromSymbol('€') // → CurrencyCode::EUR
-CountryCode::fromAlpha2('DE') // → CountryCode::Germany
+CountryCode::fromStringValue('DE') // → CountryCode::Germany
 ```
 
 ### CSV Field Architecture
