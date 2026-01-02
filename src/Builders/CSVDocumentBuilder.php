@@ -12,17 +12,16 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Builders;
 
-use CommonToolkit\Contracts\Interfaces\Common\CSV\LineInterface;
-use CommonToolkit\Entities\Common\CSV\Document;
-use CommonToolkit\Entities\Common\CSV\HeaderLine;
-use CommonToolkit\Entities\Common\CSV\DataLine;
-use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
+use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Contracts\Interfaces\CSV\LineInterface;
+use CommonToolkit\Entities\CSV\Document;
+use CommonToolkit\Entities\CSV\HeaderLine;
+use CommonToolkit\Entities\CSV\DataLine;
+use CommonToolkit\Entities\CSV\ColumnWidthConfig;
 use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
-use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
-class CSVDocumentBuilder {
-    use ErrorLog;
+class CSVDocumentBuilder extends HelperAbstract {
 
     protected ?HeaderLine $header = null;
     /** @var DataLine[] */

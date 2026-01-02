@@ -12,8 +12,8 @@ declare(strict_types=1);
 
 namespace Tests\CommonToolkit\Parsers;
 
-use CommonToolkit\Entities\Common\CSV\DataLine;
-use CommonToolkit\Entities\Common\CSV\HeaderLine;
+use CommonToolkit\Entities\CSV\DataLine;
+use CommonToolkit\Entities\CSV\HeaderLine;
 use CommonToolkit\Parsers\CSVDocumentParser;
 use RuntimeException;
 use Tests\Contracts\BaseTestCase;

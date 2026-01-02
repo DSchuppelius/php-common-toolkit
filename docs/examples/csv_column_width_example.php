@@ -13,11 +13,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
-use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
-use CommonToolkit\Entities\Common\CSV\HeaderLine;
-use CommonToolkit\Entities\Common\CSV\HeaderField;
-use CommonToolkit\Entities\Common\CSV\DataLine;
-use CommonToolkit\Entities\Common\CSV\DataField;
+use CommonToolkit\Entities\CSV\ColumnWidthConfig;
+use CommonToolkit\Entities\CSV\HeaderLine;
+use CommonToolkit\Entities\CSV\HeaderField;
+use CommonToolkit\Entities\CSV\DataLine;
+use CommonToolkit\Entities\CSV\DataField;
 use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 
 echo "=== CSV Spaltenbreiten-Funktionalität Demo ===\n\n";

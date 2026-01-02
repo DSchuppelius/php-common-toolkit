@@ -13,18 +13,17 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
-use CommonToolkit\Entities\Common\CSV\{HeaderLine, DataLine};
+use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Entities\CSV\{HeaderLine, DataLine};
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use CommonToolkit\Helper\Data\StringHelper as DataStringHelper;
-use CommonToolkit\Contracts\Interfaces\Common\CSV\{LineInterface, FieldInterface};
-use CommonToolkit\Entities\Common\CSV\Document;
+use CommonToolkit\Contracts\Interfaces\CSV\{LineInterface, FieldInterface};
+use CommonToolkit\Entities\CSV\Document;
 use CommonToolkit\Helper\FileSystem\File;
-use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 use Throwable;
 
-class CSVDocumentParser {
-    use ErrorLog;
+class CSVDocumentParser extends HelperAbstract {
 
     /**
      * Parst eine CSV-Zeichenkette in ein CSVDocument.

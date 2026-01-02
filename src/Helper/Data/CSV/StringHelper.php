@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data\CSV;
 
-use CommonToolkit\Entities\Common\CSV\DataLine;
+use CommonToolkit\Entities\CSV\DataLine;
 use CommonToolkit\Helper\Data\StringHelper as BaseStringHelper;
 use RuntimeException;
 use Throwable;

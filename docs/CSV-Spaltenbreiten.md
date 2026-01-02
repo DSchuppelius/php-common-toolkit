@@ -17,7 +17,7 @@ Die CSV-Logik wurde um die Möglichkeit erweitert, Spaltenbreiten zu fixieren (m
 Die Hauptkonfigurationsklasse für Spaltenbreiten.
 
 ```php
-use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
+use CommonToolkit\Entities\CSV\ColumnWidthConfig;
 
 $config = new ColumnWidthConfig();
 $config->setColumnWidth('Name', 10);           // Spalte 'Name' max. 10 Zeichen
@@ -50,7 +50,7 @@ Alle bestehenden CSV-Klassen wurden erweitert:
 
 ```php
 use CommonToolkit\Builders\CSVDocumentBuilder;
-use CommonToolkit\Entities\Common\CSV\ColumnWidthConfig;
+use CommonToolkit\Entities\CSV\ColumnWidthConfig;
 
 $widthConfig = new ColumnWidthConfig();
 $widthConfig->setColumnWidth('Name', 15);
@@ -121,7 +121,7 @@ $config->setTruncationStrategy('ellipsis');
 
 ```php
 use CommonToolkit\Builders\CSVDocumentBuilder;
-use CommonToolkit\Entities\Common\CSV\{HeaderLine, HeaderField, DataLine, DataField};
+use CommonToolkit\Entities\CSV\{HeaderLine, HeaderField, DataLine, DataField};
 
 // Daten erstellen
 $header = new HeaderLine([
