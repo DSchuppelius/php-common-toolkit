@@ -272,6 +272,25 @@ class FieldAbstract implements FieldInterface {
     }
 
     /**
+     * Erstellt eine Kopie des Feldes mit geänderter Quote-Eigenschaft.
+     * Behält alle anderen Eigenschaften (typedValue, enclosureRepeat, country) bei.
+     *
+     * @param bool $quoted Ob das Feld gequotet sein soll.
+     * @return static Eine neue Instanz mit der geänderten Quote-Eigenschaft.
+     */
+    public function withQuoted(bool $quoted): static {
+        $clone = clone $this;
+        $clone->quoted = $quoted;
+
+        // Bei Wechsel von quoted zu unquoted: Typ-Analyse durchführen
+        if (!$quoted && $this->quoted && is_string($this->typedValue)) {
+            $clone->analyzeUnquotedValue($this->typedValue);
+        }
+
+        return $clone;
+    }
+
+    /**
      * Gibt den Wert als String zurück.
      */
     public function toString(?string $enclosure = null): string {

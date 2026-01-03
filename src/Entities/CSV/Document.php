@@ -13,7 +13,6 @@ namespace CommonToolkit\Entities\CSV;
 
 use CommonToolkit\Contracts\Interfaces\CSV\FieldInterface;
 use CommonToolkit\Generators\CSV\CSVGenerator;
-use CommonToolkit\Traits\CSV\CSVFieldAccessorTrait;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
@@ -22,13 +21,11 @@ use RuntimeException;
  * 
  * Verwendet:
  * - CSVGenerator: Generierung von CSV-Strings
- * - CSVFieldAccessorTrait: Feld-Zugriffsmethoden für Subklassen
  * 
  * @package CommonToolkit\Entities\CSV
  */
 class Document {
     use ErrorLog;
-    use CSVFieldAccessorTrait;
 
     /** Standard-Encoding für CSV-Dokumente */
     public const DEFAULT_ENCODING = 'UTF-8';
@@ -159,8 +156,9 @@ class Document {
         $expected = $this->header?->countFields() ?? $this->rows[0]->countFields();
 
         foreach ($this->rows as $i => $row) {
-            if ($row->countFields() !== $expected) {
-                static::logError("CSV-Zeile $i hat abweichende Feldanzahl");
+            $actual = $row->countFields();
+            if ($actual !== $expected) {
+                $this->logError("CSV-Zeile $i hat abweichende Feldanzahl (erwartet: $expected, gefunden: $actual)");
                 return false;
             }
         }
@@ -177,14 +175,7 @@ class Document {
      * @return string
      */
     public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null): string {
-        return (new CSVGenerator())->generate(
-            $this,
-            $delimiter,
-            $enclosure,
-            $enclosureRepeat,
-            $targetEncoding,
-            $this->exportWithHeader
-        );
+        return (new CSVGenerator())->generate($this, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $this->exportWithHeader);
     }
 
     /**
@@ -201,16 +192,7 @@ class Document {
      * @throws RuntimeException
      */
     public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null, bool $withBom = true): void {
-        (new CSVGenerator())->toFile(
-            $this,
-            $file,
-            $delimiter,
-            $enclosure,
-            $enclosureRepeat,
-            $targetEncoding,
-            $withBom,
-            $this->exportWithHeader
-        );
+        (new CSVGenerator())->toFile($this, $file, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $withBom, $this->exportWithHeader);
     }
 
     /**
@@ -231,16 +213,13 @@ class Document {
 
     /**
      * Findet den Index einer Spalte anhand des Header-Namens.
+     * Delegiert an HeaderLine::getColumnIndex().
      *
      * @param string $columnName Name der Spalte
-     * @return int Index der Spalte oder -1 wenn nicht gefunden
+     * @return int|null Index der Spalte oder null wenn nicht gefunden
      */
-    public function getColumnIndex(string $columnName): int {
-        if (!$this->header) {
-            return -1;
-        }
-
-        return $this->header->getColumnIndex($columnName) ?? -1;
+    public function getColumnIndex(string $columnName): ?int {
+        return $this->header?->getColumnIndex($columnName);
     }
 
     /**
@@ -254,8 +233,9 @@ class Document {
     public function getFieldsByName(string $columnName): array {
         $index = $this->getColumnIndex($columnName);
 
-        if ($index === -1) {
-            static::logError("Spalte '$columnName' nicht im Header gefunden");
+        if ($index === null) {
+            $available = implode(', ', $this->getColumnNames());
+            $this->logError("Spalte '$columnName' nicht im Header gefunden. Verfügbar: $available");
             throw new RuntimeException("Spalte '$columnName' nicht im Header gefunden");
         }
 
@@ -284,14 +264,15 @@ class Document {
      */
     public function getFieldsByIndex(int $index): array {
         if ($index < 0) {
-            static::logError("Spalten-Index '$index' ist ungültig");
+            $maxIndex = ($this->header?->countFields() ?? 0) - 1;
+            $this->logError("Spalten-Index '$index' ist ungültig (gültiger Bereich: 0-$maxIndex)");
             throw new RuntimeException("Spalten-Index '$index' ist ungültig");
         }
 
         $fields = [];
         foreach ($this->rows as $row) {
             $field = $row->getField($index);
-            $fields[] = $field; // Kann null sein - Caller entscheidet, wie damit umgegangen wird
+            $fields[] = $field;
         }
 
         return $fields;
@@ -329,7 +310,7 @@ class Document {
         if ($this->enclosure !== $other->enclosure) return false;
         if (($this->header && !$other->header) || (!$this->header && $other->header)) return false;
         if ($this->header && !$this->header->equals($other->header)) return false;
-        if (count($this->rows) !== count($other->rows)) return false;
+        if ($this->countRows() !== $other->countRows()) return false;
         foreach ($this->rows as $i => $row) {
             if (!$row->equals($other->rows[$i])) return false;
         }
@@ -341,5 +322,75 @@ class Document {
      */
     public function __toString(): string {
         return $this->toString();
+    }
+
+    /**
+     * Gibt den Wert eines Feldes zurück.
+     *
+     * @param int $rowIndex Index der Zeile.
+     * @param int $fieldIndex Index des Feldes.
+     * @return string|null Der Wert oder null wenn nicht vorhanden.
+     */
+    protected function getFieldValue(int $rowIndex, int $fieldIndex): ?string {
+        $row = $this->rows[$rowIndex] ?? null;
+        if ($row === null) {
+            return null;
+        }
+
+        $field = $row->getField($fieldIndex);
+        return $field?->getValue();
+    }
+
+    /**
+     * Setzt den Wert eines Feldes.
+     * Nutzt das immutable Pattern: Erstellt neue Field- und Line-Objekte.
+     * Behält den bisherigen Quoting-Status des Feldes bei.
+     *
+     * @param int $rowIndex Index der Zeile.
+     * @param int $fieldIndex Index des Feldes.
+     * @param mixed $value Der neue Wert (wird zu String konvertiert).
+     * @throws RuntimeException Wenn Zeile oder Feld nicht existiert.
+     */
+    protected function setFieldValue(int $rowIndex, int $fieldIndex, mixed $value): void {
+        // Ermittle den aktuellen Quoting-Status (Validierung erfolgt in setFieldValueWithQuoting)
+        $quoted = $this->rows[$rowIndex]?->getField($fieldIndex)?->isQuoted() ?? false;
+        $this->setFieldValueWithQuoting($rowIndex, $fieldIndex, $value, $quoted);
+    }
+
+    /**
+     * Setzt den Wert eines Feldes mit expliziter Quoting-Kontrolle.
+     * Nutzt das immutable Pattern: Erstellt neue Field- und Line-Objekte.
+     *
+     * @param int $rowIndex Index der Zeile.
+     * @param int $fieldIndex Index des Feldes.
+     * @param mixed $value Der neue Wert (wird zu String konvertiert).
+     * @param bool $quoted Ob der Wert gequotet sein soll.
+     * @throws RuntimeException Wenn Zeile oder Feld nicht existiert.
+     */
+    protected function setFieldValueWithQuoting(int $rowIndex, int $fieldIndex, mixed $value, bool $quoted): void {
+        if (!isset($this->rows[$rowIndex])) {
+            $maxRow = $this->countRows() - 1;
+            $this->logError("Zeile $rowIndex existiert nicht (gültiger Bereich: 0-$maxRow)");
+            throw new RuntimeException("Zeile $rowIndex existiert nicht");
+        }
+
+        $row = $this->rows[$rowIndex];
+        $fields = $row->getFields();
+
+        if (!isset($fields[$fieldIndex])) {
+            $maxField = $row->countFields() - 1;
+            $this->logError("Feld $fieldIndex existiert nicht in Zeile $rowIndex (gültiger Bereich: 0-$maxField)");
+            throw new RuntimeException("Feld $fieldIndex existiert nicht in Zeile $rowIndex");
+        }
+
+        $stringValue = match (true) {
+            is_bool($value) => $value ? '1' : '0',
+            is_null($value) => '',
+            default => (string)$value,
+        };
+
+        $fields[$fieldIndex] = $fields[$fieldIndex]->withValue($stringValue)->withQuoted($quoted);
+
+        $this->rows[$rowIndex] = new DataLine($fields, $this->delimiter, $this->enclosure);
     }
 }

@@ -100,7 +100,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals(2, $doc->getColumnIndex('Age'));
 
         // Test nicht existierende Spalte
-        $this->assertEquals(-1, $doc->getColumnIndex('NonExistent'));
+        $this->assertNull($doc->getColumnIndex('NonExistent'));
     }
 
     public function testHasColumn(): void {
@@ -132,7 +132,7 @@ class DocumentTest extends BaseTestCase {
         // Sollte leeres Array zurückgeben
         $this->assertEquals([], $doc->getColumnNames());
         $this->assertFalse($doc->hasColumn('Name'));
-        $this->assertEquals(-1, $doc->getColumnIndex('Name'));
+        $this->assertNull($doc->getColumnIndex('Name'));
     }
 
     public function testColumnFunctionsWithQuotedHeaders(): void {
