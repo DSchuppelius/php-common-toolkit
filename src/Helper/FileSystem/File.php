@@ -254,6 +254,57 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Liest den Inhalt der angegebenen Datei und konvertiert ihn zu UTF-8.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return string Der Inhalt der Datei in UTF-8.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     * @throws Exception Wenn ein Fehler beim Lesen auftritt.
+     */
+    public static function readAsUtf8(string $file): string {
+        $content = self::read($file);
+
+        // BOM-Erkennung via StringHelper
+        $bomEncoding = StringHelper::detectBomEncoding($content);
+        if ($bomEncoding !== null) {
+            self::logDebug("$bomEncoding BOM erkannt: $file");
+            $content = StringHelper::stripBom($content);
+
+            // Falls bereits UTF-8, direkt zurückgeben
+            if ($bomEncoding === 'UTF-8') {
+                return $content;
+            }
+
+            // Von BOM-erkanntem Encoding zu UTF-8 konvertieren
+            $converted = mb_convert_encoding($content, 'UTF-8', $bomEncoding);
+            if ($converted === false) {
+                self::logWarning("Konvertierung von $bomEncoding zu UTF-8 fehlgeschlagen für $file, nutze Original");
+                return $content;
+            }
+            self::logInfo("Datei von $bomEncoding zu UTF-8 konvertiert: $file");
+            return $converted;
+        }
+
+        // Encoding erkennen (kein BOM vorhanden)
+        $encoding = self::chardet($file);
+
+        if ($encoding === false || $encoding === 'UTF-8' || $encoding === 'ASCII') {
+            self::logDebug("Keine Konvertierung nötig für $file (Encoding: " . ($encoding ?: 'unbekannt') . ")");
+            return $content;
+        }
+
+        // Zu UTF-8 konvertieren
+        $converted = mb_convert_encoding($content, 'UTF-8', $encoding);
+        if ($converted === false) {
+            self::logWarning("Konvertierung von $encoding zu UTF-8 fehlgeschlagen für $file, nutze Original");
+            return $content;
+        }
+
+        self::logInfo("Datei von $encoding zu UTF-8 konvertiert: $file");
+        return $converted;
+    }
+
+    /**
      * Liest einen Teil einer Datei.
      *
      * @param string $file Der Pfad zur Datei.
@@ -329,6 +380,104 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function readLinesAsArray(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): array {
         return iterator_to_array(self::readLines($file, $skipEmpty, $maxLines, $startLine), false);
+    }
+
+    /**
+     * Liefert die Zeilen einer Textdatei als Generator zurück, konvertiert zu UTF-8.
+     * Speichereffizient: Liest zeilenweise und konvertiert jede Zeile einzeln.
+     *
+     * @param string $file        Pfad zur Datei.
+     * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
+     * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @param int $startLine      Startzeile (Standard: 1).
+     * @return Generator<string>
+     * @throws FileNotFoundException
+     */
+    public static function readLinesAsUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): Generator {
+        $file = self::getRealPath($file);
+        if (!self::isReadable($file)) {
+            throw new FileNotFoundException("Datei nicht lesbar: $file");
+        }
+
+        // Encoding vorab erkennen (liest nur 4KB)
+        $encoding = self::chardet($file);
+        $needsConversion = $encoding !== false && $encoding !== 'UTF-8' && $encoding !== 'ASCII';
+
+        if ($needsConversion) {
+            self::logDebug("readLinesAsUtf8: Konvertierung von $encoding zu UTF-8 für $file");
+        }
+
+        // BOM-Handling für erste Zeile
+        $isFirstLine = true;
+
+        $handle = fopen($file, 'r');
+        if ($handle === false) {
+            self::logError("Fehler beim Öffnen der Datei für readLinesAsUtf8: $file");
+            throw new FileNotFoundException("Fehler beim Öffnen: $file");
+        }
+
+        $count = 0;
+        $currentLine = 0;
+
+        while (($line = fgets($handle)) !== false) {
+            // BOM bei erster Zeile entfernen
+            if ($isFirstLine) {
+                $isFirstLine = false;
+                $bomEncoding = StringHelper::detectBomEncoding($line);
+                if ($bomEncoding !== null) {
+                    $line = StringHelper::stripBom($line);
+                    // BOM-Encoding hat Priorität
+                    if ($bomEncoding !== 'UTF-8') {
+                        $encoding = $bomEncoding;
+                        $needsConversion = true;
+                    } elseif ($bomEncoding === 'UTF-8') {
+                        $needsConversion = false;
+                    }
+                }
+            }
+
+            $currentLine++;
+            if ($currentLine < $startLine) {
+                continue;
+            }
+
+            $line = rtrim($line, "\r\n");
+
+            if ($skipEmpty && trim($line) === '') {
+                continue;
+            }
+
+            // Konvertierung nur wenn nötig
+            if ($needsConversion) {
+                $converted = mb_convert_encoding($line, 'UTF-8', $encoding);
+                if ($converted !== false) {
+                    $line = $converted;
+                }
+            }
+
+            yield $line;
+
+            $count++;
+            if ($maxLines !== null && $count >= $maxLines) {
+                break;
+            }
+        }
+
+        fclose($handle);
+    }
+
+    /**
+     * Liest die Zeilen einer Textdatei als Array zurück, konvertiert zu UTF-8.
+     *
+     * @param string $file        Pfad zur Datei.
+     * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
+     * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @param int $startLine      Startzeile (Standard: 1).
+     * @return string[] Array mit den Zeilen der Datei in UTF-8.
+     * @throws FileNotFoundException
+     */
+    public static function readLinesAsArrayUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): array {
+        return iterator_to_array(self::readLinesAsUtf8($file, $skipEmpty, $maxLines, $startLine), false);
     }
 
     /**

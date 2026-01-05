@@ -28,6 +28,8 @@ class CSVDocumentParserTest extends BaseTestCase {
     private string $testFileQuoted;
     private string $testFileDoubleQuoted;
     private string $testFileInconsistentQuoted;
+    private string $testFileAnsi;
+    private string $testFileIso;
 
     protected function setUp(): void {
         $base = dirname(__DIR__, 2) . '/.samples/';
@@ -40,6 +42,8 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->testFileQuoted             = $base . 'quoted.csv';
         $this->testFileDoubleQuoted       = $base . 'doublequoted.csv';
         $this->testFileInconsistentQuoted = $base . 'quoted-inkonsistent.csv';
+        $this->testFileAnsi               = $base . 'ansi.csv';
+        $this->testFileIso                = $base . 'iso.csv';
     }
 
     public function testParseCommaSeparatedCSV(): void {
@@ -174,5 +178,106 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->expectExceptionMessage('Startzeile (5) darf nicht größer als Endzeile (3) sein');
 
         CSVDocumentParser::fromFileRange($this->testFileComma, 5, 3);
+    }
+
+    public function testFromFileWithAnsiEncoding(): void {
+        if (!file_exists($this->testFileAnsi)) {
+            $this->markTestSkipped('ansi.csv Test-Datei nicht gefunden');
+        }
+
+        $doc = CSVDocumentParser::fromFile($this->testFileAnsi, ';', '"', true);
+
+        $this->assertTrue($doc->hasHeader());
+        $this->assertGreaterThan(0, $doc->countRows());
+
+        // Header prüfen - Umlaute müssen korrekt konvertiert sein
+        $header = $doc->getHeader();
+        $this->assertNotNull($header);
+        $headerString = $header->toString();
+        $this->assertTrue(mb_check_encoding($headerString, 'UTF-8'), 'Header muss gültiges UTF-8 sein');
+        $this->assertStringContainsString('Straße', $headerString, 'Straße muss im Header korrekt konvertiert sein');
+
+        // Datenzeilen prüfen - Umlaute müssen korrekt konvertiert sein
+        $row = $doc->getRow(0);
+        $this->assertNotNull($row);
+        $rowString = $row->toString();
+        $this->assertTrue(mb_check_encoding($rowString, 'UTF-8'), 'Datenzeile muss gültiges UTF-8 sein');
+        $this->assertStringContainsString('München', $rowString, 'München muss in Datenzeile korrekt konvertiert sein');
+    }
+
+    public function testFromFileWithAnsiEncodingAllRows(): void {
+        if (!file_exists($this->testFileAnsi)) {
+            $this->markTestSkipped('ansi.csv Test-Datei nicht gefunden');
+        }
+
+        $doc = CSVDocumentParser::fromFile($this->testFileAnsi, ';', '"', true);
+
+        // Alle Datenzeilen durchgehen und Umlaute prüfen
+        $expectedUmlauts = ['München', 'Köln'];
+        $foundUmlauts = [];
+
+        for ($i = 0; $i < $doc->countRows(); $i++) {
+            $row = $doc->getRow($i);
+            if ($row === null) continue;
+
+            $rowString = $row->toString();
+            $this->assertTrue(mb_check_encoding($rowString, 'UTF-8'), "Zeile $i muss gültiges UTF-8 sein");
+
+            foreach ($expectedUmlauts as $umlaut) {
+                if (str_contains($rowString, $umlaut)) {
+                    $foundUmlauts[$umlaut] = true;
+                }
+            }
+        }
+
+        $this->assertCount(count($expectedUmlauts), $foundUmlauts, 'Alle erwarteten Umlaute müssen gefunden werden');
+    }
+
+    public function testFromFileWithIsoEncoding(): void {
+        if (!file_exists($this->testFileIso)) {
+            $this->markTestSkipped('iso.csv Test-Datei nicht gefunden');
+        }
+
+        $doc = CSVDocumentParser::fromFile($this->testFileIso, ';', '"', true);
+
+        $this->assertTrue($doc->hasHeader());
+
+        // Prüfen, dass der gesamte Inhalt gültiges UTF-8 ist
+        $docString = $doc->toString();
+        $this->assertTrue(mb_check_encoding($docString, 'UTF-8'), 'Gesamtes Dokument muss gültiges UTF-8 sein');
+    }
+
+    public function testFromFileRangeWithAnsiEncoding(): void {
+        if (!file_exists($this->testFileAnsi)) {
+            $this->markTestSkipped('ansi.csv Test-Datei nicht gefunden');
+        }
+
+        // Teste Zeilen 1-2 (Header + erste Datenzeile)
+        $doc = CSVDocumentParser::fromFileRange($this->testFileAnsi, 1, 2, ';', '"', true);
+
+        $this->assertTrue($doc->hasHeader());
+        $this->assertEquals(1, $doc->countRows(), 'Sollte genau eine Datenzeile haben');
+
+        // Umlaute prüfen
+        $row = $doc->getRow(0);
+        $this->assertNotNull($row);
+        $rowString = $row->toString();
+        $this->assertTrue(mb_check_encoding($rowString, 'UTF-8'), 'Datenzeile muss gültiges UTF-8 sein');
+        $this->assertStringContainsString('München', $rowString, 'München muss korrekt konvertiert sein');
+    }
+
+    public function testFromStringWithEncodingParameter(): void {
+        // Simuliere ISO-8859-1 kodierten Inhalt
+        $isoContent = mb_convert_encoding("Name;Stadt\nTest;München", 'ISO-8859-1', 'UTF-8');
+
+        $doc = CSVDocumentParser::fromString($isoContent, ';', '"', true, 'ISO-8859-1');
+
+        $this->assertTrue($doc->hasHeader());
+        $row = $doc->getRow(0);
+        $this->assertNotNull($row);
+
+        $rowString = $row->toString();
+        $this->assertTrue(mb_check_encoding($rowString, 'UTF-8'), 'Datenzeile muss gültiges UTF-8 sein');
+        $this->assertStringContainsString('München', $rowString, 'München muss korrekt konvertiert sein');
     }
 }

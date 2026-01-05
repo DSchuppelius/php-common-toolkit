@@ -196,4 +196,97 @@ class FileTest extends BaseTestCase {
         $this->expectExceptionMessage('Windows-reservierter Gerätename');
         File::rename($this->testFile, '/tmp/NUL');
     }
+
+    public function testReadAsUtf8WithAnsiCsv(): void {
+        $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
+        $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');
+
+        // Encoding der Originaldatei prüfen (sollte ISO-8859-x sein)
+        $encoding = File::chardet($ansiFile);
+        $this->assertNotFalse($encoding, 'Encoding muss erkannt werden');
+        $this->assertStringContainsString('ISO-8859', $encoding, 'Datei sollte als ISO-8859 erkannt werden');
+
+        // Als UTF-8 lesen
+        $content = File::readAsUtf8($ansiFile);
+
+        // Prüfen, dass der Inhalt jetzt gültiges UTF-8 ist
+        $this->assertTrue(mb_check_encoding($content, 'UTF-8'), 'Inhalt muss gültiges UTF-8 sein');
+
+        // Prüfen, dass Umlaute korrekt konvertiert wurden
+        $this->assertStringContainsString('München', $content, 'München muss korrekt konvertiert sein');
+        $this->assertStringContainsString('Köln', $content, 'Köln muss korrekt konvertiert sein');
+        $this->assertStringContainsString('Straße', $content, 'Straße muss korrekt konvertiert sein');
+    }
+
+    public function testReadLinesAsUtf8WithAnsiCsv(): void {
+        $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
+        $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');
+
+        $lines = iterator_to_array(File::readLinesAsUtf8($ansiFile));
+
+        $this->assertGreaterThan(0, count($lines), 'Mindestens eine Zeile erwartet');
+
+        // Alle Zeilen müssen gültiges UTF-8 sein
+        foreach ($lines as $i => $line) {
+            $this->assertTrue(mb_check_encoding($line, 'UTF-8'), "Zeile $i muss gültiges UTF-8 sein");
+        }
+
+        // Umlaute in den Zeilen prüfen
+        $allContent = implode("\n", $lines);
+        $this->assertStringContainsString('München', $allContent, 'München muss korrekt konvertiert sein');
+        $this->assertStringContainsString('Straße', $allContent, 'Straße muss im Header korrekt konvertiert sein');
+    }
+
+    public function testReadLinesAsUtf8WithSkipEmpty(): void {
+        $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
+
+        $linesAll = iterator_to_array(File::readLinesAsUtf8($ansiFile, false));
+        $linesNoEmpty = iterator_to_array(File::readLinesAsUtf8($ansiFile, true));
+
+        // Bei skipEmpty=true sollten keine leeren Zeilen enthalten sein
+        foreach ($linesNoEmpty as $line) {
+            $this->assertNotEmpty(trim($line), 'Keine leeren Zeilen bei skipEmpty=true');
+        }
+    }
+
+    public function testReadLinesAsUtf8WithMaxLines(): void {
+        $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
+
+        $lines = iterator_to_array(File::readLinesAsUtf8($ansiFile, false, 2));
+
+        $this->assertCount(2, $lines, 'Genau 2 Zeilen erwartet bei maxLines=2');
+        $this->assertTrue(mb_check_encoding($lines[0], 'UTF-8'), 'Erste Zeile muss gültiges UTF-8 sein');
+        $this->assertTrue(mb_check_encoding($lines[1], 'UTF-8'), 'Zweite Zeile muss gültiges UTF-8 sein');
+    }
+
+    public function testReadLinesAsUtf8WithStartLine(): void {
+        $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
+
+        // Ab Zeile 2 lesen (überspringt Header)
+        $lines = iterator_to_array(File::readLinesAsUtf8($ansiFile, false, null, 2));
+        $allLines = iterator_to_array(File::readLinesAsUtf8($ansiFile));
+
+        $this->assertCount(count($allLines) - 1, $lines, 'Eine Zeile weniger bei startLine=2');
+
+        // Erste Zeile sollte Daten enthalten, nicht den Header
+        $this->assertStringNotContainsString('Hausnummer', $lines[0], 'Header sollte übersprungen sein');
+    }
+
+    public function testReadLinesAsArrayUtf8(): void {
+        $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
+
+        $lines = File::readLinesAsArrayUtf8($ansiFile);
+
+        $this->assertIsArray($lines);
+        $this->assertGreaterThan(0, count($lines));
+
+        // Alle Zeilen müssen gültiges UTF-8 sein
+        foreach ($lines as $line) {
+            $this->assertTrue(mb_check_encoding($line, 'UTF-8'), 'Zeile muss gültiges UTF-8 sein');
+        }
+
+        $allContent = implode("\n", $lines);
+        $this->assertStringContainsString('München', $allContent);
+        $this->assertStringContainsString('Köln', $allContent);
+    }
 }

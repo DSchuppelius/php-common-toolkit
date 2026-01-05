@@ -93,6 +93,7 @@ class CSVDocumentParser extends HelperAbstract {
 
     /**
      * Parst eine CSV-Datei in ein CSVDocument.
+     * Speichereffizient: Nutzt zeilenweises Lesen mit automatischer Encoding-Konvertierung.
      *
      * @param string $file Der Pfad zur CSV-Datei
      * @param string $delimiter CSV-Trennzeichen
@@ -111,8 +112,13 @@ class CSVDocumentParser extends HelperAbstract {
             throw new RuntimeException("CSV-Datei nicht lesbar: $file");
         }
 
-        // Nutze erweiterte FileHelper-Funktionen für effizienten Dateizugriff
-        $lines = File::readLinesAsArray($file, $skipEmpty, $maxLines, $startLine);
+        // Speichereffizientes zeilenweises Lesen mit automatischer Encoding-Konvertierung
+        if ($detectEncoding) {
+            $lines = File::readLinesAsArrayUtf8($file, $skipEmpty, $maxLines, $startLine);
+            static::logDebug("Datei zeilenweise mit automatischer Encoding-Konvertierung gelesen: $file");
+        } else {
+            $lines = File::readLinesAsArray($file, $skipEmpty, $maxLines, $startLine);
+        }
 
         if (empty($lines)) {
             static::logError("Keine Zeilen in CSV-Datei gefunden: $file");
@@ -121,23 +127,13 @@ class CSVDocumentParser extends HelperAbstract {
 
         $content = implode("\n", $lines);
 
-        // Encoding-Erkennung wenn aktiviert - nutze File::chardet für Datei-basierte Erkennung
-        $encoding = null;
-        if ($detectEncoding) {
-            $encoding = File::chardet($file);
-            if ($encoding === false) {
-                $encoding = null;
-                static::logWarning("Encoding konnte nicht erkannt werden für: $file");
-            } else {
-                static::logDebug("Erkanntes Encoding für $file: $encoding");
-            }
-        }
-
-        return self::fromString($content, $delimiter, $enclosure, $hasHeader, $encoding);
+        // Encoding ist bereits UTF-8, daher null übergeben
+        return self::fromString($content, $delimiter, $enclosure, $hasHeader, null);
     }
 
     /**
      * Parst einen Bereich einer CSV-Datei (optimiert für große Dateien).
+     * Speichereffizient: Nutzt zeilenweises Lesen mit automatischer Encoding-Konvertierung.
      *
      * @param string $file Der Pfad zur CSV-Datei
      * @param int $fromLine Startzeile (1-basiert, inklusive)
@@ -161,17 +157,26 @@ class CSVDocumentParser extends HelperAbstract {
 
         $lines = [];
 
-        // Header hinzufügen falls gewünscht
+        // Header hinzufügen falls gewünscht und Startzeile > 1
         if ($includeHeader && $fromLine > 1) {
-            $headerLines = File::readLinesAsArray($file, false, 1, 1);
+            if ($detectEncoding) {
+                $headerLines = File::readLinesAsArrayUtf8($file, false, 1, 1);
+            } else {
+                $headerLines = File::readLinesAsArray($file, false, 1, 1);
+            }
             if (!empty($headerLines)) {
                 $lines[] = $headerLines[0];
             }
         }
 
-        // Datenzeilen lesen
+        // Datenzeilen aus dem Bereich lesen
         $maxLines = $toLine - $fromLine + 1;
-        $dataLines = File::readLinesAsArray($file, false, $maxLines, $fromLine);
+        if ($detectEncoding) {
+            $dataLines = File::readLinesAsArrayUtf8($file, false, $maxLines, $fromLine);
+            static::logDebug("Datei zeilenweise mit automatischer Encoding-Konvertierung gelesen: $file");
+        } else {
+            $dataLines = File::readLinesAsArray($file, false, $maxLines, $fromLine);
+        }
         $lines = array_merge($lines, $dataLines);
 
         if (empty($lines)) {
@@ -181,16 +186,7 @@ class CSVDocumentParser extends HelperAbstract {
 
         $content = implode("\n", $lines);
 
-        // Encoding-Erkennung wenn aktiviert - nutze File::chardet für Datei-basierte Erkennung
-        $encoding = null;
-        if ($detectEncoding) {
-            $encoding = File::chardet($file);
-            if ($encoding === false) {
-                $encoding = null;
-                static::logWarning("Encoding konnte nicht erkannt werden für: $file");
-            }
-        }
-
-        return self::fromString($content, $delimiter, $enclosure, $includeHeader, $encoding);
+        // Encoding ist bereits UTF-8, daher null übergeben
+        return self::fromString($content, $delimiter, $enclosure, $includeHeader, null);
     }
 }
