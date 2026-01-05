@@ -11,24 +11,21 @@
 
 namespace CommonToolkit\Entities\CSV;
 
+use CommonToolkit\Contracts\Abstracts\TextDocumentAbstract;
 use CommonToolkit\Contracts\Interfaces\CSV\FieldInterface;
 use CommonToolkit\Generators\CSV\CSVGenerator;
-use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
 /**
  * CSV-Dokument mit Header und Datenzeilen.
+ * Erbt von TextDocumentAbstract für Encoding-, BOM- und Zeilenumbruch-Handling.
  * 
  * Verwendet:
  * - CSVGenerator: Generierung von CSV-Strings
  * 
  * @package CommonToolkit\Entities\CSV
  */
-class Document {
-    use ErrorLog;
-
-    /** Standard-Encoding für CSV-Dokumente */
-    public const DEFAULT_ENCODING = 'UTF-8';
+class Document extends TextDocumentAbstract {
 
     protected ?HeaderLine $header;
     /** @var DataLine[] */
@@ -37,12 +34,6 @@ class Document {
     protected string $delimiter;
     protected string $enclosure;
     protected ?ColumnWidthConfig $columnWidthConfig = null;
-
-    /**
-     * Die Zeichenkodierung des Dokuments.
-     * Wird beim Parsen erkannt und beim Export verwendet.
-     */
-    protected string $encoding = self::DEFAULT_ENCODING;
 
     /**
      * Steuert ob beim CSV-Export der Header mit ausgegeben werden soll.
@@ -106,25 +97,6 @@ class Document {
     /** @return string */
     public function getEnclosure(): string {
         return $this->enclosure;
-    }
-
-    /**
-     * Gibt die Zeichenkodierung des Dokuments zurück.
-     *
-     * @return string Die Zeichenkodierung (z.B. 'UTF-8', 'ISO-8859-1')
-     */
-    public function getEncoding(): string {
-        return $this->encoding;
-    }
-
-    /**
-     * Setzt die Zeichenkodierung des Dokuments.
-     *
-     * @param string $encoding Die Zeichenkodierung (z.B. 'UTF-8', 'ISO-8859-1')
-     * @return void
-     */
-    public function setEncoding(string $encoding): void {
-        $this->encoding = $encoding;
     }
 
     /**
