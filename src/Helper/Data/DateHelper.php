@@ -686,4 +686,518 @@ class DateHelper {
 
         return DateTimeImmutable::createFromFormat($pattern, $value) ?: null;
     }
+
+    /**
+     * Berechnet das Alter basierend auf einem Geburtsdatum.
+     *
+     * @param DateTimeInterface $birthDate Das Geburtsdatum.
+     * @param DateTimeInterface|null $referenceDate Referenzdatum (Standard: heute).
+     * @return int Das Alter in Jahren.
+     */
+    public static function getAge(DateTimeInterface $birthDate, ?DateTimeInterface $referenceDate = null): int {
+        $referenceDate = $referenceDate ?? new DateTimeImmutable();
+        $diff = $referenceDate->diff($birthDate);
+        return $diff->y;
+    }
+
+    /**
+     * Gibt das Quartal eines Datums zurück (1-4).
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return int Das Quartal (1-4).
+     */
+    public static function getQuarter(DateTimeInterface $date): int {
+        $month = (int) $date->format('n');
+        return (int) ceil($month / 3);
+    }
+
+    /**
+     * Gibt den ersten Tag des Monats zurück.
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return DateTimeImmutable Der erste Tag des Monats.
+     */
+    public static function startOfMonth(DateTimeInterface $date): DateTimeImmutable {
+        return DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $date->format('Y-m-01 00:00:00')
+        );
+    }
+
+    /**
+     * Gibt den letzten Tag des Monats zurück.
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return DateTimeImmutable Der letzte Tag des Monats.
+     */
+    public static function endOfMonth(DateTimeInterface $date): DateTimeImmutable {
+        return DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $date->format('Y-m-t 23:59:59')
+        );
+    }
+
+    /**
+     * Gibt den ersten Tag der Woche zurück (Montag).
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return DateTimeImmutable Der erste Tag der Woche (Montag).
+     */
+    public static function startOfWeek(DateTimeInterface $date): DateTimeImmutable {
+        $dayOfWeek = (int) $date->format('N'); // 1 = Montag, 7 = Sonntag
+        $diff = $dayOfWeek - 1;
+
+        $start = DateTimeImmutable::createFromInterface($date);
+        return $start->modify("-{$diff} days")->setTime(0, 0, 0);
+    }
+
+    /**
+     * Gibt den letzten Tag der Woche zurück (Sonntag).
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return DateTimeImmutable Der letzte Tag der Woche (Sonntag).
+     */
+    public static function endOfWeek(DateTimeInterface $date): DateTimeImmutable {
+        $dayOfWeek = (int) $date->format('N'); // 1 = Montag, 7 = Sonntag
+        $diff = 7 - $dayOfWeek;
+
+        $end = DateTimeImmutable::createFromInterface($date);
+        return $end->modify("+{$diff} days")->setTime(23, 59, 59);
+    }
+
+    /**
+     * Gibt den ersten Tag des Jahres zurück.
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return DateTimeImmutable Der erste Tag des Jahres.
+     */
+    public static function startOfYear(DateTimeInterface $date): DateTimeImmutable {
+        return DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $date->format('Y-01-01 00:00:00')
+        );
+    }
+
+    /**
+     * Gibt den letzten Tag des Jahres zurück.
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return DateTimeImmutable Der letzte Tag des Jahres.
+     */
+    public static function endOfYear(DateTimeInterface $date): DateTimeImmutable {
+        return DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $date->format('Y-12-31 23:59:59')
+        );
+    }
+
+    /**
+     * Gibt den ersten Tag des Quartals zurück.
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return DateTimeImmutable Der erste Tag des Quartals.
+     */
+    public static function startOfQuarter(DateTimeInterface $date): DateTimeImmutable {
+        $quarter = self::getQuarter($date);
+        $month = ($quarter - 1) * 3 + 1;
+        return DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $date->format('Y') . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT) . '-01 00:00:00'
+        );
+    }
+
+    /**
+     * Gibt den letzten Tag des Quartals zurück.
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return DateTimeImmutable Der letzte Tag des Quartals.
+     */
+    public static function endOfQuarter(DateTimeInterface $date): DateTimeImmutable {
+        $quarter = self::getQuarter($date);
+        $month = $quarter * 3;
+        $lastDay = self::getLastDay((int) $date->format('Y'), $month);
+        return DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $date->format('Y') . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT) . '-' . str_pad((string) $lastDay, 2, '0', STR_PAD_LEFT) . ' 23:59:59'
+        );
+    }
+
+    /**
+     * Berechnet die Anzahl der Arbeitstage zwischen zwei Daten.
+     * Wochenenden werden ausgeschlossen, Feiertage optional.
+     *
+     * @param DateTimeInterface $start Startdatum.
+     * @param DateTimeInterface $end Enddatum.
+     * @param array $holidays Array von Feiertagen (DateTimeInterface oder 'Y-m-d' Strings).
+     * @return int Anzahl der Arbeitstage.
+     */
+    public static function getWorkingDays(DateTimeInterface $start, DateTimeInterface $end, array $holidays = []): int {
+        // Sicherstellen, dass start <= end
+        if ($start > $end) {
+            [$start, $end] = [$end, $start];
+        }
+
+        // Feiertage in ein Set von 'Y-m-d' Strings konvertieren
+        $holidaySet = [];
+        foreach ($holidays as $holiday) {
+            if ($holiday instanceof DateTimeInterface) {
+                $holidaySet[$holiday->format('Y-m-d')] = true;
+            } else {
+                $holidaySet[$holiday] = true;
+            }
+        }
+
+        $workingDays = 0;
+        $current = DateTimeImmutable::createFromInterface($start);
+        $endDate = DateTimeImmutable::createFromInterface($end);
+
+        while ($current <= $endDate) {
+            $dayOfWeek = (int) $current->format('N');
+            $dateStr = $current->format('Y-m-d');
+
+            // Wochenende (6 = Samstag, 7 = Sonntag) oder Feiertag überspringen
+            if ($dayOfWeek < 6 && !isset($holidaySet[$dateStr])) {
+                $workingDays++;
+            }
+
+            $current = $current->modify('+1 day');
+        }
+
+        return $workingDays;
+    }
+
+    /**
+     * Berechnet das Osterdatum für ein gegebenes Jahr (Gregorianischer Kalender).
+     * Algorithmus nach Gauss/Lichtenberg.
+     *
+     * @param int $year Das Jahr.
+     * @return DateTimeImmutable Das Osterdatum.
+     */
+    public static function getEasterDate(int $year): DateTimeImmutable {
+        $a = $year % 19;
+        $b = (int) floor($year / 100);
+        $c = $year % 100;
+        $d = (int) floor($b / 4);
+        $e = $b % 4;
+        $f = (int) floor(($b + 8) / 25);
+        $g = (int) floor(($b - $f + 1) / 3);
+        $h = (19 * $a + $b - $d - $g + 15) % 30;
+        $i = (int) floor($c / 4);
+        $k = $c % 4;
+        $l = (32 + 2 * $e + 2 * $i - $h - $k) % 7;
+        $m = (int) floor(($a + 11 * $h + 22 * $l) / 451);
+        $month = (int) floor(($h + $l - 7 * $m + 114) / 31);
+        $day = (($h + $l - 7 * $m + 114) % 31) + 1;
+
+        return DateTimeImmutable::createFromFormat('Y-m-d', "$year-$month-$day");
+    }
+
+    /**
+     * Gibt die beweglichen Feiertage für ein Jahr zurück (Deutschland).
+     * Basiert auf dem Osterdatum.
+     *
+     * @param int $year Das Jahr.
+     * @return array<string, DateTimeImmutable> Feiertage mit Namen als Schlüssel.
+     */
+    public static function getGermanMovableHolidays(int $year): array {
+        $easter = self::getEasterDate($year);
+
+        return [
+            'Karfreitag' => $easter->modify('-2 days'),
+            'Ostersonntag' => $easter,
+            'Ostermontag' => $easter->modify('+1 day'),
+            'Christi Himmelfahrt' => $easter->modify('+39 days'),
+            'Pfingstsonntag' => $easter->modify('+49 days'),
+            'Pfingstmontag' => $easter->modify('+50 days'),
+            'Fronleichnam' => $easter->modify('+60 days'),
+        ];
+    }
+
+    /**
+     * Gibt die festen Feiertage für ein Jahr zurück (Deutschland, bundesweit).
+     *
+     * @param int $year Das Jahr.
+     * @return array<string, DateTimeImmutable> Feiertage mit Namen als Schlüssel.
+     */
+    public static function getGermanFixedHolidays(int $year): array {
+        return [
+            'Neujahr' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-01-01"),
+            'Tag der Arbeit' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-05-01"),
+            'Tag der Deutschen Einheit' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-10-03"),
+            'Erster Weihnachtstag' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-12-25"),
+            'Zweiter Weihnachtstag' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-12-26"),
+        ];
+    }
+
+    /**
+     * Gibt alle bundesweiten deutschen Feiertage für ein Jahr zurück.
+     *
+     * @param int $year Das Jahr.
+     * @return array<string, DateTimeImmutable> Feiertage mit Namen als Schlüssel.
+     */
+    public static function getGermanHolidays(int $year): array {
+        return array_merge(
+            self::getGermanFixedHolidays($year),
+            self::getGermanMovableHolidays($year)
+        );
+    }
+
+    /**
+     * Prüft ob ein Datum ein deutscher Feiertag ist.
+     *
+     * @param DateTimeInterface $date Das zu prüfende Datum.
+     * @return bool True wenn es ein Feiertag ist.
+     */
+    public static function isGermanHoliday(DateTimeInterface $date): bool {
+        $year = (int) $date->format('Y');
+        $holidays = self::getGermanHolidays($year);
+
+        $dateStr = $date->format('Y-m-d');
+        foreach ($holidays as $holiday) {
+            if ($holiday->format('Y-m-d') === $dateStr) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Gibt die Kalenderwoche eines Datums zurück (ISO 8601).
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return int Die Kalenderwoche (1-53).
+     */
+    public static function getWeekNumber(DateTimeInterface $date): int {
+        return (int) $date->format('W');
+    }
+
+    /**
+     * Gibt das Jahr der Kalenderwoche zurück (ISO 8601).
+     * Kann sich am Jahresanfang/Ende vom Kalenderjahr unterscheiden.
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return int Das Jahr der Kalenderwoche.
+     */
+    public static function getWeekYear(DateTimeInterface $date): int {
+        return (int) $date->format('o');
+    }
+
+    /**
+     * Gibt den Tag des Jahres zurück (1-366).
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @return int Der Tag des Jahres.
+     */
+    public static function getDayOfYear(DateTimeInterface $date): int {
+        return (int) $date->format('z') + 1;
+    }
+
+    /**
+     * Berechnet die Anzahl der Tage im Jahr.
+     *
+     * @param int $year Das Jahr.
+     * @return int Anzahl der Tage (365 oder 366).
+     */
+    public static function getDaysInYear(int $year): int {
+        return self::isLeapYear($year) ? 366 : 365;
+    }
+
+    /**
+     * Addiert Arbeitstage zu einem Datum.
+     *
+     * @param DateTimeInterface $date Das Startdatum.
+     * @param int $workingDays Anzahl der Arbeitstage.
+     * @param array $holidays Array von Feiertagen.
+     * @return DateTimeImmutable Das Enddatum.
+     */
+    public static function addWorkingDays(DateTimeInterface $date, int $workingDays, array $holidays = []): DateTimeImmutable {
+        $current = DateTimeImmutable::createFromInterface($date);
+        $direction = $workingDays >= 0 ? '+1 day' : '-1 day';
+        $workingDays = abs($workingDays);
+
+        // Feiertage in ein Set konvertieren
+        $holidaySet = [];
+        foreach ($holidays as $holiday) {
+            if ($holiday instanceof DateTimeInterface) {
+                $holidaySet[$holiday->format('Y-m-d')] = true;
+            } else {
+                $holidaySet[$holiday] = true;
+            }
+        }
+
+        $addedDays = 0;
+        while ($addedDays < $workingDays) {
+            $current = $current->modify($direction);
+            $dayOfWeek = (int) $current->format('N');
+            $dateStr = $current->format('Y-m-d');
+
+            if ($dayOfWeek < 6 && !isset($holidaySet[$dateStr])) {
+                $addedDays++;
+            }
+        }
+
+        return $current;
+    }
+
+    /**
+     * Prüft ob ein Datum ein Arbeitstag ist.
+     *
+     * @param DateTimeInterface $date Das zu prüfende Datum.
+     * @param array $holidays Array von Feiertagen.
+     * @return bool True wenn es ein Arbeitstag ist.
+     */
+    public static function isWorkingDay(DateTimeInterface $date, array $holidays = []): bool {
+        // Wochenende prüfen
+        if (self::isWeekend($date)) {
+            return false;
+        }
+
+        // Feiertage prüfen
+        $dateStr = $date->format('Y-m-d');
+        foreach ($holidays as $holiday) {
+            $holidayStr = $holiday instanceof DateTimeInterface
+                ? $holiday->format('Y-m-d')
+                : $holiday;
+
+            if ($dateStr === $holidayStr) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Gibt das Datum des nächsten Arbeitstages zurück.
+     *
+     * @param DateTimeInterface $date Das Startdatum.
+     * @param array $holidays Array von Feiertagen.
+     * @return DateTimeImmutable Der nächste Arbeitstag.
+     */
+    public static function getNextWorkingDay(DateTimeInterface $date, array $holidays = []): DateTimeImmutable {
+        $current = DateTimeImmutable::createFromInterface($date)->modify('+1 day');
+
+        while (!self::isWorkingDay($current, $holidays)) {
+            $current = $current->modify('+1 day');
+        }
+
+        return $current;
+    }
+
+    /**
+     * Gibt das Datum des vorherigen Arbeitstages zurück.
+     *
+     * @param DateTimeInterface $date Das Startdatum.
+     * @param array $holidays Array von Feiertagen.
+     * @return DateTimeImmutable Der vorherige Arbeitstag.
+     */
+    public static function getPreviousWorkingDay(DateTimeInterface $date, array $holidays = []): DateTimeImmutable {
+        $current = DateTimeImmutable::createFromInterface($date)->modify('-1 day');
+
+        while (!self::isWorkingDay($current, $holidays)) {
+            $current = $current->modify('-1 day');
+        }
+
+        return $current;
+    }
+
+    /**
+     * Berechnet die Differenz zwischen zwei Daten in verschiedenen Einheiten.
+     *
+     * @param DateTimeInterface $start Startdatum.
+     * @param DateTimeInterface $end Enddatum.
+     * @param string $unit Einheit: 'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'.
+     * @return int Die Differenz in der angegebenen Einheit.
+     */
+    public static function diffIn(DateTimeInterface $start, DateTimeInterface $end, string $unit = 'days'): int {
+        $diff = $start->diff($end);
+        $totalDays = (int) $diff->format('%r%a');
+
+        return match ($unit) {
+            'years' => $diff->y * ($diff->invert ? -1 : 1),
+            'months' => ($diff->y * 12 + $diff->m) * ($diff->invert ? -1 : 1),
+            'weeks' => (int) floor($totalDays / 7),
+            'days' => $totalDays,
+            'hours' => $totalDays * 24 + $diff->h * ($diff->invert ? -1 : 1),
+            'minutes' => ($totalDays * 24 * 60) + ($diff->h * 60) + $diff->i * ($diff->invert ? -1 : 1),
+            'seconds' => ($totalDays * 86400) + ($diff->h * 3600) + ($diff->i * 60) + $diff->s * ($diff->invert ? -1 : 1),
+            default => $totalDays,
+        };
+    }
+
+    /**
+     * Erzeugt eine menschenlesbare Darstellung der Zeitdifferenz.
+     *
+     * @param DateTimeInterface $date Das Datum.
+     * @param DateTimeInterface|null $reference Referenzdatum (Standard: jetzt).
+     * @param string $locale Sprache ('de' oder 'en', Standard: 'de').
+     * @return string Menschenlesbare Differenz (z.B. "vor 2 Stunden").
+     */
+    public static function humanDiff(DateTimeInterface $date, ?DateTimeInterface $reference = null, string $locale = 'de'): string {
+        $reference = $reference ?? new DateTimeImmutable();
+        $diff = $reference->diff($date);
+
+        $isPast = $diff->invert === 1;
+        $totalSeconds = abs($diff->days * 86400 + $diff->h * 3600 + $diff->i * 60 + $diff->s);
+
+        $translations = [
+            'de' => [
+                'just_now' => 'gerade eben',
+                'seconds' => ['Sekunde', 'Sekunden'],
+                'minutes' => ['Minute', 'Minuten'],
+                'hours' => ['Stunde', 'Stunden'],
+                'days' => ['Tag', 'Tagen'],
+                'weeks' => ['Woche', 'Wochen'],
+                'months' => ['Monat', 'Monaten'],
+                'years' => ['Jahr', 'Jahren'],
+                'ago' => 'vor %s',
+                'in' => 'in %s',
+            ],
+            'en' => [
+                'just_now' => 'just now',
+                'seconds' => ['second', 'seconds'],
+                'minutes' => ['minute', 'minutes'],
+                'hours' => ['hour', 'hours'],
+                'days' => ['day', 'days'],
+                'weeks' => ['week', 'weeks'],
+                'months' => ['month', 'months'],
+                'years' => ['year', 'years'],
+                'ago' => '%s ago',
+                'in' => 'in %s',
+            ],
+        ];
+
+        $t = $translations[$locale] ?? $translations['de'];
+
+        if ($totalSeconds < 60) {
+            return $t['just_now'];
+        }
+
+        $value = 0;
+        $unit = '';
+
+        if ($diff->y > 0) {
+            $value = $diff->y;
+            $unit = $t['years'][$value === 1 ? 0 : 1];
+        } elseif ($diff->m > 0) {
+            $value = $diff->m;
+            $unit = $t['months'][$value === 1 ? 0 : 1];
+        } elseif ($diff->d >= 7) {
+            $value = (int) floor($diff->d / 7);
+            $unit = $t['weeks'][$value === 1 ? 0 : 1];
+        } elseif ($diff->d > 0) {
+            $value = $diff->d;
+            $unit = $t['days'][$value === 1 ? 0 : 1];
+        } elseif ($diff->h > 0) {
+            $value = $diff->h;
+            $unit = $t['hours'][$value === 1 ? 0 : 1];
+        } elseif ($diff->i > 0) {
+            $value = $diff->i;
+            $unit = $t['minutes'][$value === 1 ? 0 : 1];
+        }
+
+        $formatted = "$value $unit";
+        return sprintf($isPast ? $t['ago'] : $t['in'], $formatted);
+    }
 }

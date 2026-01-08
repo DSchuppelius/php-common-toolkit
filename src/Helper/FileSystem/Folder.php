@@ -245,4 +245,320 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function isAbsolutePath(string $path): bool {
         return File::isAbsolutePath($path);
     }
+
+    /**
+     * Berechnet die Gesamtgröße eines Verzeichnisses in Bytes.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $recursive Rekursiv die Größe berechnen (Standard: true).
+     * @return int Die Größe in Bytes.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function size(string $directory, bool $recursive = true): int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            self::logError("Verzeichnis nicht gefunden: $directory");
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        $size = 0;
+        $iterator = $recursive
+            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
+            : new \DirectoryIterator($directory);
+
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $size += $file->getSize();
+            }
+        }
+
+        self::logDebug("Verzeichnisgröße berechnet: $directory = $size Bytes");
+        return $size;
+    }
+
+    /**
+     * Prüft ob ein Verzeichnis leer ist.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @return bool True wenn das Verzeichnis leer ist.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function isEmpty(string $directory): bool {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        $iterator = new \DirectoryIterator($directory);
+        foreach ($iterator as $item) {
+            if (!$item->isDot()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Leert ein Verzeichnis (löscht alle Inhalte, behält das Verzeichnis).
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $recursive Unterverzeichnisse rekursiv leeren (Standard: true).
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     * @throws Exception Wenn ein Fehler beim Löschen auftritt.
+     */
+    public static function clean(string $directory, bool $recursive = true): void {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        $iterator = new \DirectoryIterator($directory);
+        foreach ($iterator as $item) {
+            if ($item->isDot()) {
+                continue;
+            }
+
+            $path = $item->getPathname();
+            if ($item->isDir()) {
+                if ($recursive) {
+                    self::delete($path, true);
+                }
+            } else {
+                File::delete($path);
+            }
+        }
+
+        self::logInfo("Verzeichnis geleert: $directory");
+    }
+
+    /**
+     * Zählt die Anzahl der Dateien in einem Verzeichnis.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $recursive Unterverzeichnisse einbeziehen (Standard: false).
+     * @param array $extensions Nur bestimmte Dateierweiterungen zählen (leer = alle).
+     * @return int Anzahl der Dateien.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function fileCount(string $directory, bool $recursive = false, array $extensions = []): int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        $count = 0;
+        $iterator = $recursive
+            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
+            : new \DirectoryIterator($directory);
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            if (empty($extensions)) {
+                $count++;
+            } else {
+                $ext = strtolower(pathinfo($file->getFilename(), PATHINFO_EXTENSION));
+                if (in_array($ext, array_map('strtolower', $extensions), true)) {
+                    $count++;
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Zählt die Anzahl der Unterverzeichnisse.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $recursive Unterverzeichnisse rekursiv zählen (Standard: false).
+     * @return int Anzahl der Unterverzeichnisse.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function folderCount(string $directory, bool $recursive = false): int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        $count = 0;
+        $iterator = $recursive
+            ? new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            )
+            : new \DirectoryIterator($directory);
+
+        foreach ($iterator as $item) {
+            if ($iterator instanceof \DirectoryIterator && $item->isDot()) {
+                continue;
+            }
+            if ($item->isDir()) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Findet Dateien nach einem Glob-Pattern.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param string $pattern Das Glob-Pattern (z.B. '*.txt', '*.{jpg,png}').
+     * @param bool $recursive Rekursiv suchen (Standard: false).
+     * @return string[] Array mit gefundenen Dateipfaden.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function findByPattern(string $directory, string $pattern, bool $recursive = false): array {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        if (!$recursive) {
+            $results = glob(rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $pattern, GLOB_BRACE);
+            return $results !== false ? $results : [];
+        }
+
+        $results = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->isFile() && fnmatch($pattern, $file->getFilename())) {
+                $results[] = $file->getPathname();
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Gibt die neueste Datei im Verzeichnis zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $recursive Unterverzeichnisse einbeziehen (Standard: false).
+     * @param array $extensions Nur bestimmte Dateierweiterungen (leer = alle).
+     * @return string|null Pfad zur neuesten Datei oder null wenn leer.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function getNewest(string $directory, bool $recursive = false, array $extensions = []): ?string {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        $newestFile = null;
+        $newestTime = 0;
+
+        $iterator = $recursive
+            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
+            : new \DirectoryIterator($directory);
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            if (!empty($extensions)) {
+                $ext = strtolower(pathinfo($file->getFilename(), PATHINFO_EXTENSION));
+                if (!in_array($ext, array_map('strtolower', $extensions), true)) {
+                    continue;
+                }
+            }
+
+            $mtime = $file->getMTime();
+            if ($mtime > $newestTime) {
+                $newestTime = $mtime;
+                $newestFile = $file->getPathname();
+            }
+        }
+
+        return $newestFile;
+    }
+
+    /**
+     * Gibt die älteste Datei im Verzeichnis zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $recursive Unterverzeichnisse einbeziehen (Standard: false).
+     * @param array $extensions Nur bestimmte Dateierweiterungen (leer = alle).
+     * @return string|null Pfad zur ältesten Datei oder null wenn leer.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function getOldest(string $directory, bool $recursive = false, array $extensions = []): ?string {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        $oldestFile = null;
+        $oldestTime = PHP_INT_MAX;
+
+        $iterator = $recursive
+            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
+            : new \DirectoryIterator($directory);
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            if (!empty($extensions)) {
+                $ext = strtolower(pathinfo($file->getFilename(), PATHINFO_EXTENSION));
+                if (!in_array($ext, array_map('strtolower', $extensions), true)) {
+                    continue;
+                }
+            }
+
+            $mtime = $file->getMTime();
+            if ($mtime < $oldestTime) {
+                $oldestTime = $mtime;
+                $oldestFile = $file->getPathname();
+            }
+        }
+
+        return $oldestFile;
+    }
+
+    /**
+     * Gibt die größte Datei im Verzeichnis zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $recursive Unterverzeichnisse einbeziehen (Standard: false).
+     * @return string|null Pfad zur größten Datei oder null wenn leer.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function getLargest(string $directory, bool $recursive = false): ?string {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+        }
+
+        $largestFile = null;
+        $largestSize = 0;
+
+        $iterator = $recursive
+            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
+            : new \DirectoryIterator($directory);
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            $size = $file->getSize();
+            if ($size > $largestSize) {
+                $largestSize = $size;
+                $largestFile = $file->getPathname();
+            }
+        }
+
+        return $largestFile;
+    }
 }

@@ -481,6 +481,125 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Liest die letzten N Zeilen einer Datei (wie Unix 'tail').
+     * Nutzt einen effizienten Algorithmus, der vom Ende der Datei rückwärts liest.
+     *
+     * @param string $file      Pfad zur Datei.
+     * @param int $lines        Anzahl der Zeilen vom Ende (Standard: 10).
+     * @param bool $skipEmpty   Leere Zeilen überspringen (Standard: false).
+     * @return string[] Array mit den letzten Zeilen der Datei.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden oder lesbar ist.
+     * @throws InvalidArgumentException Wenn $lines <= 0.
+     */
+    public static function tail(string $file, int $lines = 10, bool $skipEmpty = false): array {
+        if ($lines <= 0) {
+            throw new InvalidArgumentException("Anzahl der Zeilen muss größer als 0 sein.");
+        }
+
+        $file = self::getRealPath($file);
+        if (!self::isReadable($file)) {
+            throw new FileNotFoundException("Datei nicht lesbar: $file");
+        }
+
+        $fileSize = self::size($file);
+        if ($fileSize === 0) {
+            self::logDebug("Datei ist leer: $file");
+            return [];
+        }
+
+        $handle = fopen($file, 'rb');
+        if ($handle === false) {
+            self::logError("Fehler beim Öffnen der Datei für tail: $file");
+            throw new FileNotFoundException("Fehler beim Öffnen: $file");
+        }
+
+        $result = [];
+        $buffer = '';
+        $chunkSize = 4096;
+        $position = $fileSize;
+
+        // Vom Ende der Datei rückwärts lesen
+        while ($position > 0 && count($result) < $lines) {
+            $readSize = min($chunkSize, $position);
+            $position -= $readSize;
+
+            fseek($handle, $position);
+            $chunk = fread($handle, $readSize);
+
+            if ($chunk === false) {
+                break;
+            }
+
+            $buffer = $chunk . $buffer;
+
+            // Zeilen extrahieren
+            $bufferLines = explode("\n", $buffer);
+
+            // Die erste Zeile könnte unvollständig sein, behalten für nächste Iteration
+            $buffer = array_shift($bufferLines);
+
+            // Zeilen in umgekehrter Reihenfolge durchgehen
+            for ($i = count($bufferLines) - 1; $i >= 0; $i--) {
+                $line = rtrim($bufferLines[$i], "\r");
+
+                if ($skipEmpty && trim($line) === '') {
+                    continue;
+                }
+
+                array_unshift($result, $line);
+
+                if (count($result) >= $lines) {
+                    break 2;
+                }
+            }
+        }
+
+        // Restlichen Buffer verarbeiten (erste Zeile der Datei)
+        if (count($result) < $lines && $buffer !== '') {
+            $line = rtrim($buffer, "\r");
+            if (!$skipEmpty || trim($line) !== '') {
+                array_unshift($result, $line);
+            }
+        }
+
+        fclose($handle);
+
+        // Auf gewünschte Anzahl begrenzen
+        if (count($result) > $lines) {
+            $result = array_slice($result, -$lines);
+        }
+
+        self::logDebug("Tail: " . count($result) . " Zeilen gelesen aus $file");
+        return $result;
+    }
+
+    /**
+     * Liest die letzten N Zeilen einer Datei und konvertiert zu UTF-8.
+     *
+     * @param string $file      Pfad zur Datei.
+     * @param int $lines        Anzahl der Zeilen vom Ende (Standard: 10).
+     * @param bool $skipEmpty   Leere Zeilen überspringen (Standard: false).
+     * @return string[] Array mit den letzten Zeilen der Datei in UTF-8.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden oder lesbar ist.
+     * @throws InvalidArgumentException Wenn $lines <= 0.
+     */
+    public static function tailAsUtf8(string $file, int $lines = 10, bool $skipEmpty = false): array {
+        $result = self::tail($file, $lines, $skipEmpty);
+
+        // Encoding der Datei bestimmen
+        $encoding = self::chardet($file);
+        if ($encoding === false || $encoding === 'UTF-8' || $encoding === 'ASCII') {
+            return $result;
+        }
+
+        // Zeilen zu UTF-8 konvertieren
+        return array_map(
+            fn(string $line): string => mb_convert_encoding($line, 'UTF-8', $encoding) ?: $line,
+            $result
+        );
+    }
+
+    /**
      * Schreibt Daten in die angegebene Datei.
      *
      * @param string $file Der Pfad zur Datei.
@@ -994,5 +1113,320 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function isWindowsReservedName(string $file): bool {
         $basename = pathinfo($file, PATHINFO_FILENAME);
         return in_array(strtoupper($basename), self::WINDOWS_RESERVED_NAMES, true);
+    }
+
+    /**
+     * Liest die ersten N Zeilen einer Datei (wie Unix 'head').
+     *
+     * @param string $file      Pfad zur Datei.
+     * @param int $lines        Anzahl der Zeilen vom Anfang (Standard: 10).
+     * @param bool $skipEmpty   Leere Zeilen überspringen (Standard: false).
+     * @return string[] Array mit den ersten Zeilen der Datei.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden oder lesbar ist.
+     * @throws InvalidArgumentException Wenn $lines <= 0.
+     */
+    public static function head(string $file, int $lines = 10, bool $skipEmpty = false): array {
+        if ($lines <= 0) {
+            throw new InvalidArgumentException("Anzahl der Zeilen muss größer als 0 sein.");
+        }
+
+        return self::readLinesAsArray($file, $skipEmpty, $lines, 1);
+    }
+
+    /**
+     * Liest die ersten N Zeilen einer Datei und konvertiert zu UTF-8.
+     *
+     * @param string $file      Pfad zur Datei.
+     * @param int $lines        Anzahl der Zeilen vom Anfang (Standard: 10).
+     * @param bool $skipEmpty   Leere Zeilen überspringen (Standard: false).
+     * @return string[] Array mit den ersten Zeilen der Datei in UTF-8.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden oder lesbar ist.
+     * @throws InvalidArgumentException Wenn $lines <= 0.
+     */
+    public static function headAsUtf8(string $file, int $lines = 10, bool $skipEmpty = false): array {
+        if ($lines <= 0) {
+            throw new InvalidArgumentException("Anzahl der Zeilen muss größer als 0 sein.");
+        }
+
+        return self::readLinesAsArrayUtf8($file, $skipEmpty, $lines, 1);
+    }
+
+    /**
+     * Hängt Daten an das Ende einer Datei an.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param string $data Die anzuhängenden Daten.
+     * @param bool $newline Zeilenumbruch vor den Daten einfügen (Standard: false).
+     * @throws FileNotWrittenException Wenn die Datei nicht geschrieben werden kann.
+     */
+    public static function append(string $file, string $data, bool $newline = false): void {
+        self::validateNotReservedName($file);
+
+        $file = self::getRealPath($file);
+        $content = $newline && self::exists($file) && self::size($file) > 0 ? PHP_EOL . $data : $data;
+
+        if (file_put_contents($file, $content, FILE_APPEND) === false) {
+            self::logError("Fehler beim Anhängen an die Datei: $file");
+            throw new FileNotWrittenException("Fehler beim Anhängen an: $file");
+        }
+        self::logDebug("Daten erfolgreich an Datei angehängt: $file");
+    }
+
+    /**
+     * Fügt Daten am Anfang einer Datei ein.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param string $data Die einzufügenden Daten.
+     * @param bool $newline Zeilenumbruch nach den Daten einfügen (Standard: false).
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     * @throws FileNotWrittenException Wenn die Datei nicht geschrieben werden kann.
+     */
+    public static function prepend(string $file, string $data, bool $newline = false): void {
+        self::validateNotReservedName($file);
+
+        $file = self::getRealPath($file);
+        $existingContent = self::exists($file) ? self::read($file) : '';
+        $content = $newline ? $data . PHP_EOL . $existingContent : $data . $existingContent;
+
+        if (file_put_contents($file, $content) === false) {
+            self::logError("Fehler beim Voranstellen an die Datei: $file");
+            throw new FileNotWrittenException("Fehler beim Voranstellen an: $file");
+        }
+        self::logDebug("Daten erfolgreich am Anfang der Datei eingefügt: $file");
+    }
+
+    /**
+     * Erstellt eine leere Datei oder aktualisiert den Zeitstempel (wie Unix 'touch').
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param int|null $time Optionaler Unix-Timestamp für die Modifikationszeit.
+     * @param int|null $atime Optionaler Unix-Timestamp für die Zugriffszeit.
+     * @throws FileNotWrittenException Wenn die Datei nicht erstellt/aktualisiert werden kann.
+     */
+    public static function touch(string $file, ?int $time = null, ?int $atime = null): void {
+        self::validateNotReservedName($file);
+
+        $file = self::getRealPath($file);
+        $time = $time ?? time();
+        $atime = $atime ?? $time;
+
+        if (!touch($file, $time, $atime)) {
+            self::logError("Fehler beim Touch der Datei: $file");
+            throw new FileNotWrittenException("Fehler beim Touch: $file");
+        }
+        self::logDebug("Touch erfolgreich: $file");
+    }
+
+    /**
+     * Gibt den Zeitpunkt der letzten Modifikation zurück.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return int Unix-Timestamp der letzten Modifikation.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function modifiedTime(string $file): int {
+        $file = self::resolveFile($file);
+        $time = filemtime($file);
+        if ($time === false) {
+            self::logError("Fehler beim Abrufen der Modifikationszeit: $file");
+            throw new FileNotFoundException("Fehler beim Abrufen der Modifikationszeit: $file");
+        }
+        return $time;
+    }
+
+    /**
+     * Gibt den Erstellungszeitpunkt zurück (plattformabhängig).
+     * Hinweis: Auf Unix-Systemen wird oft die ctime (inode change time) zurückgegeben.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return int Unix-Timestamp der Erstellung.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function createdTime(string $file): int {
+        $file = self::resolveFile($file);
+        $time = filectime($file);
+        if ($time === false) {
+            self::logError("Fehler beim Abrufen der Erstellungszeit: $file");
+            throw new FileNotFoundException("Fehler beim Abrufen der Erstellungszeit: $file");
+        }
+        return $time;
+    }
+
+    /**
+     * Gibt den Zeitpunkt des letzten Zugriffs zurück.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return int Unix-Timestamp des letzten Zugriffs.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function accessTime(string $file): int {
+        $file = self::resolveFile($file);
+        $time = fileatime($file);
+        if ($time === false) {
+            self::logError("Fehler beim Abrufen der Zugriffszeit: $file");
+            throw new FileNotFoundException("Fehler beim Abrufen der Zugriffszeit: $file");
+        }
+        return $time;
+    }
+
+    /**
+     * Berechnet den Hash einer Datei.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param string $algorithm Hash-Algorithmus (Standard: 'sha256'). Weitere: 'md5', 'sha1', 'sha512', etc.
+     * @return string Der berechnete Hash.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     * @throws InvalidArgumentException Wenn der Algorithmus ungültig ist.
+     */
+    public static function hash(string $file, string $algorithm = 'sha256'): string {
+        $file = self::resolveFile($file);
+
+        if (!in_array($algorithm, hash_algos(), true)) {
+            throw new InvalidArgumentException("Ungültiger Hash-Algorithmus: $algorithm");
+        }
+
+        $hash = hash_file($algorithm, $file);
+        if ($hash === false) {
+            self::logError("Fehler beim Berechnen des Hash für: $file");
+            throw new FileNotFoundException("Fehler beim Hash-Berechnung: $file");
+        }
+
+        self::logDebug("Hash ($algorithm) berechnet für: $file");
+        return $hash;
+    }
+
+    /**
+     * Vergleicht zwei Dateien auf Gleichheit.
+     *
+     * @param string $file1 Pfad zur ersten Datei.
+     * @param string $file2 Pfad zur zweiten Datei.
+     * @param bool $byHash Vergleich per Hash (Standard: true) oder byte-für-byte (false).
+     * @param string $algorithm Hash-Algorithmus für Hash-Vergleich (Standard: 'sha256').
+     * @return bool True wenn die Dateien identisch sind.
+     * @throws FileNotFoundException Wenn eine der Dateien nicht existiert.
+     */
+    public static function compare(string $file1, string $file2, bool $byHash = true, string $algorithm = 'sha256'): bool {
+        $file1 = self::resolveFile($file1);
+        $file2 = self::resolveFile($file2);
+
+        // Schneller Größenvergleich zuerst
+        if (self::size($file1) !== self::size($file2)) {
+            return false;
+        }
+
+        if ($byHash) {
+            return self::hash($file1, $algorithm) === self::hash($file2, $algorithm);
+        }
+
+        // Byte-für-byte Vergleich
+        $handle1 = fopen($file1, 'rb');
+        $handle2 = fopen($file2, 'rb');
+
+        if ($handle1 === false || $handle2 === false) {
+            if ($handle1) fclose($handle1);
+            if ($handle2) fclose($handle2);
+            return false;
+        }
+
+        $equal = true;
+        while (!feof($handle1) && !feof($handle2)) {
+            if (fread($handle1, 8192) !== fread($handle2, 8192)) {
+                $equal = false;
+                break;
+            }
+        }
+
+        // Prüfe ob beide Dateien am Ende sind
+        if ($equal && (feof($handle1) !== feof($handle2))) {
+            $equal = false;
+        }
+
+        fclose($handle1);
+        fclose($handle2);
+
+        return $equal;
+    }
+
+    /**
+     * Prüft ob eine Datei leer ist (0 Bytes).
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return bool True wenn die Datei leer ist.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function isEmpty(string $file): bool {
+        return self::size($file) === 0;
+    }
+
+    /**
+     * Filtert Zeilen einer Datei nach einem Pattern (wie Unix 'grep').
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param string $pattern Das Suchmuster (Regex oder String).
+     * @param bool $isRegex Pattern als Regex interpretieren (Standard: false).
+     * @param bool $caseSensitive Groß-/Kleinschreibung beachten (Standard: false).
+     * @param bool $invert Nicht-passende Zeilen zurückgeben (Standard: false).
+     * @return string[] Array mit den passenden Zeilen.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function grep(string $file, string $pattern, bool $isRegex = false, bool $caseSensitive = false, bool $invert = false): array {
+        $file = self::resolveFile($file);
+        $result = [];
+
+        foreach (self::readLines($file) as $line) {
+            $matches = false;
+
+            if ($isRegex) {
+                $flags = $caseSensitive ? '' : 'i';
+                $matches = preg_match("/$pattern/$flags", $line) === 1;
+            } else {
+                $matches = $caseSensitive
+                    ? str_contains($line, $pattern)
+                    : str_contains(strtolower($line), strtolower($pattern));
+            }
+
+            if ($invert ? !$matches : $matches) {
+                $result[] = $line;
+            }
+        }
+
+        self::logDebug("Grep: " . count($result) . " Zeilen gefunden in $file");
+        return $result;
+    }
+
+    /**
+     * Filtert Zeilen einer Datei nach einem Pattern und gibt Zeilennummern zurück.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param string $pattern Das Suchmuster (Regex oder String).
+     * @param bool $isRegex Pattern als Regex interpretieren (Standard: false).
+     * @param bool $caseSensitive Groß-/Kleinschreibung beachten (Standard: false).
+     * @return array<int, string> Array mit Zeilennummer => Inhalt.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function grepWithLineNumbers(string $file, string $pattern, bool $isRegex = false, bool $caseSensitive = false): array {
+        $file = self::resolveFile($file);
+        $result = [];
+        $lineNumber = 0;
+
+        foreach (self::readLines($file) as $line) {
+            $lineNumber++;
+            $matches = false;
+
+            if ($isRegex) {
+                $flags = $caseSensitive ? '' : 'i';
+                $matches = preg_match("/$pattern/$flags", $line) === 1;
+            } else {
+                $matches = $caseSensitive
+                    ? str_contains($line, $pattern)
+                    : str_contains(strtolower($line), strtolower($pattern));
+            }
+
+            if ($matches) {
+                $result[$lineNumber] = $line;
+            }
+        }
+
+        return $result;
     }
 }

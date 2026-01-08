@@ -679,4 +679,407 @@ class StringHelper {
     public static function isDateTime(string $value, ?string $format = null): bool {
         return DateHelper::isDateTime($value, $format);
     }
+
+    /**
+     * Erzeugt einen URL-freundlichen Slug aus einem String.
+     *
+     * @param string $text Der zu konvertierende Text.
+     * @param string $separator Trennzeichen (Standard: '-').
+     * @param bool $lowercase In Kleinbuchstaben konvertieren (Standard: true).
+     * @return string Der erzeugte Slug.
+     */
+    public static function slugify(string $text, string $separator = '-', bool $lowercase = true): string {
+        // Transliteration: Umlaute und Sonderzeichen ersetzen
+        $replacements = [
+            'ä' => 'ae',
+            'ö' => 'oe',
+            'ü' => 'ue',
+            'ß' => 'ss',
+            'Ä' => 'Ae',
+            'Ö' => 'Oe',
+            'Ü' => 'Ue',
+            'à' => 'a',
+            'á' => 'a',
+            'â' => 'a',
+            'ã' => 'a',
+            'å' => 'a',
+            'è' => 'e',
+            'é' => 'e',
+            'ê' => 'e',
+            'ë' => 'e',
+            'ì' => 'i',
+            'í' => 'i',
+            'î' => 'i',
+            'ï' => 'i',
+            'ò' => 'o',
+            'ó' => 'o',
+            'ô' => 'o',
+            'õ' => 'o',
+            'ø' => 'o',
+            'ù' => 'u',
+            'ú' => 'u',
+            'û' => 'u',
+            'ý' => 'y',
+            'ÿ' => 'y',
+            'ñ' => 'n',
+            'ç' => 'c',
+            'À' => 'A',
+            'Á' => 'A',
+            'Â' => 'A',
+            'Ã' => 'A',
+            'Å' => 'A',
+            'È' => 'E',
+            'É' => 'E',
+            'Ê' => 'E',
+            'Ë' => 'E',
+            'Ì' => 'I',
+            'Í' => 'I',
+            'Î' => 'I',
+            'Ï' => 'I',
+            'Ò' => 'O',
+            'Ó' => 'O',
+            'Ô' => 'O',
+            'Õ' => 'O',
+            'Ø' => 'O',
+            'Ù' => 'U',
+            'Ú' => 'U',
+            'Û' => 'U',
+            'Ý' => 'Y',
+            'Ñ' => 'N',
+            'Ç' => 'C',
+            '&' => 'und',
+            '@' => 'at',
+        ];
+
+        $text = strtr($text, $replacements);
+
+        // Nicht-alphanumerische Zeichen durch Separator ersetzen
+        $text = preg_replace('/[^a-zA-Z0-9]+/', $separator, $text);
+
+        // Mehrfache Separatoren entfernen
+        $text = preg_replace('/' . preg_quote($separator, '/') . '+/', $separator, $text);
+
+        // Separator am Anfang und Ende entfernen
+        $text = trim($text, $separator);
+
+        return $lowercase ? strtolower($text) : $text;
+    }
+
+    /**
+     * Konvertiert CamelCase zu snake_case.
+     *
+     * @param string $text Der zu konvertierende Text.
+     * @return string Der konvertierte Text.
+     */
+    public static function camelToSnake(string $text): string {
+        $result = preg_replace('/([a-z])([A-Z])/', '$1_$2', $text);
+        return strtolower($result);
+    }
+
+    /**
+     * Konvertiert snake_case zu camelCase.
+     *
+     * @param string $text Der zu konvertierende Text.
+     * @param bool $pascalCase PascalCase statt camelCase (Standard: false).
+     * @return string Der konvertierte Text.
+     */
+    public static function snakeToCamel(string $text, bool $pascalCase = false): string {
+        $result = str_replace('_', '', ucwords($text, '_'));
+        return $pascalCase ? $result : lcfirst($result);
+    }
+
+    /**
+     * Konvertiert kebab-case zu camelCase.
+     *
+     * @param string $text Der zu konvertierende Text.
+     * @param bool $pascalCase PascalCase statt camelCase (Standard: false).
+     * @return string Der konvertierte Text.
+     */
+    public static function kebabToCamel(string $text, bool $pascalCase = false): string {
+        $result = str_replace('-', '', ucwords($text, '-'));
+        return $pascalCase ? $result : lcfirst($result);
+    }
+
+    /**
+     * Konvertiert camelCase zu kebab-case.
+     *
+     * @param string $text Der zu konvertierende Text.
+     * @return string Der konvertierte Text.
+     */
+    public static function camelToKebab(string $text): string {
+        $result = preg_replace('/([a-z])([A-Z])/', '$1-$2', $text);
+        return strtolower($result);
+    }
+
+    /**
+     * Maskiert Teile eines Strings (z.B. für Kreditkartennummern, E-Mails).
+     *
+     * @param string $text Der zu maskierende Text.
+     * @param int $visibleStart Anzahl sichtbarer Zeichen am Anfang (Standard: 0).
+     * @param int $visibleEnd Anzahl sichtbarer Zeichen am Ende (Standard: 4).
+     * @param string $maskChar Das Maskierungszeichen (Standard: '*').
+     * @return string Der maskierte Text.
+     */
+    public static function mask(string $text, int $visibleStart = 0, int $visibleEnd = 4, string $maskChar = '*'): string {
+        $length = mb_strlen($text);
+
+        if ($length <= $visibleStart + $visibleEnd) {
+            return $text;
+        }
+
+        $start = mb_substr($text, 0, $visibleStart);
+        $end = $visibleEnd > 0 ? mb_substr($text, -$visibleEnd) : '';
+        $maskLength = $length - $visibleStart - $visibleEnd;
+
+        return $start . str_repeat($maskChar, $maskLength) . $end;
+    }
+
+    /**
+     * Maskiert eine E-Mail-Adresse (z.B. j***@example.com).
+     *
+     * @param string $email Die zu maskierende E-Mail.
+     * @param string $maskChar Das Maskierungszeichen (Standard: '*').
+     * @return string Die maskierte E-Mail.
+     */
+    public static function maskEmail(string $email, string $maskChar = '*'): string {
+        $parts = explode('@', $email);
+        if (count($parts) !== 2) {
+            return self::mask($email, 1, 1, $maskChar);
+        }
+
+        $local = $parts[0];
+        $domain = $parts[1];
+
+        $maskedLocal = mb_strlen($local) > 2
+            ? mb_substr($local, 0, 1) . str_repeat($maskChar, mb_strlen($local) - 1)
+            : $local;
+
+        return $maskedLocal . '@' . $domain;
+    }
+
+    /**
+     * Zählt die Wörter in einem String.
+     *
+     * @param string $text Der zu zählende Text.
+     * @param string $locale Sprachcode für Wortgrenzen (Standard: 'de_DE').
+     * @return int Anzahl der Wörter.
+     */
+    public static function wordCount(string $text, string $locale = 'de_DE'): int {
+        // Whitespace normalisieren
+        $text = preg_replace('/\s+/', ' ', trim($text));
+
+        if ($text === '') {
+            return 0;
+        }
+
+        // Einfache Wortanzahl basierend auf Leerzeichen
+        return count(preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY));
+    }
+
+    /**
+     * Prüft, ob ein String mit einem bestimmten Teilstring beginnt.
+     *
+     * @param string $haystack Der zu prüfende String.
+     * @param string $needle Der gesuchte Anfang.
+     * @param bool $caseSensitive Groß-/Kleinschreibung beachten (Standard: true).
+     * @return bool True wenn der String mit needle beginnt.
+     */
+    public static function startsWith(string $haystack, string $needle, bool $caseSensitive = true): bool {
+        if (!$caseSensitive) {
+            return str_starts_with(mb_strtolower($haystack), mb_strtolower($needle));
+        }
+        return str_starts_with($haystack, $needle);
+    }
+
+    /**
+     * Prüft, ob ein String mit einem bestimmten Teilstring endet.
+     *
+     * @param string $haystack Der zu prüfende String.
+     * @param string $needle Das gesuchte Ende.
+     * @param bool $caseSensitive Groß-/Kleinschreibung beachten (Standard: true).
+     * @return bool True wenn der String mit needle endet.
+     */
+    public static function endsWith(string $haystack, string $needle, bool $caseSensitive = true): bool {
+        if (!$caseSensitive) {
+            return str_ends_with(mb_strtolower($haystack), mb_strtolower($needle));
+        }
+        return str_ends_with($haystack, $needle);
+    }
+
+    /**
+     * Extrahiert einen Textauszug mit Kontext um ein Keyword.
+     *
+     * @param string $text Der vollständige Text.
+     * @param string $keyword Das zu findende Keyword.
+     * @param int $contextLength Anzahl Zeichen Kontext vor/nach dem Keyword (Standard: 50).
+     * @param string $ellipsis Auslassungszeichen (Standard: '...').
+     * @return string|null Der Auszug oder null wenn nicht gefunden.
+     */
+    public static function excerpt(string $text, string $keyword, int $contextLength = 50, string $ellipsis = '...'): ?string {
+        $pos = mb_stripos($text, $keyword);
+        if ($pos === false) {
+            return null;
+        }
+
+        $start = max(0, $pos - $contextLength);
+        $length = mb_strlen($keyword) + ($contextLength * 2);
+
+        $excerpt = mb_substr($text, $start, $length);
+
+        // Whitespace normalisieren
+        $excerpt = preg_replace('/\s+/', ' ', $excerpt);
+
+        // Ellipsis hinzufügen
+        $prefix = $start > 0 ? $ellipsis : '';
+        $suffix = ($start + $length) < mb_strlen($text) ? $ellipsis : '';
+
+        return $prefix . trim($excerpt) . $suffix;
+    }
+
+    /**
+     * Wandelt den ersten Buchstaben jedes Wortes in Großbuchstaben um (Title Case).
+     *
+     * @param string $text Der zu konvertierende Text.
+     * @return string Der konvertierte Text.
+     */
+    public static function titleCase(string $text): string {
+        return mb_convert_case($text, MB_CASE_TITLE, 'UTF-8');
+    }
+
+    /**
+     * Entfernt mehrfache aufeinanderfolgende Leerzeichen.
+     *
+     * @param string $text Der zu bereinigende Text.
+     * @return string Der bereinigte Text.
+     */
+    public static function collapseWhitespace(string $text): string {
+        return preg_replace('/\s+/', ' ', $text);
+    }
+
+    /**
+     * Kehrt einen UTF-8 String um.
+     *
+     * @param string $text Der umzukehrende Text.
+     * @return string Der umgekehrte Text.
+     */
+    public static function reverse(string $text): string {
+        $chars = mb_str_split($text);
+        return implode('', array_reverse($chars));
+    }
+
+    /**
+     * Prüft ob ein String nur Buchstaben enthält.
+     *
+     * @param string $text Der zu prüfende Text.
+     * @return bool True wenn nur Buchstaben enthalten sind.
+     */
+    public static function isAlpha(string $text): bool {
+        return preg_match('/^[\p{L}]+$/u', $text) === 1;
+    }
+
+    /**
+     * Prüft ob ein String nur Buchstaben und Zahlen enthält.
+     *
+     * @param string $text Der zu prüfende Text.
+     * @return bool True wenn nur alphanumerische Zeichen enthalten sind.
+     */
+    public static function isAlphanumeric(string $text): bool {
+        return preg_match('/^[\p{L}\p{N}]+$/u', $text) === 1;
+    }
+
+    /**
+     * Prüft ob ein String nur Ziffern enthält.
+     *
+     * @param string $text Der zu prüfende Text.
+     * @return bool True wenn nur Ziffern enthalten sind.
+     */
+    public static function isNumeric(string $text): bool {
+        return ctype_digit($text);
+    }
+
+    /**
+     * Zählt das Vorkommen eines Teilstrings.
+     *
+     * @param string $haystack Der zu durchsuchende String.
+     * @param string $needle Der zu zählende Teilstring.
+     * @param bool $caseSensitive Groß-/Kleinschreibung beachten (Standard: true).
+     * @return int Anzahl der Vorkommen.
+     */
+    public static function countOccurrences(string $haystack, string $needle, bool $caseSensitive = true): int {
+        if (!$caseSensitive) {
+            return mb_substr_count(mb_strtolower($haystack), mb_strtolower($needle));
+        }
+        return mb_substr_count($haystack, $needle);
+    }
+
+    /**
+     * Füllt einen String auf eine bestimmte Länge auf (multibyte-safe).
+     *
+     * @param string $text Der zu füllende Text.
+     * @param int $length Die Ziellänge.
+     * @param string $padString Das Füllzeichen (Standard: ' ').
+     * @param int $padType STR_PAD_RIGHT, STR_PAD_LEFT oder STR_PAD_BOTH.
+     * @return string Der aufgefüllte Text.
+     */
+    public static function pad(string $text, int $length, string $padString = ' ', int $padType = STR_PAD_RIGHT): string {
+        $textLength = mb_strlen($text);
+        $padLength = mb_strlen($padString);
+
+        if ($textLength >= $length || $padLength === 0) {
+            return $text;
+        }
+
+        $diff = $length - $textLength;
+
+        switch ($padType) {
+            case STR_PAD_LEFT:
+                $padding = mb_substr(str_repeat($padString, (int) ceil($diff / $padLength)), 0, $diff);
+                return $padding . $text;
+
+            case STR_PAD_BOTH:
+                $leftPad = (int) floor($diff / 2);
+                $rightPad = $diff - $leftPad;
+                $leftPadding = mb_substr(str_repeat($padString, (int) ceil($leftPad / $padLength)), 0, $leftPad);
+                $rightPadding = mb_substr(str_repeat($padString, (int) ceil($rightPad / $padLength)), 0, $rightPad);
+                return $leftPadding . $text . $rightPadding;
+
+            case STR_PAD_RIGHT:
+            default:
+                $padding = mb_substr(str_repeat($padString, (int) ceil($diff / $padLength)), 0, $diff);
+                return $text . $padding;
+        }
+    }
+
+    /**
+     * Entfernt alle Ziffern aus einem String.
+     *
+     * @param string $text Der zu bereinigende Text.
+     * @return string Der Text ohne Ziffern.
+     */
+    public static function removeDigits(string $text): string {
+        return preg_replace('/\d/', '', $text);
+    }
+
+    /**
+     * Extrahiert alle Ziffern aus einem String.
+     *
+     * @param string $text Der zu durchsuchende Text.
+     * @return string Nur die Ziffern.
+     */
+    public static function extractDigits(string $text): string {
+        return preg_replace('/[^\d]/', '', $text);
+    }
+
+    /**
+     * Wandelt Zeilenumbrüche in ein einheitliches Format um.
+     *
+     * @param string $text Der zu konvertierende Text.
+     * @param string $lineEnding Das gewünschte Zeilenende (Standard: PHP_EOL).
+     * @return string Der konvertierte Text.
+     */
+    public static function normalizeLineEndings(string $text, string $lineEnding = PHP_EOL): string {
+        // Erst alle auf \n normalisieren, dann zum Ziel konvertieren
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        return str_replace("\n", $lineEnding, $text);
+    }
 }

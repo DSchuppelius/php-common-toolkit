@@ -289,4 +289,131 @@ class FileTest extends BaseTestCase {
         $this->assertStringContainsString('München', $allContent);
         $this->assertStringContainsString('Köln', $allContent);
     }
+
+    public function testTailReturnsLastLines(): void {
+        // Erstelle Testdatei mit mehreren Zeilen
+        $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
+        $content = "Zeile 1\nZeile 2\nZeile 3\nZeile 4\nZeile 5\nZeile 6\nZeile 7\nZeile 8\nZeile 9\nZeile 10";
+        file_put_contents($testFile, $content);
+
+        try {
+            // Lese die letzten 3 Zeilen
+            $lines = File::tail($testFile, 3);
+            $this->assertCount(3, $lines);
+            $this->assertEquals('Zeile 8', $lines[0]);
+            $this->assertEquals('Zeile 9', $lines[1]);
+            $this->assertEquals('Zeile 10', $lines[2]);
+        } finally {
+            unlink($testFile);
+        }
+    }
+
+    public function testTailWithDefaultLines(): void {
+        // Erstelle Testdatei mit mehr als 10 Zeilen
+        $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
+        $lines = [];
+        for ($i = 1; $i <= 15; $i++) {
+            $lines[] = "Zeile $i";
+        }
+        file_put_contents($testFile, implode("\n", $lines));
+
+        try {
+            // Standard: 10 Zeilen
+            $result = File::tail($testFile);
+            $this->assertCount(10, $result);
+            $this->assertEquals('Zeile 6', $result[0]);
+            $this->assertEquals('Zeile 15', $result[9]);
+        } finally {
+            unlink($testFile);
+        }
+    }
+
+    public function testTailWithSkipEmpty(): void {
+        $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
+        $content = "Zeile 1\n\nZeile 2\n\n\nZeile 3\nZeile 4\n\nZeile 5";
+        file_put_contents($testFile, $content);
+
+        try {
+            // Ohne skipEmpty
+            $lines = File::tail($testFile, 5, false);
+            $this->assertContains('', $lines);
+
+            // Mit skipEmpty
+            $linesSkipped = File::tail($testFile, 5, true);
+            $this->assertNotContains('', $linesSkipped);
+            $this->assertCount(5, $linesSkipped);
+        } finally {
+            unlink($testFile);
+        }
+    }
+
+    public function testTailWithEmptyFile(): void {
+        $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
+        file_put_contents($testFile, '');
+
+        try {
+            $lines = File::tail($testFile, 10);
+            $this->assertCount(0, $lines);
+        } finally {
+            unlink($testFile);
+        }
+    }
+
+    public function testTailWithFewerLinesThanRequested(): void {
+        $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
+        $content = "Zeile 1\nZeile 2\nZeile 3";
+        file_put_contents($testFile, $content);
+
+        try {
+            // Fordere 10 Zeilen an, aber nur 3 vorhanden
+            $lines = File::tail($testFile, 10);
+            $this->assertCount(3, $lines);
+            $this->assertEquals('Zeile 1', $lines[0]);
+            $this->assertEquals('Zeile 2', $lines[1]);
+            $this->assertEquals('Zeile 3', $lines[2]);
+        } finally {
+            unlink($testFile);
+        }
+    }
+
+    public function testTailThrowsExceptionForInvalidLines(): void {
+        $this->expectException(\InvalidArgumentException::class);
+        File::tail($this->testFile, 0);
+    }
+
+    public function testTailThrowsExceptionForNonExistingFile(): void {
+        $this->expectException(\ERRORToolkit\Exceptions\FileSystem\FileNotFoundException::class);
+        File::tail('/path/to/nonexistent/file.txt', 10);
+    }
+
+    public function testTailAsUtf8(): void {
+        $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
+
+        $lines = File::tailAsUtf8($ansiFile, 5);
+
+        $this->assertIsArray($lines);
+        $this->assertLessThanOrEqual(5, count($lines));
+
+        // Alle Zeilen müssen gültiges UTF-8 sein
+        foreach ($lines as $line) {
+            $this->assertTrue(mb_check_encoding($line, 'UTF-8'), 'Zeile muss gültiges UTF-8 sein');
+        }
+    }
+
+    public function testTailWithWindowsLineEndings(): void {
+        $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
+        $content = "Zeile 1\r\nZeile 2\r\nZeile 3\r\nZeile 4\r\nZeile 5";
+        file_put_contents($testFile, $content);
+
+        try {
+            $lines = File::tail($testFile, 3);
+            $this->assertCount(3, $lines);
+            // Prüfe, dass \r entfernt wurde
+            $this->assertEquals('Zeile 3', $lines[0]);
+            $this->assertEquals('Zeile 4', $lines[1]);
+            $this->assertEquals('Zeile 5', $lines[2]);
+        } finally {
+            unlink($testFile);
+        }
+    }
 }
