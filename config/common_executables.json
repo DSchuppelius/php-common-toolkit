@@ -4,7 +4,7 @@
             "path": "file",
             "required": false,
             "description": "Mimetypes of files",
-            "files2Check": [
+            "folders2Check": [
                 "/usr/share/misc/magic"
             ],
             "package": "file",
@@ -19,7 +19,7 @@
             "path": "file",
             "required": false,
             "description": "Mime Encoding of files",
-            "files2Check": [
+            "folders2Check": [
                 "/usr/share/misc/magic"
             ],
             "package": "file",
