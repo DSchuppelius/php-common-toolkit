@@ -138,6 +138,16 @@ class Document implements XmlDocumentInterface {
     }
 
     /**
+     * Validiert das Dokument gegen ein XSD-Schema und gibt typisiertes Ergebnis zurück.
+     * 
+     * @param string $xsdFile Pfad zur XSD-Schema-Datei
+     * @return XsdValidationResult Typisiertes Validierungsergebnis
+     */
+    public function validateAgainstXsdTyped(string $xsdFile): XsdValidationResult {
+        return XmlHelper::validateAgainstXsdTyped($this->toString(), $xsdFile);
+    }
+
+    /**
      * Prüft ob das Dokument wohlgeformt ist.
      */
     public function isWellFormed(): bool {

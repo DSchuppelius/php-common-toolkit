@@ -14,8 +14,8 @@ namespace CommonToolkit\Contracts\Abstracts\XML;
 
 use CommonToolkit\Entities\XML\XsdValidationResult;
 use CommonToolkit\Helper\FileSystem\File;
-use DOMDocument;
-use LibXMLError;
+use CommonToolkit\Parsers\ExtendedDOMDocumentParser;
+use RuntimeException;
 use UnitEnum;
 
 /**
@@ -98,30 +98,25 @@ abstract class XsdValidatorAbstract {
             );
         }
 
-        // Validate XML
-        $dom = new DOMDocument();
-        libxml_use_internal_errors(true);
-
-        if (!$dom->loadXML($xmlContent)) {
-            $errors = static::formatLibXmlErrors(libxml_get_errors());
-            libxml_clear_errors();
+        // Parse and validate XML using ExtendedDOMDocumentParser
+        try {
+            $document = ExtendedDOMDocumentParser::fromString($xmlContent);
+        } catch (RuntimeException $e) {
             return new XsdValidationResult(
                 valid: false,
-                errors: array_merge(['XML parsing failed'], $errors),
+                errors: ['XML parsing failed: ' . $e->getMessage()],
                 type: $type,
                 version: $version,
                 xsdFile: $xsdFile
             );
         }
 
-        // Schema validation
-        $valid = $dom->schemaValidate($xsdFile);
-        $errors = static::formatLibXmlErrors(libxml_get_errors());
-        libxml_clear_errors();
+        // Schema validation via Parser
+        $result = ExtendedDOMDocumentParser::validateAgainstXsd($document, $xsdFile);
 
         return new XsdValidationResult(
-            valid: $valid,
-            errors: $errors,
+            valid: $result['valid'],
+            errors: $result['errors'],
             type: $type,
             version: $version,
             xsdFile: $xsdFile
@@ -208,33 +203,5 @@ abstract class XsdValidatorAbstract {
         }
 
         return $available;
-    }
-
-    /**
-     * Formats LibXML errors to readable strings.
-     * 
-     * @param array<LibXMLError> $errors
-     * @return array<string>
-     */
-    protected static function formatLibXmlErrors(array $errors): array {
-        $formatted = [];
-
-        foreach ($errors as $error) {
-            $level = match ($error->level) {
-                LIBXML_ERR_WARNING => 'Warning',
-                LIBXML_ERR_ERROR => 'Error',
-                LIBXML_ERR_FATAL => 'Critical Error',
-                default => 'Unknown'
-            };
-
-            $formatted[] = sprintf(
-                '[%s] Line %d: %s',
-                $level,
-                $error->line,
-                trim($error->message)
-            );
-        }
-
-        return $formatted;
     }
 }

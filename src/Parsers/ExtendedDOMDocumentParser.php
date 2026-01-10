@@ -14,6 +14,7 @@ namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\XML\ExtendedDOMDocument;
+use CommonToolkit\Helper\Data\XmlHelper;
 use CommonToolkit\Helper\FileSystem\File;
 use DOMElement;
 use DOMNode;
@@ -57,15 +58,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
      * @throws RuntimeException Bei ungültigem XML oder Dateifehler
      */
     public static function fromFile(string $filePath): ExtendedDOMDocument {
-        $resolvedPath = self::resolveFile($filePath);
-        $content = file_get_contents($resolvedPath);
-
-        if ($content === false) {
-            $errorMessage = "Fehler beim Lesen der XML-Datei: {$resolvedPath}";
-            self::logError($errorMessage);
-            throw new RuntimeException($errorMessage);
-        }
-
+        $content = File::read($filePath);
         return self::fromString($content);
     }
 
@@ -145,16 +138,10 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
         $xsdPath = self::resolveFile($xsdFile);
 
         libxml_use_internal_errors(true);
-        $valid = $document->schemaValidate($xsdPath);
-        $errors = [];
-
-        if (!$valid) {
-            foreach (libxml_get_errors() as $error) {
-                $errors[] = trim($error->message) . " (Zeile {$error->line})";
-            }
-        }
-
         libxml_clear_errors();
+
+        $valid = $document->schemaValidate($xsdPath);
+        $errors = $valid ? [] : XmlHelper::getLibXmlErrors();
 
         return ['valid' => $valid, 'errors' => $errors];
     }
@@ -167,18 +154,11 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
      */
     public static function isWellFormed(string $xml): array {
         libxml_use_internal_errors(true);
+        libxml_clear_errors();
 
         $doc = new \DOMDocument();
         $valid = $doc->loadXML($xml);
-        $errors = [];
-
-        if (!$valid) {
-            foreach (libxml_get_errors() as $error) {
-                $errors[] = trim($error->message) . " (Zeile {$error->line})";
-            }
-        }
-
-        libxml_clear_errors();
+        $errors = $valid ? [] : XmlHelper::getLibXmlErrors();
 
         return ['valid' => $valid, 'errors' => $errors];
     }
