@@ -26,8 +26,7 @@ class ZipFile extends HelperAbstract {
      */
     private static function checkZipExtension(): void {
         if (!class_exists('ZipArchive')) {
-            self::logError("PHP ZipArchive-Erweiterung fehlt. ZIP-Operationen nicht möglich.");
-            throw new Exception("PHP ZipArchive-Erweiterung fehlt. Bitte installiere oder aktiviere die zip-Erweiterung.");
+            self::logErrorAndThrow(Exception::class, "PHP ZipArchive-Erweiterung fehlt. ZIP-Operationen nicht möglich.");
         }
     }
 
@@ -46,8 +45,7 @@ class ZipFile extends HelperAbstract {
 
         $zip = new ZipArchive();
         if ($zip->open($destination, ZipArchive::CREATE) !== true) {
-            self::logError("Fehler beim Erstellen des ZIP-Archivs: $destination");
-            throw new Exception("Fehler beim Erstellen des ZIP-Archivs: $destination");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Erstellen des ZIP-Archivs: $destination");
         }
 
         foreach ($files as $file) {
@@ -58,18 +56,15 @@ class ZipFile extends HelperAbstract {
             }
 
             if (!$zip->addFile($file, basename($file))) {
-                self::logError("Fehler beim Hinzufügen der Datei zum ZIP-Archiv: $file");
-                throw new Exception("Fehler beim Hinzufügen der Datei zum ZIP-Archiv: $file");
+                self::logErrorAndThrow(Exception::class, "Fehler beim Hinzufügen der Datei zum ZIP-Archiv: $file");
             }
         }
 
         if (!$zip->close()) {
-            self::logError("Fehler beim Abschließen des ZIP-Archivs: $destination");
-            throw new Exception("Fehler beim Abschließen des ZIP-Archivs: $destination");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Abschließen des ZIP-Archivs: $destination");
         }
 
-        self::logInfo("ZIP-Archiv erfolgreich erstellt: $destination");
-        return true;
+        return self::logInfoAndReturn(true, "ZIP-Archiv erfolgreich erstellt: $destination");
     }
 
     /**
@@ -87,24 +82,20 @@ class ZipFile extends HelperAbstract {
         $destinationFolder = File::getRealPath($destinationFolder);
 
         if (!File::exists($file)) {
-            self::logError("ZIP-Datei nicht gefunden: $file");
-            throw new FileNotFoundException("ZIP-Datei nicht gefunden: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "ZIP-Datei nicht gefunden: $file");
         }
 
         $zip = new ZipArchive();
         if ($zip->open($file) !== true) {
-            self::logError("Fehler beim Öffnen der ZIP-Datei: $file");
-            throw new Exception("Fehler beim Öffnen der ZIP-Datei: $file");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Öffnen der ZIP-Datei: $file");
         }
 
         if (!Folder::exists($destinationFolder) && !Folder::create($destinationFolder, 0755, true)) {
-            self::logError("Fehler beim Erstellen des Zielverzeichnisses: $destinationFolder");
-            throw new Exception("Fehler beim Erstellen des Zielverzeichnisses: $destinationFolder");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Erstellen des Zielverzeichnisses: $destinationFolder");
         }
 
         if (!$zip->extractTo($destinationFolder)) {
-            self::logError("Fehler beim Extrahieren der ZIP-Datei: $file nach $destinationFolder");
-            throw new Exception("Fehler beim Extrahieren der ZIP-Datei: $file nach $destinationFolder");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Extrahieren der ZIP-Datei: $file nach $destinationFolder");
         }
 
         $zip->close();
@@ -128,8 +119,7 @@ class ZipFile extends HelperAbstract {
         $file = File::getRealPath($file);
 
         if (!File::exists($file)) {
-            self::logError("Datei nicht gefunden: $file");
-            throw new FileNotFoundException("Datei nicht gefunden: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht gefunden: $file");
         }
 
         $zip = new ZipArchive();
@@ -152,7 +142,6 @@ class ZipFile extends HelperAbstract {
         ];
 
         $errorMessage = $errorMessages[$result] ?? "Unbekannter Fehler beim Öffnen der ZIP-Datei: $file";
-        self::logError($errorMessage);
-        return false;
+        return self::logErrorAndReturn(false, $errorMessage);
     }
 }

@@ -257,8 +257,7 @@ class TaxNumberHelper {
         $stNr = self::normalize($stNr);
 
         if (!isset(self::FEDERAL_STATES[$state])) {
-            self::logError("Unbekanntes Bundesland: {$state}");
-            return null;
+            return self::logErrorAndReturn(null, "Unbekanntes Bundesland: {$state}");
         }
 
         $stateCode = self::FEDERAL_STATES[$state]['code'];
@@ -268,8 +267,7 @@ class TaxNumberHelper {
         // variieren je nach Bundesland erheblich
 
         if (strlen($stNr) < 10 || strlen($stNr) > 13) {
-            self::logError("Ungültige Steuernummernlänge: " . strlen($stNr));
-            return null;
+            return self::logErrorAndReturn(null, "Ungültige Steuernummernlänge: " . strlen($stNr));
         }
 
         // Pad auf 13 Stellen mit führenden Nullen wenn nötig

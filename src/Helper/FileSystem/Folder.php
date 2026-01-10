@@ -30,8 +30,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function exists(string $directory): bool {
         // Windows-reservierte Gerätenamen ignorieren (auch auf Linux für Samba-Kompatibilität)
         if (File::isWindowsReservedName($directory)) {
-            self::logDebug("Windows-reservierter Gerätename ignoriert: $directory");
-            return false;
+            return self::logDebugAndReturn(false, "Windows-reservierter Gerätename ignoriert: $directory");
         }
 
         $result = is_dir($directory);
@@ -57,13 +56,11 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $destinationDirectory = self::getRealPath($destinationDirectory);
 
         if (File::isWindowsReservedName($destinationDirectory)) {
-            self::logError("Ungültiger Zielverzeichnisname (Windows-reservierter Name): $destinationDirectory");
-            throw new InvalidArgumentException("Ungültiger Verzeichnisname: " . basename($destinationDirectory) . " ist ein Windows-reservierter Gerätename");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiger Zielverzeichnisname (Windows-reservierter Name): $destinationDirectory");
         }
 
         if (!self::exists($sourceDirectory)) {
-            self::logError("Das Verzeichnis $sourceDirectory existiert nicht");
-            throw new FolderNotFoundException("Das Verzeichnis $sourceDirectory existiert nicht");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Das Verzeichnis $sourceDirectory existiert nicht");
         }
 
         if (!self::exists($destinationDirectory)) {
@@ -105,8 +102,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         if (!self::exists($directory)) {
             if (!mkdir($directory, $permissions, $recursive)) {
-                self::logError("Fehler beim Erstellen des Verzeichnisses: $directory");
-                throw new Exception("Fehler beim Erstellen des Verzeichnisses $directory");
+                self::logErrorAndThrow(Exception::class, "Fehler beim Erstellen des Verzeichnisses: $directory");
             }
             self::logDebug("Verzeichnis erstellt: $directory mit Berechtigungen $permissions");
         } else {
@@ -129,13 +125,11 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         self::validateNotReservedName($newName);
 
         if (!self::exists($oldName)) {
-            self::logError("Das Verzeichnis $oldName existiert nicht");
-            throw new FolderNotFoundException("Das Verzeichnis $oldName existiert nicht");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Das Verzeichnis $oldName existiert nicht");
         }
 
         if (!rename($oldName, $newName)) {
-            self::logError("Fehler beim Umbenennen des Verzeichnisses von $oldName nach $newName");
-            throw new Exception("Fehler beim Umbenennen des Verzeichnisses von $oldName nach $newName");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Umbenennen des Verzeichnisses von $oldName nach $newName");
         }
 
         self::logInfo("Verzeichnis umbenannt von $oldName zu $newName");
@@ -153,8 +147,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $directory = self::getRealPath($directory);
 
         if (!self::exists($directory)) {
-            self::logError("Das Verzeichnis $directory existiert nicht");
-            throw new FolderNotFoundException("Das Verzeichnis $directory existiert nicht");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Das Verzeichnis $directory existiert nicht");
         }
 
         if ($recursive) {
@@ -171,8 +164,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         }
 
         if (!rmdir($directory)) {
-            self::logError("Fehler beim Löschen des Verzeichnisses $directory");
-            throw new Exception("Fehler beim Löschen des Verzeichnisses $directory");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Löschen des Verzeichnisses $directory");
         }
 
         self::logInfo("Verzeichnis gelöscht: $directory");
@@ -193,13 +185,11 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         self::validateNotReservedName($destinationDirectory);
 
         if (!self::exists($sourceDirectory)) {
-            self::logError("Das Verzeichnis $sourceDirectory existiert nicht");
-            throw new FolderNotFoundException("Das Verzeichnis $sourceDirectory existiert nicht");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Das Verzeichnis $sourceDirectory existiert nicht");
         }
 
         if (!rename($sourceDirectory, $destinationDirectory)) {
-            self::logError("Fehler beim Verschieben des Verzeichnisses von $sourceDirectory nach $destinationDirectory");
-            throw new Exception("Fehler beim Verschieben des Verzeichnisses von $sourceDirectory nach $destinationDirectory");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Verschieben des Verzeichnisses von $sourceDirectory nach $destinationDirectory");
         }
 
         self::logInfo("Verzeichnis verschoben von $sourceDirectory nach $destinationDirectory");
@@ -216,8 +206,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $directory = self::getRealPath($directory);
 
         if (!self::exists($directory)) {
-            self::logError("Das Verzeichnis $directory existiert nicht");
-            return [];
+            return self::logErrorAndReturn([], "Das Verzeichnis $directory existiert nicht");
         }
 
         $result = [];
@@ -257,8 +246,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function size(string $directory, bool $recursive = true): int {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            self::logError("Verzeichnis nicht gefunden: $directory");
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
         $size = 0;
@@ -272,8 +260,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             }
         }
 
-        self::logDebug("Verzeichnisgröße berechnet: $directory = $size Bytes");
-        return $size;
+        return self::logDebugAndReturn($size, "Verzeichnisgröße berechnet: $directory = $size Bytes");
     }
 
     /**

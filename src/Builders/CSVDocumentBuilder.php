@@ -47,7 +47,7 @@ class CSVDocumentBuilder extends HelperAbstract {
         match (true) {
             $line instanceof HeaderLine => $this->header = $line,
             $line instanceof DataLine   => $this->rows[] = $line,
-            default => throw new RuntimeException('Unsupported CSV line type: ' . $line::class),
+            default => self::logErrorAndThrow(RuntimeException::class, 'Unsupported CSV line type: ' . $line::class),
         };
         return $this;
     }
@@ -62,8 +62,7 @@ class CSVDocumentBuilder extends HelperAbstract {
             if ($line instanceof LineInterface) {
                 $this->addLine($line);
             } else {
-                $this->logError('Ungültiger Zeilentyp übergeben', ['line' => $line]);
-                throw new RuntimeException('Ungültiger Zeilentyp: ' . get_debug_type($line));
+                $this->logErrorAndThrow(RuntimeException::class, 'Ungültiger Zeilentyp: ' . get_debug_type($line));
             }
         }
         return $this;
@@ -219,8 +218,7 @@ class CSVDocumentBuilder extends HelperAbstract {
      */
     public function reorderColumns(array $newOrder): self {
         if (!$this->header) {
-            $this->logError('Kein Header vorhanden – Spalten können nicht umsortiert werden.');
-            throw new RuntimeException('Kein Header vorhanden – Spalten können nicht umsortiert werden.');
+            $this->logErrorAndThrow(RuntimeException::class, 'Kein Header vorhanden – Spalten können nicht umsortiert werden.');
         }
 
         $headerValues = array_map(fn($f) => $f->getValue(), $this->header->getFields());
@@ -228,8 +226,7 @@ class CSVDocumentBuilder extends HelperAbstract {
 
         foreach ($newOrder as $name) {
             if (!isset($headerMap[$name])) {
-                $this->logError("Spalte '$name' existiert nicht im Header.");
-                throw new RuntimeException("Spalte '$name' existiert nicht im Header.");
+                $this->logErrorAndThrow(RuntimeException::class, "Spalte '$name' existiert nicht im Header.");
             }
         }
 

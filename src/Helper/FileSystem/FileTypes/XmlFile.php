@@ -28,8 +28,7 @@ class XmlFile extends HelperAbstract {
      */
     private static function checkDomExtension(): void {
         if (!extension_loaded('dom')) {
-            self::logError("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
-            throw new Exception("Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
+            self::logErrorAndThrow(Exception::class, "Die DOMDocument-Erweiterung ist nicht verfügbar. XML-Funktionen können nicht verwendet werden.");
         }
     }
 
@@ -56,9 +55,7 @@ class XmlFile extends HelperAbstract {
             }
             libxml_clear_errors();
 
-            $errorMsg = "Fehler beim Laden der XML-Datei: $file - " . implode(', ', $errorMessages);
-            self::logError($errorMsg);
-            throw new Exception($errorMsg);
+            self::logErrorAndThrow(Exception::class, "Fehler beim Laden der XML-Datei: $file - " . implode(', ', $errorMessages));
         }
 
         $metadata = [
@@ -88,7 +85,7 @@ class XmlFile extends HelperAbstract {
             // Re-throw FileNotFoundException to maintain expected contract
             throw $e;
         } catch (Exception $e) {
-            self::logError("Fehler beim Lesen der Datei {$file}: " . $e->getMessage());
+            self::logException($e);
             return false;
         }
     }
@@ -122,7 +119,7 @@ class XmlFile extends HelperAbstract {
 
             return $result['valid'];
         } catch (Exception $e) {
-            self::logError("Fehler bei XML-Validierung {$file}: " . $e->getMessage());
+            self::logException($e);
             return false;
         }
     }
@@ -152,15 +149,12 @@ class XmlFile extends HelperAbstract {
             }
             libxml_clear_errors();
 
-            $errorMsg = "Fehler beim Laden der XML-Datei: $file - " . implode(', ', $errorMessages);
-            self::logError($errorMsg);
-            throw new Exception($errorMsg);
+            self::logErrorAndThrow(Exception::class, "Fehler beim Laden der XML-Datei: $file - " . implode(', ', $errorMessages));
         }
 
         $root = $xml->documentElement;
         if (!$root) {
-            self::logError("Kein Root-Element gefunden in $file");
-            return 0;
+            return self::logErrorAndReturn(0, "Kein Root-Element gefunden in $file");
         }
 
         if ($elementName !== null) {
@@ -205,7 +199,7 @@ class XmlFile extends HelperAbstract {
             $content = File::read(self::resolveFile($file));
             return XmlHelper::extractNamespaces($content);
         } catch (Exception $e) {
-            self::logError("Fehler beim Extrahieren der Namespaces aus {$file}: " . $e->getMessage());
+            self::logException($e);
             return [];
         }
     }
@@ -223,7 +217,7 @@ class XmlFile extends HelperAbstract {
             $content = File::read(self::resolveFile($file));
             return XmlHelper::xmlToArray($content, $preserveAttributes);
         } catch (Exception $e) {
-            self::logError("Fehler beim Konvertieren der XML-Datei {$file} zu Array: " . $e->getMessage());
+            self::logException($e);
             return [];
         }
     }
@@ -242,7 +236,7 @@ class XmlFile extends HelperAbstract {
             $content = File::read(self::resolveFile($file));
             return XmlHelper::xpath($content, $xpath, $namespaces);
         } catch (Exception $e) {
-            self::logError("Fehler bei XPath-Abfrage auf {$file}: " . $e->getMessage());
+            self::logException($e);
             return [];
         }
     }
@@ -260,7 +254,7 @@ class XmlFile extends HelperAbstract {
             $content = File::read(self::resolveFile($file));
             return XmlHelper::validateSepaXml($content, $schemaDir);
         } catch (Exception $e) {
-            self::logError("Fehler bei SEPA-Validierung von {$file}: " . $e->getMessage());
+            self::logException($e);
             return ['valid' => false, 'errors' => [$e->getMessage()], 'messageType' => null];
         }
     }
@@ -277,7 +271,7 @@ class XmlFile extends HelperAbstract {
             $content = File::read(self::resolveFile($file));
             return XmlHelper::extractSepaMessageId($content);
         } catch (Exception $e) {
-            self::logError("Fehler beim Extrahieren der SEPA Message ID aus {$file}: " . $e->getMessage());
+            self::logException($e);
             return null;
         }
     }

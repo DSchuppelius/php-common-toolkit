@@ -72,10 +72,9 @@ class SecurityHelper extends HelperAbstract {
                 throw new InvalidArgumentException('Password-Hashing fehlgeschlagen');
             }
 
-            self::logInfo("Sicherer Password-Hash erstellt");
-            return $hash;
+            return self::logInfoAndReturn($hash, "Sicherer Password-Hash erstellt");
         } catch (Exception $e) {
-            self::logError("Fehler beim Password-Hashing: " . $e->getMessage());
+            self::logException($e);
             throw $e;
         }
     }
@@ -95,16 +94,11 @@ class SecurityHelper extends HelperAbstract {
 
             $result = password_verify($password, $hash);
 
-            if ($result) {
-                self::logInfo("Password-Verifikation erfolgreich");
-            } else {
-                self::logWarning("Password-Verifikation fehlgeschlagen");
-            }
-
-            return $result;
+            return $result
+                ? self::logInfoAndReturn(true, "Password-Verifikation erfolgreich")
+                : self::logWarningAndReturn(false, "Password-Verifikation fehlgeschlagen");
         } catch (Exception $e) {
-            self::logError("Fehler bei Password-Verifikation: " . $e->getMessage());
-            return false;
+            return self::logErrorAndReturn(false, "Fehler bei Password-Verifikation: " . $e->getMessage());
         }
     }
 
@@ -120,8 +114,7 @@ class SecurityHelper extends HelperAbstract {
             $cost = $options['cost'] ?? 12;
             return password_needs_rehash($hash, PASSWORD_ARGON2ID, ['memory_cost' => 65536, 'time_cost' => 4, 'threads' => 3]);
         } catch (Exception $e) {
-            self::logError("Fehler bei Rehash-Prüfung: " . $e->getMessage());
-            return true; // Im Zweifelsfall rehash durchführen
+            return self::logErrorAndReturn(true, "Fehler bei Rehash-Prüfung: " . $e->getMessage()); // Im Zweifelsfall rehash durchführen
         }
     }
 
@@ -142,11 +135,9 @@ class SecurityHelper extends HelperAbstract {
             $randomBytes = random_bytes($length);
             $token = $base64 ? base64_encode($randomBytes) : bin2hex($randomBytes);
 
-            self::logInfo("Sicherer Token generiert (Länge: {$length} Bytes)");
-            return $token;
+            return self::logInfoAndReturn($token, "Sicherer Token generiert (Länge: {$length} Bytes)");
         } catch (Exception $e) {
-            self::logError("Fehler bei Token-Generierung: " . $e->getMessage());
-            throw new InvalidArgumentException('Token-Generierung fehlgeschlagen: ' . $e->getMessage());
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Token-Generierung fehlgeschlagen: ' . $e->getMessage());
         }
     }
 
@@ -163,11 +154,9 @@ class SecurityHelper extends HelperAbstract {
             $key = hash('sha256', 'csrf_key_' . $sessionId, true);
             $token = hash_hmac('sha256', $data, $key);
 
-            self::logInfo("CSRF-Token für Aktion '{$action}' generiert");
-            return base64_encode($data . '|' . $token);
+            return self::logInfoAndReturn(base64_encode($data . '|' . $token), "CSRF-Token für Aktion '{$action}' generiert");
         } catch (Exception $e) {
-            self::logError("Fehler bei CSRF-Token-Generierung: " . $e->getMessage());
-            throw new InvalidArgumentException('CSRF-Token-Generierung fehlgeschlagen');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'CSRF-Token-Generierung fehlgeschlagen: ' . $e->getMessage());
         }
     }
 
@@ -196,14 +185,12 @@ class SecurityHelper extends HelperAbstract {
 
             // Zeitvalidierung
             if (time() - (int)$timestamp > $maxAge) {
-                self::logWarning("CSRF-Token abgelaufen");
-                return false;
+                return self::logWarningAndReturn(false, "CSRF-Token abgelaufen");
             }
 
             // Session- und Aktion-Validierung
             if ($tokenSessionId !== $sessionId || $tokenAction !== $action) {
-                self::logWarning("CSRF-Token Session/Aktion mismatch");
-                return false;
+                return self::logWarningAndReturn(false, "CSRF-Token Session/Aktion mismatch");
             }
 
             // Signatur-Validierung
@@ -212,15 +199,12 @@ class SecurityHelper extends HelperAbstract {
             $expectedSignature = hash_hmac('sha256', $expectedData, $key);
 
             if (!hash_equals($expectedSignature, $signature)) {
-                self::logWarning("CSRF-Token Signatur ungültig");
-                return false;
+                return self::logWarningAndReturn(false, "CSRF-Token Signatur ungültig");
             }
 
-            self::logInfo("CSRF-Token erfolgreich validiert");
-            return true;
+            return self::logInfoAndReturn(true, "CSRF-Token erfolgreich validiert");
         } catch (Exception $e) {
-            self::logError("Fehler bei CSRF-Token-Validierung: " . $e->getMessage());
-            return false;
+            return self::logErrorAndReturn(false, "Fehler bei CSRF-Token-Validierung: " . $e->getMessage());
         }
     }
 
@@ -265,11 +249,9 @@ class SecurityHelper extends HelperAbstract {
             // HTML-Entities encoding
             $input = htmlspecialchars($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-            self::logDebug("Input sanitisiert: " . substr($input, 0, 50) . "...");
-            return $input;
+            return self::logDebugAndReturn($input, "Input sanitisiert: " . substr($input, 0, 50) . "...");
         } catch (Exception $e) {
-            self::logError("Fehler bei Input-Sanitization: " . $e->getMessage());
-            return ''; // Im Fehlerfall leeren String zurückgeben
+            return self::logErrorAndReturn('', "Fehler bei Input-Sanitization: " . $e->getMessage()); // Im Fehlerfall leeren String zurückgeben
         }
     }
 
@@ -329,10 +311,9 @@ class SecurityHelper extends HelperAbstract {
                     $data = self::sanitizeInput($data, false);
             }
 
-            self::logDebug("Banking-Daten sanitisiert: Typ '{$type}', Länge: " . strlen($data));
-            return $data;
+            return self::logDebugAndReturn($data, "Banking-Daten sanitisiert: Typ '{$type}', Länge: " . strlen($data));
         } catch (Exception $e) {
-            self::logError("Fehler bei Banking-Daten-Sanitization: " . $e->getMessage());
+            self::logException($e);
             throw $e;
         }
     }
@@ -364,11 +345,9 @@ class SecurityHelper extends HelperAbstract {
                 }
             }
 
-            self::logInfo("Security-Header gesetzt: " . count($headers) . " Header");
-            return $headers;
+            return self::logInfoAndReturn($headers, "Security-Header gesetzt: " . count($headers) . " Header");
         } catch (Exception $e) {
-            self::logError("Fehler bei Security-Header-Setup: " . $e->getMessage());
-            return [];
+            return self::logErrorAndReturn([], "Fehler bei Security-Header-Setup: " . $e->getMessage());
         }
     }
 
@@ -404,19 +383,16 @@ class SecurityHelper extends HelperAbstract {
 
             // Prüfen ob Limit überschritten
             if (count($attempts) >= $maxAttempts) {
-                self::logWarning("Rate-Limit überschritten für: {$identifier}, Aktion: {$action}");
-                return false;
+                return self::logWarningAndReturn(false, "Rate-Limit überschritten für: {$identifier}, Aktion: {$action}");
             }
 
             // Aktuellen Versuch hinzufügen
             $attempts[] = $currentTime;
             file_put_contents($rateLimitFile, json_encode($attempts), LOCK_EX);
 
-            self::logDebug("Rate-Limit geprüft: {$identifier}, Versuche: " . count($attempts) . "/{$maxAttempts}");
-            return true;
+            return self::logDebugAndReturn(true, "Rate-Limit geprüft: {$identifier}, Versuche: " . count($attempts) . "/{$maxAttempts}");
         } catch (Exception $e) {
-            self::logError("Fehler bei Rate-Limiting: " . $e->getMessage());
-            return true; // Im Fehlerfall erlauben
+            return self::logErrorAndReturn(true, "Fehler bei Rate-Limiting: " . $e->getMessage()); // Im Fehlerfall erlauben
         }
     }
 
@@ -441,11 +417,9 @@ class SecurityHelper extends HelperAbstract {
             $sessionData = implode('|', $entropy);
             $sessionId = hash('sha256', $sessionData);
 
-            self::logInfo("Sichere Session-ID generiert");
-            return $sessionId;
+            return self::logInfoAndReturn($sessionId, "Sichere Session-ID generiert");
         } catch (Exception $e) {
-            self::logError("Fehler bei Session-ID-Generierung: " . $e->getMessage());
-            return bin2hex(random_bytes(32)); // Fallback
+            return self::logErrorAndReturn(bin2hex(random_bytes(32)), "Fehler bei Session-ID-Generierung: " . $e->getMessage()); // Fallback
         }
     }
 
@@ -514,8 +488,7 @@ class SecurityHelper extends HelperAbstract {
             // Fallback für kurze Strings
             return str_repeat('*', $length);
         } catch (Exception $e) {
-            self::logError("Fehler bei Daten-Maskierung: " . $e->getMessage());
-            return str_repeat('*', strlen($data));
+            return self::logErrorAndReturn(str_repeat('*', strlen($data)), "Fehler bei Daten-Maskierung: " . $e->getMessage());
         }
     }
 }

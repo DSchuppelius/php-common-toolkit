@@ -65,19 +65,16 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     private static function detectViaShell(string $commandName, string $file): string|false {
         $command = self::getConfiguredCommand($commandName, ['[INPUT]' => escapeshellarg($file)]);
         if (empty($command)) {
-            self::logError("Kein Befehl für $commandName gefunden.");
-            return false;
+            return self::logErrorAndReturn(false, "Kein Befehl für $commandName gefunden.");
         }
 
         $output = [];
         if (!Shell::executeShellCommand($command, $output) || empty($output)) {
-            self::logError("Fehler beim $commandName-Aufruf für $file");
-            return false;
+            return self::logErrorAndReturn(false, "Fehler beim $commandName-Aufruf für $file");
         }
 
         $result = trim(implode("\n", $output));
-        self::logInfo("$commandName für $file erkannt: $result");
-        return $result;
+        return self::logInfoAndReturn($result, "$commandName für $file erkannt: $result");
     }
 
     /**
@@ -102,8 +99,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return self::detectViaShell('mimetype', $file);
         }
 
-        self::logError("MIME-Typ konnte nicht bestimmt werden: $file");
-        return false;
+        return self::logErrorAndReturn(false, "MIME-Typ konnte nicht bestimmt werden: $file");
     }
 
     /**
@@ -128,8 +124,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return self::detectViaShell('mime-encoding', $file);
         }
 
-        self::logError("MIME-Encoding konnte nicht bestimmt werden: $file");
-        return false;
+        return self::logErrorAndReturn(false, "MIME-Encoding konnte nicht bestimmt werden: $file");
     }
 
     /**
@@ -143,8 +138,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if ($file === false) return false;
 
         if (array_key_exists($file, self::$chardetCache)) {
-            self::logDebug("Chardet Cache-Hit für $file");
-            return self::$chardetCache[$file];
+            return self::logDebugAndReturn(self::$chardetCache[$file], "Chardet Cache-Hit für $file");
         }
 
         $content = self::readPartial($file);
@@ -208,14 +202,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function exists(string $file): bool {
         // Windows-reservierte Gerätenamen ignorieren (auch auf Linux für Samba-Kompatibilität)
         if (self::isWindowsReservedName($file)) {
-            self::logDebug("Windows-reservierter Gerätename ignoriert: $file");
-            return false;
+            return self::logDebugAndReturn(false, "Windows-reservierter Gerätename ignoriert: $file");
         }
 
         $result = file_exists($file);
-        if (!$result) {
-            self::logDebug("Existenzprüfung der Datei: $file -> false");
-        }
+        self::logDebugUnless($result, "Existenzprüfung der Datei: $file -> false");
         return $result;
     }
 
@@ -232,25 +223,20 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if (preg_match('#^https?://#i', $file)) {
             $content = @file_get_contents($file);
             if ($content === false) {
-                self::logError("Fehler beim Abrufen der URL: $file");
-                throw new Exception("Fehler beim Abrufen der URL: $file");
+                self::logErrorAndThrow(Exception::class, "Fehler beim Abrufen der URL: $file");
             }
-            self::logDebug("URL erfolgreich abgerufen: $file");
-            return $content;
+            return self::logDebugAndReturn($content, "URL erfolgreich abgerufen: $file");
         }
 
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            self::logError("Datei nicht gefunden: $file");
-            throw new FileNotFoundException("Datei nicht gefunden: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht gefunden: $file");
         }
         $content = file_get_contents($file);
         if ($content === false) {
-            self::logError("Fehler beim Lesen der Datei: $file");
-            throw new Exception("Fehler beim Lesen: $file");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Lesen der Datei: $file");
         }
-        self::logDebug("Datei erfolgreich gelesen: $file");
-        return $content;
+        return self::logDebugAndReturn($content, "Datei erfolgreich gelesen: $file");
     }
 
     /**
@@ -278,30 +264,25 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             // Von BOM-erkanntem Encoding zu UTF-8 konvertieren
             $converted = mb_convert_encoding($content, 'UTF-8', $bomEncoding);
             if ($converted === false) {
-                self::logWarning("Konvertierung von $bomEncoding zu UTF-8 fehlgeschlagen für $file, nutze Original");
-                return $content;
+                return self::logWarningAndReturn($content, "Konvertierung von $bomEncoding zu UTF-8 fehlgeschlagen für $file, nutze Original");
             }
-            self::logInfo("Datei von $bomEncoding zu UTF-8 konvertiert: $file");
-            return $converted;
+            return self::logInfoAndReturn($converted, "Datei von $bomEncoding zu UTF-8 konvertiert: $file");
         }
 
         // Encoding erkennen (kein BOM vorhanden)
         $encoding = self::chardet($file);
 
         if ($encoding === false || $encoding === 'UTF-8' || $encoding === 'ASCII') {
-            self::logDebug("Keine Konvertierung nötig für $file (Encoding: " . ($encoding ?: 'unbekannt') . ")");
-            return $content;
+            return self::logDebugAndReturn($content, "Keine Konvertierung nötig für $file (Encoding: " . ($encoding ?: 'unbekannt') . ")");
         }
 
         // Zu UTF-8 konvertieren
         $converted = mb_convert_encoding($content, 'UTF-8', $encoding);
         if ($converted === false) {
-            self::logWarning("Konvertierung von $encoding zu UTF-8 fehlgeschlagen für $file, nutze Original");
-            return $content;
+            return self::logWarningAndReturn($content, "Konvertierung von $encoding zu UTF-8 fehlgeschlagen für $file, nutze Original");
         }
 
-        self::logInfo("Datei von $encoding zu UTF-8 konvertiert: $file");
-        return $converted;
+        return self::logInfoAndReturn($converted, "Datei von $encoding zu UTF-8 konvertiert: $file");
     }
 
     /**
@@ -318,11 +299,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         $content = file_get_contents($file, false, null, $offset, $length);
         if ($content === false) {
-            self::logError("Fehler beim partiellen Lesen der Datei: $file");
-            return false;
+            return self::logErrorAndReturn(false, "Fehler beim partiellen Lesen der Datei: $file");
         }
-        self::logDebug("Datei partiell gelesen ($length Bytes ab $offset): $file");
-        return $content;
+        return self::logDebugAndReturn($content, "Datei partiell gelesen ($length Bytes ab $offset): $file");
     }
 
     /**
@@ -338,13 +317,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function readLines(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): Generator {
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
-            throw new FileNotFoundException("Datei nicht lesbar: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
         }
 
         $handle = fopen($file, 'r');
         if ($handle === false) {
-            self::logError("Fehler beim Öffnen der Datei für readLines: $file");
-            throw new FileNotFoundException("Fehler beim Öffnen: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Öffnen der Datei für readLines: $file");
         }
 
         $count = 0;
@@ -396,24 +374,21 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function readLinesAsUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): Generator {
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
-            throw new FileNotFoundException("Datei nicht lesbar: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
         }
 
         // Encoding vorab erkennen (liest nur 4KB)
         $encoding = self::chardet($file);
         $needsConversion = $encoding !== false && $encoding !== 'UTF-8' && $encoding !== 'ASCII';
 
-        if ($needsConversion) {
-            self::logDebug("readLinesAsUtf8: Konvertierung von $encoding zu UTF-8 für $file");
-        }
+        self::logDebugIf($needsConversion, "readLinesAsUtf8: Konvertierung von $encoding zu UTF-8 für $file");
 
         // BOM-Handling für erste Zeile
         $isFirstLine = true;
 
         $handle = fopen($file, 'r');
         if ($handle === false) {
-            self::logError("Fehler beim Öffnen der Datei für readLinesAsUtf8: $file");
-            throw new FileNotFoundException("Fehler beim Öffnen: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Öffnen der Datei für readLinesAsUtf8: $file");
         }
 
         $count = 0;
@@ -493,24 +468,22 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function tail(string $file, int $lines = 10, bool $skipEmpty = false): array {
         if ($lines <= 0) {
-            throw new InvalidArgumentException("Anzahl der Zeilen muss größer als 0 sein.");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Anzahl der Zeilen muss größer als 0 sein.");
         }
 
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
-            throw new FileNotFoundException("Datei nicht lesbar: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
         }
 
         $fileSize = self::size($file);
         if ($fileSize === 0) {
-            self::logDebug("Datei ist leer: $file");
-            return [];
+            return self::logDebugAndReturn([], "Datei ist leer: $file");
         }
 
         $handle = fopen($file, 'rb');
         if ($handle === false) {
-            self::logError("Fehler beim Öffnen der Datei für tail: $file");
-            throw new FileNotFoundException("Fehler beim Öffnen: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Öffnen der Datei für tail: $file");
         }
 
         $result = [];
@@ -569,8 +542,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $result = array_slice($result, -$lines);
         }
 
-        self::logDebug("Tail: " . count($result) . " Zeilen gelesen aus $file");
-        return $result;
+        return self::logDebugAndReturn($result, "Tail: " . count($result) . " Zeilen gelesen aus $file");
     }
 
     /**
@@ -611,8 +583,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         $file = self::getRealPath($file);
         if (file_put_contents($file, $data) === false) {
-            self::logError("Fehler beim Schreiben in die Datei: $file");
-            throw new FileNotWrittenException("Fehler beim Schreiben in: $file");
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Schreiben in die Datei: $file");
         }
         self::logInfo("Daten erfolgreich in Datei geschrieben: $file");
     }
@@ -630,8 +601,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return;
         }
         if (!unlink($file)) {
-            self::logError("Fehler beim Löschen der Datei: $file");
-            throw new Exception("Fehler beim Löschen: $file");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Löschen der Datei: $file");
         }
         self::logDebug("Datei gelöscht: $file");
     }
@@ -646,8 +616,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function size(string $file): int {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            self::logError("Datei existiert nicht: $file");
-            throw new FileNotFoundException("Datei nicht gefunden: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei existiert nicht: $file");
         }
         return filesize($file);
     }
@@ -661,12 +630,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function isReadable(string $file): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            self::logError("Datei existiert nicht: $file");
-            return false;
+            return self::logErrorAndReturn(false, "Datei existiert nicht: $file");
         }
         if (!is_readable($file)) {
-            self::logError("Datei ist nicht lesbar: $file");
-            return false;
+            return self::logErrorAndReturn(false, "Datei ist nicht lesbar: $file");
         }
         return true;
     }
@@ -681,13 +648,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function isReady(string $file, bool $logging = true): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            if ($logging) self::logError("Datei existiert nicht: $file");
+            self::logErrorIf($logging, "Datei existiert nicht: $file");
             return false;
         }
         $handle = @fopen($file, 'r');
         if ($handle === false) {
-            self::logDebug("Datei ist noch nicht bereit zum Lesen: $file");
-            return false;
+            return self::logDebugAndReturn(false, "Datei ist noch nicht bereit zum Lesen: $file");
         }
         fclose($handle);
         return true;
@@ -705,17 +671,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $start = time();
         while (!self::isReady($file, false)) {
             if (!self::exists($file)) {
-                self::logWarning("Datei existiert nicht mehr während Wartezeit: $file");
-                return false;
+                return self::logWarningAndReturn(false, "Datei existiert nicht mehr während Wartezeit: $file");
             }
             if (time() - $start >= $timeout) {
-                self::logError("Timeout beim Warten auf Datei: $file");
-                return false;
+                return self::logErrorAndReturn(false, "Timeout beim Warten auf Datei: $file");
             }
             sleep(1);
         }
-        self::logDebug("Datei ist bereit: $file");
-        return true;
+        return self::logDebugAndReturn(true, "Datei ist bereit: $file");
     }
 
     /**
@@ -734,8 +697,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::validateNotReservedName($destinationFile);
 
         if (!self::exists($sourceFile)) {
-            self::logError("Quelldatei existiert nicht: $sourceFile");
-            throw new FileNotFoundException("Datei nicht gefunden: $sourceFile");
+            self::logErrorAndThrow(FileNotFoundException::class, "Quelldatei existiert nicht: $sourceFile");
         }
 
         if (self::exists($destinationFile) && !$overwrite) {
@@ -744,8 +706,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         if (!@copy($sourceFile, $destinationFile)) {
-            self::logError("Fehler beim Kopieren von $sourceFile nach $destinationFile");
-            throw new FileNotWrittenException("Fehler beim Kopieren von $sourceFile nach $destinationFile");
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Kopieren von $sourceFile nach $destinationFile");
         }
 
         self::logInfo("Datei erfolgreich kopiert: $sourceFile -> $destinationFile");
@@ -771,13 +732,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::validateNotReservedName($destinationFile);
 
         if (!self::exists($sourceFile)) {
-            self::logError("Quelldatei existiert nicht: $sourceFile");
-            throw new FileNotFoundException("Datei nicht gefunden: $sourceFile");
+            self::logErrorAndThrow(FileNotFoundException::class, "Quelldatei existiert nicht: $sourceFile");
         }
 
         if (!Folder::exists($destinationFolder)) {
-            self::logError("Zielverzeichnis existiert nicht: $destinationFolder");
-            throw new FolderNotFoundException("Zielordner nicht gefunden: $destinationFolder");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Zielverzeichnis existiert nicht: $destinationFolder");
         }
 
         if (self::exists($destinationFile) && !$overwrite) {
@@ -788,8 +747,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         if (!@rename($sourceFile, $destinationFile)) {
-            self::logError("Fehler beim Verschieben von $sourceFile nach $destinationFile");
-            throw new FileNotWrittenException("Fehler beim Verschieben nach $destinationFile");
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Verschieben von $sourceFile nach $destinationFile");
         }
 
         self::logDebug("Datei verschoben: $sourceFile -> $destinationFile");
@@ -811,13 +769,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::validateNotReservedName($newName);
 
         if (!self::exists($oldName)) {
-            self::logError("Datei zum Umbenennen nicht gefunden: $oldName");
-            throw new FileNotFoundException("Die Datei $oldName existiert nicht");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei zum Umbenennen nicht gefunden: $oldName");
         }
 
         if (self::exists($newName)) {
-            self::logError("Zieldatei existiert bereits: $newName");
-            throw new FileExistsException("Die Datei $newName existiert bereits");
+            self::logErrorAndThrow(FileExistsException::class, "Zieldatei existiert bereits: $newName");
         }
 
         if ($newName === basename($newName)) {
@@ -825,8 +781,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         if (!rename($oldName, $newName)) {
-            self::logError("Fehler beim Umbenennen von $oldName nach $newName");
-            throw new FileNotWrittenException("Fehler beim Umbenennen der Datei von $oldName nach $newName");
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Umbenennen von $oldName nach $newName");
         }
 
         self::logDebug("Datei umbenannt von $oldName zu $newName");
@@ -846,18 +801,15 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         self::validateNotReservedName($file);
 
         if (self::exists($file)) {
-            self::logError("Datei existiert bereits: $file");
-            throw new FileExistsException("Datei existiert bereits: $file");
+            self::logErrorAndThrow(FileExistsException::class, "Datei existiert bereits: $file");
         }
 
         if (file_put_contents($file, $content) === false) {
-            self::logError("Fehler beim Erstellen der Datei: $file");
-            throw new FileNotWrittenException("Fehler beim Erstellen: $file");
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Erstellen der Datei: $file");
         }
 
         if (!chmod($file, $permissions)) {
-            self::logError("Fehler beim Setzen von Rechten ($permissions) für Datei: $file");
-            throw new Exception("Fehler beim Setzen von Rechten für $file");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Setzen von Rechten ($permissions) für Datei: $file");
         }
 
         self::logInfo("Datei erstellt: $file mit Rechten $permissions");
@@ -897,14 +849,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function containsKeyword(string $file, array|string $keywords, ?string &$matchingLine = null, SearchMode $mode = SearchMode::CONTAINS, bool $caseSensitive = false): bool {
         if (!self::isReadable($file)) {
-            self::logError("Datei nicht lesbar oder nicht vorhanden: $file");
-            return false;
+            return self::logErrorAndReturn(false, "Datei nicht lesbar oder nicht vorhanden: $file");
         }
 
         $handle = fopen($file, 'r');
         if ($handle === false) {
-            self::logError("Fehler beim Öffnen der Datei: $file");
-            return false;
+            return self::logErrorAndReturn(false, "Fehler beim Öffnen der Datei: $file");
         }
 
         $keywordsString = is_array($keywords) ? implode(', ', $keywords) : $keywords;
@@ -913,14 +863,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if (StringHelper::containsKeyword($line, $keywords, $mode, $caseSensitive)) {
                 $matchingLine = trim($line);
                 fclose($handle);
-                self::logInfo("Schlüsselwörter [$keywordsString] in Datei gefunden: $matchingLine");
-                return true;
+                return self::logInfoAndReturn(true, "Schlüsselwörter [$keywordsString] in Datei gefunden: $matchingLine");
             }
         }
 
         fclose($handle);
-        self::logDebug("Keine Übereinstimmung in Datei: $file");
-        return false;
+        return self::logDebugAndReturn(false, "Keine Übereinstimmung in Datei: $file");
     }
 
     /**
@@ -933,14 +881,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function lineCount(string $file, bool $skipEmpty = false): int {
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
-            throw new FileNotFoundException("Datei nicht lesbar: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
         }
 
         $lines = 0;
         $handle = fopen($file, "r");
         if ($handle === false) {
-            self::logError("Fehler beim Öffnen der Datei für Zeilenzählung: $file");
-            throw new FileNotFoundException("Fehler beim Öffnen: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Öffnen der Datei für Zeilenzählung: $file");
         }
 
         while (!feof($handle)) {
@@ -949,8 +896,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $lines++;
         }
         fclose($handle);
-        self::logInfo("Anzahl der Zeilen in $file: $lines");
-        return $lines;
+        return self::logInfoAndReturn($lines, "Anzahl der Zeilen in $file: $lines");
     }
 
     /**
@@ -963,18 +909,16 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function charCount(string $file, string $encoding = "UTF-8"): int {
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
-            throw new FileNotFoundException("Datei nicht lesbar: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
         }
 
         $content = file_get_contents($file);
         if ($content === false) {
-            self::logError("Fehler beim Lesen der Datei zur Zeichenzählung: $file");
-            throw new FileNotFoundException("Fehler beim Lesen: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Lesen der Datei zur Zeichenzählung: $file");
         }
 
         $length = mb_strlen($content, $encoding);
-        self::logInfo("Anzahl der Zeichen in $file: $length");
-        return $length;
+        return self::logInfoAndReturn($length, "Anzahl der Zeichen in $file: $length");
     }
 
     /**
@@ -1127,7 +1071,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function head(string $file, int $lines = 10, bool $skipEmpty = false): array {
         if ($lines <= 0) {
-            throw new InvalidArgumentException("Anzahl der Zeilen muss größer als 0 sein.");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Anzahl der Zeilen muss größer als 0 sein.");
         }
 
         return self::readLinesAsArray($file, $skipEmpty, $lines, 1);
@@ -1145,7 +1089,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function headAsUtf8(string $file, int $lines = 10, bool $skipEmpty = false): array {
         if ($lines <= 0) {
-            throw new InvalidArgumentException("Anzahl der Zeilen muss größer als 0 sein.");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Anzahl der Zeilen muss größer als 0 sein.");
         }
 
         return self::readLinesAsArrayUtf8($file, $skipEmpty, $lines, 1);
@@ -1166,8 +1110,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $content = $newline && self::exists($file) && self::size($file) > 0 ? PHP_EOL . $data : $data;
 
         if (file_put_contents($file, $content, FILE_APPEND) === false) {
-            self::logError("Fehler beim Anhängen an die Datei: $file");
-            throw new FileNotWrittenException("Fehler beim Anhängen an: $file");
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Anhängen an die Datei: $file");
         }
         self::logDebug("Daten erfolgreich an Datei angehängt: $file");
     }
@@ -1189,8 +1132,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $content = $newline ? $data . PHP_EOL . $existingContent : $data . $existingContent;
 
         if (file_put_contents($file, $content) === false) {
-            self::logError("Fehler beim Voranstellen an die Datei: $file");
-            throw new FileNotWrittenException("Fehler beim Voranstellen an: $file");
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Voranstellen an die Datei: $file");
         }
         self::logDebug("Daten erfolgreich am Anfang der Datei eingefügt: $file");
     }
@@ -1211,8 +1153,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $atime = $atime ?? $time;
 
         if (!touch($file, $time, $atime)) {
-            self::logError("Fehler beim Touch der Datei: $file");
-            throw new FileNotWrittenException("Fehler beim Touch: $file");
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Touch der Datei: $file");
         }
         self::logDebug("Touch erfolgreich: $file");
     }
@@ -1228,8 +1169,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::resolveFile($file);
         $time = filemtime($file);
         if ($time === false) {
-            self::logError("Fehler beim Abrufen der Modifikationszeit: $file");
-            throw new FileNotFoundException("Fehler beim Abrufen der Modifikationszeit: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Abrufen der Modifikationszeit: $file");
         }
         return $time;
     }
@@ -1246,8 +1186,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::resolveFile($file);
         $time = filectime($file);
         if ($time === false) {
-            self::logError("Fehler beim Abrufen der Erstellungszeit: $file");
-            throw new FileNotFoundException("Fehler beim Abrufen der Erstellungszeit: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Abrufen der Erstellungszeit: $file");
         }
         return $time;
     }
@@ -1263,8 +1202,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::resolveFile($file);
         $time = fileatime($file);
         if ($time === false) {
-            self::logError("Fehler beim Abrufen der Zugriffszeit: $file");
-            throw new FileNotFoundException("Fehler beim Abrufen der Zugriffszeit: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Abrufen der Zugriffszeit: $file");
         }
         return $time;
     }
@@ -1282,17 +1220,15 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::resolveFile($file);
 
         if (!in_array($algorithm, hash_algos(), true)) {
-            throw new InvalidArgumentException("Ungültiger Hash-Algorithmus: $algorithm");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiger Hash-Algorithmus: $algorithm");
         }
 
         $hash = hash_file($algorithm, $file);
         if ($hash === false) {
-            self::logError("Fehler beim Berechnen des Hash für: $file");
-            throw new FileNotFoundException("Fehler beim Hash-Berechnung: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Berechnen des Hash für: $file");
         }
 
-        self::logDebug("Hash ($algorithm) berechnet für: $file");
-        return $hash;
+        return self::logDebugAndReturn($hash, "Hash ($algorithm) berechnet für: $file");
     }
 
     /**
@@ -1390,8 +1326,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             }
         }
 
-        self::logDebug("Grep: " . count($result) . " Zeilen gefunden in $file");
-        return $result;
+        return self::logDebugAndReturn($result, "Grep: " . count($result) . " Zeilen gefunden in $file");
     }
 
     /**

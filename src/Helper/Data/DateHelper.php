@@ -51,8 +51,7 @@ class DateHelper {
             $date->modify('last day of this month');
             return (int) $date->format('d');
         } catch (Throwable $e) {
-            self::logError("Fehler in Datumsberechnung für $month/$year: " . $e->getMessage());
-            return 0;
+            return self::logErrorAndReturn(0, "Fehler in Datumsberechnung für $month/$year: " . $e->getMessage());
         }
     }
 
@@ -95,8 +94,7 @@ class DateHelper {
             }
         }
 
-        self::logWarning("Kein {$n}. Wochentag ({$weekday->name}) im Monat $month/$year gefunden");
-        return null;
+        return self::logWarningAndReturn(null, "Kein {$n}. Wochentag ({$weekday->name}) im Monat $month/$year gefunden");
     }
 
     /**
@@ -202,8 +200,7 @@ class DateHelper {
             return sprintf('%02d.%02d.%04d', $matches[1], $matches[2], (int) $matches[3]);
         }
 
-        self::logError("Ungültiges Datumsformat: $date");
-        throw new InvalidArgumentException("Ungültiges Datumsformat: $date");
+        self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiges Datumsformat: $date");
     }
 
     /**
@@ -219,8 +216,7 @@ class DateHelper {
             return DateTimeImmutable::createFromMutable($dt);
         }
 
-        self::logWarning("Kein gültiges Format gefunden für: $dateString");
-        return null;
+        return self::logWarningAndReturn(null, "Kein gültiges Format gefunden für: $dateString");
     }
 
     /**
@@ -343,8 +339,7 @@ class DateHelper {
      */
     public static function germanToIso(string $value): string|false {
         if (!self::isDate($value, $detectedFormat) || $detectedFormat !== DateTimeFormat::DE) {
-            self::logError("Ungültiges DE-Datum: $value");
-            return false;
+            return self::logErrorAndReturn(false, "Ungültiges DE-Datum: $value");
         }
         return self::formatDate($value, DateTimeFormat::ISO, DateTimeFormat::DE) ?? false;
     }
@@ -360,8 +355,7 @@ class DateHelper {
         if ($value === null || in_array($value, ['0000-00-00', '1970-01-01', '00:00:00'], true)) {
             return false;
         } elseif (!self::isDate($value, $detectedFormat) || $detectedFormat !== DateTimeFormat::ISO) {
-            self::logError("Ungültiges ISO-Datum: $value");
-            return false;
+            return self::logErrorAndReturn(false, "Ungültiges ISO-Datum: $value");
         }
 
         return self::formatDate($value, DateTimeFormat::DE, DateTimeFormat::ISO, $withTime) ?? false;

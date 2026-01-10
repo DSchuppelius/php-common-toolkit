@@ -57,8 +57,7 @@ class CsvFile extends HelperAbstract {
         $file = self::resolveFile($file);
         $handle = fopen($file, 'r');
         if (!$handle) {
-            self::logError("Fehler beim Öffnen der Datei: $file");
-            throw new Exception("Fehler beim Öffnen der Datei: $file");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Öffnen der Datei: $file");
         }
 
         $delimiterCounts = array_fill_keys(self::$commonDelimiters, 0);
@@ -76,8 +75,7 @@ class CsvFile extends HelperAbstract {
         $detectedDelimiter = key($delimiterCounts);
 
         if ($delimiterCounts[$detectedDelimiter] === 0) {
-            self::logError("Kein geeignetes Trennzeichen in der Datei $file gefunden.");
-            throw new Exception("Kein geeignetes Trennzeichen in der Datei $file gefunden.");
+            self::logErrorAndThrow(Exception::class, "Kein geeignetes Trennzeichen in der Datei $file gefunden.");
         }
 
         return $detectedDelimiter;
@@ -134,8 +132,7 @@ class CsvFile extends HelperAbstract {
             if ($columnCount === null) {
                 $columnCount = $rowLength;
             } elseif ($rowLength !== $columnCount) {
-                self::logDebug("Fehlerhafte Zeile $index: Spaltenanzahl $rowLength stimmt nicht mit Header ($columnCount) überein.");
-                return false;
+                return self::logDebugAndReturn(false, "Fehlerhafte Zeile $index: Spaltenanzahl $rowLength stimmt nicht mit Header ($columnCount) überein.");
             }
         }
 
@@ -154,8 +151,7 @@ class CsvFile extends HelperAbstract {
         try {
             $file = self::resolveFile($file);
         } catch (Throwable $e) {
-            self::logInfo("CSV-Datei nicht gefunden oder ungültig: " . $e->getMessage());
-            return false;
+            return self::logInfoAndReturn(false, "CSV-Datei nicht gefunden oder ungültig: " . $e->getMessage());
         }
 
         $delimiter ??= self::detectDelimiter($file);
@@ -164,21 +160,18 @@ class CsvFile extends HelperAbstract {
         $header = $lines->current();
 
         if ($header === false) {
-            self::logInfo("Header konnte nicht gelesen werden: $file");
-            return false;
+            return self::logInfoAndReturn(false, "Header konnte nicht gelesen werden: $file");
         }
 
         $headerValid = empty(array_diff($headerPattern, $header)) && empty(array_diff($header, $headerPattern));
         if (!$headerValid) {
-            self::logDebug("Header stimmt nicht überein. Erwartet: " . implode(',', $headerPattern) . " / Gefunden: " . implode(',', $header));
-            return false;
+            return self::logDebugAndReturn(false, "Header stimmt nicht überein. Erwartet: " . implode(',', $headerPattern) . " / Gefunden: " . implode(',', $header));
         }
 
         if ($wellFormed) {
             foreach ($lines as $index => $row) {
                 if (count($row) !== count($header)) {
-                    self::logDebug("Zeile $index hat nicht die gleiche Anzahl Spalten wie der Header.");
-                    return false;
+                    return self::logDebugAndReturn(false, "Zeile $index hat nicht die gleiche Anzahl Spalten wie der Header.");
                 }
             }
         }
@@ -200,23 +193,20 @@ class CsvFile extends HelperAbstract {
         try {
             $file = self::resolveFile($file);
         } catch (Throwable $e) {
-            self::logInfo("Fehler beim Öffnen der Datei: " . $e->getMessage());
-            return false;
+            return self::logInfoAndReturn(false, "Fehler beim Öffnen der Datei: " . $e->getMessage());
         }
 
         $delimiter ??= self::detectDelimiter($file);
 
         foreach (self::readLines($file, $delimiter) as $row) {
             if (!self::checkStructure($row, $structurePattern, $expectedColumns, $strict)) {
-                self::logDebug("Strukturprüfung fehlgeschlagen bei Zeile: " . implode($delimiter, $row));
-                return false;
+                return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen bei Zeile: " . implode($delimiter, $row));
             }
 
             if (!$checkAllRows) break;
         }
 
-        self::logInfo("CSV-Datei entspricht dem Strukturmuster: $structurePattern");
-        return true;
+        return self::logInfoAndReturn(true, "CSV-Datei entspricht dem Strukturmuster: $structurePattern");
     }
 
     /**
@@ -233,8 +223,7 @@ class CsvFile extends HelperAbstract {
         try {
             $file = self::resolveFile($file);
         } catch (Throwable $e) {
-            self::logInfo("Fehler beim Öffnen der Datei: " . $e->getMessage());
-            return false;
+            return self::logInfoAndReturn(false, "Fehler beim Öffnen der Datei: " . $e->getMessage());
         }
 
         $delimiter ??= self::detectDelimiter($file);
@@ -242,13 +231,11 @@ class CsvFile extends HelperAbstract {
         foreach (self::readLines($file, $delimiter) as $row) {
             if (self::matchColumns($row, $columnPatterns, $encoding, $strict)) {
                 $matchingRow = $row;
-                self::logInfo("Zeile mit Muster gefunden: " . implode($delimiter, $row));
-                return true;
+                return self::logInfoAndReturn(true, "Zeile mit Muster gefunden: " . implode($delimiter, $row));
             }
         }
 
-        self::logDebug("Keine passende Zeile in $file gefunden.");
-        return false;
+        return self::logDebugAndReturn(false, "Keine passende Zeile in $file gefunden.");
     }
 
     /**
@@ -261,20 +248,15 @@ class CsvFile extends HelperAbstract {
      */
     public static function matchColumns(?array $row, ?array $patterns, string $encoding = 'UTF-8', bool $strict = true): bool {
         if (!is_array($row) || empty($row)) {
-            self::logDebug("matchColumns erwartet ein Array als erste Zeile.");
-            return false;
+            return self::logDebugAndReturn(false, "matchColumns erwartet ein Array als erste Zeile.");
         } elseif (!is_array($patterns) || empty($patterns)) {
-            self::logDebug("matchColumns erwartet ein Array als Muster.");
-            return false;
+            return self::logDebugAndReturn(false, "matchColumns erwartet ein Array als Muster.");
         } elseif (implode('', $row) === '') {
-            self::logDebug("Leere Zeile erkannt, kein Vergleich notwendig.");
-            return false;
+            return self::logDebugAndReturn(false, "Leere Zeile erkannt, kein Vergleich notwendig.");
         } elseif ($strict && count($row) != count($patterns)) {
-            self::logDebug("Spaltenanzahl (" . count($row) . ") enstpricht nicht der Musteranzahl (" . count($patterns) . ").");
-            return false;
+            return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($row) . ") enstpricht nicht der Musteranzahl (" . count($patterns) . ").");
         } elseif (!$strict && count($row) < count($patterns)) {
-            self::logDebug("Spaltenanzahl (" . count($row) . ") ist kleiner als die Musteranzahl (" . count($patterns) . ").");
-            return false;
+            return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($row) . ") ist kleiner als die Musteranzahl (" . count($patterns) . ").");
         }
 
         foreach ($row as $index => $cell) {
@@ -288,13 +270,11 @@ class CsvFile extends HelperAbstract {
             $patternQuoted = preg_quote($pattern, '/');
 
             if (!preg_match("/^$patternQuoted/", $cell) && !preg_match("/^$patternQuoted/", $cellUtf8)) {
-                self::logDebug("Muster nicht gefunden: »" . $patternQuoted . "« in Spalte[$index] = »" . $cell . "«");
-                return false;
+                return self::logDebugAndReturn(false, "Muster nicht gefunden: »" . $patternQuoted . "« in Spalte[$index] = »" . $cell . "«");
             }
         }
 
-        self::logDebug("Alle Muster erfolgreich in den Spalten gefunden.");
-        return true;
+        return self::logDebugAndReturn(true, "Alle Muster erfolgreich in den Spalten gefunden.");
     }
 
     /**
@@ -306,14 +286,11 @@ class CsvFile extends HelperAbstract {
      */
     public static function checkStructure(array $row, string $patterns, ?int $columns = null, bool $strict = true): bool {
         if (!is_null($columns) && count($row) !== $columns) {
-            self::logDebug("Strukturprüfung fehlgeschlagen: erwartet $columns Spalten, erhalten: " . count($row));
-            return false;
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet $columns Spalten, erhalten: " . count($row));
         } elseif ($strict && count($row) != strlen($patterns)) {
-            self::logDebug("Strukturprüfung fehlgeschlagen: erwartet " . strlen($patterns) . " Spalten, erhalten: " . count($row));
-            return false;
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet " . strlen($patterns) . " Spalten, erhalten: " . count($row));
         } elseif (!$strict && count($row) < strlen($patterns)) {
-            self::logDebug("Strukturprüfung fehlgeschlagen: erwartet mindestens " . strlen($patterns) . " Spalten, erhalten: " . count($row));
-            return false;
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet mindestens " . strlen($patterns) . " Spalten, erhalten: " . count($row));
         }
 
         foreach (str_split($patterns) as $index => $symbol) {
@@ -325,13 +302,11 @@ class CsvFile extends HelperAbstract {
             }
 
             if (!Validator::validateBySymbol($symbol, $wert)) {
-                self::logDebug("Spalte $index entspricht nicht dem erwarteten Musterzeichen '$symbol' – Wert: '$wert'");
-                return false;
+                return self::logDebugAndReturn(false, "Spalte $index entspricht nicht dem erwarteten Musterzeichen '$symbol' – Wert: '$wert'");
             }
         }
 
-        self::logDebug("Strukturprüfung erfolgreich für Muster: '$patterns'");
-        return true;
+        return self::logDebugAndReturn(true, "Strukturprüfung erfolgreich für Muster: '$patterns'");
     }
 
     /**
@@ -374,11 +349,9 @@ class CsvFile extends HelperAbstract {
             $rowCount = $meta['RowCount'];
             $dataRows = $hasHeader ? max(0, $rowCount - 1) : $rowCount;
 
-            self::logInfo("Anzahl der Datenzeilen in $file: $dataRows (Header: " . ($hasHeader ? "ja" : "nein") . ")");
-            return $dataRows;
+            return self::logInfoAndReturn($dataRows, "Anzahl der Datenzeilen in $file: $dataRows (Header: " . ($hasHeader ? "ja" : "nein") . ")");
         } catch (Throwable $e) {
-            self::logError("Fehler beim Ermitteln der Datenzeilen: " . $e->getMessage());
-            return 0;
+            return self::logErrorAndReturn(0, "Fehler beim Ermitteln der Datenzeilen: " . $e->getMessage());
         }
     }
 }

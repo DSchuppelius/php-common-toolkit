@@ -30,8 +30,10 @@ abstract class HelperAbstract implements HelperInterface {
      */
     protected static function resolveFile(string $file): string {
         if (!File::exists($file)) {
-            self::logError("Die Datei $file existiert nicht oder ist nicht lesbar.");
-            throw new FileNotFoundException("Die Datei $file existiert nicht oder ist nicht lesbar.");
+            self::logErrorAndThrow(
+                FileNotFoundException::class,
+                "Die Datei $file existiert nicht oder ist nicht lesbar."
+            );
         }
         return File::getRealPath($file);
     }

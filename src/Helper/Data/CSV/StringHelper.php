@@ -389,8 +389,7 @@ final class StringHelper extends BaseStringHelper {
                     $i,
                     substr($line, max(0, $i - 10), 20)
                 );
-                self::logError($errormsg);
-                throw new RuntimeException($errormsg);
+                self::logErrorAndThrow(RuntimeException::class, $errormsg);
             }
 
             if ($char === $delimiter && !$inQuotes) {
@@ -400,14 +399,12 @@ final class StringHelper extends BaseStringHelper {
             }
 
             if (str_contains($current, $delimiter . $enclosure)) {
-                self::logError('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
-                throw new RuntimeException('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
+                self::logErrorAndThrow(RuntimeException::class, 'Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
             }
         }
 
         if ($inQuotes) {
-            self::logError('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
-            throw new RuntimeException('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
+            self::logErrorAndThrow(RuntimeException::class, 'Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
         }
 
         if ($current !== '' || str_ends_with($line, $delimiter)) {

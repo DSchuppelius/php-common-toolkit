@@ -143,8 +143,7 @@ class WebLinkHelper {
         $allowedSchemes = $allowedSchemes ?? self::ALLOWED_SCHEMES;
 
         if (!in_array($scheme, $allowedSchemes, true)) {
-            self::logDebug("URL-Schema '$scheme' ist nicht erlaubt.");
-            return false;
+            return self::logDebugAndReturn(false, "URL-Schema '$scheme' ist nicht erlaubt.");
         }
 
         $host = self::getHost($url);
@@ -155,14 +154,12 @@ class WebLinkHelper {
         }
 
         if ($host === null || $host === '') {
-            self::logDebug("URL hat keinen gültigen Host: $url");
-            return false;
+            return self::logDebugAndReturn(false, "URL hat keinen gültigen Host: $url");
         }
 
         if ($checkDns && function_exists('checkdnsrr')) {
             if (!@checkdnsrr($host, 'A') && !@checkdnsrr($host, 'AAAA')) {
-                self::logDebug("DNS-Lookup für Host '$host' fehlgeschlagen.");
-                return false;
+                return self::logDebugAndReturn(false, "DNS-Lookup für Host '$host' fehlgeschlagen.");
             }
         }
 
@@ -732,8 +729,7 @@ class WebLinkHelper {
 
         $socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
         if ($socket === false) {
-            self::logDebug("Socket-Verbindung zu $host:$port fehlgeschlagen: $errstr ($errno)");
-            return false;
+            return self::logDebugAndReturn(false, "Socket-Verbindung zu $host:$port fehlgeschlagen: $errstr ($errno)");
         }
 
         fclose($socket);

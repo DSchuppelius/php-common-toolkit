@@ -91,8 +91,7 @@ class StringHelper {
         }
 
         if ($converted === false) {
-            self::logDebug("Konvertierung von '$text' von '$from' nach '$to' fehlgeschlagen.");
-            return $text;
+            return self::logDebugAndReturn($text, "Konvertierung von '$text' von '$from' nach '$to' fehlgeschlagen.");
         }
 
         return $converted;
@@ -346,16 +345,14 @@ class StringHelper {
      */
     public static function detectEncoding(string $text): string|false {
         if (trim($text) === '') {
-            self::logDebug("detectEncoding: leerer String übergeben");
-            return false;
+            return self::logDebugAndReturn(false, "detectEncoding: leerer String übergeben");
         }
 
         // Versuch über ShellChardet (sofern chardet installiert)
         try {
             $encoding = ShellChardet::detect($text);
             if ($encoding !== false) {
-                self::logInfo("ShellChardet erkannte: $encoding");
-                return $encoding;
+                return self::logInfoAndReturn($encoding, "ShellChardet erkannte: $encoding");
             }
             self::logWarning("ShellChardet konnte keine Kodierung erkennen.");
         } catch (Throwable $e) {
@@ -365,12 +362,10 @@ class StringHelper {
         // Fallback auf mb_detect_encoding
         $fallback = mb_detect_encoding($text, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII'], true);
         if ($fallback !== false) {
-            self::logInfo("Fallback mit mb_detect_encoding erkannte: $fallback");
-            return $fallback;
+            return self::logInfoAndReturn($fallback, "Fallback mit mb_detect_encoding erkannte: $fallback");
         }
 
-        self::logError("detectEncoding: Keine Kodierung erkannt");
-        return false;
+        return self::logErrorAndReturn(false, "detectEncoding: Keine Kodierung erkannt");
     }
 
     /**

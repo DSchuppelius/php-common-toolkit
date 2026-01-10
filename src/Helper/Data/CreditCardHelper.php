@@ -124,8 +124,7 @@ class CreditCardHelper extends HelperAbstract {
             }
         }
 
-        self::logError("Unbekannter Kartentyp für Nummer: " . substr($cardNumber, 0, 4) . "****");
-        return null;
+        return self::logErrorAndReturn(null, "Unbekannter Kartentyp für Nummer: " . substr($cardNumber, 0, 4) . "****");
     }
 
     /**
@@ -164,8 +163,7 @@ class CreditCardHelper extends HelperAbstract {
      */
     public static function isValidExpiry(int $month, int $year): bool {
         if ($month < 1 || $month > 12) {
-            self::logError("Ungültiger Monat: {$month}");
-            return false;
+            return self::logErrorAndReturn(false, "Ungültiger Monat: {$month}");
         }
 
         // 2-stelliges Jahr zu 4-stellig konvertieren
@@ -195,8 +193,7 @@ class CreditCardHelper extends HelperAbstract {
      */
     public static function parseExpiryDate(string $expiryDate): ?array {
         if (!preg_match('/^(\d{2})\/(\d{2,4})$/', trim($expiryDate), $matches)) {
-            self::logError("Ungültiges Ablaufdatum-Format: {$expiryDate}");
-            return null;
+            return self::logErrorAndReturn(null, "Ungültiges Ablaufdatum-Format: {$expiryDate}");
         }
 
         $month = (int)$matches[1];

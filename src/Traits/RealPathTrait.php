@@ -34,23 +34,18 @@ trait RealPathTrait {
     public static function getRealPath(string $path): string {
         // Windows-reservierte Gerätenamen nicht auflösen (auch auf Linux für Samba-Kompatibilität)
         if (File::isWindowsReservedName($path)) {
-            self::logDebug("Windows-reservierter Gerätename, Pfad nicht aufgelöst: $path");
-            return $path;
+            return self::logDebugAndReturn($path, "Windows-reservierter Gerätename, Pfad nicht aufgelöst: $path");
         }
 
         if (self::exists($path)) {
             $realPath = realpath($path);
             if ($realPath === false) {
-                self::logDebug("Konnte Pfad nicht auflösen: $path");
-                return $path;
+                return self::logDebugAndReturn($path, "Konnte Pfad nicht auflösen: $path");
             }
-            if ($realPath !== $path) {
-                self::logDebug("Pfad wurde normalisiert: $path -> $realPath");
-            }
+            self::logDebugIf($realPath !== $path, "Pfad wurde normalisiert: $path -> $realPath");
             return $realPath;
         }
-        self::logDebug("Pfad existiert nicht, unverändert zurückgeben: $path");
-        return $path;
+        return self::logDebugAndReturn($path, "Pfad existiert nicht, unverändert zurückgeben: $path");
     }
 
     /**
@@ -62,9 +57,9 @@ trait RealPathTrait {
      */
     protected static function validateNotReservedName(string $path): void {
         if (File::isWindowsReservedName($path)) {
-            self::logError("Ungültiger Pfadname (Windows-reservierter Name): $path");
-            throw new InvalidArgumentException(
-                "Ungültiger Name: " . basename($path) . " ist ein Windows-reservierter Gerätename"
+            self::logErrorAndThrow(
+                InvalidArgumentException::class,
+                "Ungültiger Pfadname (Windows-reservierter Name): $path - " . basename($path) . " ist ein Windows-reservierter Gerätename"
             );
         }
     }

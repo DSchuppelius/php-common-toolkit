@@ -44,7 +44,7 @@ class JsonFile extends HelperAbstract {
             $content = File::read(self::resolveFile($file));
             return JsonHelper::isValid($content);
         } catch (Exception $e) {
-            self::logError("Fehler beim Validieren der JSON-Datei {$file}: " . $e->getMessage());
+            self::logException($e);
             return false;
         }
     }
@@ -81,21 +81,18 @@ class JsonFile extends HelperAbstract {
             $dir = dirname($file);
             if (!is_dir($dir)) {
                 if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
-                    self::logError("Konnte Verzeichnis nicht erstellen: {$dir}");
-                    return false;
+                    return self::logErrorAndReturn(false, "Konnte Verzeichnis nicht erstellen: {$dir}");
                 }
             }
 
             $result = file_put_contents($file, $json);
             if ($result === false) {
-                self::logError("Konnte JSON nicht in Datei schreiben: {$file}");
-                return false;
+                return self::logErrorAndReturn(false, "Konnte JSON nicht in Datei schreiben: {$file}");
             }
 
-            self::logInfo("JSON erfolgreich gespeichert: {$file}");
-            return true;
+            return self::logInfoAndReturn(true, "JSON erfolgreich gespeichert: {$file}");
         } catch (InvalidArgumentException $e) {
-            self::logError("Fehler beim Kodieren der Daten für {$file}: " . $e->getMessage());
+            self::logException($e);
             return false;
         }
     }
@@ -117,14 +114,12 @@ class JsonFile extends HelperAbstract {
             $result = file_put_contents($targetFile, $prettyJson);
 
             if ($result === false) {
-                self::logError("Konnte Pretty-Print JSON nicht speichern: {$targetFile}");
-                return false;
+                return self::logErrorAndReturn(false, "Konnte Pretty-Print JSON nicht speichern: {$targetFile}");
             }
 
-            self::logInfo("JSON Pretty-Print gespeichert: {$targetFile}");
-            return true;
+            return self::logInfoAndReturn(true, "JSON Pretty-Print gespeichert: {$targetFile}");
         } catch (Exception $e) {
-            self::logError("Fehler beim Pretty-Print von {$file}: " . $e->getMessage());
+            self::logException($e);
             return false;
         }
     }
@@ -146,14 +141,12 @@ class JsonFile extends HelperAbstract {
             $result = file_put_contents($targetFile, $minifiedJson);
 
             if ($result === false) {
-                self::logError("Konnte minified JSON nicht speichern: {$targetFile}");
-                return false;
+                return self::logErrorAndReturn(false, "Konnte minified JSON nicht speichern: {$targetFile}");
             }
 
-            self::logInfo("JSON minified und gespeichert: {$targetFile}");
-            return true;
+            return self::logInfoAndReturn(true, "JSON minified und gespeichert: {$targetFile}");
         } catch (Exception $e) {
-            self::logError("Fehler beim Minify von {$file}: " . $e->getMessage());
+            self::logException($e);
             return false;
         }
     }
@@ -171,7 +164,7 @@ class JsonFile extends HelperAbstract {
             $content = File::read(self::resolveFile($file));
             return JsonHelper::extractPath($content, $path);
         } catch (Exception $e) {
-            self::logError("Fehler beim Extrahieren des Pfades '{$path}' aus {$file}: " . $e->getMessage());
+            self::logException($e);
             return null;
         }
     }
@@ -223,14 +216,12 @@ class JsonFile extends HelperAbstract {
             $result = file_put_contents($targetFile, $mergedJson);
 
             if ($result === false) {
-                self::logError("Konnte gemergtes JSON nicht speichern: {$targetFile}");
-                return false;
+                return self::logErrorAndReturn(false, "Konnte gemergtes JSON nicht speichern: {$targetFile}");
             }
 
-            self::logInfo("JSON-Dateien erfolgreich gemergt: {$targetFile}");
-            return true;
+            return self::logInfoAndReturn(true, "JSON-Dateien erfolgreich gemergt: {$targetFile}");
         } catch (Exception $e) {
-            self::logError("Fehler beim Mergen von {$file1} und {$file2}: " . $e->getMessage());
+            self::logException($e);
             return false;
         }
     }
@@ -259,14 +250,12 @@ class JsonFile extends HelperAbstract {
             $result = file_put_contents($targetFile, $maskedJson);
 
             if ($result === false) {
-                self::logError("Konnte maskiertes JSON nicht speichern: {$targetFile}");
-                return false;
+                return self::logErrorAndReturn(false, "Konnte maskiertes JSON nicht speichern: {$targetFile}");
             }
 
-            self::logInfo("Sensitive Daten in JSON maskiert: {$targetFile}");
-            return true;
+            return self::logInfoAndReturn(true, "Sensitive Daten in JSON maskiert: {$targetFile}");
         } catch (Exception $e) {
-            self::logError("Fehler beim Maskieren sensitiver Daten in {$file}: " . $e->getMessage());
+            self::logException($e);
             return false;
         }
     }
@@ -302,7 +291,7 @@ class JsonFile extends HelperAbstract {
                 'depth' => $depth
             ];
         } catch (Exception $e) {
-            self::logError("Fehler beim Lesen der Metadaten von {$file}: " . $e->getMessage());
+            self::logException($e);
             return [
                 'fileSize' => filesize($resolvedFile) ?: 0,
                 'isValid' => false,
@@ -378,7 +367,7 @@ class JsonFile extends HelperAbstract {
             $data = JsonHelper::decode($content, true);
             return is_array($data) ? $data : [$data];
         } catch (Exception $e) {
-            self::logError("Fehler beim Konvertieren der JSON-Datei {$file} zu Array: " . $e->getMessage());
+            self::logException($e);
             return [];
         }
     }
@@ -397,11 +386,9 @@ class JsonFile extends HelperAbstract {
         $backupFile = $resolvedFile . $backupSuffix;
 
         if (copy($resolvedFile, $backupFile)) {
-            self::logInfo("Backup erstellt: {$backupFile}");
-            return $backupFile;
+            return self::logInfoAndReturn($backupFile, "Backup erstellt: {$backupFile}");
         } else {
-            self::logError("Konnte Backup nicht erstellen: {$backupFile}");
-            return false;
+            return self::logErrorAndReturn(false, "Konnte Backup nicht erstellen: {$backupFile}");
         }
     }
 }

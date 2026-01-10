@@ -43,8 +43,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         $resultCode = 0;
 
         if (empty($command)) {
-            self::logError("pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
-            throw new Exception("pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
+            self::logErrorAndThrow(Exception::class, "pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
         }
 
         Shell::executeShellCommand($command, $output, $resultCode);
@@ -53,16 +52,13 @@ class PdfFile extends ConfiguredHelperAbstract {
             foreach ($output as $line) {
                 $lower = strtolower($line);
                 if (str_contains($lower, 'incorrect password')) {
-                    self::logError("Falsches Passwort für PDF-Datei: $file");
-                    throw new InvalidPasswordException("Command Line Error: Incorrect password");
+                    self::logErrorAndThrow(InvalidPasswordException::class, "Falsches Passwort für PDF-Datei: $file");
                 }
                 if (str_contains($lower, 'syntax error') || str_contains($lower, 'error')) {
-                    self::logError("Fehlerhafte PDF-Struktur: $file");
-                    throw new Exception("Fehler beim Lesen der PDF-Metadaten: $line");
+                    self::logErrorAndThrow(Exception::class, "Fehlerhafte PDF-Struktur: $file - $line");
                 }
             }
-            self::logError("Fehler beim Abrufen der PDF-Metadaten für $file. (Exit-Code: $resultCode).");
-            throw new Exception("Fehler beim Abrufen der PDF-Metadaten für $file");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Abrufen der PDF-Metadaten für $file. (Exit-Code: $resultCode)");
         }
 
         $metadata = [];
@@ -108,8 +104,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         // Fallback über qpdf --check (Konfiguration)
         $command = self::getConfiguredCommand("pdf-check", ["[INPUT]" => escapeshellarg($file)]);
         if (empty($command)) {
-            self::logWarning("pdf-check nicht konfiguriert, keine Fallback-Prüfung möglich.");
-            return false;
+            return self::logWarningAndReturn(false, "pdf-check nicht konfiguriert, keine Fallback-Prüfung möglich.");
         }
 
         $output = [];
@@ -148,18 +143,15 @@ class PdfFile extends ConfiguredHelperAbstract {
         $resultCode = 0;
 
         if (empty($command)) {
-            self::logError("mutool bzw. pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
-            throw new Exception("mutool bzw. pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
+            self::logErrorAndThrow(Exception::class, "mutool bzw. pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
         } elseif (!Shell::executeShellCommand($command, $output, $resultCode, false, 1)) {
-            self::logError("Fehler bei der PDF-Validierung für $file.");
-            return false;
+            return self::logErrorAndReturn(false, "Fehler bei der PDF-Validierung für $file.");
         }
 
         // Wenn die Ausgabe Fehler enthält, ist die PDF ungültig
         foreach ($output as $line) {
             if (stripos($line, 'error') !== false || stripos($line, 'Syntax.Error') !== false) {
-                self::logError("Syntaxfehler in PDF erkannt: $file");
-                return false;
+                return self::logErrorAndReturn(false, "Syntaxfehler in PDF erkannt: $file");
             }
         }
 
@@ -189,15 +181,13 @@ class PdfFile extends ConfiguredHelperAbstract {
         );
 
         if (empty($command)) {
-            self::logError("pdf-decrypt wurde nicht konfiguriert oder ist nicht installiert.");
-            throw new Exception("pdf-decrypt wurde nicht konfiguriert oder ist nicht installiert.");
+            self::logErrorAndThrow(Exception::class, "pdf-decrypt wurde nicht konfiguriert oder ist nicht installiert.");
         }
 
         $output = [];
         $resultCode = 0;
         if (!Shell::executeShellCommand($command, $output, $resultCode)) {
-            self::logError("Fehler beim Entschlüsseln der PDF-Datei $inputFile.");
-            return false;
+            return self::logErrorAndReturn(false, "Fehler beim Entschlüsseln der PDF-Datei $inputFile.");
         }
 
         return File::exists($outputFile);
@@ -228,15 +218,13 @@ class PdfFile extends ConfiguredHelperAbstract {
 
         $command = self::getConfiguredCommand("pdf-encrypt", $params);
         if (empty($command)) {
-            self::logError("pdf-encrypt wurde nicht konfiguriert oder ist nicht installiert.");
-            throw new Exception("pdf-encrypt wurde nicht konfiguriert oder ist nicht installiert.");
+            self::logErrorAndThrow(Exception::class, "pdf-encrypt wurde nicht konfiguriert oder ist nicht installiert.");
         }
 
         $output = [];
         $resultCode = 0;
         if (!Shell::executeShellCommand($command, $output, $resultCode)) {
-            self::logError("Fehler beim Verschlüsseln der PDF-Datei $inputFile.");
-            return false;
+            return self::logErrorAndReturn(false, "Fehler beim Verschlüsseln der PDF-Datei $inputFile.");
         }
 
         return File::exists($outputFile);

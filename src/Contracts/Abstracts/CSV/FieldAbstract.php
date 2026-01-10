@@ -17,6 +17,7 @@ use CommonToolkit\Helper\Data\NumberHelper;
 use CommonToolkit\Helper\Data\DateHelper;
 use DateTimeImmutable;
 use ERRORToolkit\Traits\ErrorLog;
+use Psr\Log\LogLevel;
 
 class FieldAbstract implements FieldInterface {
     use ErrorLog;
@@ -302,9 +303,10 @@ class FieldAbstract implements FieldInterface {
         if ($this->quoted) {
             $enc = str_repeat($enclosure, $quoteLevel);
 
-            if (str_contains($value, $enclosure)) {
-                $this->logWarning('Falsche CSV-Syntax: Value enthält Enclosure: "' . $value . '"');
-            }
+            self::logWarningIf(
+                str_contains($value, $enclosure),
+                'Falsche CSV-Syntax: Value enthält Enclosure: "' . $value . '"'
+            );
 
             return $enc . $value . $enc;
         }

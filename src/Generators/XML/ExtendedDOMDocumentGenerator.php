@@ -51,8 +51,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
         $xml = $document->saveXML();
         if ($xml === false) {
-            self::logError('Fehler beim Generieren des XML-Strings');
-            throw new RuntimeException('Fehler beim Generieren des XML-Strings');
+            self::logErrorAndThrow(RuntimeException::class, 'Fehler beim Generieren des XML-Strings');
         }
 
         return $xml;
@@ -85,8 +84,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
         $canonical = $document->C14N($exclusive, $withComments);
 
         if ($canonical === false) {
-            self::logError('Fehler beim Generieren von kanonischem XML');
-            throw new RuntimeException('Fehler beim Generieren von kanonischem XML');
+            self::logErrorAndThrow(RuntimeException::class, 'Fehler beim Generieren von kanonischem XML');
         }
 
         return $canonical;
@@ -200,8 +198,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
         $result = $document->save($filePath);
         if ($result === false) {
-            self::logError("Fehler beim Speichern der XML-Datei: {$filePath}");
-            throw new RuntimeException("Fehler beim Speichern der XML-Datei: {$filePath}");
+            self::logErrorAndThrow(RuntimeException::class, "Fehler beim Speichern der XML-Datei: {$filePath}");
         }
 
         self::logInfo("XML-Datei gespeichert: {$filePath} ({$result} Bytes)");

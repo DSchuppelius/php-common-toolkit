@@ -64,8 +64,8 @@ class PostalCodeHelper {
         'IE' => ['length' => [7, 8],       'pattern' => '/^[A-Z][0-9]{2}\s?[A-Z0-9]{4}$/i',              'format' => 'A65 F4E2'],
 
         // Andere
-        'US' => ['length' => [5, 10],      'pattern' => '/^[0-9]{5}(-[0-9]{4})?$/',                       'format' => '12345 oder 12345-6789'],
-        'CA' => ['length' => [6, 7],       'pattern' => '/^[A-Z][0-9][A-Z]\s?[0-9][A-Z][0-9]$/i',         'format' => 'A1A 1A1'],
+        'US' => ['length' => [5, 10],      'pattern' => '/^[0-9]{5}(-[0-9]{4})?$/',                      'format' => '12345 oder 12345-6789'],
+        'CA' => ['length' => [6, 7],       'pattern' => '/^[A-Z][0-9][A-Z]\s?[0-9][A-Z][0-9]$/i',        'format' => 'A1A 1A1'],
     ];
 
     /**

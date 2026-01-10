@@ -39,7 +39,7 @@ class CSVDocumentParser extends HelperAbstract {
     public static function fromString(string $csv, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, ?string $encoding = null): Document {
         $csv = trim($csv);
         if ($csv === '') {
-            throw new RuntimeException('Leere CSV-Zeichenkette');
+            static::logErrorAndThrow(RuntimeException::class, 'Leere CSV-Zeichenkette');
         }
 
         // Encoding-Erkennung und Konvertierung nach UTF-8 für internes Parsing
@@ -50,8 +50,7 @@ class CSVDocumentParser extends HelperAbstract {
 
         $lines = StringHelper::splitCsvByLogicalLine($csv, $enclosure);
         if ($lines === [] || $lines === false) {
-            static::logError('CSVDocumentParser::fromString() – keine gültigen Zeilen erkannt');
-            throw new RuntimeException('Keine gültigen CSV-Zeilen erkannt');
+            static::logErrorAndThrow(RuntimeException::class, 'CSVDocumentParser::fromString() – keine gültigen Zeilen erkannt');
         }
 
         $builder = new CSVDocumentBuilder($delimiter, $enclosure, null, $sourceEncoding);
@@ -60,11 +59,9 @@ class CSVDocumentParser extends HelperAbstract {
             if ($hasHeader) {
                 $headerLine = array_shift($lines);
                 if ($headerLine === null) {
-                    static::logError('Header-Zeile fehlt');
-                    throw new RuntimeException('Header-Zeile fehlt');
+                    static::logErrorAndThrow(RuntimeException::class, 'Header-Zeile fehlt');
                 } elseif (!StringHelper::canParseCompleteCSVDataLine($headerLine, $delimiter, $enclosure)) {
-                    static::logError('Inkonsistente Quote-Struktur erkannt');
-                    throw new RuntimeException('Inkonsistente Quote-Struktur erkannt');
+                    static::logErrorAndThrow(RuntimeException::class, 'Inkonsistente Quote-Struktur erkannt');
                 }
                 $builder->setHeader(HeaderLine::fromString($headerLine, $delimiter, $enclosure));
             }
@@ -72,21 +69,18 @@ class CSVDocumentParser extends HelperAbstract {
             foreach ($lines as $line) {
                 if (trim($line) === '') continue;
                 elseif (!StringHelper::canParseCompleteCSVDataLine($line, $delimiter, $enclosure)) {
-                    static::logError('Inkonsistente Quote-Struktur erkannt');
-                    throw new RuntimeException('Inkonsistente Quote-Struktur erkannt');
+                    static::logErrorAndThrow(RuntimeException::class, 'Inkonsistente Quote-Struktur erkannt');
                 }
 
                 $builder->addRow(DataLine::fromString($line, $delimiter, $enclosure));
             }
         } catch (Throwable $e) {
-            static::logError("Fehler beim Parsen der CSV: " . $e->getMessage());
-            throw new RuntimeException("Fehler beim Parsen der CSV: " . $e->getMessage(), 0, $e);
+            static::logErrorAndThrow(RuntimeException::class, "Fehler beim Parsen der CSV: " . $e->getMessage());
         }
 
         $result = $builder->build();
         if (!$result->isConsistent()) {
-            static::logError('Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
-            throw new RuntimeException('Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
+            static::logErrorAndThrow(RuntimeException::class, 'Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
         }
         return $result;
     }
@@ -108,8 +102,7 @@ class CSVDocumentParser extends HelperAbstract {
      */
     public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, int $startLine = 1, ?int $maxLines = null, bool $skipEmpty = false, bool $detectEncoding = true): Document {
         if (!File::isReadable($file)) {
-            static::logError("CSV-Datei nicht lesbar: $file");
-            throw new RuntimeException("CSV-Datei nicht lesbar: $file");
+            static::logErrorAndThrow(RuntimeException::class, "CSV-Datei nicht lesbar: $file");
         }
 
         // Speichereffizientes zeilenweises Lesen mit automatischer Encoding-Konvertierung
@@ -121,8 +114,7 @@ class CSVDocumentParser extends HelperAbstract {
         }
 
         if (empty($lines)) {
-            static::logError("Keine Zeilen in CSV-Datei gefunden: $file");
-            throw new RuntimeException("Keine Zeilen in CSV-Datei gefunden: $file");
+            static::logErrorAndThrow(RuntimeException::class, "Keine Zeilen in CSV-Datei gefunden: $file");
         }
 
         $content = implode("\n", $lines);
@@ -147,12 +139,11 @@ class CSVDocumentParser extends HelperAbstract {
      */
     public static function fromFileRange(string $file, int $fromLine, int $toLine, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $includeHeader = true, bool $detectEncoding = true): Document {
         if ($fromLine > $toLine) {
-            throw new RuntimeException("Startzeile ($fromLine) darf nicht größer als Endzeile ($toLine) sein");
+            static::logErrorAndThrow(RuntimeException::class, "Startzeile ($fromLine) darf nicht größer als Endzeile ($toLine) sein");
         }
 
         if (!File::isReadable($file)) {
-            static::logError("CSV-Datei nicht lesbar: $file");
-            throw new RuntimeException("CSV-Datei nicht lesbar: $file");
+            static::logErrorAndThrow(RuntimeException::class, "CSV-Datei nicht lesbar: $file");
         }
 
         $lines = [];
@@ -180,8 +171,7 @@ class CSVDocumentParser extends HelperAbstract {
         $lines = array_merge($lines, $dataLines);
 
         if (empty($lines)) {
-            static::logError("Keine Zeilen im angegebenen Bereich gefunden: $file (Zeilen $fromLine-$toLine)");
-            throw new RuntimeException("Keine Zeilen im angegebenen Bereich gefunden");
+            static::logErrorAndThrow(RuntimeException::class, "Keine Zeilen im angegebenen Bereich gefunden: $file (Zeilen $fromLine-$toLine)");
         }
 
         $content = implode("\n", $lines);

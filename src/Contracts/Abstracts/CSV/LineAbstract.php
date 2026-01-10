@@ -52,8 +52,7 @@ abstract class LineAbstract implements LineInterface {
      */
     public static function fromString(string $line, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE): static {
         if ($delimiter === '') {
-            static::logError('CSV delimiter darf nicht leer sein');
-            throw new RuntimeException('CSV delimiter darf nicht leer sein');
+            static::logErrorAndThrow(RuntimeException::class, 'CSV delimiter darf nicht leer sein');
         }
 
         $fields = array_map(

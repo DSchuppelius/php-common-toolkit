@@ -16,8 +16,8 @@ use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\XML\ExtendedDOMDocument;
 use CommonToolkit\Helper\Data\XmlHelper;
 use CommonToolkit\Helper\FileSystem\File;
+use DOMDocument;
 use DOMElement;
-use DOMNode;
 use RuntimeException;
 
 /**
@@ -94,9 +94,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
         $result = self::validateAgainstXsd($document, $xsdFile);
 
         if (!$result['valid']) {
-            throw new RuntimeException(
-                'XSD-Validierung fehlgeschlagen: ' . implode(', ', $result['errors'])
-            );
+            self::logErrorAndThrow(RuntimeException::class, 'XSD-Validierung fehlgeschlagen: ' . implode(', ', $result['errors']));
         }
 
         return $document;
@@ -115,9 +113,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
         $result = self::validateAgainstXsd($document, $xsdFile);
 
         if (!$result['valid']) {
-            throw new RuntimeException(
-                'XSD-Validierung fehlgeschlagen: ' . implode(', ', $result['errors'])
-            );
+            self::logErrorAndThrow(RuntimeException::class, 'XSD-Validierung fehlgeschlagen: ' . implode(', ', $result['errors']));
         }
 
         return $document;
@@ -156,7 +152,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
         libxml_use_internal_errors(true);
         libxml_clear_errors();
 
-        $doc = new \DOMDocument();
+        $doc = new DOMDocument();
         $valid = $doc->loadXML($xml);
         $errors = $valid ? [] : XmlHelper::getLibXmlErrors();
 

@@ -202,11 +202,9 @@ class BankHelper {
 
         // Validierung mit Helper-Funktionen
         if (!self::isBLZ($blzPadded)) {
-            self::logError("Ungültige BLZ: '$blz' (nach Normalisierung: '$blzPadded')");
-            throw new InvalidArgumentException("Ungültige BLZ: '$blz'");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige BLZ: '$blz' (nach Normalisierung: '$blzPadded')");
         } elseif (!self::isKTO($ktoPadded)) {
-            self::logError("Ungültige Kontonummer: '$kto' (nach Normalisierung: '$ktoPadded')");
-            throw new InvalidArgumentException("Ungültige Kontonummer: '$kto'");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige Kontonummer: '$kto' (nach Normalisierung: '$ktoPadded')");
         }
 
         $account = $blzPadded . $ktoPadded;
@@ -232,14 +230,12 @@ class BankHelper {
         $chars = self::ibanCharMap();
 
         if (!isset($countries[$countryCode])) {
-            self::logError("Ungültiger Ländercode: '$countryCode'");
-            throw new InvalidArgumentException("Invalid country code: $countryCode");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiger Ländercode: '$countryCode'");
         }
 
         $expectedLength = $countries[$countryCode] - 4; // ohne Prüfziffer und Länderkennung
         if (strlen($accountNumber) !== $expectedLength) {
-            self::logError("Die Kontonummer hat nicht die richtige Länge ($expectedLength) für $countryCode. Eingabe: '$accountNumber'");
-            throw new InvalidArgumentException("Ungültige Kontonummer-Länge für $countryCode");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Die Kontonummer hat nicht die richtige Länge ($expectedLength) für $countryCode. Eingabe: '$accountNumber'");
         }
 
         $rearranged = $accountNumber . $countryCode . '00';
@@ -496,8 +492,7 @@ class BankHelper {
 
     private static function requireBcMath(): void {
         if (!function_exists('bcmod')) {
-            self::logError("bcmath nicht verfügbar.");
-            throw new RuntimeException("Die PHP-Erweiterung 'bcmath' ist erforderlich, aber nicht aktiviert.");
+            self::logErrorAndThrow(RuntimeException::class, "Die PHP-Erweiterung 'bcmath' ist erforderlich, aber nicht aktiviert.");
         }
     }
 

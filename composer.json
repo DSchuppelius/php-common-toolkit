@@ -20,7 +20,7 @@
     "ext-bcmath": "*",
     "ext-dom": "*",
     "ext-intl": "*",
-    "dschuppelius/php-config-toolkit": "^0.2.15"
+    "dschuppelius/php-config-toolkit": "^0.2.26"
   },
 
   "autoload-dev": {

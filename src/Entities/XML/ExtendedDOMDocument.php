@@ -71,8 +71,7 @@ class ExtendedDOMDocument extends DOMDocument {
         if (!$this->loadXML($xmlContent)) {
             $errors = XmlHelper::getLibXmlErrors();
             $errorMessage = "Ungültiges XML-Dokument: " . ($errors[0] ?? 'Unbekannter Fehler');
-            self::logError($errorMessage);
-            throw new RuntimeException($errorMessage);
+            self::logErrorAndThrow(RuntimeException::class, $errorMessage);
         }
 
         libxml_clear_errors();
@@ -256,8 +255,7 @@ class ExtendedDOMDocument extends DOMDocument {
     public function findRequiredNode(string $expression, string $errorMessage, ?DOMNode $context = null): DOMNode {
         $node = $this->findNode($expression, $context);
         if ($node === null) {
-            self::logError($errorMessage);
-            throw new RuntimeException($errorMessage);
+            self::logErrorAndThrow(RuntimeException::class, $errorMessage);
         }
         return $node;
     }

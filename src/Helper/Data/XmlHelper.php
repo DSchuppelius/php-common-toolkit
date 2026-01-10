@@ -74,8 +74,7 @@ class XmlHelper extends HelperAbstract {
     public static function validateAgainstXsd(string $xml, string $xsdFile): array {
         if (!File::exists($xsdFile)) {
             $error = "XSD-Schema-Datei nicht gefunden: {$xsdFile}";
-            self::logError($error);
-            return ['valid' => false, 'errors' => [$error]];
+            return self::logErrorAndReturn(['valid' => false, 'errors' => [$error]], $error);
         }
 
         $doc = new DOMDocument();
@@ -150,12 +149,12 @@ class XmlHelper extends HelperAbstract {
         $doc->formatOutput = true;
 
         if (!$doc->loadXML($xml)) {
-            throw new InvalidArgumentException('Ungültiger XML-String');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
 
         $formatted = $doc->saveXML();
         if ($formatted === false) {
-            throw new RuntimeException('XML-Formatierung fehlgeschlagen');
+            self::logErrorAndThrow(RuntimeException::class, 'XML-Formatierung fehlgeschlagen');
         }
 
         return $formatted;
@@ -170,8 +169,7 @@ class XmlHelper extends HelperAbstract {
     public static function extractNamespaces(string $xml): array {
         $doc = new DOMDocument();
         if (!$doc->loadXML($xml)) {
-            self::logError('Fehler beim Laden des XML für Namespace-Extraktion');
-            return [];
+            return self::logErrorAndReturn([], 'Fehler beim Laden des XML für Namespace-Extraktion');
         }
 
         $xpath = new DOMXPath($doc);
@@ -200,7 +198,7 @@ class XmlHelper extends HelperAbstract {
     public static function xmlToArray(string $xml, bool $preserveAttributes = true): array {
         $doc = new DOMDocument();
         if (!$doc->loadXML($xml)) {
-            throw new InvalidArgumentException('Ungültiger XML-String');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
 
         return self::nodeToArray($doc->documentElement, $preserveAttributes);
@@ -433,8 +431,7 @@ class XmlHelper extends HelperAbstract {
 
             return null;
         } catch (InvalidArgumentException $e) {
-            self::logError("Fehler bei SEPA Message ID Extraktion: " . $e->getMessage());
-            return null;
+            return self::logErrorAndReturn(null, "Fehler bei SEPA Message ID Extraktion: " . $e->getMessage());
         }
     }
 
@@ -648,16 +645,14 @@ class XmlHelper extends HelperAbstract {
     public static function minify(string $xml): string {
         $doc = new DOMDocument();
         if (!$doc->loadXML($xml)) {
-            self::logError('Fehler beim XML-Minify: Ungültiges XML');
-            return $xml;
+            return self::logErrorAndReturn($xml, 'Fehler beim XML-Minify: Ungültiges XML');
         }
 
         $doc->preserveWhiteSpace = false;
         $minified = $doc->saveXML();
 
         if ($minified === false) {
-            self::logError('Fehler beim XML-Minify: Speichern fehlgeschlagen');
-            return $xml;
+            return self::logErrorAndReturn($xml, 'Fehler beim XML-Minify: Speichern fehlgeschlagen');
         }
 
         // Zusätzlich Zeilenumbrüche zwischen Elementen entfernen

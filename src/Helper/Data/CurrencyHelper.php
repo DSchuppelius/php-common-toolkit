@@ -28,8 +28,7 @@ class CurrencyHelper {
      */
     private static function ensureNumberFormatterAvailable(): void {
         if (!class_exists(NumberFormatter::class)) {
-            self::logError("Die PHP Intl-Extension (intl) ist nicht aktiv. NumberFormatter nicht verfügbar.");
-            throw new RuntimeException("Die PHP Intl-Extension (intl) ist nicht aktiviert. Bitte aktiviere sie in deiner php.ini.");
+            self::logErrorAndThrow(RuntimeException::class, "Die PHP Intl-Extension (intl) ist nicht aktiv. NumberFormatter nicht verfügbar.");
         }
     }
 
@@ -50,8 +49,7 @@ class CurrencyHelper {
         $formatted = $formatter->formatCurrency($amount, $currencyCode);
 
         if ($formatted === false) {
-            self::logError("Fehler bei der Währungsformatierung: " . $formatter->getErrorMessage());
-            throw new RuntimeException("Fehler bei der Währungsformatierung: " . $formatter->getErrorMessage());
+            self::logErrorAndThrow(RuntimeException::class, "Fehler bei der Währungsformatierung: " . $formatter->getErrorMessage());
         }
 
         return $formatted;
@@ -74,8 +72,7 @@ class CurrencyHelper {
         $parsed = $formatter->parseCurrency($input, $parsedCurrency);
 
         if ($parsed === false || $parsedCurrency !== $currencyCode) {
-            self::logError("Fehler beim Währungsparsing: " . $formatter->getErrorMessage());
-            throw new RuntimeException("Ungültige Währungseingabe: '$input'");
+            self::logErrorAndThrow(RuntimeException::class, "Fehler beim Währungsparsing für Eingabe '$input': " . $formatter->getErrorMessage());
         }
 
         return $parsed;
