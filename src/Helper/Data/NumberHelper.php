@@ -15,9 +15,12 @@ namespace CommonToolkit\Helper\Data;
 use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Enums\MetricPrefix;
 use CommonToolkit\Enums\TemperatureUnit;
+use ERRORToolkit\Traits\ErrorLog;
+use InvalidArgumentException;
 use RuntimeException;
 
 class NumberHelper {
+    use ErrorLog;
     /**
      * Konvertiert eine Zahl in einen menschenlesbaren Byte-Wert (z. B. "2.5 GB").
      * @param int|float $bytes Die Anzahl der Bytes.
@@ -42,7 +45,7 @@ class NumberHelper {
      */
     public static function parseByteString(string $input): int {
         if (!preg_match('/^([\d\.,]+)\s*(B|KB|MB|GB|TB|PB)$/i', trim($input), $matches)) {
-            throw new RuntimeException("Ungültiges Format: '$input'");
+            self::logErrorAndThrow(RuntimeException::class, "Ungültiges Format: '$input'");
         }
 
         $value = (float) str_replace(',', '.', $matches[1]);
@@ -76,7 +79,7 @@ class NumberHelper {
             'K-C' => $value - 273.15,
             'F-K' => ($value - 32) * 5 / 9 + 273.15,
             'K-F' => ($value - 273.15) * 9 / 5 + 32,
-            default => throw new \RuntimeException("Ungültige Temperaturumrechnung: {$from->value} zu {$to->value}")
+            default => self::logErrorAndThrow(RuntimeException::class, "Ungültige Temperaturumrechnung: {$from->value} zu {$to->value}")
         };
     }
 
@@ -107,7 +110,7 @@ class NumberHelper {
         [$toPrefix, $toBase] = $getPrefix($toUnit);
 
         if ($fromBase !== $toBase) {
-            throw new RuntimeException("Uneinheitliche Basiseinheit: $fromBase zu $toBase");
+            self::logErrorAndThrow(RuntimeException::class, "Uneinheitliche Basiseinheit: $fromBase zu $toBase");
         }
 
         $fromExp = $prefixes[$fromPrefix] ?? 0;
@@ -614,14 +617,14 @@ class NumberHelper {
      *
      * @param int $number Die Zahl (0-170).
      * @return float Die Fakultät.
-     * @throws \InvalidArgumentException Wenn die Zahl negativ oder zu groß ist.
+     * @throws InvalidArgumentException Wenn die Zahl negativ oder zu groß ist.
      */
     public static function factorial(int $number): float {
         if ($number < 0) {
-            throw new \InvalidArgumentException("Fakultät für negative Zahlen nicht definiert.");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Fakultät für negative Zahlen nicht definiert.");
         }
         if ($number > 170) {
-            throw new \InvalidArgumentException("Fakultät zu groß für Float-Darstellung.");
+            self::logErrorAndThrow(InvalidArgumentException::class, "Fakultät zu groß für Float-Darstellung.");
         }
 
         $result = 1.0;

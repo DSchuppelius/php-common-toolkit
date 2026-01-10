@@ -145,7 +145,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
         $xml = $document->saveXML();
         if ($xml === false) {
-            throw new RuntimeException('Fehler beim Generieren des XML-Strings');
+            self::logErrorAndThrow(RuntimeException::class, 'Fehler beim Generieren des XML-Strings');
         }
 
         return $xml;
@@ -171,7 +171,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
         $xml = $document->saveXML();
         if ($xml === false) {
-            throw new RuntimeException('Fehler beim Generieren des XML-Strings');
+            self::logErrorAndThrow(RuntimeException::class, 'Fehler beim Generieren des XML-Strings');
         }
 
         return $xml;

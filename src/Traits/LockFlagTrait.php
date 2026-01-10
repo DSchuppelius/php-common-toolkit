@@ -30,7 +30,7 @@ trait LockFlagTrait {
         return match ($value) {
             0 => self::NONE,
             1 => self::LOCKED,
-            default => throw new InvalidArgumentException("Invalid lock value: $value"),
+            default => self::logErrorAndThrow(InvalidArgumentException::class, "Invalid lock value: $value"),
         };
     }
 }

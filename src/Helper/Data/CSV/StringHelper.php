@@ -142,7 +142,7 @@ final class StringHelper extends BaseStringHelper {
      * @throws RuntimeException
      */
     private static function parseCSVLine(string $line, string $delimiter, string $enclosure, bool $withMeta = false): array {
-        if ($delimiter === '') throw new RuntimeException('Delimiter darf nicht leer sein');
+        if ($delimiter === '') self::logErrorAndThrow(RuntimeException::class, 'Delimiter darf nicht leer sein');
         if (empty(trim($line))) {
             return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
         }

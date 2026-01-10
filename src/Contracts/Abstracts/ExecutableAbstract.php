@@ -13,8 +13,11 @@ declare(strict_types=1);
 namespace CommonToolkit\Contracts\Abstracts;
 
 use CommonToolkit\Helper\Platform;
+use ERRORToolkit\Traits\ErrorLog;
 
 abstract class ExecutableAbstract {
+    use ErrorLog;
+
     protected string $path;
     protected array $args = [];
     protected array $debugArgs = [];

@@ -15,9 +15,13 @@ namespace CommonToolkit\Helper\FileSystem;
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
 use CommonToolkit\Traits\RealPathTrait;
+use DirectoryIterator;
 use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
+use FilesystemIterator;
 use InvalidArgumentException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 class Folder extends HelperAbstract implements FileSystemInterface {
     use RealPathTrait;
@@ -251,8 +255,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         $size = 0;
         $iterator = $recursive
-            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
-            : new \DirectoryIterator($directory);
+            ? new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS))
+            : new DirectoryIterator($directory);
 
         foreach ($iterator as $file) {
             if ($file->isFile()) {
@@ -273,10 +277,10 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function isEmpty(string $directory): bool {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
-        $iterator = new \DirectoryIterator($directory);
+        $iterator = new DirectoryIterator($directory);
         foreach ($iterator as $item) {
             if (!$item->isDot()) {
                 return false;
@@ -297,10 +301,10 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function clean(string $directory, bool $recursive = true): void {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
-        $iterator = new \DirectoryIterator($directory);
+        $iterator = new DirectoryIterator($directory);
         foreach ($iterator as $item) {
             if ($item->isDot()) {
                 continue;
@@ -331,13 +335,13 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function fileCount(string $directory, bool $recursive = false, array $extensions = []): int {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
         $count = 0;
         $iterator = $recursive
-            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
-            : new \DirectoryIterator($directory);
+            ? new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS))
+            : new DirectoryIterator($directory);
 
         foreach ($iterator as $file) {
             if (!$file->isFile()) {
@@ -368,17 +372,16 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function folderCount(string $directory, bool $recursive = false): int {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
         $count = 0;
         $iterator = $recursive
-            ? new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::SELF_FIRST
+            ? new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
             )
-            : new \DirectoryIterator($directory);
-
+            : new DirectoryIterator($directory);
         foreach ($iterator as $item) {
             if ($iterator instanceof \DirectoryIterator && $item->isDot()) {
                 continue;
@@ -403,7 +406,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function findByPattern(string $directory, string $pattern, bool $recursive = false): array {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
         if (!$recursive) {
@@ -412,8 +415,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         }
 
         $results = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
         );
 
         foreach ($iterator as $file) {
@@ -437,15 +440,15 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function getNewest(string $directory, bool $recursive = false, array $extensions = []): ?string {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
         $newestFile = null;
         $newestTime = 0;
 
         $iterator = $recursive
-            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
-            : new \DirectoryIterator($directory);
+            ? new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS))
+            : new DirectoryIterator($directory);
 
         foreach ($iterator as $file) {
             if (!$file->isFile()) {
@@ -481,15 +484,15 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function getOldest(string $directory, bool $recursive = false, array $extensions = []): ?string {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
         $oldestFile = null;
         $oldestTime = PHP_INT_MAX;
 
         $iterator = $recursive
-            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
-            : new \DirectoryIterator($directory);
+            ? new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS))
+            : new DirectoryIterator($directory);
 
         foreach ($iterator as $file) {
             if (!$file->isFile()) {
@@ -524,15 +527,15 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     public static function getLargest(string $directory, bool $recursive = false): ?string {
         $directory = self::getRealPath($directory);
         if (!self::exists($directory)) {
-            throw new FolderNotFoundException("Verzeichnis nicht gefunden: $directory");
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
         }
 
         $largestFile = null;
         $largestSize = 0;
 
         $iterator = $recursive
-            ? new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS))
-            : new \DirectoryIterator($directory);
+            ? new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS))
+            : new DirectoryIterator($directory);
 
         foreach ($iterator as $file) {
             if (!$file->isFile()) {

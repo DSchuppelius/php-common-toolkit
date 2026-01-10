@@ -35,7 +35,7 @@ class CsvFile extends HelperAbstract {
     private static function readLines(string $file, string $delimiter): Generator {
         $handle = fopen($file, 'r');
         if (!$handle) {
-            throw new RuntimeException("CSV-Datei konnte nicht geöffnet werden: $file");
+            self::logErrorAndThrow(RuntimeException::class, "CSV-Datei konnte nicht geöffnet werden: $file");
         }
 
         while (($row = fgetcsv($handle, 0, $delimiter, self::$defaultEnclosure, self::$defaultEscape)) !== false) {

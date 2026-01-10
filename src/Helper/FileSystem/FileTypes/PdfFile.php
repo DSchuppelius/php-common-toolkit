@@ -97,8 +97,6 @@ class PdfFile extends ConfiguredHelperAbstract {
             }
         } catch (InvalidPasswordException $e) {
             return true;
-        } catch (Exception $e) {
-            throw $e;
         }
 
         // Fallback über qpdf --check (Konfiguration)

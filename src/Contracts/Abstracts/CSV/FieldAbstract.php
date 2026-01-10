@@ -302,11 +302,7 @@ class FieldAbstract implements FieldInterface {
 
         if ($this->quoted) {
             $enc = str_repeat($enclosure, $quoteLevel);
-
-            self::logWarningIf(
-                str_contains($value, $enclosure),
-                'Falsche CSV-Syntax: Value enthält Enclosure: "' . $value . '"'
-            );
+            self::logWarningIf(str_contains($value, $enclosure), 'Falsche CSV-Syntax: Value enthält Enclosure: "' . $value . '"');
 
             return $enc . $value . $enc;
         }

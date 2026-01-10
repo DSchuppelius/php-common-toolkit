@@ -260,7 +260,7 @@ class XmlHelper extends HelperAbstract {
     public static function xpath(string $xml, string $xpath, array $namespaces = []): array {
         $doc = new DOMDocument();
         if (!$doc->loadXML($xml)) {
-            throw new InvalidArgumentException('Ungültiger XML-String');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
 
         $xpathObj = new DOMXPath($doc);
@@ -272,7 +272,7 @@ class XmlHelper extends HelperAbstract {
 
         $nodes = $xpathObj->query($xpath);
         if ($nodes === false) {
-            throw new InvalidArgumentException('Ungültiger XPath-Ausdruck');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XPath-Ausdruck');
         }
 
         $results = [];
@@ -295,7 +295,7 @@ class XmlHelper extends HelperAbstract {
     public static function xpathNodes(string $xml, string $xpath, array $namespaces = []): array {
         $doc = new DOMDocument();
         if (!$doc->loadXML($xml)) {
-            throw new InvalidArgumentException('Ungültiger XML-String');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
 
         $xpathObj = new DOMXPath($doc);
@@ -306,7 +306,7 @@ class XmlHelper extends HelperAbstract {
 
         $nodeList = $xpathObj->query($xpath);
         if ($nodeList === false) {
-            throw new InvalidArgumentException('Ungültiger XPath-Ausdruck');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XPath-Ausdruck');
         }
 
         $results = [];
@@ -567,7 +567,7 @@ class XmlHelper extends HelperAbstract {
 
         $xml = $doc->saveXML();
         if ($xml === false) {
-            throw new RuntimeException('XML-Generierung fehlgeschlagen');
+            self::logErrorAndThrow(RuntimeException::class, 'XML-Generierung fehlgeschlagen');
         }
 
         return $xml;

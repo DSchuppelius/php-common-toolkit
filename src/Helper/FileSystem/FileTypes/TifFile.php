@@ -146,14 +146,12 @@ class TifFile extends ConfiguredHelperAbstract {
             if (PdfFile::isValid($pdfFile)) {
                 self::logInfo("TIFF-Datei erfolgreich ohne Kompression in PDF umgewandelt: $tiffFile");
             } else {
-                self::logError("Erneuter Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
                 File::delete($pdfFile);
-                throw new Exception("Erneuter Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
+                self::logErrorAndThrow(Exception::class, "Erneuter Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
             }
         } else {
-            self::logError("Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
             File::delete($pdfFile);
-            throw new Exception("Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
+            self::logErrorAndThrow(Exception::class, "Fehler bei der Umwandlung von TIFF in PDF: $tiffFile");
         }
 
         if ($deleteSourceFile) {

@@ -87,7 +87,7 @@ class XmlGenerator extends HelperAbstract {
 
         $xml = $doc->saveXML();
         if ($xml === false) {
-            throw new RuntimeException('Fehler beim Generieren des XML-Strings');
+            self::logErrorAndThrow(RuntimeException::class, 'Fehler beim Generieren des XML-Strings');
         }
 
         return $xml;
@@ -141,7 +141,7 @@ class XmlGenerator extends HelperAbstract {
         $canonical = $doc->C14N();
 
         if ($canonical === false) {
-            throw new RuntimeException('Fehler beim Generieren von kanonischem XML');
+            self::logErrorAndThrow(RuntimeException::class, 'Fehler beim Generieren von kanonischem XML');
         }
 
         return $canonical;
@@ -169,7 +169,7 @@ class XmlGenerator extends HelperAbstract {
 
         $xml = $doc->saveXML();
         if ($xml === false) {
-            throw new RuntimeException('Fehler beim Generieren des XML-Strings');
+            self::logErrorAndThrow(RuntimeException::class, 'Fehler beim Generieren des XML-Strings');
         }
 
         return $xml;
