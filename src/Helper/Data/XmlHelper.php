@@ -557,8 +557,8 @@ class XmlHelper extends HelperAbstract {
 
         // Root-Element mit optionalem Namespace erstellen
         if ($namespaceUri !== null) {
-            $qualifiedName = $namespacePrefix !== null 
-                ? "{$namespacePrefix}:{$rootElement}" 
+            $qualifiedName = $namespacePrefix !== null
+                ? "{$namespacePrefix}:{$rootElement}"
                 : $rootElement;
             $root = $doc->createElementNS($namespaceUri, $qualifiedName);
         } else {
