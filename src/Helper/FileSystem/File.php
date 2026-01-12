@@ -216,9 +216,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return self::logDebugAndReturn(false, "Windows-reservierter Gerätename ignoriert: $file");
         }
 
-        // open_basedir-Prüfung
+        // open_basedir-Prüfung (Logging erfolgt bereits in Folder::isBlockedByOpenBasedir)
         if (Folder::isBlockedByOpenBasedir($file)) {
-            return self::logErrorAndReturn(false, "Zugriff auf Datei durch open_basedir blockiert: $file");
+            return false;
         }
 
         $result = file_exists($file);

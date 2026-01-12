@@ -157,9 +157,9 @@ class Files extends HelperAbstract {
      * @return array Ein Array mit den gefundenen Dateipfaden.
      */
     public static function get(string $directory, bool $recursive = false, array $fileTypes = [], ?string $regexPattern = null, ?string $contains = null): array {
-        // open_basedir-Prüfung
+        // open_basedir-Prüfung (Logging erfolgt bereits in Folder::isBlockedByOpenBasedir)
         if (Folder::isBlockedByOpenBasedir($directory)) {
-            return self::logErrorAndReturn([], "Zugriff auf Verzeichnis durch open_basedir blockiert: $directory");
+            return [];
         }
 
         if (!Folder::exists($directory)) {

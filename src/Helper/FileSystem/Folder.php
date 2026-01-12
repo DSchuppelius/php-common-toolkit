@@ -129,9 +129,9 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             return self::logDebugAndReturn(false, "Windows-reservierter Gerätename ignoriert: $directory");
         }
 
-        // open_basedir-Prüfung
+        // open_basedir-Prüfung (Logging erfolgt bereits in isBlockedByOpenBasedir)
         if (self::isBlockedByOpenBasedir($directory)) {
-            return self::logErrorAndReturn(false, "Zugriff auf Verzeichnis durch open_basedir blockiert: $directory");
+            return false;
         }
 
         $result = is_dir($directory);
