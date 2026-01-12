@@ -156,4 +156,41 @@ class FolderTest extends BaseTestCase {
     public function testGetOldestReturnsNullForEmptyFolder(): void {
         $this->assertNull(Folder::getOldest($this->testDir));
     }
+
+    public function testIsBlockedByOpenBasedirWithNoRestriction(): void {
+        // Wenn open_basedir nicht gesetzt ist, sollte nichts blockiert sein
+        $currentOpenBasedir = ini_get('open_basedir');
+
+        if (empty($currentOpenBasedir)) {
+            $this->assertFalse(Folder::isBlockedByOpenBasedir('/some/random/path'));
+            $this->assertFalse(Folder::isBlockedByOpenBasedir($this->testDir));
+        } else {
+            // Wenn open_basedir gesetzt ist, sollte das temp-Verzeichnis nicht blockiert sein
+            $this->assertFalse(Folder::isBlockedByOpenBasedir($this->testDir));
+        }
+    }
+
+    public function testIsBlockedByOpenBasedirWithAllowedPath(): void {
+        // Test mit temporärem Verzeichnis, das normalerweise erlaubt ist
+        $tempDir = sys_get_temp_dir();
+
+        // Das temp-Verzeichnis sollte nicht blockiert sein
+        $this->assertFalse(Folder::isBlockedByOpenBasedir($tempDir));
+    }
+
+    public function testExistsReturnsFalseForBlockedPath(): void {
+        // Dieser Test prüft indirekt die open_basedir-Integration in exists()
+        $currentOpenBasedir = ini_get('open_basedir');
+
+        if (!empty($currentOpenBasedir)) {
+            // Prüfe einen Pfad, der wahrscheinlich nicht in open_basedir ist
+            $blockedPath = '/root/somefolder';
+            if (Folder::isBlockedByOpenBasedir($blockedPath)) {
+                $this->assertFalse(Folder::exists($blockedPath));
+            }
+        }
+
+        // Standard-Test: Nicht-existierendes Verzeichnis
+        $this->assertFalse(Folder::exists('/nonexistent/path/folder'));
+    }
 }

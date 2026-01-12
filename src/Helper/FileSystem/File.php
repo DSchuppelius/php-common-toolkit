@@ -194,6 +194,17 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Prüft, ob ein Pfad durch die open_basedir-Einschränkung blockiert wird.
+     * Delegiert an Folder::isBlockedByOpenBasedir().
+     *
+     * @param string $path Der zu prüfende Pfad.
+     * @return bool True, wenn der Pfad durch open_basedir blockiert wird, andernfalls false.
+     */
+    public static function isBlockedByOpenBasedir(string $path): bool {
+        return Folder::isBlockedByOpenBasedir($path);
+    }
+
+    /**
      * Überprüft, ob die Datei existiert.
      *
      * @param string $file Der Pfad zur Datei.
@@ -203,6 +214,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         // Windows-reservierte Gerätenamen ignorieren (auch auf Linux für Samba-Kompatibilität)
         if (self::isWindowsReservedName($file)) {
             return self::logDebugAndReturn(false, "Windows-reservierter Gerätename ignoriert: $file");
+        }
+
+        // open_basedir-Prüfung
+        if (Folder::isBlockedByOpenBasedir($file)) {
+            return self::logErrorAndReturn(false, "Zugriff auf Datei durch open_basedir blockiert: $file");
         }
 
         $result = file_exists($file);

@@ -16,6 +16,37 @@ use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 
 class Files extends HelperAbstract {
     /**
+     * Prüft, ob mindestens ein Pfad durch die open_basedir-Einschränkung blockiert wird.
+     *
+     * @param array $paths Ein Array mit Pfaden.
+     * @return bool True, wenn mindestens ein Pfad blockiert ist, andernfalls false.
+     */
+    public static function isBlockedByOpenBasedir(array $paths): bool {
+        foreach ($paths as $path) {
+            if (Folder::isBlockedByOpenBasedir($path)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gibt alle Pfade zurück, die durch open_basedir blockiert werden.
+     *
+     * @param array $paths Ein Array mit Pfaden.
+     * @return array Ein Array mit den blockierten Pfaden.
+     */
+    public static function getBlockedByOpenBasedir(array $paths): array {
+        $blocked = [];
+        foreach ($paths as $path) {
+            if (Folder::isBlockedByOpenBasedir($path)) {
+                $blocked[] = $path;
+            }
+        }
+        return $blocked;
+    }
+
+    /**
      * Gibt den absoluten Pfad zu mehreren Dateien zurück.
      *
      * @param array $files Ein Array mit Dateipfaden.
@@ -126,6 +157,15 @@ class Files extends HelperAbstract {
      * @return array Ein Array mit den gefundenen Dateipfaden.
      */
     public static function get(string $directory, bool $recursive = false, array $fileTypes = [], ?string $regexPattern = null, ?string $contains = null): array {
+        // open_basedir-Prüfung
+        if (Folder::isBlockedByOpenBasedir($directory)) {
+            return self::logErrorAndReturn([], "Zugriff auf Verzeichnis durch open_basedir blockiert: $directory");
+        }
+
+        if (!Folder::exists($directory)) {
+            return self::logErrorAndReturn([], "Das Verzeichnis $directory existiert nicht");
+        }
+
         $result = [];
         $files = array_diff(scandir($directory), ['.', '..']);
 

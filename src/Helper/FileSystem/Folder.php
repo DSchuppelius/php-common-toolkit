@@ -25,6 +25,98 @@ use RecursiveIteratorIterator;
 
 class Folder extends HelperAbstract implements FileSystemInterface {
     use RealPathTrait;
+
+    /**
+     * Prüft, ob ein Pfad durch die open_basedir-Einschränkung blockiert wird.
+     *
+     * @param string $path Der zu prüfende Pfad.
+     * @return bool True, wenn der Pfad durch open_basedir blockiert wird, andernfalls false.
+     */
+    public static function isBlockedByOpenBasedir(string $path): bool {
+        $openBasedir = ini_get('open_basedir');
+
+        // Wenn open_basedir nicht gesetzt ist, ist alles erlaubt
+        if (empty($openBasedir)) {
+            return false;
+        }
+
+        // Absoluten Pfad ermitteln (ohne Symlink-Auflösung, da realpath bei Blockierung null zurückgibt)
+        $absolutePath = $path;
+        if (!preg_match('#^(/|[a-zA-Z]:)#', $path)) {
+            $cwd = getcwd();
+            if ($cwd === false) {
+                self::logWarning("getcwd() fehlgeschlagen, kann open_basedir-Prüfung nicht durchführen für: $path");
+                return false;
+            }
+            $absolutePath = $cwd . DIRECTORY_SEPARATOR . $path;
+        }
+
+        // Pfad normalisieren (. und .. auflösen)
+        $absolutePath = self::normalizePathForOpenBasedir($absolutePath);
+
+        // open_basedir kann mehrere Pfade enthalten, getrennt durch : (Linux) oder ; (Windows)
+        $separator = DIRECTORY_SEPARATOR === '\\' ? ';' : ':';
+        $allowedPaths = explode($separator, $openBasedir);
+
+        foreach ($allowedPaths as $allowedPath) {
+            $allowedPath = trim($allowedPath);
+            if (empty($allowedPath)) {
+                continue;
+            }
+
+            // Erlaubten Pfad normalisieren
+            $normalizedAllowed = self::normalizePathForOpenBasedir($allowedPath);
+
+            // Prüfen, ob der absolute Pfad mit dem erlaubten Pfad beginnt
+            if (str_starts_with($absolutePath, $normalizedAllowed)) {
+                return false;
+            }
+        }
+
+        self::logWarning("Zugriff auf '$path' durch open_basedir blockiert. Erlaubte Pfade: $openBasedir");
+        return true;
+    }
+
+    /**
+     * Normalisiert einen Pfad für die open_basedir-Prüfung (löst . und .. auf, ohne realpath zu verwenden).
+     *
+     * @param string $path Der zu normalisierende Pfad.
+     * @return string Der normalisierte Pfad.
+     */
+    private static function normalizePathForOpenBasedir(string $path): string {
+        // Backslashes durch Slashes ersetzen für Konsistenz
+        $path = str_replace('\\', '/', $path);
+
+        // Doppelte Slashes entfernen
+        $path = preg_replace('#/+#', '/', $path);
+
+        // Pfadteile verarbeiten
+        $parts = explode('/', $path);
+        $result = [];
+
+        foreach ($parts as $part) {
+            if ($part === '..') {
+                if (!empty($result) && end($result) !== '') {
+                    array_pop($result);
+                }
+            } elseif ($part !== '.' && $part !== '') {
+                $result[] = $part;
+            } elseif ($part === '' && empty($result)) {
+                // Root-Slash beibehalten
+                $result[] = '';
+            }
+        }
+
+        $normalizedPath = implode('/', $result);
+
+        // Trailing Slash hinzufügen, wenn es ein Verzeichnis ist (mit @ um Warnings zu unterdrücken)
+        if (@is_dir($path) && !str_ends_with($normalizedPath, '/')) {
+            $normalizedPath .= '/';
+        }
+
+        return $normalizedPath;
+    }
+
     /**
      * Überprüft, ob ein Verzeichnis existiert.
      *
@@ -35,6 +127,11 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         // Windows-reservierte Gerätenamen ignorieren (auch auf Linux für Samba-Kompatibilität)
         if (File::isWindowsReservedName($directory)) {
             return self::logDebugAndReturn(false, "Windows-reservierter Gerätename ignoriert: $directory");
+        }
+
+        // open_basedir-Prüfung
+        if (self::isBlockedByOpenBasedir($directory)) {
+            return self::logErrorAndReturn(false, "Zugriff auf Verzeichnis durch open_basedir blockiert: $directory");
         }
 
         $result = is_dir($directory);

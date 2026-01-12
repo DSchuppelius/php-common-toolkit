@@ -416,4 +416,47 @@ class FileTest extends BaseTestCase {
             unlink($testFile);
         }
     }
+
+    public function testIsBlockedByOpenBasedirWithNoRestriction(): void {
+        // Wenn open_basedir nicht gesetzt ist, sollte nichts blockiert sein
+        $currentOpenBasedir = ini_get('open_basedir');
+
+        if (empty($currentOpenBasedir)) {
+            $this->assertFalse(File::isBlockedByOpenBasedir('/some/random/path'));
+            $this->assertFalse(File::isBlockedByOpenBasedir($this->testFile));
+        } else {
+            // Wenn open_basedir gesetzt ist, sollte die temp-Datei nicht blockiert sein
+            $this->assertFalse(File::isBlockedByOpenBasedir($this->testFile));
+        }
+    }
+
+    public function testIsBlockedByOpenBasedirWithAllowedPath(): void {
+        // Test mit temporärem Verzeichnis, das normalerweise erlaubt ist
+        $tempDir = sys_get_temp_dir();
+        $testFile = tempnam($tempDir, 'basedir_test');
+
+        try {
+            // Die Datei im temp-Verzeichnis sollte nicht blockiert sein
+            $this->assertFalse(File::isBlockedByOpenBasedir($testFile));
+        } finally {
+            unlink($testFile);
+        }
+    }
+
+    public function testExistsReturnsFalseForBlockedPath(): void {
+        // Dieser Test prüft indirekt die open_basedir-Integration in exists()
+        // Bei einem blockierten Pfad sollte exists() false zurückgeben
+        $currentOpenBasedir = ini_get('open_basedir');
+
+        if (!empty($currentOpenBasedir)) {
+            // Prüfe einen Pfad, der wahrscheinlich nicht in open_basedir ist
+            $blockedPath = '/root/somefile.txt';
+            if (File::isBlockedByOpenBasedir($blockedPath)) {
+                $this->assertFalse(File::exists($blockedPath));
+            }
+        }
+
+        // Standard-Test: Nicht-existierende Datei
+        $this->assertFalse(File::exists('/nonexistent/path/file.txt'));
+    }
 }
