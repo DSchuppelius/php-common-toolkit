@@ -328,19 +328,554 @@ class BankHelper {
     }
 
     /**
-     * Gibt die BLZ und KTO aus einer IBAN zurück.
+     * Gibt die BLZ und KTO aus einer deutschen IBAN zurück.
      *
-     * @param string|null $iban Die IBAN.
+     * @param string|null $iban Die deutsche IBAN.
      * @return false|array Ein Array mit 'BLZ' und 'KTO' oder false bei ungültiger IBAN.
+     * @deprecated Verwende splitIBANComponents() für internationale Unterstützung.
      */
     public static function splitIBAN(?string $iban): array|false {
         if ($iban === null || strlen($iban) < 22) {
             return false;
         }
+
+        $countryCode = strtoupper(substr($iban, 0, 2));
+        if ($countryCode !== 'DE') {
+            return false;
+        }
+
         return [
             'BLZ' => substr($iban, 4, 8),
             'KTO' => substr($iban, 12, 10)
         ];
+    }
+
+    /**
+     * Extrahiert die Komponenten einer IBAN für verschiedene Länder.
+     *
+     * Gibt ein Array mit länderspezifischen Komponenten zurück:
+     * - 'countryCode': Der 2-stellige ISO-Ländercode
+     * - 'checkDigits': Die 2-stellige Prüfziffer
+     * - 'bban': Der Basic Bank Account Number (länderspezifischer Teil)
+     * - Zusätzliche länderspezifische Felder (z.B. 'bankCode', 'branchCode', 'accountNumber')
+     *
+     * @param string|null $iban Die IBAN.
+     * @return false|array<string, string> Ein Array mit IBAN-Komponenten oder false bei ungültiger IBAN.
+     */
+    public static function splitIBANComponents(?string $iban): array|false {
+        if ($iban === null) {
+            return false;
+        }
+
+        $iban = strtoupper(str_replace(' ', '', $iban));
+        if (!self::isIBAN($iban)) {
+            return false;
+        }
+
+        $countryCode = substr($iban, 0, 2);
+        $checkDigits = substr($iban, 2, 2);
+        $bban = substr($iban, 4);
+
+        $countries = self::countryLengths();
+        if (!isset($countries[$countryCode]) || strlen($iban) !== $countries[$countryCode]) {
+            return false;
+        }
+
+        $result = [
+            'countryCode' => $countryCode,
+            'checkDigits' => $checkDigits,
+            'bban' => $bban,
+        ];
+
+        // Länderspezifische BBAN-Zerlegung
+        $result = array_merge($result, self::parseBBAN($countryCode, $bban));
+
+        return $result;
+    }
+
+    /**
+     * Zerlegt den BBAN (Basic Bank Account Number) nach länderspezifischen Regeln.
+     *
+     * @param string $countryCode Der 2-stellige ISO-Ländercode.
+     * @param string $bban Der BBAN-Teil der IBAN.
+     * @return array<string, string> Länderspezifische Komponenten.
+     */
+    private static function parseBBAN(string $countryCode, string $bban): array {
+        return match ($countryCode) {
+            // Deutschland: 8 BLZ + 10 Konto
+            'DE' => [
+                'bankCode' => substr($bban, 0, 8),
+                'accountNumber' => substr($bban, 8, 10),
+            ],
+            // Österreich: 5 BLZ + 11 Konto
+            'AT' => [
+                'bankCode' => substr($bban, 0, 5),
+                'accountNumber' => substr($bban, 5, 11),
+            ],
+            // Schweiz: 5 BC-Nummer + 12 Konto
+            'CH', 'LI' => [
+                'bankCode' => substr($bban, 0, 5),
+                'accountNumber' => substr($bban, 5),
+            ],
+            // Frankreich, Monaco: 5 Bank + 5 Filiale + 11 Konto + 2 Prüf
+            'FR', 'MC' => [
+                'bankCode' => substr($bban, 0, 5),
+                'branchCode' => substr($bban, 5, 5),
+                'accountNumber' => substr($bban, 10, 11),
+                'nationalCheckDigits' => substr($bban, 21, 2),
+            ],
+            // Italien, San Marino: 1 Prüf + 5 ABI + 5 CAB + 12 Konto
+            'IT', 'SM' => [
+                'checkChar' => substr($bban, 0, 1),
+                'bankCode' => substr($bban, 1, 5),
+                'branchCode' => substr($bban, 6, 5),
+                'accountNumber' => substr($bban, 11, 12),
+            ],
+            // Spanien: 4 Bank + 4 Filiale + 2 Prüf + 10 Konto
+            'ES' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 4),
+                'nationalCheckDigits' => substr($bban, 8, 2),
+                'accountNumber' => substr($bban, 10, 10),
+            ],
+            // Niederlande: 4 Bank + 10 Konto
+            'NL' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 10),
+            ],
+            // Belgien: 3 Bank + 7 Konto + 2 Prüf
+            'BE' => [
+                'bankCode' => substr($bban, 0, 3),
+                'accountNumber' => substr($bban, 3, 7),
+                'nationalCheckDigits' => substr($bban, 10, 2),
+            ],
+            // Luxemburg: 3 Bank + 13 Konto
+            'LU' => [
+                'bankCode' => substr($bban, 0, 3),
+                'accountNumber' => substr($bban, 3, 13),
+            ],
+            // Großbritannien: 4 Bank + 6 Filiale + 8 Konto
+            'GB' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 6),
+                'accountNumber' => substr($bban, 10, 8),
+            ],
+            // Irland: 4 Bank + 6 Filiale + 8 Konto
+            'IE' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 6),
+                'accountNumber' => substr($bban, 10, 8),
+            ],
+            // Polen: 8 Bank + 16 Konto
+            'PL' => [
+                'bankCode' => substr($bban, 0, 8),
+                'accountNumber' => substr($bban, 8, 16),
+            ],
+            // Tschechien: 4 Bank + 6 Konto-Präfix + 10 Konto
+            'CZ' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountPrefix' => substr($bban, 4, 6),
+                'accountNumber' => substr($bban, 10, 10),
+            ],
+            // Slowakei: 4 Bank + 6 Konto-Präfix + 10 Konto
+            'SK' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountPrefix' => substr($bban, 4, 6),
+                'accountNumber' => substr($bban, 10, 10),
+            ],
+            // Ungarn: 3 Bank + 4 Filiale + 1 Prüf + 16 Konto
+            'HU' => [
+                'bankCode' => substr($bban, 0, 3),
+                'branchCode' => substr($bban, 3, 4),
+                'nationalCheckDigit' => substr($bban, 7, 1),
+                'accountNumber' => substr($bban, 8, 16),
+            ],
+            // Portugal: 4 Bank + 4 Filiale + 11 Konto + 2 Prüf
+            'PT' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 4),
+                'accountNumber' => substr($bban, 8, 11),
+                'nationalCheckDigits' => substr($bban, 19, 2),
+            ],
+            // Griechenland: 3 Bank + 4 Filiale + 16 Konto
+            'GR' => [
+                'bankCode' => substr($bban, 0, 3),
+                'branchCode' => substr($bban, 3, 4),
+                'accountNumber' => substr($bban, 7, 16),
+            ],
+            // Dänemark, Färöer, Grönland: 4 Bank + 10 Konto
+            'DK', 'FO', 'GL' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 10),
+            ],
+            // Schweden: 3 Bank + 17 Konto
+            'SE' => [
+                'bankCode' => substr($bban, 0, 3),
+                'accountNumber' => substr($bban, 3, 17),
+            ],
+            // Norwegen: 4 Bank + 7 Konto
+            'NO' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 7),
+            ],
+            // Finnland: 3 Bank + 11 Konto
+            'FI' => [
+                'bankCode' => substr($bban, 0, 3),
+                'accountNumber' => substr($bban, 3, 11),
+            ],
+            // Estland: 2 Bank + 14 Konto
+            'EE' => [
+                'bankCode' => substr($bban, 0, 2),
+                'accountNumber' => substr($bban, 2, 14),
+            ],
+            // Lettland: 4 Bank + 13 Konto
+            'LV' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 13),
+            ],
+            // Litauen: 5 Bank + 11 Konto
+            'LT' => [
+                'bankCode' => substr($bban, 0, 5),
+                'accountNumber' => substr($bban, 5, 11),
+            ],
+            // Kroatien: 7 Bank + 10 Konto
+            'HR' => [
+                'bankCode' => substr($bban, 0, 7),
+                'accountNumber' => substr($bban, 7, 10),
+            ],
+            // Slowenien: 5 Bank + 10 Konto
+            'SI' => [
+                'bankCode' => substr($bban, 0, 5),
+                'accountNumber' => substr($bban, 5, 10),
+            ],
+            // Rumänien: 4 Bank + 16 Konto
+            'RO' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 16),
+            ],
+            // Bulgarien: 4 Bank + 4 Filiale + 2 Typ + 8 Konto
+            'BG' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 4),
+                'accountType' => substr($bban, 8, 2),
+                'accountNumber' => substr($bban, 10, 8),
+            ],
+            // Zypern: 3 Bank + 5 Filiale + 16 Konto
+            'CY' => [
+                'bankCode' => substr($bban, 0, 3),
+                'branchCode' => substr($bban, 3, 5),
+                'accountNumber' => substr($bban, 8, 16),
+            ],
+            // Malta: 4 Bank + 5 Filiale + 18 Konto
+            'MT' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 5),
+                'accountNumber' => substr($bban, 9, 18),
+            ],
+            // Türkei: 5 Bank + 17 Konto
+            'TR' => [
+                'bankCode' => substr($bban, 0, 5),
+                'accountNumber' => substr($bban, 5, 17),
+            ],
+            // Albanien: 8 Bank + 16 Konto
+            'AL' => [
+                'bankCode' => substr($bban, 0, 8),
+                'accountNumber' => substr($bban, 8, 16),
+            ],
+            // Andorra: 4 Bank + 4 Filiale + 12 Konto
+            'AD' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 4),
+                'accountNumber' => substr($bban, 8, 12),
+            ],
+            // Aserbaidschan: 4 Bank + 20 Konto
+            'AZ' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 20),
+            ],
+            // Bahrain: 4 Bank + 14 Konto
+            'BH' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 14),
+            ],
+            // Bosnien und Herzegowina: 3 Bank + 3 Filiale + 10 Konto
+            'BA' => [
+                'bankCode' => substr($bban, 0, 3),
+                'branchCode' => substr($bban, 3, 3),
+                'accountNumber' => substr($bban, 6, 10),
+            ],
+            // Brasilien: 8 Bank + 5 Filiale + 10 Konto + 1 Typ + 1 Prüf
+            'BR' => [
+                'bankCode' => substr($bban, 0, 8),
+                'branchCode' => substr($bban, 8, 5),
+                'accountNumber' => substr($bban, 13, 10),
+                'accountType' => substr($bban, 23, 1),
+                'ownerAccountNumber' => substr($bban, 24, 1),
+            ],
+            // Costa Rica: 4 Bank + 14 Konto
+            'CR' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 14),
+            ],
+            // Dominikanische Republik: 4 Bank + 20 Konto
+            'DO' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 20),
+            ],
+            // Georgien: 2 Bank + 16 Konto
+            'GE' => [
+                'bankCode' => substr($bban, 0, 2),
+                'accountNumber' => substr($bban, 2, 16),
+            ],
+            // Gibraltar: 4 Bank + 15 Konto
+            'GI' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 15),
+            ],
+            // Guatemala: 4 Bank + 20 Konto
+            'GT' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 20),
+            ],
+            // Island: 4 Bank + 2 Filiale + 6 Konto + 10 Kennnummer
+            'IS' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 2),
+                'accountNumber' => substr($bban, 6, 6),
+                'identificationNumber' => substr($bban, 12, 10),
+            ],
+            // Israel: 3 Bank + 3 Filiale + 13 Konto
+            'IL' => [
+                'bankCode' => substr($bban, 0, 3),
+                'branchCode' => substr($bban, 3, 3),
+                'accountNumber' => substr($bban, 6, 13),
+            ],
+            // Jordanien: 4 Bank + 4 Filiale + 18 Konto
+            'JO' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 4),
+                'accountNumber' => substr($bban, 8, 18),
+            ],
+            // Kasachstan: 3 Bank + 13 Konto
+            'KZ' => [
+                'bankCode' => substr($bban, 0, 3),
+                'accountNumber' => substr($bban, 3, 13),
+            ],
+            // Kosovo: 4 Bank + 12 Konto
+            'XK' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 12),
+            ],
+            // Kuwait: 4 Bank + 22 Konto
+            'KW' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 22),
+            ],
+            // Libanon: 4 Bank + 20 Konto
+            'LB' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 20),
+            ],
+            // Mauretanien: 5 Bank + 5 Filiale + 11 Konto + 2 Prüf
+            'MR' => [
+                'bankCode' => substr($bban, 0, 5),
+                'branchCode' => substr($bban, 5, 5),
+                'accountNumber' => substr($bban, 10, 11),
+                'nationalCheckDigits' => substr($bban, 21, 2),
+            ],
+            // Mauritius: 4 Bank + 2 Filiale + 18 Konto + 3 Währung
+            'MU' => [
+                'bankCode' => substr($bban, 0, 4),
+                'branchCode' => substr($bban, 4, 2),
+                'accountNumber' => substr($bban, 6, 18),
+                'currencyCode' => substr($bban, 24, 3),
+            ],
+            // Moldawien: 2 Bank + 18 Konto
+            'MD' => [
+                'bankCode' => substr($bban, 0, 2),
+                'accountNumber' => substr($bban, 2, 18),
+            ],
+            // Montenegro: 3 Bank + 15 Konto
+            'ME' => [
+                'bankCode' => substr($bban, 0, 3),
+                'accountNumber' => substr($bban, 3, 15),
+            ],
+            // Pakistan: 4 Bank + 16 Konto
+            'PK' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 16),
+            ],
+            // Palästina: 4 Bank + 21 Konto
+            'PS' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 21),
+            ],
+            // Katar: 4 Bank + 21 Konto
+            'QA' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 21),
+            ],
+            // Saudi-Arabien: 2 Bank + 18 Konto
+            'SA' => [
+                'bankCode' => substr($bban, 0, 2),
+                'accountNumber' => substr($bban, 2, 18),
+            ],
+            // Serbien: 3 Bank + 15 Konto
+            'RS' => [
+                'bankCode' => substr($bban, 0, 3),
+                'accountNumber' => substr($bban, 3, 15),
+            ],
+            // Tunesien: 2 Bank + 3 Filiale + 15 Konto
+            'TN' => [
+                'bankCode' => substr($bban, 0, 2),
+                'branchCode' => substr($bban, 2, 3),
+                'accountNumber' => substr($bban, 5, 15),
+            ],
+            // Vereinigte Arabische Emirate: 3 Bank + 16 Konto
+            'AE' => [
+                'bankCode' => substr($bban, 0, 3),
+                'accountNumber' => substr($bban, 3, 16),
+            ],
+            // Britische Jungferninseln: 4 Bank + 16 Konto
+            'VG' => [
+                'bankCode' => substr($bban, 0, 4),
+                'accountNumber' => substr($bban, 4, 16),
+            ],
+            // Fallback: Nur BBAN ohne weitere Zerlegung
+            default => [],
+        };
+    }
+
+    /**
+     * Extrahiert den Ländercode aus einer IBAN.
+     *
+     * @param string|null $iban Die IBAN.
+     * @return string|null Der 2-stellige ISO-Ländercode oder null bei ungültiger IBAN.
+     */
+    public static function getCountryCodeFromIBAN(?string $iban): ?string {
+        if ($iban === null || strlen($iban) < 2) {
+            return null;
+        }
+
+        $countryCode = strtoupper(substr($iban, 0, 2));
+        $countries = self::countryLengths();
+
+        return isset($countries[$countryCode]) ? $countryCode : null;
+    }
+
+    /**
+     * Prüft, ob die IBAN zu einem bestimmten Land gehört.
+     *
+     * @param string|null $iban Die IBAN.
+     * @param CountryCode|string $countryCode Der erwartete Ländercode.
+     * @return bool True, wenn die IBAN zum angegebenen Land gehört.
+     */
+    public static function isIBANFromCountry(?string $iban, CountryCode|string $countryCode): bool {
+        if ($countryCode instanceof CountryCode) {
+            $countryCode = $countryCode->value;
+        }
+
+        $ibanCountry = self::getCountryCodeFromIBAN($iban);
+        return $ibanCountry !== null && strtoupper($countryCode) === $ibanCountry;
+    }
+
+    /**
+     * Prüft, ob die IBAN aus einem SEPA-Land stammt.
+     *
+     * @param string|null $iban Die IBAN.
+     * @return bool True, wenn die IBAN aus einem SEPA-Land stammt.
+     */
+    public static function isSepaIBAN(?string $iban): bool {
+        $countryCode = self::getCountryCodeFromIBAN($iban);
+        if ($countryCode === null) {
+            return false;
+        }
+
+        return in_array($countryCode, self::sepaCountries(), true);
+    }
+
+    /**
+     * Gibt die Liste der SEPA-Länder zurück.
+     *
+     * @return string[] ISO-2 Ländercodes aller SEPA-Teilnehmerländer.
+     */
+    private static function sepaCountries(): array {
+        return [
+            // EU-Mitgliedstaaten
+            'AT',
+            'BE',
+            'BG',
+            'HR',
+            'CY',
+            'CZ',
+            'DK',
+            'EE',
+            'FI',
+            'FR',
+            'DE',
+            'GR',
+            'HU',
+            'IE',
+            'IT',
+            'LV',
+            'LT',
+            'LU',
+            'MT',
+            'NL',
+            'PL',
+            'PT',
+            'RO',
+            'SK',
+            'SI',
+            'ES',
+            'SE',
+            // EWR-Länder
+            'IS',
+            'LI',
+            'NO',
+            // Weitere SEPA-Teilnehmer
+            'CH',
+            'MC',
+            'SM',
+            'AD',
+            'VA',
+            'GB',
+            'GI',
+            // Territorien
+            'GG',
+            'IM',
+            'JE', // Kanalinseln & Isle of Man
+            'PM',
+            'BL',
+            'MF',
+            'GP',
+            'MQ',
+            'GF',
+            'RE',
+            'YT', // Französische Überseegebiete
+        ];
+    }
+
+    /**
+     * Extrahiert den Bank-Code aus einer IBAN (länderspezifisch).
+     *
+     * @param string|null $iban Die IBAN.
+     * @return string|null Der Bank-Code oder null, wenn nicht verfügbar.
+     */
+    public static function getBankCodeFromIBAN(?string $iban): ?string {
+        $components = self::splitIBANComponents($iban);
+        return $components['bankCode'] ?? null;
+    }
+
+    /**
+     * Extrahiert die Kontonummer aus einer IBAN (länderspezifisch).
+     *
+     * @param string|null $iban Die IBAN.
+     * @return string|null Die Kontonummer oder null, wenn nicht verfügbar.
+     */
+    public static function getAccountNumberFromIBAN(?string $iban): ?string {
+        $components = self::splitIBANComponents($iban);
+        return $components['accountNumber'] ?? null;
     }
 
     /**
