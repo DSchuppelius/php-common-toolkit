@@ -57,8 +57,25 @@ final class NumberHelperTest extends TestCase {
     }
 
     public function testNormalizeDecimal(): void {
+        // Deutsches Format mit Tausender und Dezimal
         $this->assertEquals(1234.56, NumberHelper::normalizeDecimal("1.234,56"));
         $this->assertEquals(7890.12, NumberHelper::normalizeDecimal("7 890,12"));
+
+        // US-Format mit Tausender und Dezimal
+        $this->assertEquals(1234.56, NumberHelper::normalizeDecimal("1,234.56"));
+        $this->assertEquals(1234567.89, NumberHelper::normalizeDecimal("1,234,567.89"));
+
+        // Einfache Dezimalformate (nicht 3 Stellen nach Trenner)
+        $this->assertEquals(1.5, NumberHelper::normalizeDecimal("1,5"));
+        $this->assertEquals(1.5, NumberHelper::normalizeDecimal("1.5"));
+        $this->assertEquals(123.456, NumberHelper::normalizeDecimal("123,456"));
+
+        // Ganzzahlen
+        $this->assertEquals(1234.0, NumberHelper::normalizeDecimal("1234"));
+
+        // Leerstring
+        $this->assertEquals(0.0, NumberHelper::normalizeDecimal(""));
+        $this->assertEquals(0.0, NumberHelper::normalizeDecimal("   "));
     }
 
     // === Neue Tests für verschobene Number-Format-Funktionen ===
