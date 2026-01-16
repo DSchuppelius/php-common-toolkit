@@ -25,6 +25,23 @@ class StringHelper {
 
     public const REGEX_ALLOWED_EXTRAS = ' .,:;!?()"„“«»‚‘’“”€$£¥+=*%&@#<>|^~{}—–…·\-\[\]\/\'' . "\t\\\\";
 
+    // BOM (Byte Order Mark) Konstanten
+    public const BOM_UTF8     = "\xEF\xBB\xBF";
+    public const BOM_UTF16_BE = "\xFE\xFF";
+    public const BOM_UTF16_LE = "\xFF\xFE";
+    public const BOM_UTF32_BE = "\x00\x00\xFE\xFF";
+    public const BOM_UTF32_LE = "\xFF\xFE\x00\x00";
+
+    /**
+     * Prüft ob ein String null oder leer ist.
+     *
+     * @param string|null $value Der zu prüfende Wert.
+     * @return bool True wenn null oder leerer String.
+     */
+    public static function isNullOrEmpty(?string $value): bool {
+        return $value === null || $value === '';
+    }
+
     /**
      * Konvertiert einen UTF-8-String in ISO-8859-1.
      *
@@ -107,13 +124,13 @@ class StringHelper {
         $encoding = strtoupper($encoding);
 
         return match ($encoding) {
-            'UTF-8'                         => "\xEF\xBB\xBF",
-            'UTF-16BE', 'UTF-16-BE'         => "\xFE\xFF",
-            'UTF-16LE', 'UTF-16-LE'         => "\xFF\xFE",
-            'UTF-16'                        => "\xFF\xFE",           // Little-Endian als Default
-            'UTF-32BE', 'UTF-32-BE'         => "\x00\x00\xFE\xFF",
-            'UTF-32LE', 'UTF-32-LE'         => "\xFF\xFE\x00\x00",
-            'UTF-32'                        => "\xFF\xFE\x00\x00",   // Little-Endian als Default
+            'UTF-8'                         => self::BOM_UTF8,
+            'UTF-16BE', 'UTF-16-BE'         => self::BOM_UTF16_BE,
+            'UTF-16LE', 'UTF-16-LE'         => self::BOM_UTF16_LE,
+            'UTF-16'                        => self::BOM_UTF16_LE,    // Little-Endian als Default
+            'UTF-32BE', 'UTF-32-BE'         => self::BOM_UTF32_BE,
+            'UTF-32LE', 'UTF-32-LE'         => self::BOM_UTF32_LE,
+            'UTF-32'                        => self::BOM_UTF32_LE,    // Little-Endian als Default
             default                         => null,
         };
     }
@@ -125,19 +142,19 @@ class StringHelper {
      * @return string|null Das erkannte Encoding oder null wenn kein BOM gefunden wurde
      */
     public static function detectBomEncoding(string $content): ?string {
-        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+        if (str_starts_with($content, self::BOM_UTF8)) {
             return 'UTF-8';
         }
-        if (str_starts_with($content, "\xFF\xFE\x00\x00")) {
+        if (str_starts_with($content, self::BOM_UTF32_LE)) {
             return 'UTF-32LE';
         }
-        if (str_starts_with($content, "\x00\x00\xFE\xFF")) {
+        if (str_starts_with($content, self::BOM_UTF32_BE)) {
             return 'UTF-32BE';
         }
-        if (str_starts_with($content, "\xFF\xFE")) {
+        if (str_starts_with($content, self::BOM_UTF16_LE)) {
             return 'UTF-16LE';
         }
-        if (str_starts_with($content, "\xFE\xFF")) {
+        if (str_starts_with($content, self::BOM_UTF16_BE)) {
             return 'UTF-16BE';
         }
         return null;
@@ -151,15 +168,15 @@ class StringHelper {
      */
     public static function stripBom(string $content): string {
         // UTF-32 zuerst prüfen (4 Bytes)
-        if (str_starts_with($content, "\xFF\xFE\x00\x00") || str_starts_with($content, "\x00\x00\xFE\xFF")) {
+        if (str_starts_with($content, self::BOM_UTF32_LE) || str_starts_with($content, self::BOM_UTF32_BE)) {
             return substr($content, 4);
         }
         // UTF-8 (3 Bytes)
-        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+        if (str_starts_with($content, self::BOM_UTF8)) {
             return substr($content, 3);
         }
         // UTF-16 (2 Bytes)
-        if (str_starts_with($content, "\xFF\xFE") || str_starts_with($content, "\xFE\xFF")) {
+        if (str_starts_with($content, self::BOM_UTF16_LE) || str_starts_with($content, self::BOM_UTF16_BE)) {
             return substr($content, 2);
         }
         return $content;
@@ -168,32 +185,37 @@ class StringHelper {
     /**
      * Entfernt nicht druckbare Zeichen aus einem String.
      *
-     * @param string $input Der zu bereinigende String.
+     * @param string|null $input Der zu bereinigende String (null wird als leerer String behandelt).
      * @return string Der bereinigte String ohne nicht druckbare Zeichen.
      */
-    public static function sanitizePrintable(string $input): string {
+    public static function sanitizePrintable(?string $input): string {
+        if (self::isNullOrEmpty($input)) return '';
         return preg_replace('/[[:^print:]]/', ' ', $input) ?? '';
     }
 
     /**
      * Entfernt nicht-ASCII-Zeichen aus einem String.
      *
-     * @param string $input Der zu bereinigende String.
+     * @param string|null $input Der zu bereinigende String (null wird als leerer String behandelt).
      * @return string Der bereinigte String ohne nicht-ASCII-Zeichen.
      */
-    public static function removeNonAscii(string $input): string {
+    public static function removeNonAscii(?string $input): string {
+        if (self::isNullOrEmpty($input)) return '';
         return preg_replace('/[\x80-\xFF]/', '', $input) ?? '';
     }
 
     /**
-     * Kürzt einen Text auf eine maximale Länge und fügt ein Suffix hinzu.
+     * Kürzt einen Text auf eine maximale Länge und fügt optional ein Suffix hinzu.
      *
-     * @param string $text Der zu kürzende Text.
-     * @param int $maxLength Die maximale Länge des Textes.
-     * @param string $suffix Das Suffix, das hinzugefügt wird (Standard: '...').
-     * @return string Der gekürzte Text.
+     * Für einfaches Kürzen ohne Suffix: truncate($text, $length, '')
+     *
+     * @param string|null $text Der zu kürzende Text (null wird als leerer String behandelt).
+     * @param int $maxLength Die maximale Länge des Textes (inkl. Suffix).
+     * @param string $suffix Das Suffix, das hinzugefügt wird (Standard: '...'). Leerer String für kein Suffix.
+     * @return string Der gekürzte Text mit Suffix, oder der Original-Text wenn kürzer.
      */
-    public static function truncate(string $text, int $maxLength, string $suffix = '...'): string {
+    public static function truncate(?string $text, int $maxLength, string $suffix = '...'): string {
+        if (self::isNullOrEmpty($text)) return '';
         return mb_strlen($text) > $maxLength
             ? mb_substr($text, 0, $maxLength - mb_strlen($suffix)) . $suffix
             : $text;
@@ -232,110 +254,53 @@ class StringHelper {
     /**
      * Normalisiert Whitespace in einem String. Zeilenumbrüche und mehrere Leerzeichen werden durch ein einzelnes Leerzeichen ersetzt.
      *
-     * @param string $input Der zu normalisierende String.
-     * @return string Der normalisierte String.
+     * Der String wird zusätzlich getrimmt. Im Gegensatz zu collapseWhitespace()
+     * wird hier auch am Anfang und Ende normalisiert.
+     *
+     * @param string|null $input Der zu normalisierende String (null wird als leerer String behandelt).
+     * @return string Der normalisierte und getrimmte String.
+     * @see collapseWhitespace() Für Kollabieren ohne Trimmen.
+     * @see normalizeInlineWhitespace() Für Kollabieren unter Erhalt von Zeilenumbrüchen.
      */
-    public static function normalizeWhitespace(string $input): string {
+    public static function normalizeWhitespace(?string $input): string {
+        if (self::isNullOrEmpty($input)) return '';
         return preg_replace('/\s+/', ' ', trim($input)) ?? '';
     }
 
     /**
      * Normalisiert Whitespace in einem String. Mehrere Leerzeichen oder Tabs werden durch ein einzelnes Leerzeichen ersetzt. Zeilenumbrüche bleiben erhalten.
      *
-     * @param string $input Der zu normalisierende String.
+     * @param string|null $input Der zu normalisierende String (null wird als leerer String behandelt).
      * @return string Der normalisierte String.
      */
-    public static function normalizeInlineWhitespace(string $input): string {
+    public static function normalizeInlineWhitespace(?string $input): string {
+        if (self::isNullOrEmpty($input)) return '';
         return preg_replace('/[ \t]{2,}/u', ' ', $input) ?? '';
     }
 
     /**
      * Konvertiert einen String in Kleinbuchstaben (UTF-8).
      *
-     * @param string $input Der zu konvertierende String.
+     * @param string|null $input Der zu konvertierende String (null wird als leerer String behandelt).
      * @return string Der konvertierte String in Kleinbuchstaben.
      */
-    public static function toLower(string $input): string {
+    public static function toLower(?string $input): string {
+        if (self::isNullOrEmpty($input)) return '';
         return mb_strtolower($input, 'UTF-8');
     }
 
     /**
      * Konvertiert einen String in Großbuchstaben (UTF-8).
      *
-     * @param string $input Der zu konvertierende String.
+     * @param string|null $input Der zu konvertierende String (null wird als leerer String behandelt).
      * @return string Der konvertierte String in Großbuchstaben.
      */
-    public static function toUpper(string $input): string {
+    public static function toUpper(?string $input): string {
+        if (self::isNullOrEmpty($input)) return '';
         return mb_strtoupper($input, 'UTF-8');
     }
 
-    /**
-     * Entfernt den UTF-8 BOM (Byte Order Mark) aus einem String.
-     *
-     * @param string $input Der zu bereinigende String.
-     * @return string Der bereinigte String.
-     */
-    public static function removeUtf8Bom(string $input): string {
-        return preg_replace('/^\xEF\xBB\xBF/', '', $input) ?? $input;
-    }
 
-    /**
-     * Entfernt den UTF-16 BOM (Byte Order Mark - Big Endian) aus einem String.
-     *
-     * @param string $input Der zu bereinigende String.
-     * @return string Der bereinigte String.
-     */
-    public static function removeUtf16BomBE(string $input): string {
-        return preg_replace('/^\xFE\xFF/', '', $input) ?? $input;
-    }
-
-    /**
-     * Entfernt den UTF-16 BOM (Byte Order Mark - Little Endian) aus einem String.
-     *
-     * @param string $input Der zu bereinigende String.
-     * @return string Der bereinigte String.
-     */
-    public static function removeUtf16BomLE(string $input): string {
-        return preg_replace('/^\xFF\xFE/', '', $input) ?? $input;
-    }
-
-    /**
-     * Entfernt den UTF-32 BOM (Byte Order Mark - Big Endian) aus einem String.
-     *
-     * @param string $input Der zu bereinigende String.
-     * @return string Der bereinigte String.
-     */
-    public static function removeUtf32BomBE(string $input): string {
-        return preg_replace('/^\x00\x00\xFE\xFF/', '', $input) ?? $input;
-    }
-
-    /**
-     * Entfernt den UTF-32 BOM (Byte Order Mark - Little Endian) aus einem String.
-     *
-     * @param string $input Der zu bereinigende String.
-     * @return string Der bereinigte String.
-     */
-    public static function removeUtf32BomLE(string $input): string {
-        return preg_replace('/^\xFF\xFE\x00\x00/', '', $input) ?? $input;
-    }
-
-    /**
-     * Entfernt den BOM (Byte Order Mark) aus einem String.
-     *
-     * @param string $input Der zu bereinigende String.
-     * @return string Der bereinigte String.
-     */
-    public static function removeBom(string $input): string {
-        return self::removeUtf8Bom(
-            self::removeUtf16BomBE(
-                self::removeUtf16BomLE(
-                    self::removeUtf32BomBE(
-                        self::removeUtf32BomLE($input)
-                    )
-                )
-            )
-        );
-    }
 
     /**
      * Ermittelt die Zeichenkodierung eines Strings.
@@ -388,23 +353,15 @@ class StringHelper {
             $h = $caseSensitive ? $haystack : mb_strtolower($haystack);
             $k = $caseSensitive ? $keyword : mb_strtolower($keyword);
 
-            switch ($mode) {
-                case SearchMode::EXACT:
-                    if (trim($h) === trim($k)) return true;
-                    break;
-                case SearchMode::CONTAINS:
-                    if (str_contains($h, $k)) return true;
-                    break;
-                case SearchMode::STARTS_WITH:
-                    if (str_starts_with($h, $k)) return true;
-                    break;
-                case SearchMode::ENDS_WITH:
-                    if (str_ends_with($h, $k)) return true;
-                    break;
-                case SearchMode::REGEX:
-                    if (@preg_match($k, $haystack) === 1) return true;
-                    break;
-            }
+            $found = match ($mode) {
+                SearchMode::EXACT       => trim($h) === trim($k),
+                SearchMode::CONTAINS    => str_contains($h, $k),
+                SearchMode::STARTS_WITH => str_starts_with($h, $k),
+                SearchMode::ENDS_WITH   => str_ends_with($h, $k),
+                SearchMode::REGEX       => @preg_match($k, $haystack) === 1,
+            };
+
+            if ($found) return true;
         }
 
         return false;
@@ -413,10 +370,10 @@ class StringHelper {
     /**
      * Entfernt unerwünschte Zeichenketten aus einem String und trimmt den Rest auf die angegebenen Trim-Zeichen.
      *
-     * @param string $input
-     * @param array $unwanted
-     * @param string $trimChars
-     * @return void
+     * @param string $input Der zu bereinigende String.
+     * @param array<string> $unwanted Array der zu entfernenden Zeichenketten.
+     * @param string $trimChars Zeichen, die am Anfang und Ende getrimmt werden.
+     * @return string Der bereinigte String.
      */
     public static function cleanFromList(string $input, array $unwanted, string $trimChars = " ;,"): string {
         foreach ($unwanted as $needle) {
@@ -446,10 +403,11 @@ class StringHelper {
         }
 
         $blocks = [];
-        while (strlen($text) > 0 && count($blocks) < $maxBlocks) {
-            $chunk = substr(str_pad($text, $blockLength, $padChar), 0, $blockLength);
+        while (mb_strlen($text) > 0 && count($blocks) < $maxBlocks) {
+            $chunk = self::pad($text, $blockLength, $padChar, STR_PAD_RIGHT);
+            $chunk = mb_substr($chunk, 0, $blockLength);
             $blocks[] = $chunk;
-            $text = substr($text, $blockLength);
+            $text = mb_substr($text, $blockLength);
         }
 
         return array_pad($blocks, $maxBlocks, '');
@@ -597,52 +555,15 @@ class StringHelper {
     /**
      * Versucht einen String als DateTime zu parsen.
      *
+     * Delegiert an DateHelper::parseDateTime() für konsistente Datums-Verarbeitung.
+     *
      * @param string $value Der zu parsende String
      * @param CountryCode $country Das Land für länder-spezifische Formatinterpretation
      * @return DateTimeImmutable|null Das DateTime-Objekt oder null
+     * @see DateHelper::parseDateTime() Für die vollständige Implementierung.
      */
     public static function parseDateTime(string $value, CountryCode $country = CountryCode::Germany): ?DateTimeImmutable {
-        // Unix timestamp prüfen (10 oder 13 Stellen)
-        if (ctype_digit($value) && (strlen($value) === 10 || strlen($value) === 13)) {
-            $timestamp = (int) $value;
-            if ($timestamp > 0 && $timestamp < 2147483647) {
-                if (strlen($value) === 13) {
-                    $timestamp = intval($timestamp / 1000);
-                }
-                return DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
-            }
-        }
-
-        // Standard-Formate prüfen (vorsichtig - nur eindeutige Formate)
-        $formats = [
-            'Y-m-d H:i:s',
-            'Y-m-d\TH:i:s',
-            'Y-m-d\TH:i:sP',
-            'Y-m-d',        // ISO Format: YYYY-MM-DD
-            'd.m.Y',        // Deutsch: DD.MM.YYYY (sicherer als DD-MM-YYYY)
-            'd.m.Y H:i:s',  // Deutsch mit Zeit
-        ];
-
-        // Länder-spezifische Formate hinzufügen
-        $countryFormats = self::getCountrySpecificFormats($country);
-        $formats = array_merge($formats, $countryFormats);
-
-        foreach ($formats as $fmt) {
-            $date = DateTimeImmutable::createFromFormat($fmt, $value);
-            if ($date !== false) {
-                return $date;
-            }
-        }
-
-        // Fallback: strtotime (nur bei längeren Strings und wenn sie wie typische Datums-Strings aussehen)
-        if (strlen($value) >= 8 && preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
-            $timestamp = strtotime($value);
-            if ($timestamp !== false) {
-                return \DateTimeImmutable::createFromFormat('U', (string) $timestamp) ?: null;
-            }
-        }
-
-        return null;
+        return DateHelper::parseDateTime($value, $country);
     }
 
     /**
@@ -763,10 +684,11 @@ class StringHelper {
     /**
      * Konvertiert CamelCase zu snake_case.
      *
-     * @param string $text Der zu konvertierende Text.
+     * @param string|null $text Der zu konvertierende Text (null wird als leerer String behandelt).
      * @return string Der konvertierte Text.
      */
-    public static function camelToSnake(string $text): string {
+    public static function camelToSnake(?string $text): string {
+        if (self::isNullOrEmpty($text)) return '';
         $result = preg_replace('/([a-z])([A-Z])/', '$1_$2', $text);
         return strtolower($result);
     }
@@ -774,11 +696,12 @@ class StringHelper {
     /**
      * Konvertiert snake_case zu camelCase.
      *
-     * @param string $text Der zu konvertierende Text.
+     * @param string|null $text Der zu konvertierende Text (null wird als leerer String behandelt).
      * @param bool $pascalCase PascalCase statt camelCase (Standard: false).
      * @return string Der konvertierte Text.
      */
-    public static function snakeToCamel(string $text, bool $pascalCase = false): string {
+    public static function snakeToCamel(?string $text, bool $pascalCase = false): string {
+        if (self::isNullOrEmpty($text)) return '';
         $result = str_replace('_', '', ucwords($text, '_'));
         return $pascalCase ? $result : lcfirst($result);
     }
@@ -786,11 +709,12 @@ class StringHelper {
     /**
      * Konvertiert kebab-case zu camelCase.
      *
-     * @param string $text Der zu konvertierende Text.
+     * @param string|null $text Der zu konvertierende Text (null wird als leerer String behandelt).
      * @param bool $pascalCase PascalCase statt camelCase (Standard: false).
      * @return string Der konvertierte Text.
      */
-    public static function kebabToCamel(string $text, bool $pascalCase = false): string {
+    public static function kebabToCamel(?string $text, bool $pascalCase = false): string {
+        if (self::isNullOrEmpty($text)) return '';
         $result = str_replace('-', '', ucwords($text, '-'));
         return $pascalCase ? $result : lcfirst($result);
     }
@@ -798,10 +722,11 @@ class StringHelper {
     /**
      * Konvertiert camelCase zu kebab-case.
      *
-     * @param string $text Der zu konvertierende Text.
+     * @param string|null $text Der zu konvertierende Text (null wird als leerer String behandelt).
      * @return string Der konvertierte Text.
      */
-    public static function camelToKebab(string $text): string {
+    public static function camelToKebab(?string $text): string {
+        if (self::isNullOrEmpty($text)) return '';
         $result = preg_replace('/([a-z])([A-Z])/', '$1-$2', $text);
         return strtolower($result);
     }
@@ -809,13 +734,14 @@ class StringHelper {
     /**
      * Maskiert Teile eines Strings (z.B. für Kreditkartennummern, E-Mails).
      *
-     * @param string $text Der zu maskierende Text.
+     * @param string|null $text Der zu maskierende Text (null wird als leerer String behandelt).
      * @param int $visibleStart Anzahl sichtbarer Zeichen am Anfang (Standard: 0).
      * @param int $visibleEnd Anzahl sichtbarer Zeichen am Ende (Standard: 4).
      * @param string $maskChar Das Maskierungszeichen (Standard: '*').
      * @return string Der maskierte Text.
      */
-    public static function mask(string $text, int $visibleStart = 0, int $visibleEnd = 4, string $maskChar = '*'): string {
+    public static function mask(?string $text, int $visibleStart = 0, int $visibleEnd = 4, string $maskChar = '*'): string {
+        if (self::isNullOrEmpty($text)) return '';
         $length = mb_strlen($text);
 
         if ($length <= $visibleStart + $visibleEnd) {
@@ -832,11 +758,12 @@ class StringHelper {
     /**
      * Maskiert eine E-Mail-Adresse (z.B. j***@example.com).
      *
-     * @param string $email Die zu maskierende E-Mail.
+     * @param string|null $email Die zu maskierende E-Mail (null wird als leerer String behandelt).
      * @param string $maskChar Das Maskierungszeichen (Standard: '*').
      * @return string Die maskierte E-Mail.
      */
-    public static function maskEmail(string $email, string $maskChar = '*'): string {
+    public static function maskEmail(?string $email, string $maskChar = '*'): string {
+        if (self::isNullOrEmpty($email)) return '';
         $parts = explode('@', $email);
         if (count($parts) !== 2) {
             return self::mask($email, 1, 1, $maskChar);
@@ -855,8 +782,10 @@ class StringHelper {
     /**
      * Zählt die Wörter in einem String.
      *
+     * Verwendet einfache Leerzeichen-basierte Worttrennung.
+     *
      * @param string $text Der zu zählende Text.
-     * @param string $locale Sprachcode für Wortgrenzen (Standard: 'de_DE').
+     * @param string $locale Reserviert für zukünftige locale-basierte Worttrennung (derzeit unbenutzt).
      * @return int Anzahl der Wörter.
      */
     public static function wordCount(string $text, string $locale = 'de_DE'): int {
@@ -934,30 +863,38 @@ class StringHelper {
     /**
      * Wandelt den ersten Buchstaben jedes Wortes in Großbuchstaben um (Title Case).
      *
-     * @param string $text Der zu konvertierende Text.
+     * @param string|null $text Der zu konvertierende Text (null wird als leerer String behandelt).
      * @return string Der konvertierte Text.
      */
-    public static function titleCase(string $text): string {
+    public static function titleCase(?string $text): string {
+        if (self::isNullOrEmpty($text)) return '';
         return mb_convert_case($text, MB_CASE_TITLE, 'UTF-8');
     }
 
     /**
      * Entfernt mehrfache aufeinanderfolgende Leerzeichen.
      *
-     * @param string $text Der zu bereinigende Text.
-     * @return string Der bereinigte Text.
+     * Im Gegensatz zu normalizeWhitespace() wird der String NICHT getrimmt.
+     * Alle Whitespace-Typen (Leerzeichen, Tabs, Zeilenumbrüche) werden zu einem Leerzeichen.
+     *
+     * @param string|null $text Der zu bereinigende Text (null wird als leerer String behandelt).
+     * @return string Der bereinigte Text mit einfachen Leerzeichen.
+     * @see normalizeWhitespace() Für Kollabieren mit Trimmen.
+     * @see normalizeInlineWhitespace() Für Kollabieren unter Erhalt von Zeilenumbrüchen.
      */
-    public static function collapseWhitespace(string $text): string {
+    public static function collapseWhitespace(?string $text): string {
+        if (self::isNullOrEmpty($text)) return '';
         return preg_replace('/\s+/', ' ', $text);
     }
 
     /**
      * Kehrt einen UTF-8 String um.
      *
-     * @param string $text Der umzukehrende Text.
+     * @param string|null $text Der umzukehrende Text (null wird als leerer String behandelt).
      * @return string Der umgekehrte Text.
      */
-    public static function reverse(string $text): string {
+    public static function reverse(?string $text): string {
+        if (self::isNullOrEmpty($text)) return '';
         $chars = mb_str_split($text);
         return implode('', array_reverse($chars));
     }
@@ -1046,35 +983,216 @@ class StringHelper {
     }
 
     /**
+     * Kürzt einen String auf eine maximale Länge (multibyte-safe).
+     *
+     * @param string|null $text Der zu kürzende Text.
+     * @param int $maxLength Die maximale Länge.
+     * @return string Der gekürzte Text ohne Suffix.
+     * @deprecated Verwende stattdessen truncate($text, $maxLength, '') - gleiche Funktionalität.
+     */
+    public static function limit(?string $text, int $maxLength): string {
+        return self::truncate($text, $maxLength, '');
+    }
+
+    /**
      * Entfernt alle Ziffern aus einem String.
      *
-     * @param string $text Der zu bereinigende Text.
+     * @param string|null $text Der zu bereinigende Text (null wird als leerer String behandelt).
      * @return string Der Text ohne Ziffern.
      */
-    public static function removeDigits(string $text): string {
+    public static function removeDigits(?string $text): string {
+        if (self::isNullOrEmpty($text)) return '';
         return preg_replace('/\d/', '', $text);
     }
 
     /**
      * Extrahiert alle Ziffern aus einem String.
      *
-     * @param string $text Der zu durchsuchende Text.
+     * @param string|null $text Der zu durchsuchende Text (null wird als leerer String behandelt).
      * @return string Nur die Ziffern.
      */
-    public static function extractDigits(string $text): string {
+    public static function extractDigits(?string $text): string {
+        if (self::isNullOrEmpty($text)) return '';
         return preg_replace('/[^\d]/', '', $text);
     }
 
     /**
      * Wandelt Zeilenumbrüche in ein einheitliches Format um.
      *
-     * @param string $text Der zu konvertierende Text.
+     * @param string|null $text Der zu konvertierende Text (null wird als leerer String behandelt).
      * @param string $lineEnding Das gewünschte Zeilenende (Standard: PHP_EOL).
      * @return string Der konvertierte Text.
      */
-    public static function normalizeLineEndings(string $text, string $lineEnding = PHP_EOL): string {
+    public static function normalizeLineEndings(?string $text, string $lineEnding = PHP_EOL): string {
+        if (self::isNullOrEmpty($text)) return '';
         // Erst alle auf \n normalisieren, dann zum Ziel konvertieren
         $text = str_replace(["\r\n", "\r"], "\n", $text);
         return str_replace("\n", $lineEnding, $text);
+    }
+
+    /**
+     * Bricht einen Text auf eine maximale Zeilenlänge um.
+     *
+     * Im Gegensatz zu wordwrap() ist diese Methode multibyte-safe.
+     *
+     * @param string|null $text Der umzubrechende Text (null wird als leerer String behandelt).
+     * @param int $width Maximale Zeilenlänge (Standard: 75).
+     * @param string $break Zeilenumbruch-Zeichen (Standard: "\n").
+     * @param bool $cut Ob Wörter länger als $width geschnitten werden (Standard: false).
+     * @return string Der umgebrochene Text.
+     */
+    public static function wrap(?string $text, int $width = 75, string $break = "\n", bool $cut = false): string {
+        if (self::isNullOrEmpty($text)) return '';
+        if ($width <= 0) return $text;
+
+        $lines = [];
+        $words = preg_split('/(\s+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $currentLine = '';
+
+        foreach ($words as $word) {
+            // Leerzeichen-Token
+            if (trim($word) === '') {
+                if ($currentLine !== '' && mb_strlen($currentLine) + mb_strlen($word) <= $width) {
+                    $currentLine .= $word;
+                }
+                continue;
+            }
+
+            $wordLength = mb_strlen($word);
+            $lineLength = mb_strlen($currentLine);
+
+            // Wort passt in aktuelle Zeile
+            if ($lineLength + $wordLength <= $width) {
+                $currentLine .= $word;
+                continue;
+            }
+
+            // Aktuelle Zeile abschließen wenn nicht leer
+            if ($currentLine !== '') {
+                $lines[] = rtrim($currentLine);
+                $currentLine = '';
+            }
+
+            // Wort ist zu lang für eine Zeile
+            if ($cut && $wordLength > $width) {
+                while (mb_strlen($word) > $width) {
+                    $lines[] = mb_substr($word, 0, $width);
+                    $word = mb_substr($word, $width);
+                }
+                $currentLine = $word;
+            } else {
+                $currentLine = $word;
+            }
+        }
+
+        if ($currentLine !== '') {
+            $lines[] = rtrim($currentLine);
+        }
+
+        return implode($break, $lines);
+    }
+
+    /**
+     * Extrahiert den Text zwischen zwei Markern.
+     *
+     * @param string $text Der zu durchsuchende Text.
+     * @param string $start Der Startmarker.
+     * @param string $end Der Endmarker.
+     * @param bool $includeMarkers Ob die Marker im Ergebnis enthalten sein sollen (Standard: false).
+     * @return string|null Der gefundene Text oder null wenn nicht gefunden.
+     */
+    public static function between(string $text, string $start, string $end, bool $includeMarkers = false): ?string {
+        $startPos = mb_strpos($text, $start);
+        if ($startPos === false) {
+            return null;
+        }
+
+        $startPos += $includeMarkers ? 0 : mb_strlen($start);
+        $endPos = mb_strpos($text, $end, $startPos + ($includeMarkers ? mb_strlen($start) : 0));
+
+        if ($endPos === false) {
+            return null;
+        }
+
+        $length = $endPos - $startPos + ($includeMarkers ? mb_strlen($end) : 0);
+        return mb_substr($text, $startPos, $length);
+    }
+
+    /**
+     * Prüft, ob der String mindestens eines der angegebenen Schlüsselwörter enthält.
+     *
+     * @param string $haystack Der zu durchsuchende String.
+     * @param array<string> $needles Array der zu suchenden Teilstrings.
+     * @param bool $caseSensitive Groß-/Kleinschreibung beachten (Standard: true).
+     * @return bool True wenn mindestens ein Schlüsselwort gefunden wurde.
+     */
+    public static function containsAny(string $haystack, array $needles, bool $caseSensitive = true): bool {
+        $h = $caseSensitive ? $haystack : mb_strtolower($haystack);
+
+        foreach ($needles as $needle) {
+            if ($needle === '') continue;
+            $n = $caseSensitive ? $needle : mb_strtolower($needle);
+            if (str_contains($h, $n)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Prüft, ob der String alle angegebenen Schlüsselwörter enthält.
+     *
+     * @param string $haystack Der zu durchsuchende String.
+     * @param array<string> $needles Array der zu suchenden Teilstrings.
+     * @param bool $caseSensitive Groß-/Kleinschreibung beachten (Standard: true).
+     * @return bool True wenn alle Schlüsselwörter gefunden wurden.
+     */
+    public static function containsAll(string $haystack, array $needles, bool $caseSensitive = true): bool {
+        if (empty($needles)) {
+            return true;
+        }
+
+        $h = $caseSensitive ? $haystack : mb_strtolower($haystack);
+
+        foreach ($needles as $needle) {
+            if ($needle === '') continue;
+            $n = $caseSensitive ? $needle : mb_strtolower($needle);
+            if (!str_contains($h, $n)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Entfernt HTML-Tags aus einem String und normalisiert Whitespace.
+     *
+     * @param string|null $html Der zu bereinigende HTML-String (null wird als leerer String behandelt).
+     * @param string|null $allowedTags Erlaubte Tags im strip_tags Format (Standard: null = keine).
+     * @return string Der bereinigte Text.
+     */
+    public static function stripHtml(?string $html, ?string $allowedTags = null): string {
+        if (self::isNullOrEmpty($html)) return '';
+        $text = strip_tags($html, $allowedTags);
+        return self::normalizeWhitespace($text);
+    }
+
+    /**
+     * Wiederholt einen String n-mal.
+     *
+     * @param string|null $text Der zu wiederholende Text (null wird als leerer String behandelt).
+     * @param int $times Anzahl der Wiederholungen.
+     * @param string $separator Trennzeichen zwischen den Wiederholungen (Standard: '').
+     * @return string Der wiederholte Text.
+     */
+    public static function repeat(?string $text, int $times, string $separator = ''): string {
+        if (self::isNullOrEmpty($text)) return '';
+        if ($times <= 0) return '';
+        if ($separator === '') {
+            return str_repeat($text, $times);
+        }
+        return implode($separator, array_fill(0, $times, $text));
     }
 }

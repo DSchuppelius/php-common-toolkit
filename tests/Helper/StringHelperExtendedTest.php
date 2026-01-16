@@ -149,4 +149,61 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('a b c', StringHelper::collapseWhitespace('a    b    c'));
         $this->assertEquals('hello world', StringHelper::collapseWhitespace("hello\t\n  world"));
     }
+
+    public function testWrap(): void {
+        $text = 'Dies ist ein langer Text der umgebrochen werden soll.';
+        $wrapped = StringHelper::wrap($text, 20);
+        $lines = explode("\n", $wrapped);
+
+        $this->assertGreaterThan(1, count($lines));
+        foreach ($lines as $line) {
+            $this->assertLessThanOrEqual(20, mb_strlen($line));
+        }
+    }
+
+    public function testWrapWithCut(): void {
+        $text = 'Superlangeeeeesssssswort';
+        $wrapped = StringHelper::wrap($text, 10, "\n", true);
+        $lines = explode("\n", $wrapped);
+
+        foreach ($lines as $line) {
+            $this->assertLessThanOrEqual(10, mb_strlen($line));
+        }
+    }
+
+    public function testBetween(): void {
+        $text = 'Vor [Inhalt] Nach';
+        $this->assertEquals('Inhalt', StringHelper::between($text, '[', ']'));
+        $this->assertEquals('[Inhalt]', StringHelper::between($text, '[', ']', true));
+        $this->assertNull(StringHelper::between($text, '{', '}'));
+    }
+
+    public function testContainsAny(): void {
+        $text = 'Hello World';
+        $this->assertTrue(StringHelper::containsAny($text, ['Hello', 'Goodbye']));
+        $this->assertTrue(StringHelper::containsAny($text, ['World']));
+        $this->assertFalse(StringHelper::containsAny($text, ['Goodbye', 'Farewell']));
+        $this->assertTrue(StringHelper::containsAny($text, ['hello'], false));
+        $this->assertFalse(StringHelper::containsAny($text, ['hello'], true));
+    }
+
+    public function testContainsAll(): void {
+        $text = 'Hello World Test';
+        $this->assertTrue(StringHelper::containsAll($text, ['Hello', 'World']));
+        $this->assertFalse(StringHelper::containsAll($text, ['Hello', 'Goodbye']));
+        $this->assertTrue(StringHelper::containsAll($text, []));
+        $this->assertTrue(StringHelper::containsAll($text, ['hello', 'world'], false));
+    }
+
+    public function testStripHtml(): void {
+        $html = '<p>Hello <strong>World</strong></p>';
+        $this->assertEquals('Hello World', StringHelper::stripHtml($html));
+    }
+
+    public function testRepeat(): void {
+        $this->assertEquals('abcabcabc', StringHelper::repeat('abc', 3));
+        $this->assertEquals('abc-abc-abc', StringHelper::repeat('abc', 3, '-'));
+        $this->assertEquals('', StringHelper::repeat('abc', 0));
+        $this->assertEquals('', StringHelper::repeat('abc', -1));
+    }
 }

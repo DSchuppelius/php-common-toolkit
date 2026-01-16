@@ -74,10 +74,22 @@ class StringHelperTest extends BaseTestCase {
         $this->assertSame("straße", $lower);
     }
 
-    public function testRemoveUtf8Bom(): void {
-        $bom = "\xEF\xBB\xBFHallo";
-        $clean = StringHelper::removeUtf8Bom($bom);
-        $this->assertSame("Hallo", $clean);
+    public function testStripBom(): void {
+        // UTF-8 BOM
+        $bomUtf8 = StringHelper::BOM_UTF8 . "Hallo";
+        $this->assertSame("Hallo", StringHelper::stripBom($bomUtf8));
+
+        // UTF-16 LE BOM
+        $bomUtf16Le = StringHelper::BOM_UTF16_LE . "Test";
+        $this->assertSame("Test", StringHelper::stripBom($bomUtf16Le));
+
+        // UTF-16 BE BOM
+        $bomUtf16Be = StringHelper::BOM_UTF16_BE . "Test";
+        $this->assertSame("Test", StringHelper::stripBom($bomUtf16Be));
+
+        // Kein BOM
+        $noBom = "Hallo";
+        $this->assertSame("Hallo", StringHelper::stripBom($noBom));
     }
 
     public function testDetectEncoding(): void {
