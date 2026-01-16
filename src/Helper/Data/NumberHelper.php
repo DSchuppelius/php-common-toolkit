@@ -150,9 +150,9 @@ class NumberHelper {
      * - US-Format: 1,234.56 → 1234.56
      * - Einfache Formate: 1,5 oder 1.5
      * 
-     * Heuristik bei Mehrdeutigkeit (z.B. "1,234" oder "1.234"):
-     * - Vorkommazahl 1-999 UND genau 3 Nachkommastellen → Tausender (1234)
-     * - Sonst → Dezimal
+     * Bei Mehrdeutigkeit (nur ein Trenner mit genau 3 Nachkommastellen) wird
+     * Dezimal bevorzugt. Für eindeutige Tausender-Erkennung beide Trenner verwenden
+     * (z.B. "1.234,00" oder "1,234.00").
      * 
      * @param string $value Der zu normalisierende Wert.
      * @return float Der normalisierte Wert.
@@ -176,46 +176,11 @@ class NumberHelper {
                 $value = str_replace(',', '', $value);
             }
         } elseif ($lastComma !== false) {
-            // Nur Komma vorhanden
-            $afterComma = substr($value, $lastComma + 1);
-            $beforeComma = substr($value, 0, $lastComma);
-
-            // Prüfen: Ist es ein US-Tausender? (1-2 Ziffern vor Komma, genau 3 danach)
-            // Bei 3 Ziffern vor dem Trenner ist es mehrdeutig → Dezimal bevorzugen
-            $isThousandsSeparator = strlen($afterComma) === 3
-                && ctype_digit($afterComma)
-                && substr_count($value, ',') === 1
-                && ctype_digit($beforeComma)
-                && strlen($beforeComma) >= 1
-                && strlen($beforeComma) <= 2;
-
-            if ($isThousandsSeparator) {
-                // US Tausender: 1,234 oder 12,345 → 1234 oder 12345
-                $value = str_replace(',', '', $value);
-            } else {
-                // Dezimal: 1,5 oder 123,456 → 1.5 oder 123.456
-                $value = str_replace(',', '.', $value);
-            }
-        } elseif ($lastDot !== false) {
-            // Nur Punkt vorhanden
-            $afterDot = substr($value, $lastDot + 1);
-            $beforeDot = substr($value, 0, $lastDot);
-
-            // Prüfen: Ist es ein deutsches Tausender? (1-2 Ziffern vor Punkt, genau 3 danach)
-            // Bei 3 Ziffern vor dem Trenner ist es mehrdeutig → Dezimal bevorzugen
-            $isThousandsSeparator = strlen($afterDot) === 3
-                && ctype_digit($afterDot)
-                && substr_count($value, '.') === 1
-                && ctype_digit($beforeDot)
-                && strlen($beforeDot) >= 1
-                && strlen($beforeDot) <= 2;
-
-            if ($isThousandsSeparator) {
-                // Deutsches Tausender: 1.234 oder 12.345 → 1234 oder 12345
-                $value = str_replace('.', '', $value);
-            }
-            // Sonst: Dezimal, PHP versteht es bereits
+            // Nur Komma vorhanden → immer als Dezimaltrenner behandeln
+            // (wie im deutschen Format üblich)
+            $value = str_replace(',', '.', $value);
         }
+        // Nur Punkt: PHP versteht es bereits als Dezimal
 
         return (float) $value;
     }

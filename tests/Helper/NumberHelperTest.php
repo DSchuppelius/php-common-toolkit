@@ -69,6 +69,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals(1.5, NumberHelper::normalizeDecimal("1,5"));
         $this->assertEquals(1.5, NumberHelper::normalizeDecimal("1.5"));
         $this->assertEquals(123.456, NumberHelper::normalizeDecimal("123,456"));
+        $this->assertEquals(1.234, NumberHelper::normalizeDecimal("1,234"));
 
         // Ganzzahlen
         $this->assertEquals(1234.0, NumberHelper::normalizeDecimal("1234"));
