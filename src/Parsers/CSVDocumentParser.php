@@ -96,17 +96,26 @@ class CSVDocumentParser extends HelperAbstract {
      * @param int $startLine Ab welcher Zeile gelesen werden soll (1-basiert)
      * @param int|null $maxLines Maximale Anzahl zu lesender Zeilen (null = alle)
      * @param bool $skipEmpty Leere Zeilen überspringen
-     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
+     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren (ignoriert wenn sourceEncoding gesetzt)
+     * @param string|null $sourceEncoding Explizites Quell-Encoding (z.B. 'CP850', 'CP437').
+     *                                    Wenn gesetzt, wird dieses Encoding verwendet statt automatischer Erkennung.
+     *                                    Für DOS-Dateien sollte das Encoding explizit angegeben werden,
+     *                                    da automatische Erkennung von CP437/CP850 unzuverlässig ist.
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
-    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, int $startLine = 1, ?int $maxLines = null, bool $skipEmpty = false, bool $detectEncoding = true): Document {
+    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, int $startLine = 1, ?int $maxLines = null, bool $skipEmpty = false, bool $detectEncoding = true, ?string $sourceEncoding = null): Document {
         if (!File::isReadable($file)) {
             static::logErrorAndThrow(RuntimeException::class, "CSV-Datei nicht lesbar: $file");
         }
 
-        // Speichereffizientes zeilenweises Lesen mit automatischer Encoding-Konvertierung
-        if ($detectEncoding) {
+        // Speichereffizientes zeilenweises Lesen mit Encoding-Konvertierung
+        // Wenn sourceEncoding explizit angegeben ist, wird es verwendet (wichtig für CP437/CP850)
+        // Wenn detectEncoding true ist, wird das Encoding automatisch erkannt
+        if ($sourceEncoding !== null) {
+            $lines = File::readLinesAsArrayUtf8($file, $skipEmpty, $maxLines, $startLine, $sourceEncoding);
+            static::logDebug("Datei mit explizitem Encoding '$sourceEncoding' gelesen: $file");
+        } elseif ($detectEncoding) {
             $lines = File::readLinesAsArrayUtf8($file, $skipEmpty, $maxLines, $startLine);
             static::logDebug("Datei zeilenweise mit automatischer Encoding-Konvertierung gelesen: $file");
         } else {
@@ -133,11 +142,15 @@ class CSVDocumentParser extends HelperAbstract {
      * @param string $delimiter CSV-Trennzeichen
      * @param string $enclosure CSV-Textbegrenzer
      * @param bool $includeHeader Ob Header-Zeile aus Zeile 1 mit einbezogen werden soll
-     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
+     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren (ignoriert wenn sourceEncoding gesetzt)
+     * @param string|null $sourceEncoding Explizites Quell-Encoding (z.B. 'CP850', 'CP437').
+     *                                    Wenn gesetzt, wird dieses Encoding verwendet statt automatischer Erkennung.
+     *                                    Für DOS-Dateien sollte das Encoding explizit angegeben werden,
+     *                                    da automatische Erkennung von CP437/CP850 unzuverlässig ist.
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
-    public static function fromFileRange(string $file, int $fromLine, int $toLine, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $includeHeader = true, bool $detectEncoding = true): Document {
+    public static function fromFileRange(string $file, int $fromLine, int $toLine, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $includeHeader = true, bool $detectEncoding = true, ?string $sourceEncoding = null): Document {
         if ($fromLine > $toLine) {
             static::logErrorAndThrow(RuntimeException::class, "Startzeile ($fromLine) darf nicht größer als Endzeile ($toLine) sein");
         }
@@ -150,7 +163,9 @@ class CSVDocumentParser extends HelperAbstract {
 
         // Header hinzufügen falls gewünscht und Startzeile > 1
         if ($includeHeader && $fromLine > 1) {
-            if ($detectEncoding) {
+            if ($sourceEncoding !== null) {
+                $headerLines = File::readLinesAsArrayUtf8($file, false, 1, 1, $sourceEncoding);
+            } elseif ($detectEncoding) {
                 $headerLines = File::readLinesAsArrayUtf8($file, false, 1, 1);
             } else {
                 $headerLines = File::readLinesAsArray($file, false, 1, 1);
@@ -162,7 +177,10 @@ class CSVDocumentParser extends HelperAbstract {
 
         // Datenzeilen aus dem Bereich lesen
         $maxLines = $toLine - $fromLine + 1;
-        if ($detectEncoding) {
+        if ($sourceEncoding !== null) {
+            $dataLines = File::readLinesAsArrayUtf8($file, false, $maxLines, $fromLine, $sourceEncoding);
+            static::logDebug("Datei mit explizitem Encoding '$sourceEncoding' gelesen: $file");
+        } elseif ($detectEncoding) {
             $dataLines = File::readLinesAsArrayUtf8($file, false, $maxLines, $fromLine);
             static::logDebug("Datei zeilenweise mit automatischer Encoding-Konvertierung gelesen: $file");
         } else {

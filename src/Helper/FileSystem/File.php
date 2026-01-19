@@ -142,34 +142,84 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         $content = self::readPartial($file);
+
+        // Prüfe zuerst auf UTF-8 BOM oder gültiges UTF-8
         if ($content !== false) {
-            $encodings = ['UTF-8', 'ISO-8859-1', 'ISO-8859-15', 'Windows-1252', 'ASCII'];
+            $bomEncoding = StringHelper::detectBomEncoding($content);
+            if ($bomEncoding !== null) {
+                self::logInfo("Zeichencodierung via BOM erkannt: $bomEncoding für $file");
+                self::adjustLocaleBasedOnEncoding($bomEncoding);
+                self::$chardetCache[$file] = $bomEncoding;
+                return $bomEncoding;
+            }
+
+            // Prüfe ob es gültiges UTF-8 ist
+            if (mb_check_encoding($content, 'UTF-8') && preg_match('//u', $content)) {
+                // Prüfe ob es auch als ASCII interpretiert werden kann
+                if (mb_check_encoding($content, 'ASCII')) {
+                    self::logInfo("Zeichencodierung erkannt: ASCII für $file");
+                    self::$chardetCache[$file] = 'ASCII';
+                    return 'ASCII';
+                }
+                self::logInfo("Zeichencodierung erkannt: UTF-8 für $file");
+                self::$chardetCache[$file] = 'UTF-8';
+                return 'UTF-8';
+            }
+        }
+
+        // Für nicht-UTF-8 Inhalte: Versuche Shell-basierte Erkennung (erkennt DOS-Codepages besser)
+        self::logDebug("Versuche Shell-basierte Erkennung (chardet/uchardet) für $file");
+        $detected = self::detectViaShell('chardet', $file) ?: self::detectViaShell('uchardet', $file);
+
+        if ($detected !== false) {
+            $detected = trim($detected);
+            // Normalisiere Encoding-Namen für konsistente Verwendung
+            $detected = StringHelper::normalizeEncodingName($detected);
+            // Spezielle Fallbacks
+            if ($detected === "None" || $detected === "NONE") {
+                $detected = "UTF-8";
+            }
+
+            // Erweiterte Heuristik: Wenn chardet ein problematisches Encoding erkannt hat
+            // prüfe mit unserer Heuristik auf DOS-Codepages, MacRoman, etc.
+            if ($content !== false && in_array($detected, ['Windows-1252', 'ISO-8859-15', 'ISO-8859-1', 'MacRoman', 'MACROMAN'], true)) {
+                $legacyEncoding = StringHelper::detectLegacyEncoding($content, $detected);
+                if ($legacyEncoding !== null && $legacyEncoding !== $detected) {
+                    self::logInfo("Heuristik: $legacyEncoding statt $detected erkannt für $file");
+                    $detected = $legacyEncoding;
+                }
+            }
+
+            self::adjustLocaleBasedOnEncoding($detected);
+            self::logDebug("Shell-basierte Zeichencodierung erkannt: $detected für $file");
+            self::$chardetCache[$file] = $detected;
+            return $detected;
+        }
+
+        // Letzter Fallback: Heuristik und mb_detect_encoding
+        if ($content !== false) {
+            // Versuche die erweiterte Heuristik für Legacy-Encodings
+            $legacyEncoding = StringHelper::detectLegacyEncoding($content);
+            if ($legacyEncoding !== null) {
+                self::logInfo("Heuristik-basierte Zeichencodierung erkannt: $legacyEncoding für $file");
+                self::adjustLocaleBasedOnEncoding($legacyEncoding);
+                self::$chardetCache[$file] = $legacyEncoding;
+                return $legacyEncoding;
+            }
+
+            $encodings = ['ISO-8859-1', 'ISO-8859-15', 'Windows-1252'];
             $detected = mb_detect_encoding($content, $encodings, true);
             if ($detected !== false) {
-                self::logInfo("Zeichencodierung via PHP erkannt: $detected für $file");
+                self::logInfo("Zeichencodierung via PHP-Fallback erkannt: $detected für $file");
                 self::adjustLocaleBasedOnEncoding($detected);
                 self::$chardetCache[$file] = $detected;
                 return $detected;
             }
         }
 
-        self::logWarning("Fallback via Shell (chardet/uchardet) für $file");
-        $detected = self::detectViaShell('chardet', $file) ?: self::detectViaShell('uchardet', $file);
-
-        if ($detected !== false) {
-            $detected = trim($detected);
-            if ($detected === "ISO-8859-1" || $detected === "MacRoman") {
-                $detected = "ISO-8859-15";
-            } elseif ($detected === "None") {
-                $detected = "UTF-8";
-            }
-            self::adjustLocaleBasedOnEncoding($detected);
-            self::logDebug("Shell-basierte Zeichencodierung erkannt: $detected für $file");
-        }
-
-        // Ergebnis cachen (auch false für Fehlschläge)
-        self::$chardetCache[$file] = $detected;
-        return $detected;
+        // Nichts erkannt - false cachen
+        self::$chardetCache[$file] = false;
+        return false;
     }
 
     /**
@@ -259,12 +309,26 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Liest den Inhalt der angegebenen Datei und konvertiert ihn zu UTF-8.
      *
      * @param string $file Der Pfad zur Datei.
+     * @param string|null $sourceEncoding Explizites Quell-Encoding (z.B. 'CP850', 'CP437').
+     *                               Wenn null, wird das Encoding automatisch erkannt.
+     *                               Für DOS-Dateien sollte das Encoding explizit angegeben werden,
+     *                               da automatische Erkennung von CP437/CP850 unzuverlässig ist.
      * @return string Der Inhalt der Datei in UTF-8.
      * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
      * @throws Exception Wenn ein Fehler beim Lesen auftritt.
      */
-    public static function readAsUtf8(string $file): string {
+    public static function readAsUtf8(string $file, ?string $sourceEncoding = null): string {
         $content = self::read($file);
+
+        // Wenn Encoding explizit angegeben, direkt konvertieren
+        if ($sourceEncoding !== null) {
+            $encoding = StringHelper::normalizeEncodingName($sourceEncoding);
+            if ($encoding === 'UTF-8' || $encoding === 'ASCII') {
+                return $content;
+            }
+            $converted = StringHelper::convertToUtf8($content, $encoding);
+            return self::logInfoAndReturn($converted, "Datei von $encoding zu UTF-8 konvertiert: $file");
+        }
 
         // BOM-Erkennung via StringHelper
         $bomEncoding = StringHelper::detectBomEncoding($content);
@@ -278,10 +342,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             }
 
             // Von BOM-erkanntem Encoding zu UTF-8 konvertieren
-            $converted = mb_convert_encoding($content, 'UTF-8', $bomEncoding);
-            if ($converted === false) {
-                return self::logWarningAndReturn($content, "Konvertierung von $bomEncoding zu UTF-8 fehlgeschlagen für $file, nutze Original");
-            }
+            $converted = StringHelper::convertToUtf8($content, $bomEncoding);
             return self::logInfoAndReturn($converted, "Datei von $bomEncoding zu UTF-8 konvertiert: $file");
         }
 
@@ -292,11 +353,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return self::logDebugAndReturn($content, "Keine Konvertierung nötig für $file (Encoding: " . ($encoding ?: 'unbekannt') . ")");
         }
 
-        // Zu UTF-8 konvertieren
-        $converted = mb_convert_encoding($content, 'UTF-8', $encoding);
-        if ($converted === false) {
-            return self::logWarningAndReturn($content, "Konvertierung von $encoding zu UTF-8 fehlgeschlagen für $file, nutze Original");
-        }
+        // Zu UTF-8 konvertieren - verwendet iconv für DOS-Codepages
+        $converted = StringHelper::convertToUtf8($content, $encoding);
 
         return self::logInfoAndReturn($converted, "Datei von $encoding zu UTF-8 konvertiert: $file");
     }
@@ -380,21 +438,30 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Liefert die Zeilen einer Textdatei als Generator zurück, konvertiert zu UTF-8.
      * Speichereffizient: Liest zeilenweise und konvertiert jede Zeile einzeln.
      *
-     * @param string $file        Pfad zur Datei.
-     * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
-     * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
-     * @param int $startLine      Startzeile (Standard: 1).
+     * @param string $file           Pfad zur Datei.
+     * @param bool $skipEmpty        Leere Zeilen überspringen (Standard: false).
+     * @param int|null $maxLines     Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @param int $startLine         Startzeile (Standard: 1).
+     * @param string|null $sourceEncoding Explizites Quell-Encoding (z.B. 'CP850', 'CP437').
+     *                               Wenn null, wird das Encoding automatisch erkannt.
+     *                               Für DOS-Dateien sollte das Encoding explizit angegeben werden,
+     *                               da automatische Erkennung von CP437/CP850 unzuverlässig ist.
      * @return Generator<string>
      * @throws FileNotFoundException
      */
-    public static function readLinesAsUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): Generator {
+    public static function readLinesAsUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1, ?string $sourceEncoding = null): Generator {
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
             self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
         }
 
-        // Encoding vorab erkennen (liest nur 4KB)
-        $encoding = self::chardet($file);
+        // Encoding bestimmen: explizit angegeben oder automatisch erkennen
+        if ($sourceEncoding !== null) {
+            $encoding = StringHelper::normalizeEncodingName($sourceEncoding);
+            self::logDebug("readLinesAsUtf8: Verwende explizit angegebenes Encoding: $encoding für $file");
+        } else {
+            $encoding = self::chardet($file);
+        }
         $needsConversion = $encoding !== false && $encoding !== 'UTF-8' && $encoding !== 'ASCII';
 
         self::logDebugIf($needsConversion, "readLinesAsUtf8: Konvertierung von $encoding zu UTF-8 für $file");
@@ -438,12 +505,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 continue;
             }
 
-            // Konvertierung nur wenn nötig
+            // Konvertierung nur wenn nötig - verwendet iconv für DOS-Codepages
             if ($needsConversion) {
-                $converted = mb_convert_encoding($line, 'UTF-8', $encoding);
-                if ($converted !== false) {
-                    $line = $converted;
-                }
+                $line = StringHelper::convertToUtf8($line, $encoding);
             }
 
             yield $line;
@@ -460,15 +524,17 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     /**
      * Liest die Zeilen einer Textdatei als Array zurück, konvertiert zu UTF-8.
      *
-     * @param string $file        Pfad zur Datei.
-     * @param bool $skipEmpty     Leere Zeilen überspringen (Standard: false).
-     * @param int|null $maxLines  Begrenzung auf Anzahl Zeilen (Standard: null = alle).
-     * @param int $startLine      Startzeile (Standard: 1).
+     * @param string $file           Pfad zur Datei.
+     * @param bool $skipEmpty        Leere Zeilen überspringen (Standard: false).
+     * @param int|null $maxLines     Begrenzung auf Anzahl Zeilen (Standard: null = alle).
+     * @param int $startLine         Startzeile (Standard: 1).
+     * @param string|null $sourceEncoding Explizites Quell-Encoding (z.B. 'CP850', 'CP437').
+     *                               Wenn null, wird das Encoding automatisch erkannt.
      * @return string[] Array mit den Zeilen der Datei in UTF-8.
      * @throws FileNotFoundException
      */
-    public static function readLinesAsArrayUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): array {
-        return iterator_to_array(self::readLinesAsUtf8($file, $skipEmpty, $maxLines, $startLine), false);
+    public static function readLinesAsArrayUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1, ?string $sourceEncoding = null): array {
+        return iterator_to_array(self::readLinesAsUtf8($file, $skipEmpty, $maxLines, $startLine, $sourceEncoding), false);
     }
 
     /**
