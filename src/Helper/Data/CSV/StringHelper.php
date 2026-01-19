@@ -284,6 +284,12 @@ final class StringHelper extends BaseStringHelper {
                 return true;
             }
 
+            // Prüfe auf Excel-Exponentialformat-Manipulation (z.B. "3,21001E+13" → "32100100000000")
+            if (self::hasExcelExponentialNotation($trimmed)) {
+                self::logWarning('CSV enthält Excel-Exponentialformat - Daten wurden möglicherweise durch Excel manipuliert: ' . $trimmed);
+                return true;
+            }
+
             // Falls normalisierte Variante (z. B. durch doppelte Quotes) übereinstimmt
             $normalizedInput2  = self::normalizeRepeatedEnclosures($trimmed, $delimiter, $enclosure);
             $normalizedRebuilt2 = self::normalizeRepeatedEnclosures($rebuilt, $delimiter, $enclosure);
@@ -292,6 +298,20 @@ final class StringHelper extends BaseStringHelper {
         } catch (Throwable) {
             return false;
         }
+    }
+
+    /**
+     * Prüft, ob eine Zeichenkette Excel-Exponentialnotation enthält.
+     * Excel konvertiert große Zahlen automatisch in wissenschaftliche Notation (z.B. 3,21001E+13).
+     * Dies führt oft zu Datenverlust bei Referenznummern, IBANs, etc.
+     *
+     * @param string $value Die zu prüfende Zeichenkette
+     * @return bool True, wenn Exponentialnotation gefunden wurde
+     */
+    public static function hasExcelExponentialNotation(string $value): bool {
+        // Deutsche Notation: 3,21001E+13 oder 3,21001E-13
+        // Englische Notation: 3.21001E+13 oder 3.21001E-13
+        return (bool) preg_match('/\d+[,\.]\d+E[+-]\d+/i', $value);
     }
 
     /**

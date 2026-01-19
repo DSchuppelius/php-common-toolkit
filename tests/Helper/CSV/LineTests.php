@@ -378,4 +378,55 @@ class LineTests extends BaseTestCase {
             );
         }
     }
+
+    // ========== Tests für Excel-Exponentialformat-Erkennung ==========
+
+    public function testHasExcelExponentialNotation(): void {
+        // Positive Fälle - Deutsche Notation
+        $this->assertTrue(StringHelper::hasExcelExponentialNotation('3,21001E+13'));
+        $this->assertTrue(StringHelper::hasExcelExponentialNotation('1,5E-10'));
+        $this->assertTrue(StringHelper::hasExcelExponentialNotation('9,99999E+15'));
+
+        // Positive Fälle - Englische Notation
+        $this->assertTrue(StringHelper::hasExcelExponentialNotation('3.21001E+13'));
+        $this->assertTrue(StringHelper::hasExcelExponentialNotation('1.5E-10'));
+
+        // Positive Fälle - Kleinbuchstabe e
+        $this->assertTrue(StringHelper::hasExcelExponentialNotation('3,21001e+13'));
+        $this->assertTrue(StringHelper::hasExcelExponentialNotation('3.21001e-5'));
+
+        // Negative Fälle - Keine Exponentialnotation
+        $this->assertFalse(StringHelper::hasExcelExponentialNotation('32100100000000'));
+        $this->assertFalse(StringHelper::hasExcelExponentialNotation('DE89370400440532013000'));
+        $this->assertFalse(StringHelper::hasExcelExponentialNotation('COBADEFFXXX'));
+        $this->assertFalse(StringHelper::hasExcelExponentialNotation('1234567890'));
+        $this->assertFalse(StringHelper::hasExcelExponentialNotation('3,14'));
+        $this->assertFalse(StringHelper::hasExcelExponentialNotation(''));
+    }
+
+    public function testCanParseCompleteCSVDataLineWithExcelExponentialFormat(): void {
+        // Excel-manipulierte Zeile mit Exponentialnotation sollte als valide erkannt werden
+        $excelLine = 'BYLADEM1001;DE51120300001019616752;;;;07.03.2024;-375,48;RIVERTY FUER AMAZON;;COBADEFFXXX;DE73478400650158014102;3,21001E+13;;;;;EUR;3,21001E+13';
+
+        $this->assertTrue(
+            StringHelper::canParseCompleteCSVDataLine($excelLine, ';'),
+            'Excel-manipulierte CSV-Zeile sollte als valide erkannt werden'
+        );
+    }
+
+    public function testCanParseCompleteCSVDataLineWithMixedExcelFormat(): void {
+        // Gemischte Zeile mit normalen Werten und Exponentialnotation
+        $tests = [
+            'Feld1;3,21E+10;Feld3',
+            '"Wert";1,5E-5;"Ende"',
+            '100;2.5E+8;300',
+        ];
+
+        foreach ($tests as $line) {
+            $this->assertTrue(
+                StringHelper::canParseCompleteCSVDataLine($line, ';'),
+                sprintf('Zeile mit Exponentialnotation sollte valide sein: %s', $line)
+            );
+        }
+    }
 }
