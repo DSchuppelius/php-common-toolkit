@@ -167,7 +167,7 @@ class DateHelper {
      * @param array $acceptedFormats Eine Liste akzeptierter Formate.
      * @return bool True, wenn das Datum gültig ist, andernfalls false.
      */
-    public static function isValidDate(string $value, array $acceptedFormats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y']): bool {
+    public static function isValidDate(string $value, array $acceptedFormats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y', 'dmY']): bool {
         return self::getValidDateFormat($value, $acceptedFormats) !== null;
     }
 
@@ -178,7 +178,7 @@ class DateHelper {
      * @param array $acceptedFormats Eine Liste akzeptierter Formate.
      * @return string|null Das erste gültige Format oder null, wenn keines gefunden wurde.
      */
-    public static function getValidDateFormat(string $value, array $acceptedFormats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y']): ?string {
+    public static function getValidDateFormat(string $value, array $acceptedFormats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y', 'dmY']): ?string {
         foreach ($acceptedFormats as $format) {
             if (self::isCleanDateParse(DateTime::createFromFormat($format, $value))) {
                 return $format;
