@@ -33,6 +33,8 @@ class FieldAbstract implements FieldInterface {
     private string $leadingWhitespace = '';
     /** @var string Trailing whitespace für unquoted Fields (für Round-Trip-Erhaltung) */
     private string $trailingWhitespace = '';
+    /** @var int Anzahl innerer Leerzeichen bei quoted leeren Feldern (für Round-Trip-Erhaltung) */
+    private int $innerPadding = 0;
 
     public function __construct(string $raw, string $enclosure = self::DEFAULT_ENCLOSURE, CountryCode $country = CountryCode::Germany) {
         $this->raw = $raw;
@@ -74,8 +76,10 @@ class FieldAbstract implements FieldInterface {
             }
 
             // Leeres Feld mit symmetrischen Quotes → intdiv
+            // Innere Leerzeichen zählen für Round-Trip-Erhaltung
             if (trim($matches[2]) === '' && $startRun === $endRun) {
                 $this->enclosureRepeat = intdiv($startRun, 2);
+                $this->innerPadding = strlen($matches[2]);
                 $this->typedValue = '';
                 return;
             }
@@ -340,8 +344,15 @@ class FieldAbstract implements FieldInterface {
         if ($this->quoted) {
             $quoteLevel = max(1, $this->enclosureRepeat);
             $enc = str_repeat($enclosure, $quoteLevel);
-            self::logWarningIf(str_contains($value, $enclosure), 'Falsche CSV-Syntax: Value enthält Enclosure: "' . $value . '"');
-            return $enc . $value . $enc;
+
+            // Innere Leerzeichen für Round-Trip wiederherstellen
+            $innerValue = $value;
+            if ($this->innerPadding > 0 && $value === '') {
+                $innerValue = str_repeat(' ', $this->innerPadding);
+            }
+
+            self::logWarningIf(str_contains($innerValue, $enclosure), 'Falsche CSV-Syntax: Value enthält Enclosure: "' . $innerValue . '"');
+            return $enc . $innerValue . $enc;
         }
 
         // Unquoted: Whitespace nur bei Round-Trip (trimmed=false) erhalten
