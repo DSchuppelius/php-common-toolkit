@@ -299,7 +299,14 @@ class StringHelper {
         // CP852 (Mitteleuropa): andere Umlaut-Positionen
         // ä=0x84 (gleich!), ö=0x94 (gleich!), ü=0x81 (gleich!)
         // Aber: ą=0xA5, ć=0x86, ę=0xA9, ł=0x88, ń=0xE4, ó=0xA2, ś=0x9C, ź=0xAB, ż=0xAF
-        $cp852Specific = [0x86, 0x88, 0x9C, 0xA5, 0xA9, 0xAB, 0xAF, 0xE4];
+        // ACHTUNG: 0xE4 ist NICHT in dieser Liste, weil es in ISO-8859-1 = ä ist!
+        // 0xE4 muss kontextabhängig unterschieden werden (ä im Deutschen vs ń im Polnischen)
+        $cp852Specific = [0x86, 0x88, 0x9C, 0xA5, 0xA9, 0xAB, 0xAF];
+
+        // Konflikt-Bytes: in ISO-8859-1 sind das normale Buchstaben, in CP852 polnische
+        // 0xE4 = ä (ISO-8859-1) vs ń (CP852)
+        // Diese brauchen Kontextanalyse für deutsche vs polnische Texte
+        $conflictBytes = [0xE4];
 
         // Windows-1252 typografische Zeichen (0x80-0x9F)
         // €=0x80, ‚=0x82, ƒ=0x83, „=0x84, …=0x85, †=0x86, ‡=0x87, ˆ=0x88, ‰=0x89,
@@ -392,6 +399,30 @@ class StringHelper {
             // ===== CP852 (Mitteleuropa) =====
             if (in_array($byte, $cp852Specific, true)) {
                 $scores['CP852'] += 2;
+            }
+
+            // ===== Konflikt-Bytes: 0xE4 = ä (ISO-8859-1) vs ń (CP852) =====
+            // In deutschen Texten ist 0xE4 fast immer ä (Latin-1)
+            // In polnischen Texten wäre es ń (CP852)
+            // Heuristik: Im Buchstabenkontext mit deutschen Mustern → Latin-1
+            if (in_array($byte, $conflictBytes, true)) {
+                if ($isLetterContext) {
+                    // Prüfe ob andere polnische CP852-Zeichen vorhanden sind
+                    $hasOtherCp852 = false;
+                    for ($j = 0; $j < $len && !$hasOtherCp852; $j++) {
+                        if (in_array(ord($data[$j]), $cp852Specific, true)) {
+                            $hasOtherCp852 = true;
+                        }
+                    }
+                    if ($hasOtherCp852) {
+                        // Andere polnische Zeichen vorhanden → wahrscheinlich CP852
+                        $scores['CP852'] += 2;
+                    } else {
+                        // Keine anderen polnischen Zeichen → wahrscheinlich ä (Latin-1)
+                        $scores['ISO-8859-1'] += 3;
+                        $scores['Windows-1252'] += 3;
+                    }
+                }
             }
 
             // ===== Windows-1252 typografische Zeichen =====
