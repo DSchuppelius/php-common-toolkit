@@ -131,6 +131,26 @@ class FieldAbstract implements FieldInterface {
     }
 
     /**
+     * Prüft, ob das Feld null ist.
+     */
+    public function isNull(): bool {
+        return $this->typedValue === null;
+    }
+
+    /**
+     * Prüft, ob das Feld leer oder nur Whitespace enthält.
+     */
+    public function isBlank(): bool {
+        if ($this->typedValue === null || $this->typedValue === '') {
+            return true;
+        }
+        if (is_string($this->typedValue)) {
+            return trim($this->typedValue) === '';
+        }
+        return false;
+    }
+
+    /**
      * Gibt den typisierten Wert zurück.
      * Für unquoted Fields: int, float, bool, DateTimeImmutable oder string
      * Für quoted Fields: immer string
