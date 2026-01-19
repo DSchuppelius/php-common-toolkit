@@ -29,6 +29,11 @@ class FieldAbstract implements FieldInterface {
     private ?string $originalFormat = null;
     private CountryCode $country;
 
+    /** @var string Leading whitespace für unquoted Fields (für Round-Trip-Erhaltung) */
+    private string $leadingWhitespace = '';
+    /** @var string Trailing whitespace für unquoted Fields (für Round-Trip-Erhaltung) */
+    private string $trailingWhitespace = '';
+
     public function __construct(string $raw, string $enclosure = self::DEFAULT_ENCLOSURE, CountryCode $country = CountryCode::Germany) {
         $this->raw = $raw;
         $this->country = $country;
@@ -60,6 +65,7 @@ class FieldAbstract implements FieldInterface {
 
         if (preg_match('/^(' . $enc . '+)(.*?)(?:' . $enc . '+)$/s', $trimmed, $matches)) {
             $this->quoted = true;
+            // Bei quoted Fields: Whitespace außerhalb der Quotes ignorieren
 
             $startRun = strlen($matches[1]);
             $endRun = 0;
@@ -87,9 +93,18 @@ class FieldAbstract implements FieldInterface {
 
             $this->typedValue = $inner;
         } else {
-            // Unquoted Field
+            // Unquoted Field - Whitespace für Round-Trip erhalten
             $this->quoted = false;
             $this->enclosureRepeat = 0;
+
+            // Leading/Trailing Whitespace extrahieren und speichern
+            if (preg_match('/^(\s*)/', $raw, $leadMatch)) {
+                $this->leadingWhitespace = $leadMatch[1];
+            }
+            if (preg_match('/(\s*)$/', $raw, $trailMatch)) {
+                $this->trailingWhitespace = $trailMatch[1];
+            }
+
             $this->analyzeUnquotedValue($trimmed);
         }
     }
@@ -313,21 +328,24 @@ class FieldAbstract implements FieldInterface {
 
     /**
      * Gibt den Wert als String zurück.
+     *
+     * @param string|null $enclosure Das Enclosure-Zeichen (Standard: ")
+     * @param bool $trimmed Wenn true, wird Whitespace entfernt; wenn false, bleibt er für Round-Trip erhalten
+     * @return string Der formatierte Wert
      */
-    public function toString(?string $enclosure = null): string {
+    public function toString(?string $enclosure = null, bool $trimmed = false): string {
         $enclosure = $enclosure ?? self::DEFAULT_ENCLOSURE;
-
-        $quoteLevel = max(1, $this->enclosureRepeat);
         $value = $this->getValue();
 
         if ($this->quoted) {
+            $quoteLevel = max(1, $this->enclosureRepeat);
             $enc = str_repeat($enclosure, $quoteLevel);
             self::logWarningIf(str_contains($value, $enclosure), 'Falsche CSV-Syntax: Value enthält Enclosure: "' . $value . '"');
-
             return $enc . $value . $enc;
         }
 
-        return $value;
+        // Unquoted: Whitespace nur bei Round-Trip (trimmed=false) erhalten
+        return $trimmed ? $value : $this->leadingWhitespace . $value . $this->trailingWhitespace;
     }
 
     /**
