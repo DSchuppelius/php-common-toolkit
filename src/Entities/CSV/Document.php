@@ -94,9 +94,48 @@ class Document extends TextDocumentAbstract {
         return $this->delimiter;
     }
 
+    /**
+     * Gibt zurück, ob der Header beim Export ausgegeben wird.
+     *
+     * @return bool
+     */
+    public function getExportWithHeader(): bool {
+        return $this->exportWithHeader;
+    }
+
+    /**
+     * Setzt, ob der Header beim Export ausgegeben werden soll.
+     *
+     * @param bool $exportWithHeader
+     * @return void
+     */
+    public function setExportWithHeader(bool $exportWithHeader): void {
+        $this->exportWithHeader = $exportWithHeader;
+    }
+
+    /**
+     * Setzt das Trennzeichen für den CSV-Export.
+     *
+     * @param string $delimiter Das Trennzeichen (z.B. ',' oder ';').
+     * @return void
+     */
+    public function setDelimiter(string $delimiter): void {
+        $this->delimiter = $delimiter;
+    }
+
     /** @return string */
     public function getEnclosure(): string {
         return $this->enclosure;
+    }
+
+    /**
+     * Setzt das Einschlusszeichen für den CSV-Export.
+     *
+     * @param string $enclosure Das Einschlusszeichen (z.B. '"').
+     * @return void
+     */
+    public function setEnclosure(string $enclosure): void {
+        $this->enclosure = $enclosure;
     }
 
     /**
