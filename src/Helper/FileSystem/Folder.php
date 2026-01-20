@@ -648,4 +648,236 @@ class Folder extends HelperAbstract implements FileSystemInterface {
 
         return $largestFile;
     }
+
+    /**
+     * Gibt den Zeitpunkt der letzten Modifikation eines Verzeichnisses zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @return int Unix-Timestamp der letzten Modifikation.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function modifiedTime(string $directory): int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
+        }
+
+        $time = filemtime($directory);
+        if ($time === false) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Fehler beim Abrufen der Modifikationszeit: $directory");
+        }
+
+        return $time;
+    }
+
+    /**
+     * Gibt den Erstellungszeitpunkt eines Verzeichnisses zurück (plattformabhängig).
+     * Hinweis: Auf Unix-Systemen wird oft die ctime (inode change time) zurückgegeben.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @return int Unix-Timestamp der Erstellung.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function createdTime(string $directory): int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
+        }
+
+        $time = filectime($directory);
+        if ($time === false) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Fehler beim Abrufen der Erstellungszeit: $directory");
+        }
+
+        return $time;
+    }
+
+    /**
+     * Gibt den Zeitpunkt des letzten Zugriffs auf ein Verzeichnis zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @return int Unix-Timestamp des letzten Zugriffs.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function accessTime(string $directory): int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
+        }
+
+        $time = fileatime($directory);
+        if ($time === false) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Fehler beim Abrufen der Zugriffszeit: $directory");
+        }
+
+        return $time;
+    }
+
+    /**
+     * Überprüft, ob ein Verzeichnis lesbar ist.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @return bool True, wenn das Verzeichnis lesbar ist, andernfalls false.
+     */
+    public static function isReadable(string $directory): bool {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            return self::logErrorAndReturn(false, "Verzeichnis existiert nicht: $directory");
+        }
+        if (!is_readable($directory)) {
+            return self::logErrorAndReturn(false, "Verzeichnis ist nicht lesbar: $directory");
+        }
+        return true;
+    }
+
+    /**
+     * Überprüft, ob ein Verzeichnis beschreibbar ist.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @return bool True, wenn das Verzeichnis beschreibbar ist, andernfalls false.
+     */
+    public static function isWritable(string $directory): bool {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            return self::logErrorAndReturn(false, "Verzeichnis existiert nicht: $directory");
+        }
+        if (!is_writable($directory)) {
+            return self::logErrorAndReturn(false, "Verzeichnis ist nicht beschreibbar: $directory");
+        }
+        return true;
+    }
+
+    /**
+     * Gibt die kleinste Datei im Verzeichnis zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $recursive Unterverzeichnisse einbeziehen (Standard: false).
+     * @param bool $includeEmpty Leere Dateien (0 Bytes) einbeziehen (Standard: false).
+     * @return string|null Pfad zur kleinsten Datei oder null wenn leer.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function getSmallest(string $directory, bool $recursive = false, bool $includeEmpty = false): ?string {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
+        }
+
+        $smallestFile = null;
+        $smallestSize = PHP_INT_MAX;
+
+        $iterator = $recursive
+            ? new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS))
+            : new DirectoryIterator($directory);
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            $size = $file->getSize();
+            if (!$includeEmpty && $size === 0) {
+                continue;
+            }
+
+            if ($size < $smallestSize) {
+                $smallestSize = $size;
+                $smallestFile = $file->getPathname();
+            }
+        }
+
+        return $smallestFile;
+    }
+
+    /**
+     * Gibt die Berechtigungen eines Verzeichnisses zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $octal Als Oktalzahl zurückgeben (Standard: true), sonst als Integer.
+     * @return string|int Berechtigungen als Oktalstring (z.B. '0755') oder Integer.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function permissions(string $directory, bool $octal = true): string|int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
+        }
+
+        $perms = fileperms($directory);
+        if ($perms === false) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Fehler beim Abrufen der Berechtigungen: $directory");
+        }
+
+        // Nur die letzten 4 Oktalziffern (Berechtigungen ohne Dateityp)
+        $perms = $perms & 0777;
+
+        return $octal ? sprintf('%04o', $perms) : $perms;
+    }
+
+    /**
+     * Gibt den Eigentümer eines Verzeichnisses zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $asName Als Benutzername zurückgeben (Standard: true), sonst als UID.
+     * @return string|int Benutzername oder UID.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function owner(string $directory, bool $asName = true): string|int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
+        }
+
+        $uid = fileowner($directory);
+        if ($uid === false) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Fehler beim Abrufen des Eigentümers: $directory");
+        }
+
+        if (!$asName) {
+            return $uid;
+        }
+
+        // posix_getpwuid nur auf Unix verfügbar
+        if (function_exists('posix_getpwuid')) {
+            $info = posix_getpwuid($uid);
+            if ($info !== false && isset($info['name'])) {
+                return $info['name'];
+            }
+        }
+
+        return $uid;
+    }
+
+    /**
+     * Gibt die Gruppe eines Verzeichnisses zurück.
+     *
+     * @param string $directory Der Pfad des Verzeichnisses.
+     * @param bool $asName Als Gruppenname zurückgeben (Standard: true), sonst als GID.
+     * @return string|int Gruppenname oder GID.
+     * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
+     */
+    public static function group(string $directory, bool $asName = true): string|int {
+        $directory = self::getRealPath($directory);
+        if (!self::exists($directory)) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Verzeichnis nicht gefunden: $directory");
+        }
+
+        $gid = filegroup($directory);
+        if ($gid === false) {
+            self::logErrorAndThrow(FolderNotFoundException::class, "Fehler beim Abrufen der Gruppe: $directory");
+        }
+
+        if (!$asName) {
+            return $gid;
+        }
+
+        // posix_getgrgid nur auf Unix verfügbar
+        if (function_exists('posix_getgrgid')) {
+            $info = posix_getgrgid($gid);
+            if ($info !== false && isset($info['name'])) {
+                return $info['name'];
+            }
+        }
+
+        return $gid;
+    }
 }

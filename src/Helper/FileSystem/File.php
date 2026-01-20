@@ -721,6 +721,23 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Überprüft, ob die Datei beschreibbar ist.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return bool True, wenn die Datei beschreibbar ist, andernfalls false.
+     */
+    public static function isWritable(string $file): bool {
+        $file = self::getRealPath($file);
+        if (!self::exists($file)) {
+            return self::logErrorAndReturn(false, "Datei existiert nicht: $file");
+        }
+        if (!is_writable($file)) {
+            return self::logErrorAndReturn(false, "Datei ist nicht beschreibbar: $file");
+        }
+        return true;
+    }
+
+    /**
      * Überprüft, ob die Datei bereit ist, gelesen zu werden.
      *
      * @param string $file Der Pfad zur Datei.
@@ -1287,6 +1304,90 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Abrufen der Zugriffszeit: $file");
         }
         return $time;
+    }
+
+    /**
+     * Gibt die Berechtigungen einer Datei zurück.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param bool $octal Als Oktalzahl zurückgeben (Standard: true), sonst als Integer.
+     * @return string|int Berechtigungen als Oktalstring (z.B. '0644') oder Integer.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function permissions(string $file, bool $octal = true): string|int {
+        $file = self::resolveFile($file);
+
+        $perms = fileperms($file);
+        if ($perms === false) {
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Abrufen der Berechtigungen: $file");
+        }
+
+        // Nur die letzten 4 Oktalziffern (Berechtigungen ohne Dateityp)
+        $perms = $perms & 0777;
+
+        return $octal ? sprintf('%04o', $perms) : $perms;
+    }
+
+    /**
+     * Gibt den Eigentümer einer Datei zurück.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param bool $asName Als Benutzername zurückgeben (Standard: true), sonst als UID.
+     * @return string|int Benutzername oder UID.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function owner(string $file, bool $asName = true): string|int {
+        $file = self::resolveFile($file);
+
+        $uid = fileowner($file);
+        if ($uid === false) {
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Abrufen des Eigentümers: $file");
+        }
+
+        if (!$asName) {
+            return $uid;
+        }
+
+        // posix_getpwuid nur auf Unix verfügbar
+        if (function_exists('posix_getpwuid')) {
+            $info = posix_getpwuid($uid);
+            if ($info !== false && isset($info['name'])) {
+                return $info['name'];
+            }
+        }
+
+        return $uid;
+    }
+
+    /**
+     * Gibt die Gruppe einer Datei zurück.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @param bool $asName Als Gruppenname zurückgeben (Standard: true), sonst als GID.
+     * @return string|int Gruppenname oder GID.
+     * @throws FileNotFoundException Wenn die Datei nicht existiert.
+     */
+    public static function group(string $file, bool $asName = true): string|int {
+        $file = self::resolveFile($file);
+
+        $gid = filegroup($file);
+        if ($gid === false) {
+            self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Abrufen der Gruppe: $file");
+        }
+
+        if (!$asName) {
+            return $gid;
+        }
+
+        // posix_getgrgid nur auf Unix verfügbar
+        if (function_exists('posix_getgrgid')) {
+            $info = posix_getgrgid($gid);
+            if ($info !== false && isset($info['name'])) {
+                return $info['name'];
+            }
+        }
+
+        return $gid;
     }
 
     /**
