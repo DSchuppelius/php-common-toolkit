@@ -17,7 +17,6 @@ use CommonToolkit\Helper\Data\NumberHelper;
 use CommonToolkit\Helper\Data\DateHelper;
 use DateTimeImmutable;
 use ERRORToolkit\Traits\ErrorLog;
-use Psr\Log\LogLevel;
 
 class FieldAbstract implements FieldInterface {
     use ErrorLog;
@@ -101,15 +100,25 @@ class FieldAbstract implements FieldInterface {
             $this->quoted = false;
             $this->enclosureRepeat = 0;
 
-            // Leading/Trailing Whitespace extrahieren und speichern
-            if (preg_match('/^(\s*)/', $raw, $leadMatch)) {
-                $this->leadingWhitespace = $leadMatch[1];
-            }
-            if (preg_match('/(\s*)$/', $raw, $trailMatch)) {
-                $this->trailingWhitespace = $trailMatch[1];
-            }
+            // Sonderfall: Feld besteht nur aus Whitespace
+            // In diesem Fall würden beide Regexe den gesamten String matchen,
+            // was zu einer Verdoppelung beim Rekonstruieren führen würde.
+            if ($trimmed === '') {
+                // Alles als leadingWhitespace behandeln, trailingWhitespace bleibt leer
+                $this->leadingWhitespace = $raw;
+                $this->trailingWhitespace = '';
+                $this->typedValue = '';
+            } else {
+                // Leading/Trailing Whitespace extrahieren und speichern
+                if (preg_match('/^(\s*)/', $raw, $leadMatch)) {
+                    $this->leadingWhitespace = $leadMatch[1];
+                }
+                if (preg_match('/(\s*)$/', $raw, $trailMatch)) {
+                    $this->trailingWhitespace = $trailMatch[1];
+                }
 
-            $this->analyzeUnquotedValue($trimmed);
+                $this->analyzeUnquotedValue($trimmed);
+            }
         }
     }
 

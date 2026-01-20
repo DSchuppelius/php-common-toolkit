@@ -56,20 +56,26 @@ class CSVDocumentParser extends HelperAbstract {
         $builder = new CSVDocumentBuilder($delimiter, $enclosure, null, $sourceEncoding);
 
         try {
+            $lineNumber = 0;
             if ($hasHeader) {
                 $headerLine = array_shift($lines);
+                $lineNumber++;
                 if ($headerLine === null) {
                     static::logErrorAndThrow(RuntimeException::class, 'Header-Zeile fehlt');
                 } elseif (!StringHelper::canParseCompleteCSVDataLine($headerLine, $delimiter, $enclosure)) {
-                    static::logErrorAndThrow(RuntimeException::class, 'Inkonsistente Quote-Struktur erkannt');
+                    $preview = self::getLinePreview($headerLine);
+                    static::logErrorAndThrow(RuntimeException::class, "Inkonsistente Quote-Struktur in Header-Zeile (Zeile 1): $preview");
                 }
                 $builder->setHeader(HeaderLine::fromString($headerLine, $delimiter, $enclosure));
             }
 
             foreach ($lines as $line) {
+                $lineNumber++;
                 if (trim($line) === '') continue;
                 elseif (!StringHelper::canParseCompleteCSVDataLine($line, $delimiter, $enclosure)) {
-                    static::logErrorAndThrow(RuntimeException::class, 'Inkonsistente Quote-Struktur erkannt');
+                    $preview = self::getLinePreview($line);
+                    $fieldCount = substr_count($line, $delimiter) + 1;
+                    static::logErrorAndThrow(RuntimeException::class, "Inkonsistente Quote-Struktur in Zeile $lineNumber (Felder: $fieldCount): $preview");
                 }
 
                 $builder->addRow(DataLine::fromString($line, $delimiter, $enclosure));
@@ -196,5 +202,23 @@ class CSVDocumentParser extends HelperAbstract {
 
         // Encoding ist bereits UTF-8, daher null übergeben
         return self::fromString($content, $delimiter, $enclosure, $includeHeader, null);
+    }
+
+    /**
+     * Erzeugt eine gekürzte Vorschau einer CSV-Zeile für Fehlermeldungen.
+     *
+     * @param string $line Die Zeile
+     * @param int $maxLength Maximale Länge der Vorschau (Standard: 100)
+     * @return string Die gekürzte Vorschau
+     */
+    private static function getLinePreview(string $line, int $maxLength = 100): string {
+        // Steuerzeichen und Zeilenumbrüche sichtbar machen
+        $preview = preg_replace('/[\x00-\x1F]/', '�', $line) ?? $line;
+
+        if (strlen($preview) > $maxLength) {
+            $preview = substr($preview, 0, $maxLength) . '...';
+        }
+
+        return '"' . $preview . '"';
     }
 }

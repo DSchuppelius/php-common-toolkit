@@ -474,4 +474,37 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('""', $field->toString(), 'toString() gibt nur Quotes zurück');
         $this->assertSame('""', $field->toString(null, true), 'toString(trimmed: true) ohne äußeren Whitespace');
     }
+
+    public function testUnquotedFieldWithOnlyWhitespace(): void {
+        // Unquoted Field, das nur aus Whitespace besteht (z.B. 27 Leerzeichen)
+        // Wichtig: Round-Trip muss exakt funktionieren, ohne Verdoppelung des Whitespace
+        $raw = str_repeat(' ', 27);
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted(), 'Nur-Whitespace-Feld ist nicht gequotet');
+        $this->assertSame('', $field->getValue(), 'getValue() gibt leeren String zurück');
+        $this->assertSame($raw, $field->getRaw(), 'getRaw() gibt Original zurück');
+        $this->assertSame($raw, $field->toString(), 'toString() muss exakt dem Original entsprechen');
+        $this->assertSame(27, strlen($field->toString()), 'toString() Länge muss 27 sein (nicht 54)');
+    }
+
+    public function testUnquotedFieldWithVariousWhitespaceOnlyContent(): void {
+        // Verschiedene Whitespace-Varianten testen
+        $tests = [
+            str_repeat(' ', 1),   // 1 Leerzeichen
+            str_repeat(' ', 5),   // 5 Leerzeichen
+            str_repeat(' ', 27),  // 27 Leerzeichen (Original-Problem)
+            str_repeat(' ', 100), // 100 Leerzeichen
+            "\t",                 // Tab
+            "\t\t\t",             // Mehrere Tabs
+            "   \t   ",           // Gemischt Leerzeichen und Tabs
+        ];
+
+        foreach ($tests as $raw) {
+            $field = new DataField($raw);
+
+            $this->assertFalse($field->isQuoted(), sprintf('Whitespace-Feld (%d Zeichen) sollte nicht gequotet sein', strlen($raw)));
+            $this->assertSame($raw, $field->toString(), sprintf('Round-Trip muss für "%s" (Länge %d) exakt funktionieren', addcslashes($raw, "\t"), strlen($raw)));
+        }
+    }
 }
