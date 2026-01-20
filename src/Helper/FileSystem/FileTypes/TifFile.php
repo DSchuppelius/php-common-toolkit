@@ -62,7 +62,7 @@ class TifFile extends ConfiguredHelperAbstract {
             File::rename($file, $newFilename);
             return self::repair($newFilename);
         } elseif ($mimeType === 'image/tiff' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
-            self::logInfo("Die Datei ist bereits im TIFF-Format: $file");
+            self::logDebug("Die Datei ist bereits im TIFF-Format: $file");
             if ($forceRepair) {
                 self::logNotice("Erzwinge Reparatur der TIFF-Datei: $file");
                 $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".original.tif", $file);
@@ -212,7 +212,7 @@ class TifFile extends ConfiguredHelperAbstract {
                 if (str_contains(strtolower(implode($output)), "not a tiff")) {
                     return self::logWarningAndReturn(false, "TIFF-Datei ist ungültig: $file");
                 }
-                return self::logInfoAndReturn(true, "TIFF-Datei ist gültig: $file");
+                return self::logDebugAndReturn(true, "TIFF-Datei ist gültig: $file");
             } else {
                 return self::logWarningAndReturn(false, "TIFF-Datei ist ungültig: $file");
             }

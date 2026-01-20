@@ -207,7 +207,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             }
             self::logDebug("Verzeichnis erstellt: $directory mit Berechtigungen $permissions");
         } else {
-            self::logInfo("Verzeichnis existiert bereits: $directory");
+            self::logDebug("Verzeichnis existiert bereits: $directory");
         }
     }
 
@@ -259,7 +259,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
                     self::delete($path, $recursive);
                 } else {
                     unlink($path);
-                    self::logInfo("Datei gelöscht: $path");
+                    self::logDebug("Datei gelöscht: $path");
                 }
             }
         }

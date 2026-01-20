@@ -72,7 +72,7 @@ class SecurityHelper extends HelperAbstract {
                 throw new InvalidArgumentException('Password-Hashing fehlgeschlagen');
             }
 
-            return self::logInfoAndReturn($hash, "Sicherer Password-Hash erstellt");
+            return self::logDebugAndReturn($hash, "Sicherer Password-Hash erstellt");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -95,7 +95,7 @@ class SecurityHelper extends HelperAbstract {
             $result = password_verify($password, $hash);
 
             return $result
-                ? self::logInfoAndReturn(true, "Password-Verifikation erfolgreich")
+                ? self::logDebugAndReturn(true, "Password-Verifikation erfolgreich")
                 : self::logWarningAndReturn(false, "Password-Verifikation fehlgeschlagen");
         } catch (Exception $e) {
             return self::logErrorAndReturn(false, "Fehler bei Password-Verifikation: " . $e->getMessage());
@@ -135,7 +135,7 @@ class SecurityHelper extends HelperAbstract {
             $randomBytes = random_bytes($length);
             $token = $base64 ? base64_encode($randomBytes) : bin2hex($randomBytes);
 
-            return self::logInfoAndReturn($token, "Sicherer Token generiert (Länge: {$length} Bytes)");
+            return self::logDebugAndReturn($token, "Sicherer Token generiert (Länge: {$length} Bytes)");
         } catch (Exception $e) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Token-Generierung fehlgeschlagen: ' . $e->getMessage());
         }
@@ -154,7 +154,7 @@ class SecurityHelper extends HelperAbstract {
             $key = hash('sha256', 'csrf_key_' . $sessionId, true);
             $token = hash_hmac('sha256', $data, $key);
 
-            return self::logInfoAndReturn(base64_encode($data . '|' . $token), "CSRF-Token für Aktion '{$action}' generiert");
+            return self::logDebugAndReturn(base64_encode($data . '|' . $token), "CSRF-Token für Aktion '{$action}' generiert");
         } catch (Exception $e) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'CSRF-Token-Generierung fehlgeschlagen: ' . $e->getMessage());
         }
@@ -202,7 +202,7 @@ class SecurityHelper extends HelperAbstract {
                 return self::logWarningAndReturn(false, "CSRF-Token Signatur ungültig");
             }
 
-            return self::logInfoAndReturn(true, "CSRF-Token erfolgreich validiert");
+            return self::logDebugAndReturn(true, "CSRF-Token erfolgreich validiert");
         } catch (Exception $e) {
             return self::logErrorAndReturn(false, "Fehler bei CSRF-Token-Validierung: " . $e->getMessage());
         }
@@ -345,7 +345,7 @@ class SecurityHelper extends HelperAbstract {
                 }
             }
 
-            return self::logInfoAndReturn($headers, "Security-Header gesetzt: " . count($headers) . " Header");
+            return self::logDebugAndReturn($headers, "Security-Header gesetzt: " . count($headers) . " Header");
         } catch (Exception $e) {
             return self::logErrorAndReturn([], "Fehler bei Security-Header-Setup: " . $e->getMessage());
         }
@@ -417,7 +417,7 @@ class SecurityHelper extends HelperAbstract {
             $sessionData = implode('|', $entropy);
             $sessionId = hash('sha256', $sessionData);
 
-            return self::logInfoAndReturn($sessionId, "Sichere Session-ID generiert");
+            return self::logDebugAndReturn($sessionId, "Sichere Session-ID generiert");
         } catch (Exception $e) {
             return self::logErrorAndReturn(bin2hex(random_bytes(32)), "Fehler bei Session-ID-Generierung: " . $e->getMessage()); // Fallback
         }

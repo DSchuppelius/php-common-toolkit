@@ -762,7 +762,7 @@ class StringHelper {
         try {
             $encoding = ShellChardet::detect($text);
             if ($encoding !== false) {
-                return self::logInfoAndReturn($encoding, "ShellChardet erkannte: $encoding");
+                return self::logDebugAndReturn($encoding, "ShellChardet erkannte: $encoding");
             }
             self::logWarning("ShellChardet konnte keine Kodierung erkennen.");
         } catch (Throwable $e) {
@@ -772,7 +772,7 @@ class StringHelper {
         // Fallback auf mb_detect_encoding
         $fallback = mb_detect_encoding($text, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII'], true);
         if ($fallback !== false) {
-            return self::logInfoAndReturn($fallback, "Fallback mit mb_detect_encoding erkannte: $fallback");
+            return self::logDebugAndReturn($fallback, "Fallback mit mb_detect_encoding erkannte: $fallback");
         }
 
         return self::logErrorAndReturn(false, "detectEncoding: Keine Kodierung erkannt");

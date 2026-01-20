@@ -114,7 +114,7 @@ class XmlFile extends HelperAbstract {
                     self::logError("XML-Validierung $file: $error");
                 }
             } else {
-                self::logInfo("XML-Datei $file entspricht dem XSD-Schema $xsdSchema.");
+                self::logDebug("XML-Datei $file entspricht dem XSD-Schema $xsdSchema.");
             }
 
             return $result['valid'];
@@ -159,7 +159,7 @@ class XmlFile extends HelperAbstract {
 
         if ($elementName !== null) {
             $count = $root->getElementsByTagName($elementName)->length;
-            self::logInfo("XML-Datei $file enthält $count <$elementName>-Element(e).");
+            self::logDebug("XML-Datei $file enthält $count <$elementName>-Element(e).");
         } else {
             $count = 0;
             foreach ($root->childNodes as $node) {
@@ -167,7 +167,7 @@ class XmlFile extends HelperAbstract {
                     $count++;
                 }
             }
-            self::logInfo("XML-Datei $file enthält $count direkte Kindelement(e) unter <$root->tagName>.");
+            self::logDebug("XML-Datei $file enthält $count direkte Kindelement(e) unter <$root->tagName>.");
         }
 
         libxml_clear_errors();

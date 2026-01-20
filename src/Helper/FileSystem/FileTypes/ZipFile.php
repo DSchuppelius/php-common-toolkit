@@ -126,7 +126,7 @@ class ZipFile extends HelperAbstract {
         $result = $zip->open($file);
 
         if ($result === true) {
-            self::logInfo("ZIP-Datei ist gültig: $file");
+            self::logDebug("ZIP-Datei ist gültig: $file");
             $zip->close();
             return true;
         }

@@ -187,7 +187,7 @@ class Files extends HelperAbstract {
         }
 
         if (empty($result)) {
-            self::logInfo("Keine passenden Dateien gefunden im Verzeichnis: $directory");
+            self::logDebug("Keine passenden Dateien gefunden im Verzeichnis: $directory");
         } else {
             self::logDebug("Es wurden Dateien im Verzeichnis: $directory gefunden");
         }

@@ -104,7 +104,7 @@ class CryptoHelper extends HelperAbstract {
                 'algorithm' => $cipher
             ];
 
-            return self::logInfoAndReturn($result, "Daten erfolgreich verschlüsselt mit {$cipher}");
+            return self::logDebugAndReturn($result, "Daten erfolgreich verschlüsselt mit {$cipher}");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -161,7 +161,7 @@ class CryptoHelper extends HelperAbstract {
                 throw new InvalidArgumentException('Entschlüsselung fehlgeschlagen: ' . openssl_error_string());
             }
 
-            return self::logInfoAndReturn($plaintext, "Daten erfolgreich entschlüsselt mit {$cipher}");
+            return self::logDebugAndReturn($plaintext, "Daten erfolgreich entschlüsselt mit {$cipher}");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -185,7 +185,7 @@ class CryptoHelper extends HelperAbstract {
             $key = random_bytes($length);
             $result = $base64 ? base64_encode($key) : $key;
 
-            return self::logInfoAndReturn($result, "Kryptographischer Schlüssel generiert ({$length} Bytes)");
+            return self::logDebugAndReturn($result, "Kryptographischer Schlüssel generiert ({$length} Bytes)");
         } catch (Exception $e) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Schlüsselgenerierung fehlgeschlagen: ' . $e->getMessage());
         }
@@ -223,7 +223,7 @@ class CryptoHelper extends HelperAbstract {
             $derivedKey = hash_pbkdf2($algorithm, $password, $salt, $iterations, $length, true);
             $result = base64_encode($derivedKey);
 
-            return self::logInfoAndReturn($result, "Schlüssel erfolgreich abgeleitet mit PBKDF2 ({$iterations} Iterationen)");
+            return self::logDebugAndReturn($result, "Schlüssel erfolgreich abgeleitet mit PBKDF2 ({$iterations} Iterationen)");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -263,7 +263,7 @@ class CryptoHelper extends HelperAbstract {
                 'algorithm' => $algorithm
             ];
 
-            return self::logInfoAndReturn($result, "Sicherer Hash erstellt mit {$algorithm}");
+            return self::logDebugAndReturn($result, "Sicherer Hash erstellt mit {$algorithm}");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -290,7 +290,7 @@ class CryptoHelper extends HelperAbstract {
             $result = hash_equals($expectedHashData['hash'], $hashData['hash']);
 
             if ($result) {
-                self::logInfo("Hash-Verifikation erfolgreich");
+                self::logDebug("Hash-Verifikation erfolgreich");
             } else {
                 self::logWarning("Hash-Verifikation fehlgeschlagen");
             }
@@ -327,7 +327,7 @@ class CryptoHelper extends HelperAbstract {
             $hmac = hash_hmac($algorithm, $data, $key, true);
             $result = base64_encode($hmac);
 
-            return self::logInfoAndReturn($result, "HMAC-Signatur erstellt mit {$algorithm}");
+            return self::logDebugAndReturn($result, "HMAC-Signatur erstellt mit {$algorithm}");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -349,7 +349,7 @@ class CryptoHelper extends HelperAbstract {
             $result = hash_equals($expectedSignature, $signature);
 
             return $result
-                ? self::logInfoAndReturn(true, "HMAC-Verifikation erfolgreich")
+                ? self::logDebugAndReturn(true, "HMAC-Verifikation erfolgreich")
                 : self::logWarningAndReturn(false, "HMAC-Verifikation fehlgeschlagen");
         } catch (Exception $e) {
             return self::logErrorAndReturn(false, "Fehler bei HMAC-Verifikation: " . $e->getMessage());
@@ -394,7 +394,7 @@ class CryptoHelper extends HelperAbstract {
                 'public_key' => $publicKeyDetails['key']
             ];
 
-            return self::logInfoAndReturn($result, "RSA-Schlüsselpaar generiert ({$keySize} Bits)");
+            return self::logDebugAndReturn($result, "RSA-Schlüsselpaar generiert ({$keySize} Bits)");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -425,7 +425,7 @@ class CryptoHelper extends HelperAbstract {
             }
 
             $result = base64_encode($encrypted);
-            return self::logInfoAndReturn($result, "Daten erfolgreich RSA-verschlüsselt");
+            return self::logDebugAndReturn($result, "Daten erfolgreich RSA-verschlüsselt");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -456,7 +456,7 @@ class CryptoHelper extends HelperAbstract {
                 throw new InvalidArgumentException('RSA-Entschlüsselung fehlgeschlagen: ' . openssl_error_string());
             }
 
-            return self::logInfoAndReturn($decrypted, "Daten erfolgreich RSA-entschlüsselt");
+            return self::logDebugAndReturn($decrypted, "Daten erfolgreich RSA-entschlüsselt");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -488,7 +488,7 @@ class CryptoHelper extends HelperAbstract {
             }
 
             $result = base64_encode($signature);
-            return self::logInfoAndReturn($result, "Digitale RSA-Signatur erstellt mit {$algorithm}");
+            return self::logDebugAndReturn($result, "Digitale RSA-Signatur erstellt mit {$algorithm}");
         } catch (Exception $e) {
             self::logException($e);
             throw $e;
@@ -519,7 +519,7 @@ class CryptoHelper extends HelperAbstract {
             $result = openssl_verify($data, $signatureData, $key, $algorithm);
 
             if ($result === 1) {
-                return self::logInfoAndReturn(true, "RSA-Signatur erfolgreich verifiziert");
+                return self::logDebugAndReturn(true, "RSA-Signatur erfolgreich verifiziert");
             } elseif ($result === 0) {
                 return self::logWarningAndReturn(false, "RSA-Signatur-Verifikation fehlgeschlagen");
             } else {
@@ -615,7 +615,7 @@ class CryptoHelper extends HelperAbstract {
                 'hashes' => array_intersect($hashes, self::ALLOWED_HASHES)
             ];
 
-            return self::logInfoAndReturn($result, "OpenSSL-Status abgerufen - Verfügbar: " . ($available ? 'Ja' : 'Nein'));
+            return self::logDebugAndReturn($result, "OpenSSL-Status abgerufen - Verfügbar: " . ($available ? 'Ja' : 'Nein'));
         } catch (Exception $e) {
             return self::logErrorAndReturn([
                 'available' => false,

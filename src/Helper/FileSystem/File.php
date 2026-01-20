@@ -74,7 +74,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         $result = trim(implode("\n", $output));
-        return self::logInfoAndReturn($result, "$commandName für $file erkannt: $result");
+        return self::logDebugAndReturn($result, "$commandName für $file erkannt: $result");
     }
 
     /**
@@ -88,7 +88,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if ($file === false) return false;
 
         if (class_exists('finfo')) {
-            self::logInfo("Nutze finfo für MIME-Typ: $file");
+            self::logDebug("Nutze finfo für MIME-Typ: $file");
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->file($file);
             if ($result !== false) return $result;
@@ -113,7 +113,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if ($file === false) return false;
 
         if (class_exists('finfo')) {
-            self::logInfo("Nutze finfo für MIME-Encoding: $file");
+            self::logDebug("Nutze finfo für MIME-Encoding: $file");
             $finfo = new finfo(FILEINFO_MIME_ENCODING);
             $result = $finfo->file($file);
             if ($result !== false) return $result;
@@ -147,7 +147,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if ($content !== false) {
             $bomEncoding = StringHelper::detectBomEncoding($content);
             if ($bomEncoding !== null) {
-                self::logInfo("Zeichencodierung via BOM erkannt: $bomEncoding für $file");
+                self::logDebug("Zeichencodierung via BOM erkannt: $bomEncoding für $file");
                 self::adjustLocaleBasedOnEncoding($bomEncoding);
                 self::$chardetCache[$file] = $bomEncoding;
                 return $bomEncoding;
@@ -157,11 +157,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if (mb_check_encoding($content, 'UTF-8') && preg_match('//u', $content)) {
                 // Prüfe ob es auch als ASCII interpretiert werden kann
                 if (mb_check_encoding($content, 'ASCII')) {
-                    self::logInfo("Zeichencodierung erkannt: ASCII für $file");
+                    self::logDebug("Zeichencodierung erkannt: ASCII für $file");
                     self::$chardetCache[$file] = 'ASCII';
                     return 'ASCII';
                 }
-                self::logInfo("Zeichencodierung erkannt: UTF-8 für $file");
+                self::logDebug("Zeichencodierung erkannt: UTF-8 für $file");
                 self::$chardetCache[$file] = 'UTF-8';
                 return 'UTF-8';
             }
@@ -185,7 +185,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if ($content !== false && in_array($detected, ['Windows-1252', 'ISO-8859-15', 'ISO-8859-1', 'MacRoman', 'MACROMAN'], true)) {
                 $legacyEncoding = StringHelper::detectLegacyEncoding($content, $detected);
                 if ($legacyEncoding !== null && $legacyEncoding !== $detected) {
-                    self::logInfo("Heuristik: $legacyEncoding statt $detected erkannt für $file");
+                    self::logDebug("Heuristik: $legacyEncoding statt $detected erkannt für $file");
                     $detected = $legacyEncoding;
                 }
             }
@@ -201,7 +201,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             // Versuche die erweiterte Heuristik für Legacy-Encodings
             $legacyEncoding = StringHelper::detectLegacyEncoding($content);
             if ($legacyEncoding !== null) {
-                self::logInfo("Heuristik-basierte Zeichencodierung erkannt: $legacyEncoding für $file");
+                self::logDebug("Heuristik-basierte Zeichencodierung erkannt: $legacyEncoding für $file");
                 self::adjustLocaleBasedOnEncoding($legacyEncoding);
                 self::$chardetCache[$file] = $legacyEncoding;
                 return $legacyEncoding;
@@ -210,7 +210,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $encodings = ['ISO-8859-1', 'ISO-8859-15', 'Windows-1252'];
             $detected = mb_detect_encoding($content, $encodings, true);
             if ($detected !== false) {
-                self::logInfo("Zeichencodierung via PHP-Fallback erkannt: $detected für $file");
+                self::logDebug("Zeichencodierung via PHP-Fallback erkannt: $detected für $file");
                 self::adjustLocaleBasedOnEncoding($detected);
                 self::$chardetCache[$file] = $detected;
                 return $detected;
@@ -945,7 +945,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if (StringHelper::containsKeyword($line, $keywords, $mode, $caseSensitive)) {
                 $matchingLine = trim($line);
                 fclose($handle);
-                return self::logInfoAndReturn(true, "Schlüsselwörter [$keywordsString] in Datei gefunden: $matchingLine");
+                return self::logDebugAndReturn(true, "Schlüsselwörter [$keywordsString] in Datei gefunden: $matchingLine");
             }
         }
 
@@ -978,7 +978,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $lines++;
         }
         fclose($handle);
-        return self::logInfoAndReturn($lines, "Anzahl der Zeilen in $file: $lines");
+        return self::logDebugAndReturn($lines, "Anzahl der Zeilen in $file: $lines");
     }
 
     /**
@@ -1000,7 +1000,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         $length = mb_strlen($content, $encoding);
-        return self::logInfoAndReturn($length, "Anzahl der Zeichen in $file: $length");
+        return self::logDebugAndReturn($length, "Anzahl der Zeichen in $file: $length");
     }
 
     /**

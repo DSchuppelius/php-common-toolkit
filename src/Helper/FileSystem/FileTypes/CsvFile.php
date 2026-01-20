@@ -119,7 +119,7 @@ class CsvFile extends HelperAbstract {
         try {
             $file = self::resolveFile($file);
         } catch (Throwable $e) {
-            self::logInfo("CSV-Datei nicht gefunden oder ungültig: " . $e->getMessage());
+            self::logDebug("CSV-Datei nicht gefunden oder ungültig: " . $e->getMessage());
             return false;
         }
 
@@ -151,7 +151,7 @@ class CsvFile extends HelperAbstract {
         try {
             $file = self::resolveFile($file);
         } catch (Throwable $e) {
-            return self::logInfoAndReturn(false, "CSV-Datei nicht gefunden oder ungültig: " . $e->getMessage());
+            return self::logDebugAndReturn(false, "CSV-Datei nicht gefunden oder ungültig: " . $e->getMessage());
         }
 
         $delimiter ??= self::detectDelimiter($file);
@@ -160,7 +160,7 @@ class CsvFile extends HelperAbstract {
         $header = $lines->current();
 
         if ($header === false) {
-            return self::logInfoAndReturn(false, "Header konnte nicht gelesen werden: $file");
+            return self::logDebugAndReturn(false, "Header konnte nicht gelesen werden: $file");
         }
 
         $headerValid = empty(array_diff($headerPattern, $header)) && empty(array_diff($header, $headerPattern));
@@ -193,7 +193,7 @@ class CsvFile extends HelperAbstract {
         try {
             $file = self::resolveFile($file);
         } catch (Throwable $e) {
-            return self::logInfoAndReturn(false, "Fehler beim Öffnen der Datei: " . $e->getMessage());
+            return self::logDebugAndReturn(false, "Fehler beim Öffnen der Datei: " . $e->getMessage());
         }
 
         $delimiter ??= self::detectDelimiter($file);
@@ -206,7 +206,7 @@ class CsvFile extends HelperAbstract {
             if (!$checkAllRows) break;
         }
 
-        return self::logInfoAndReturn(true, "CSV-Datei entspricht dem Strukturmuster: $structurePattern");
+        return self::logDebugAndReturn(true, "CSV-Datei entspricht dem Strukturmuster: $structurePattern");
     }
 
     /**
@@ -223,7 +223,7 @@ class CsvFile extends HelperAbstract {
         try {
             $file = self::resolveFile($file);
         } catch (Throwable $e) {
-            return self::logInfoAndReturn(false, "Fehler beim Öffnen der Datei: " . $e->getMessage());
+            return self::logDebugAndReturn(false, "Fehler beim Öffnen der Datei: " . $e->getMessage());
         }
 
         $delimiter ??= self::detectDelimiter($file);
@@ -231,7 +231,7 @@ class CsvFile extends HelperAbstract {
         foreach (self::readLines($file, $delimiter) as $row) {
             if (self::matchColumns($row, $columnPatterns, $encoding, $strict)) {
                 $matchingRow = $row;
-                return self::logInfoAndReturn(true, "Zeile mit Muster gefunden: " . implode($delimiter, $row));
+                return self::logDebugAndReturn(true, "Zeile mit Muster gefunden: " . implode($delimiter, $row));
             }
         }
 
@@ -349,7 +349,7 @@ class CsvFile extends HelperAbstract {
             $rowCount = $meta['RowCount'];
             $dataRows = $hasHeader ? max(0, $rowCount - 1) : $rowCount;
 
-            return self::logInfoAndReturn($dataRows, "Anzahl der Datenzeilen in $file: $dataRows (Header: " . ($hasHeader ? "ja" : "nein") . ")");
+            return self::logDebugAndReturn($dataRows, "Anzahl der Datenzeilen in $file: $dataRows (Header: " . ($hasHeader ? "ja" : "nein") . ")");
         } catch (Throwable $e) {
             return self::logErrorAndReturn(0, "Fehler beim Ermitteln der Datenzeilen: " . $e->getMessage());
         }
