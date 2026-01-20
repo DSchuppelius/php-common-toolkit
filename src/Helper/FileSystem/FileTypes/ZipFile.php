@@ -17,6 +17,7 @@ use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\FileSystem\Folder;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
+use InvalidArgumentException;
 use ZipArchive;
 
 class ZipFile extends HelperAbstract {
@@ -68,12 +69,13 @@ class ZipFile extends HelperAbstract {
     }
 
     /**
-     * Extrahiert eine ZIP-Datei in einen Zielordner.
+     * Extrahiert eine ZIP-Datei in einen Zielordner mit Zip-Slip-Schutz.
      *
      * @param string $file ZIP-Datei, die extrahiert werden soll.
      * @param string $destinationFolder Zielverzeichnis.
      * @param bool $deleteSourceFile Ob die ZIP-Datei nach dem Extrahieren gelöscht werden soll.
      * @throws Exception Falls die Datei nicht extrahiert werden kann.
+     * @throws InvalidArgumentException Falls ein Path-Traversal-Angriff erkannt wird.
      */
     public static function extract(string $file, string $destinationFolder, bool $deleteSourceFile = true): void {
         self::checkZipExtension();
@@ -90,20 +92,97 @@ class ZipFile extends HelperAbstract {
             self::logErrorAndThrow(Exception::class, "Fehler beim Öffnen der ZIP-Datei: $file");
         }
 
-        if (!Folder::exists($destinationFolder) && !Folder::create($destinationFolder, 0755, true)) {
-            self::logErrorAndThrow(Exception::class, "Fehler beim Erstellen des Zielverzeichnisses: $destinationFolder");
+        if (!Folder::exists($destinationFolder)) {
+            Folder::create($destinationFolder, 0755, true);
         }
 
-        if (!$zip->extractTo($destinationFolder)) {
-            self::logErrorAndThrow(Exception::class, "Fehler beim Extrahieren der ZIP-Datei: $file nach $destinationFolder");
+        // Zip-Slip-Schutz: Jede Datei einzeln prüfen und extrahieren
+        $destinationReal = realpath($destinationFolder);
+        if ($destinationReal === false) {
+            $zip->close();
+            self::logErrorAndThrow(Exception::class, "Zielverzeichnis konnte nicht aufgelöst werden: $destinationFolder");
+        }
+        $destinationReal = rtrim($destinationReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entryName = $zip->getNameIndex($i);
+            if ($entryName === false) {
+                continue;
+            }
+
+            // Zieldatei-Pfad berechnen und normalisieren
+            $targetPath = $destinationReal . $entryName;
+            $targetPathReal = self::normalizePath($targetPath);
+
+            // Zip-Slip-Prüfung: Ist der Zielpfad innerhalb des Zielverzeichnisses?
+            if (!str_starts_with($targetPathReal, $destinationReal)) {
+                $zip->close();
+                self::logErrorAndThrow(
+                    InvalidArgumentException::class,
+                    "Zip-Slip-Angriff erkannt! Eintrag '$entryName' versucht außerhalb des Zielverzeichnisses zu schreiben."
+                );
+            }
+
+            // Verzeichnis erstellen falls nötig
+            $targetDir = dirname($targetPathReal);
+            if (!Folder::exists($targetDir)) {
+                Folder::create($targetDir, 0755, true);
+            }
+
+            // Ist es ein Verzeichnis? (endet mit /)
+            if (str_ends_with($entryName, '/')) {
+                continue;
+            }
+
+            // Datei extrahieren
+            $content = $zip->getFromIndex($i);
+            if ($content === false) {
+                $zip->close();
+                self::logErrorAndThrow(Exception::class, "Fehler beim Lesen des Eintrags: $entryName");
+            }
+
+            File::write($targetPathReal, $content);
         }
 
-        $zip->close();
+        $zip->close();;
         self::logInfo("ZIP-Datei erfolgreich extrahiert: $file nach $destinationFolder");
 
         if ($deleteSourceFile) {
             File::delete($file);
         }
+    }
+
+    /**
+     * Normalisiert einen Pfad und löst . und .. auf (ohne realpath, da Datei noch nicht existiert).
+     *
+     * @param string $path Der zu normalisierende Pfad.
+     * @return string Der normalisierte Pfad.
+     */
+    private static function normalizePath(string $path): string {
+        // Backslashes durch Slashes ersetzen
+        $path = str_replace('\\', '/', $path);
+
+        // Doppelte Slashes entfernen
+        $path = preg_replace('#/+#', '/', $path);
+
+        // Pfadteile verarbeiten
+        $parts = explode('/', $path);
+        $result = [];
+
+        foreach ($parts as $part) {
+            if ($part === '..') {
+                if (!empty($result) && end($result) !== '') {
+                    array_pop($result);
+                }
+            } elseif ($part !== '.' && $part !== '') {
+                $result[] = $part;
+            } elseif ($part === '' && empty($result)) {
+                // Root-Slash beibehalten
+                $result[] = '';
+            }
+        }
+
+        return implode(DIRECTORY_SEPARATOR, $result);
     }
 
     /**
