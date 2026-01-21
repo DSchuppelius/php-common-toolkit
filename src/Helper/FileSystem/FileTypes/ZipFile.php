@@ -236,7 +236,7 @@ class ZipFile extends HelperAbstract {
             File::write($targetPathReal, $content);
         }
 
-        $zip->close();;
+        $zip->close();
         self::logInfo("ZIP-Datei erfolgreich extrahiert: $file nach $destinationFolder");
 
         if ($deleteSourceFile) {
