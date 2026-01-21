@@ -138,190 +138,196 @@ class XLSXGenerator extends HelperAbstract {
     protected function generateContentTypes(Document $document): string {
         $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">';
-    $xml .= '
+        $xml .= '
     <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" />';
-    $xml .= '
+        $xml .= '
     <Default Extension="xml" ContentType="application/xml" />';
-    $xml .= '
+        $xml .= '
     <Override PartName="/xl/workbook.xml"
         ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml" />';
 
-    foreach ($document->getSheets() as $idx => $sheet) {
-    $xml .= '
+        foreach ($document->getSheets() as $idx => $sheet) {
+            $xml .= '
     <Override PartName="/xl/worksheets/sheet' . ($idx + 1) . '.xml"
         ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml" />';
-    }
+        }
 
-    $xml .= '
+        $xml .= '
     <Override PartName="/xl/styles.xml"
         ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml" />';
 
-    if (!empty($this->sharedStrings)) {
-    $xml .= '
+        if (!empty($this->sharedStrings)) {
+            $xml .= '
     <Override PartName="/xl/sharedStrings.xml"
         ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml" />';
-    }
+        }
 
-    $xml .= '
+        $xml .= '
     <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml" />
     ';
-    $xml .= '
+        $xml .= '
     <Override PartName="/docProps/app.xml"
         ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml" />';
-    $xml .= '
+        $xml .= '
 </Types>';
 
-return $xml;
-}
+        return $xml;
+    }
 
     /**
      * Generiert _rels/.rels
      */
     protected function generateRootRels(): string {
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
-    $xml .= '
+        $xml .= '
     <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
         Target="xl/workbook.xml" />';
-    $xml .= '
+        $xml .= '
     <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"
         Target="docProps/core.xml" />';
-    $xml .= '
+        $xml .= '
     <Relationship Id="rId3"
         Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties"
         Target="docProps/app.xml" />';
-    $xml .= '
+        $xml .= '
 </Relationships>';
 
-return $xml;
-}
+        return $xml;
+    }
 
     /**
      * Generiert docProps/app.xml
      */
     protected function generateAppProps(Document $document): string {
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">';
-    $xml .= '<Application>CommonToolkit</Application>';
-    $xml .= '<DocSecurity>0</DocSecurity>';
-    $xml .= '<ScaleCrop>false</ScaleCrop>';
-    $xml .= '<LinksUpToDate>false</LinksUpToDate>';
-    $xml .= '<SharedDoc>false</SharedDoc>';
-    $xml .= '<HyperlinksChanged>false</HyperlinksChanged>';
-    $xml .= '<AppVersion>1.0</AppVersion>';
-    $xml .= '</Properties>';
+        $xml .= '<Application>CommonToolkit</Application>';
+        $xml .= '<DocSecurity>0</DocSecurity>';
+        $xml .= '<ScaleCrop>false</ScaleCrop>';
+        $xml .= '<LinksUpToDate>false</LinksUpToDate>';
+        $xml .= '<SharedDoc>false</SharedDoc>';
+        $xml .= '<HyperlinksChanged>false</HyperlinksChanged>';
+        $xml .= '<AppVersion>1.0</AppVersion>';
+        $xml .= '</Properties>';
 
-return $xml;
-}
+        return $xml;
+    }
 
-/**
-* Generiert docProps/core.xml
-*/
-protected function generateCoreProps(Document $document): string {
-$now = (new \DateTimeImmutable())->format('Y-m-d\TH:i:s\Z');
+    /**
+     * Generiert docProps/core.xml
+     */
+    protected function generateCoreProps(Document $document): string {
+        $now = (new \DateTimeImmutable())->format('Y-m-d\TH:i:s\Z');
 
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" ';
         $xml .= ' xmlns:dc="http://purl.org/dc/elements/1.1/" ';
         $xml .= ' xmlns:dcterms="http://purl.org/dc/terms/" ';
         $xml .= ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">';
 
-    if ($document->getCreator() !== null) {
-    $xml .= '<dc:creator>' . $this->escapeXml($document->getCreator()) . '</dc:creator>';
+        if ($document->getCreator() !== null) {
+            $xml .= '<dc:creator>' . $this->escapeXml($document->getCreator()) . '</dc:creator>';
+        }
+
+        if ($document->getTitle() !== null) {
+            $xml .= '<dc:title>' . $this->escapeXml($document->getTitle()) . '</dc:title>';
+        }
+
+        if ($document->getDescription() !== null) {
+            $xml .= '<dc:description>' . $this->escapeXml($document->getDescription()) . '</dc:description>';
+        }
+
+        $created = $document->getCreated()?->format('Y-m-d\TH:i:s\Z') ?? $now;
+        $modified = $document->getModified()?->format('Y-m-d\TH:i:s\Z') ?? $now;
+
+        $xml .= '<dcterms:created xsi:type="dcterms:W3CDTF">' . $created . '</dcterms:created>';
+        $xml .= '<dcterms:modified xsi:type="dcterms:W3CDTF">' . $modified . '</dcterms:modified>';
+        $xml .= '</cp:coreProperties>';
+
+        return $xml;
     }
-
-    if ($document->getTitle() !== null) {
-    $xml .= '<dc:title>' . $this->escapeXml($document->getTitle()) . '</dc:title>';
-    }
-
-    if ($document->getDescription() !== null) {
-    $xml .= '<dc:description>' . $this->escapeXml($document->getDescription()) . '</dc:description>';
-    }
-
-    $created = $document->getCreated()?->format('Y-m-d\TH:i:s\Z') ?? $now;
-    $modified = $document->getModified()?->format('Y-m-d\TH:i:s\Z') ?? $now;
-
-    $xml .= '<dcterms:created xsi:type="dcterms:W3CDTF">' . $created . '</dcterms:created>';
-    $xml .= '<dcterms:modified xsi:type="dcterms:W3CDTF">' . $modified . '</dcterms:modified>';
-    $xml .= '</cp:coreProperties>';
-
-return $xml;
-}
 
     /**
      * Generiert xl/workbook.xml
      */
     protected function generateWorkbook(Document $document): string {
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ';
         $xml .= ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
-    $xml .= '<sheets>';
+        $xml .= '<sheets>';
 
         foreach ($document->getSheets() as $idx => $sheet) {
-        $xml .= '
+            $xml .= '
         <sheet name="' . $this->escapeXml($sheet->getName()) . '" sheetId="' . ($idx + 1) . '"
             r:id="rId' . ($idx + 1) . '" />';
         }
 
         $xml .= '
     </sheets>';
-    $xml .= '</workbook>';
+        $xml .= '</workbook>';
 
-return $xml;
-}
+        return $xml;
+    }
 
     /**
      * Generiert xl/_rels/workbook.xml.rels
      */
     protected function generateWorkbookRels(Document $document): string {
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
 
-    $rId = 1;
+        $rId = 1;
 
-    foreach ($document->getSheets() as $idx => $sheet) {
-    $xml .= '
+        foreach ($document->getSheets() as $idx => $sheet) {
+            $xml .= '
     <Relationship Id="rId' . $rId . '"
         Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
         Target="worksheets/sheet' . ($idx + 1) . '.xml" />';
-    $rId++;
-    }
+            $rId++;
+        }
 
-    $xml .= '
+        $xml .= '
     <Relationship Id="rId' . $rId . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"
         Target="styles.xml" />';
-    $rId++;
+        $rId++;
 
-    if (!empty($this->sharedStrings)) {
-    $xml .= '
+        if (!empty($this->sharedStrings)) {
+            $xml .= '
     <Relationship Id="rId' . $rId . '"
         Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
         Target="sharedStrings.xml" />';
-    }
+        }
 
-    $xml .= '
+        $xml .= '
 </Relationships>';
 
-return $xml;
-}
+        return $xml;
+    }
 
     /**
      * Generiert xl/styles.xml
      */
     protected function generateStyles(): string {
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
 
-    // Fonts
-    $xml .= '<fonts count="1">';
+        // Fonts
+        $xml .= '<fonts count="1">';
         $xml .= '<font>
             <sz val="11" />
             <name val="Calibri" />
         </font>';
         $xml .= '</fonts>';
 
-    // Fills
-    $xml .= '<fills count="2">';
+        // Fills
+        $xml .= '<fills count="2">';
         $xml .= '<fill>
             <patternFill patternType="none" />
         </fill>';
@@ -330,8 +336,8 @@ return $xml;
         </fill>';
         $xml .= '</fills>';
 
-    // Borders
-    $xml .= '<borders count="1">';
+        // Borders
+        $xml .= '<borders count="1">';
         $xml .= '<border>
             <left />
             <right />
@@ -341,24 +347,24 @@ return $xml;
         </border>';
         $xml .= '</borders>';
 
-    // Cell Style XFs
-    $xml .= '<cellStyleXfs count="1">';
+        // Cell Style XFs
+        $xml .= '<cellStyleXfs count="1">';
         $xml .= '
         <xf numFmtId="0" fontId="0" fillId="0" borderId="0" />';
         $xml .= '
     </cellStyleXfs>';
 
-    // Cell XFs
-    $xml .= '<cellXfs count="1">';
+        // Cell XFs
+        $xml .= '<cellXfs count="1">';
         $xml .= '
         <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" />';
         $xml .= '
     </cellXfs>';
 
-    $xml .= '</styleSheet>';
+        $xml .= '</styleSheet>';
 
-return $xml;
-}
+        return $xml;
+    }
 
     /**
      * Generiert xl/sharedStrings.xml
@@ -366,80 +372,82 @@ return $xml;
     protected function generateSharedStrings(): string {
         $count = count($this->sharedStrings);
 
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' . $count . '"
     uniqueCount="' . $count . '">';
 
-    foreach ($this->sharedStrings as $str) {
-    $xml .= '<si>
+        foreach ($this->sharedStrings as $str) {
+            $xml .= '<si>
         <t>' . $this->escapeXml($str) . '</t>
     </si>';
+        }
+
+        $xml .= '</sst>';
+
+        return $xml;
     }
-
-    $xml .= '</sst>';
-
-return $xml;
-}
 
     /**
      * Generiert ein Worksheet.
      */
     protected function generateSheet(Sheet $sheet): string {
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
-    $xml .= '<sheetData>';
+        $xml .= '<sheetData>';
 
         $rowIndex = 1;
 
         // Header
         if ($sheet->hasHeader()) {
-        $xml .= $this->generateRow($sheet->getHeader(), $rowIndex);
-        $rowIndex++;
+            $xml .= $this->generateRow($sheet->getHeader(), $rowIndex);
+            $rowIndex++;
         }
 
         // Data Rows
         foreach ($sheet->getRows() as $row) {
-        $xml .= $this->generateRow($row, $rowIndex);
-        $rowIndex++;
+            $xml .= $this->generateRow($row, $rowIndex);
+            $rowIndex++;
         }
 
         $xml .= '</sheetData>';
-    $xml .= '</worksheet>';
+        $xml .= '</worksheet>';
 
-return $xml;
-}
-
-/**
-* Generiert eine Zeile.
-*/
-protected function generateRow(?Row $row, int $rowIndex): string {
-if ($row === null) {
-return '';
-}
-
-$xml = '<row r="' . $rowIndex . '">';
-
-    foreach ($row->getCells() as $colIndex => $cell) {
-    $xml .= $this->generateCell($cell, $rowIndex, $colIndex);
+        return $xml;
     }
 
-    $xml .= '</row>';
+    /**
+     * Generiert eine Zeile.
+     */
+    protected function generateRow(?Row $row, int $rowIndex): string {
+        if ($row === null) {
+            return '';
+        }
 
-return $xml;
-}
+        $xml = '<row r="' . $rowIndex . '">';
 
-/**
-* Generiert eine Zelle.
-*/
-protected function generateCell(Cell $cell, int $rowIndex, int $colIndex): string {
-$ref = $this->indexToColumnRef($colIndex) . $rowIndex;
-$value = $cell->getValue();
+        foreach ($row->getCells() as $colIndex => $cell) {
+            $xml .= $this->generateCell($cell, $rowIndex, $colIndex);
+        }
 
-if ($value === null || $value === '') {
-return '';
-}
+        $xml .= '</row>';
 
-$xml = '<c r="' . $ref . '"';
+        return $xml;
+    }
+
+    /**
+     * Generiert eine Zelle.
+     */
+    protected function generateCell(Cell $cell, int $rowIndex, int $colIndex): string {
+        $ref = $this->indexToColumnRef($colIndex) . $rowIndex;
+        $value = $cell->getValue();
+
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        $xml = '<c r="' . $ref . '"';
 
         // Typ bestimmen
         if (is_string($value)) {
@@ -449,87 +457,87 @@ $xml = '<c r="' . $ref . '"';
                 $xml .= ' t="s">
     <v>' . $idx . '</v>
 </c>';
-return $xml;
-}
-$xml .= ' t="inlineStr"><is>
+                return $xml;
+            }
+            $xml .= ' t="inlineStr"><is>
     <t>' . $this->escapeXml($value) . '</t>
 </is>
 </c>';
-return $xml;
-}
+            return $xml;
+        }
 
-if (is_bool($value)) {
-$xml .= ' t="b"><v>' . ($value ? '1' : '0') . '</v>
+        if (is_bool($value)) {
+            $xml .= ' t="b"><v>' . ($value ? '1' : '0') . '</v>
 </c>';
-return $xml;
-}
+            return $xml;
+        }
 
-if (is_int($value) || is_float($value)) {
-$xml .= '><v>' . $value . '</v>
+        if (is_int($value) || is_float($value)) {
+            $xml .= '><v>' . $value . '</v>
 </c>';
-return $xml;
-}
+            return $xml;
+        }
 
-if ($value instanceof DateTimeInterface) {
-// Excel-Datum berechnen
-$excelDate = $this->dateTimeToExcel($value);
-$xml .= ' s="1"><v>' . $excelDate . '</v>
+        if ($value instanceof DateTimeInterface) {
+            // Excel-Datum berechnen
+            $excelDate = $this->dateTimeToExcel($value);
+            $xml .= ' s="1"><v>' . $excelDate . '</v>
 </c>';
-return $xml;
-}
+            return $xml;
+        }
 
-// Fallback: als String
-$xml .= ' t="inlineStr"><is>
+        // Fallback: als String
+        $xml .= ' t="inlineStr"><is>
     <t>' . $this->escapeXml((string) $value) . '</t>
 </is>
 </c>';
-return $xml;
-}
+        return $xml;
+    }
 
-/**
-* Konvertiert einen 0-basierten Spaltenindex in eine Spaltenreferenz (A, B, ..., AA, AB, ...).
-*/
-protected function indexToColumnRef(int $index): string {
-$ref = '';
-$index++;
+    /**
+     * Konvertiert einen 0-basierten Spaltenindex in eine Spaltenreferenz (A, B, ..., AA, AB, ...).
+     */
+    protected function indexToColumnRef(int $index): string {
+        $ref = '';
+        $index++;
 
-while ($index > 0) {
-$index--;
-$ref = chr(ord('A') + ($index % 26)) . $ref;
-$index = intdiv($index, 26);
-}
+        while ($index > 0) {
+            $index--;
+            $ref = chr(ord('A') + ($index % 26)) . $ref;
+            $index = intdiv($index, 26);
+        }
 
-return $ref;
-}
+        return $ref;
+    }
 
-/**
-* Konvertiert ein DateTime in einen Excel-Datumswert.
-*/
-protected function dateTimeToExcel(DateTimeInterface $date): float {
-$epoch = new \DateTimeImmutable('1899-12-30');
-$diff = $epoch->diff($date);
+    /**
+     * Konvertiert ein DateTime in einen Excel-Datumswert.
+     */
+    protected function dateTimeToExcel(DateTimeInterface $date): float {
+        $epoch = new \DateTimeImmutable('1899-12-30');
+        $diff = $epoch->diff($date);
 
-$days = (int) $diff->format('%a');
-if ($diff->invert) {
-$days = -$days;
-}
+        $days = (int) $diff->format('%a');
+        if ($diff->invert) {
+            $days = -$days;
+        }
 
-// Zeitanteil
-$seconds = $date->format('H') * 3600 + $date->format('i') * 60 + $date->format('s');
-$fraction = $seconds / 86400;
+        // Zeitanteil
+        $seconds = $date->format('H') * 3600 + $date->format('i') * 60 + $date->format('s');
+        $fraction = $seconds / 86400;
 
-// Lotus-Bug korrigieren (1900 war kein Schaltjahr)
-if ($days >= 60) {
-$days++;
-}
+        // Lotus-Bug korrigieren (1900 war kein Schaltjahr)
+        if ($days >= 60) {
+            $days++;
+        }
 
-return $days + $fraction;
-}
+        return $days + $fraction;
+    }
 
-/**
-* Escaped einen String für XML.
-*/
-protected function escapeXml(string $value): string {
-return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
-}
+    /**
+     * Escaped einen String für XML.
+     */
+    protected function escapeXml(string $value): string {
+        return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    }
 }
