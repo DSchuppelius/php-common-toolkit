@@ -19,6 +19,33 @@ use Throwable;
 
 final class StringHelper extends BaseStringHelper {
     /**
+     * Prüft, ob ein String von Enclosure-Zeichen umschlossen ist.
+     *
+     * @param string $value         Der zu prüfende String
+     * @param string $enclosure     Enclosure-Zeichen (z. B. '"')
+     * @param int    $minRepeat     Minimale Anzahl der Enclosure-Wiederholungen (Standard: 1)
+     * @return bool                 True, wenn der String von Enclosures umschlossen ist
+     */
+    public static function hasStringEnclosure(string $value, string $enclosure = '"', int $minRepeat = 1): bool {
+        if ($value === '' || $enclosure === '' || $minRepeat < 1) {
+            return false;
+        }
+
+        $encLen = strlen($enclosure);
+        $valLen = strlen($value);
+
+        // Mindestlänge: 2 * minRepeat * enclosure-Länge
+        if ($valLen < 2 * $minRepeat * $encLen) {
+            return false;
+        }
+
+        $expectedStart = str_repeat($enclosure, $minRepeat);
+        $expectedEnd   = str_repeat($enclosure, $minRepeat);
+
+        return str_starts_with($value, $expectedStart) && str_ends_with($value, $expectedEnd);
+    }
+
+    /**
      * Erkennt die Anzahl der wiederholten Enclosures in einer CSV-Zeile.
      *
      * @param string      $line       Eingabezeile (z. B. aus einer CSV-Datei)
