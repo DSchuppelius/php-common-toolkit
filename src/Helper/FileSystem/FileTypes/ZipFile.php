@@ -304,12 +304,12 @@ class ZipFile extends HelperAbstract {
 
         // Fehlercodes besser behandeln
         $errorMessages = [
-            ZipArchive::ER_NOZIP => "Die Datei ist keine gültige ZIP-Datei: $file",
+            ZipArchive::ER_NOZIP  => "Die Datei ist keine gültige ZIP-Datei: $file",
             ZipArchive::ER_INCONS => "Das ZIP-Archiv ist inkonsistent: $file",
             ZipArchive::ER_MEMORY => "Speicherproblem beim Öffnen des ZIP-Archivs: $file",
-            ZipArchive::ER_READ => "Fehler beim Lesen des ZIP-Archivs: $file",
-            ZipArchive::ER_CRC => "CRC-Fehler im ZIP-Archiv: $file",
-            ZipArchive::ER_OPEN => "Fehler beim Öffnen des ZIP-Archivs: $file"
+            ZipArchive::ER_READ   => "Fehler beim Lesen des ZIP-Archivs: $file",
+            ZipArchive::ER_CRC    => "CRC-Fehler im ZIP-Archiv: $file",
+            ZipArchive::ER_OPEN   => "Fehler beim Öffnen des ZIP-Archivs: $file"
         ];
 
         $errorMessage = $errorMessages[$result] ?? "Unbekannter Fehler beim Öffnen der ZIP-Datei: $file";
@@ -371,15 +371,15 @@ class ZipFile extends HelperAbstract {
         return match ($errorCode) {
             ZipArchive::ER_EXISTS => "Datei existiert bereits",
             ZipArchive::ER_INCONS => "Inkonsistentes ZIP-Archiv",
-            ZipArchive::ER_INVAL => "Ungültiges Argument",
+            ZipArchive::ER_INVAL  => "Ungültiges Argument",
             ZipArchive::ER_MEMORY => "Speicherfehler",
-            ZipArchive::ER_NOENT => "Datei nicht gefunden",
-            ZipArchive::ER_NOZIP => "Keine gültige ZIP-Datei",
-            ZipArchive::ER_OPEN => "Datei konnte nicht geöffnet werden",
-            ZipArchive::ER_READ => "Lesefehler",
-            ZipArchive::ER_SEEK => "Seek-Fehler",
-            ZipArchive::ER_CRC => "CRC-Prüfsummenfehler",
-            default => "Unbekannter Fehler (Code: $errorCode)",
+            ZipArchive::ER_NOENT  => "Datei nicht gefunden",
+            ZipArchive::ER_NOZIP  => "Keine gültige ZIP-Datei",
+            ZipArchive::ER_OPEN   => "Datei konnte nicht geöffnet werden",
+            ZipArchive::ER_READ   => "Lesefehler",
+            ZipArchive::ER_SEEK   => "Seek-Fehler",
+            ZipArchive::ER_CRC    => "CRC-Prüfsummenfehler",
+            default               => "Unbekannter Fehler (Code: $errorCode)",
         };
     }
 }
