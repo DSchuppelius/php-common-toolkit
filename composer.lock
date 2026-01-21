@@ -4,24 +4,24 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2dd6ac4131673d6a281d427bd663e9fe",
+    "content-hash": "e92bf72693e94ca0934e5344991e3e9b",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.2.19",
+            "version": "v0.2.30",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "0f213d5de0a813d1e1650ad423d253ade9a1505a"
+                "reference": "05031152d946994aa722b63275659110f5aab7c9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/0f213d5de0a813d1e1650ad423d253ade9a1505a",
-                "reference": "0f213d5de0a813d1e1650ad423d253ade9a1505a",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/05031152d946994aa722b63275659110f5aab7c9",
+                "reference": "05031152d946994aa722b63275659110f5aab7c9",
                 "shasum": ""
             },
             "require": {
-                "dschuppelius/php-error-toolkit": "^1.2",
+                "dschuppelius/php-error-toolkit": "^2.0",
                 "php": ">=8.0 <8.5"
             },
             "require-dev": {
@@ -46,22 +46,22 @@
             "description": "Ein Toolkit für JSON-basierte Konfigurationsverwaltung",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.2.19"
+                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.2.30"
             },
-            "time": "2025-12-30T11:30:06+00:00"
+            "time": "2026-01-20T08:28:22+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v1.4.1.1",
+            "version": "v2.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "26a5845e549acc211b3ff05e898579a3c3f0df70"
+                "reference": "c0bcdb80d51de52f0c1106b5262a7d76000cb730"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/26a5845e549acc211b3ff05e898579a3c3f0df70",
-                "reference": "26a5845e549acc211b3ff05e898579a3c3f0df70",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/c0bcdb80d51de52f0c1106b5262a7d76000cb730",
+                "reference": "c0bcdb80d51de52f0c1106b5262a7d76000cb730",
                 "shasum": ""
             },
             "require": {
@@ -90,9 +90,9 @@
             "description": "Reused codes for my api php sdks",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v1.4.1.1"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.0.4"
             },
-            "time": "2026-01-05T19:05:54+00:00"
+            "time": "2026-01-20T08:04:14+00:00"
         },
         {
             "name": "psr/log",
@@ -719,16 +719,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "11.5.46",
+            "version": "11.5.48",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "75dfe79a2aa30085b7132bb84377c24062193f33"
+                "reference": "fe3665c15e37140f55aaf658c81a2eb9030b6d89"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/75dfe79a2aa30085b7132bb84377c24062193f33",
-                "reference": "75dfe79a2aa30085b7132bb84377c24062193f33",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/fe3665c15e37140f55aaf658c81a2eb9030b6d89",
+                "reference": "fe3665c15e37140f55aaf658c81a2eb9030b6d89",
                 "shasum": ""
             },
             "require": {
@@ -742,7 +742,7 @@
                 "phar-io/manifest": "^2.0.4",
                 "phar-io/version": "^3.2.1",
                 "php": ">=8.2",
-                "phpunit/php-code-coverage": "^11.0.11",
+                "phpunit/php-code-coverage": "^11.0.12",
                 "phpunit/php-file-iterator": "^5.1.0",
                 "phpunit/php-invoker": "^5.0.1",
                 "phpunit/php-text-template": "^4.0.1",
@@ -800,7 +800,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.46"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.48"
             },
             "funding": [
                 {
@@ -824,7 +824,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-12-06T08:01:15+00:00"
+            "time": "2026-01-16T16:26:27+00:00"
         },
         {
             "name": "sebastian/cli-parser",

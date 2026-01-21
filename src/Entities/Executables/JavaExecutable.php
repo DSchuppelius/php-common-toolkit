@@ -19,7 +19,7 @@ use Exception;
 class JavaExecutable extends ExecutableAbstract {
     public function execute(array $overrideArgs = []): string {
         if (!Java::exists()) {
-            throw new Exception("Java ist auf diesem System nicht verfügbar.");
+            self::logErrorAndThrow(Exception::class, "Java ist auf diesem System nicht verfügbar.");
         }
 
         return Java::execute($this->path, $this->prepareArguments($overrideArgs));

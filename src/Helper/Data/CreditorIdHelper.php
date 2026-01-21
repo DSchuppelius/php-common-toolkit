@@ -282,13 +282,11 @@ class CreditorIdHelper {
         $nationalId = strtoupper(preg_replace('/\s+/', '', $nationalId) ?? $nationalId);
 
         if (strlen($countryCode) !== 2 || !preg_match('/^[A-Z]{2}$/', $countryCode)) {
-            self::logError("Ungültiger Ländercode: {$countryCode}");
-            return null;
+            return self::logErrorAndReturn(null, "Ungültiger Ländercode: {$countryCode}");
         }
 
         if (strlen($nationalId) < 1) {
-            self::logError("Nationale Kennung fehlt");
-            return null;
+            return self::logErrorAndReturn(null, "Nationale Kennung fehlt");
         }
 
         // Berechnung: nationale ID + Ländercode + 00 → MOD 97

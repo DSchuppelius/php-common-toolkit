@@ -15,9 +15,12 @@ namespace CommonToolkit\Helper\Data;
 use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Enums\MetricPrefix;
 use CommonToolkit\Enums\TemperatureUnit;
+use ERRORToolkit\Traits\ErrorLog;
+use InvalidArgumentException;
 use RuntimeException;
 
 class NumberHelper {
+    use ErrorLog;
     /**
      * Konvertiert eine Zahl in einen menschenlesbaren Byte-Wert (z. B. "2.5 GB").
      * @param int|float $bytes Die Anzahl der Bytes.
@@ -42,7 +45,7 @@ class NumberHelper {
      */
     public static function parseByteString(string $input): int {
         if (!preg_match('/^([\d\.,]+)\s*(B|KB|MB|GB|TB|PB)$/i', trim($input), $matches)) {
-            throw new RuntimeException("Ungültiges Format: '$input'");
+            self::logErrorAndThrow(RuntimeException::class, "Ungültiges Format: '$input'");
         }
 
         $value = (float) str_replace(',', '.', $matches[1]);
@@ -76,7 +79,7 @@ class NumberHelper {
             'K-C' => $value - 273.15,
             'F-K' => ($value - 32) * 5 / 9 + 273.15,
             'K-F' => ($value - 273.15) * 9 / 5 + 32,
-            default => throw new \RuntimeException("Ungültige Temperaturumrechnung: {$from->value} zu {$to->value}")
+            default => self::logErrorAndThrow(RuntimeException::class, "Ungültige Temperaturumrechnung: {$from->value} zu {$to->value}")
         };
     }
 
@@ -107,7 +110,7 @@ class NumberHelper {
         [$toPrefix, $toBase] = $getPrefix($toUnit);
 
         if ($fromBase !== $toBase) {
-            throw new RuntimeException("Uneinheitliche Basiseinheit: $fromBase zu $toBase");
+            self::logErrorAndThrow(RuntimeException::class, "Uneinheitliche Basiseinheit: $fromBase zu $toBase");
         }
 
         $fromExp = $prefixes[$fromPrefix] ?? 0;
@@ -140,13 +143,45 @@ class NumberHelper {
     }
 
     /**
-     * Normalisiert bzw. Konvertiert eine Dezimalzahl, indem sie Punkte und Leerzeichen entfernt und Kommas in Punkte umwandelt.
+     * Normalisiert eine Dezimalzahl mit automatischer Format-Erkennung.
+     * 
+     * Unterstützt:
+     * - Deutsches Format: 1.234,56 → 1234.56
+     * - US-Format: 1,234.56 → 1234.56
+     * - Einfache Formate: 1,5 oder 1.5
+     * 
+     * Bei Mehrdeutigkeit (nur ein Trenner mit genau 3 Nachkommastellen) wird
+     * Dezimal bevorzugt. Für eindeutige Tausender-Erkennung beide Trenner verwenden
+     * (z.B. "1.234,00" oder "1,234.00").
+     * 
      * @param string $value Der zu normalisierende Wert.
      * @return float Der normalisierte Wert.
      */
     public static function normalizeDecimal(string $value): float {
-        $value = str_replace(['.', ' '], '', $value);
-        $value = str_replace(',', '.', $value);
+        $value = trim(str_replace(' ', '', $value));
+        if ($value === '') return 0.0;
+
+        // Position von Punkt und Komma finden
+        $lastComma = strrpos($value, ',');
+        $lastDot = strrpos($value, '.');
+
+        // Beide vorhanden: das letzte ist Dezimaltrenner
+        if ($lastComma !== false && $lastDot !== false) {
+            if ($lastComma > $lastDot) {
+                // Deutsches Format: 1.234,56
+                $value = str_replace('.', '', $value);
+                $value = str_replace(',', '.', $value);
+            } else {
+                // US Format: 1,234.56
+                $value = str_replace(',', '', $value);
+            }
+        } elseif ($lastComma !== false) {
+            // Nur Komma vorhanden → immer als Dezimaltrenner behandeln
+            // (wie im deutschen Format üblich)
+            $value = str_replace(',', '.', $value);
+        }
+        // Nur Punkt: PHP versteht es bereits als Dezimal
+
         return (float) $value;
     }
 
@@ -321,5 +356,374 @@ class NumberHelper {
 
         // Fallback
         return (string) $number;
+    }
+
+    /**
+     * Formatiert einen Betrag als Währung.
+     *
+     * @param float|int $amount Der Betrag.
+     * @param string $currencySymbol Das Währungssymbol (Standard: '€').
+     * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
+     * @param string $decimalSeparator Dezimaltrennzeichen (Standard: ',').
+     * @param string $thousandsSeparator Tausendertrennzeichen (Standard: '.').
+     * @param bool $symbolBefore Symbol vor dem Betrag (Standard: false für deutsch).
+     * @return string Der formatierte Währungsbetrag.
+     */
+    public static function formatCurrency(
+        float|int $amount,
+        string $currencySymbol = '€',
+        int $decimals = 2,
+        string $decimalSeparator = ',',
+        string $thousandsSeparator = '.',
+        bool $symbolBefore = false
+    ): string {
+        $formatted = number_format(abs($amount), $decimals, $decimalSeparator, $thousandsSeparator);
+        $sign = $amount < 0 ? '-' : '';
+
+        if ($symbolBefore) {
+            return $sign . $currencySymbol . ' ' . $formatted;
+        }
+
+        return $sign . $formatted . ' ' . $currencySymbol;
+    }
+
+    /**
+     * Konvertiert eine Zahl in ihre Ordinalform.
+     *
+     * @param int $number Die Zahl.
+     * @param string $locale Die Sprache ('de' oder 'en', Standard: 'de').
+     * @return string Die Ordinalform (z.B. '1.' oder '1st').
+     */
+    public static function ordinalize(int $number, string $locale = 'de'): string {
+        if ($locale === 'de') {
+            return $number . '.';
+        }
+
+        // Englische Ordinalzahlen
+        $suffix = 'th';
+        $lastDigit = $number % 10;
+        $lastTwoDigits = $number % 100;
+
+        if ($lastTwoDigits >= 11 && $lastTwoDigits <= 13) {
+            $suffix = 'th';
+        } elseif ($lastDigit === 1) {
+            $suffix = 'st';
+        } elseif ($lastDigit === 2) {
+            $suffix = 'nd';
+        } elseif ($lastDigit === 3) {
+            $suffix = 'rd';
+        }
+
+        return $number . $suffix;
+    }
+
+    /**
+     * Konvertiert eine Zahl in Worte (deutsch).
+     * Unterstützt Zahlen von 0 bis 999.999.999.999.
+     *
+     * @param int $number Die Zahl.
+     * @param bool $capitalize Ersten Buchstaben groß (Standard: false).
+     * @return string Die Zahl in Worten.
+     */
+    public static function toWords(int $number, bool $capitalize = false): string {
+        if ($number === 0) {
+            return $capitalize ? 'Null' : 'null';
+        }
+
+        $isNegative = $number < 0;
+        $number = abs($number);
+
+        $ones = [
+            '',
+            'eins',
+            'zwei',
+            'drei',
+            'vier',
+            'fünf',
+            'sechs',
+            'sieben',
+            'acht',
+            'neun',
+            'zehn',
+            'elf',
+            'zwölf',
+            'dreizehn',
+            'vierzehn',
+            'fünfzehn',
+            'sechzehn',
+            'siebzehn',
+            'achtzehn',
+            'neunzehn'
+        ];
+        $tens = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
+
+        $convertBelow1000 = function (int $n) use ($ones, $tens): string {
+            if ($n === 0) return '';
+
+            $result = '';
+
+            if ($n >= 100) {
+                $hundreds = (int) ($n / 100);
+                $result .= ($hundreds === 1 ? 'ein' : $ones[$hundreds]) . 'hundert';
+                $n %= 100;
+            }
+
+            if ($n >= 20) {
+                $ten = (int) ($n / 10);
+                $one = $n % 10;
+                if ($one > 0) {
+                    $oneWord = $one === 1 ? 'ein' : $ones[$one];
+                    $result .= $oneWord . 'und' . $tens[$ten];
+                } else {
+                    $result .= $tens[$ten];
+                }
+            } elseif ($n > 0) {
+                $result .= $ones[$n];
+            }
+
+            return $result;
+        };
+
+        $parts = [];
+
+        // Milliarden
+        if ($number >= 1_000_000_000) {
+            $billions = (int) ($number / 1_000_000_000);
+            $parts[] = ($billions === 1 ? 'eine Milliarde' : $convertBelow1000($billions) . ' Milliarden');
+            $number %= 1_000_000_000;
+        }
+
+        // Millionen
+        if ($number >= 1_000_000) {
+            $millions = (int) ($number / 1_000_000);
+            $parts[] = ($millions === 1 ? 'eine Million' : $convertBelow1000($millions) . ' Millionen');
+            $number %= 1_000_000;
+        }
+
+        // Tausend
+        if ($number >= 1000) {
+            $thousands = (int) ($number / 1000);
+            $parts[] = ($thousands === 1 ? 'ein' : $convertBelow1000($thousands)) . 'tausend';
+            $number %= 1000;
+        }
+
+        // Rest unter 1000
+        if ($number > 0) {
+            $parts[] = $convertBelow1000($number);
+        }
+
+        $result = implode('', $parts);
+        $result = ($isNegative ? 'minus ' : '') . $result;
+
+        return $capitalize ? ucfirst($result) : $result;
+    }
+
+    /**
+     * Prüft ob eine Zahl gerade ist.
+     *
+     * @param int $number Die Zahl.
+     * @return bool True wenn gerade.
+     */
+    public static function isEven(int $number): bool {
+        return $number % 2 === 0;
+    }
+
+    /**
+     * Prüft ob eine Zahl ungerade ist.
+     *
+     * @param int $number Die Zahl.
+     * @return bool True wenn ungerade.
+     */
+    public static function isOdd(int $number): bool {
+        return $number % 2 !== 0;
+    }
+
+    /**
+     * Prüft ob eine Zahl positiv ist (> 0).
+     *
+     * @param float|int $number Die Zahl.
+     * @return bool True wenn positiv.
+     */
+    public static function isPositive(float|int $number): bool {
+        return $number > 0;
+    }
+
+    /**
+     * Prüft ob eine Zahl negativ ist (< 0).
+     *
+     * @param float|int $number Die Zahl.
+     * @return bool True wenn negativ.
+     */
+    public static function isNegative(float|int $number): bool {
+        return $number < 0;
+    }
+
+    /**
+     * Prüft ob eine Zahl null ist.
+     *
+     * @param float|int $number Die Zahl.
+     * @return bool True wenn null.
+     */
+    public static function isZero(float|int $number): bool {
+        return $number == 0;
+    }
+
+    /**
+     * Berechnet den Durchschnitt einer Zahlenliste.
+     *
+     * @param array $numbers Array von Zahlen.
+     * @return float Der Durchschnitt oder 0 wenn leer.
+     */
+    public static function average(array $numbers): float {
+        if (empty($numbers)) {
+            return 0.0;
+        }
+        return array_sum($numbers) / count($numbers);
+    }
+
+    /**
+     * Berechnet den Median einer Zahlenliste.
+     *
+     * @param array $numbers Array von Zahlen.
+     * @return float Der Median oder 0 wenn leer.
+     */
+    public static function median(array $numbers): float {
+        if (empty($numbers)) {
+            return 0.0;
+        }
+
+        sort($numbers);
+        $count = count($numbers);
+        $middle = (int) floor($count / 2);
+
+        if ($count % 2 === 0) {
+            return ($numbers[$middle - 1] + $numbers[$middle]) / 2;
+        }
+
+        return $numbers[$middle];
+    }
+
+    /**
+     * Gibt das Vorzeichen einer Zahl zurück.
+     *
+     * @param float|int $number Die Zahl.
+     * @return int -1, 0 oder 1.
+     */
+    public static function sign(float|int $number): int {
+        return $number <=> 0;
+    }
+
+    /**
+     * Formatiert eine Zahl mit SI-Präfix (k, M, G, etc.).
+     *
+     * @param float|int $number Die Zahl.
+     * @param int $precision Dezimalstellen (Standard: 2).
+     * @param bool $binary Binäre Präfixe verwenden (Ki, Mi, Gi) (Standard: false).
+     * @return string Die formatierte Zahl.
+     */
+    public static function formatWithSiPrefix(float|int $number, int $precision = 2, bool $binary = false): string {
+        if ($number == 0) {
+            return '0';
+        }
+
+        $base = $binary ? 1024 : 1000;
+        $prefixes = $binary
+            ? ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei']
+            : ['', 'k', 'M', 'G', 'T', 'P', 'E'];
+
+        $isNegative = $number < 0;
+        $number = abs($number);
+
+        $exp = (int) floor(log($number, $base));
+        $exp = min($exp, count($prefixes) - 1);
+        $exp = max($exp, 0);
+
+        $value = $number / pow($base, $exp);
+        $formatted = round($value, $precision);
+
+        return ($isNegative ? '-' : '') . $formatted . $prefixes[$exp];
+    }
+
+    /**
+     * Berechnet die Fakultät einer Zahl.
+     *
+     * @param int $number Die Zahl (0-170).
+     * @return float Die Fakultät.
+     * @throws InvalidArgumentException Wenn die Zahl negativ oder zu groß ist.
+     */
+    public static function factorial(int $number): float {
+        if ($number < 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Fakultät für negative Zahlen nicht definiert.");
+        }
+        if ($number > 170) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Fakultät zu groß für Float-Darstellung.");
+        }
+
+        $result = 1.0;
+        for ($i = 2; $i <= $number; $i++) {
+            $result *= $i;
+        }
+        return $result;
+    }
+
+    /**
+     * Prüft ob eine Zahl eine Primzahl ist.
+     *
+     * @param int $number Die Zahl.
+     * @return bool True wenn Primzahl.
+     */
+    public static function isPrime(int $number): bool {
+        if ($number < 2) {
+            return false;
+        }
+        if ($number === 2) {
+            return true;
+        }
+        if ($number % 2 === 0) {
+            return false;
+        }
+
+        $sqrt = (int) sqrt($number);
+        for ($i = 3; $i <= $sqrt; $i += 2) {
+            if ($number % $i === 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Berechnet den größten gemeinsamen Teiler (GGT).
+     *
+     * @param int $a Erste Zahl.
+     * @param int $b Zweite Zahl.
+     * @return int Der größte gemeinsame Teiler.
+     */
+    public static function gcd(int $a, int $b): int {
+        $a = abs($a);
+        $b = abs($b);
+
+        while ($b !== 0) {
+            $temp = $b;
+            $b = $a % $b;
+            $a = $temp;
+        }
+
+        return $a;
+    }
+
+    /**
+     * Berechnet das kleinste gemeinsame Vielfache (KGV).
+     *
+     * @param int $a Erste Zahl.
+     * @param int $b Zweite Zahl.
+     * @return int Das kleinste gemeinsame Vielfache.
+     */
+    public static function lcm(int $a, int $b): int {
+        if ($a === 0 || $b === 0) {
+            return 0;
+        }
+        return abs($a * $b) / self::gcd($a, $b);
     }
 }

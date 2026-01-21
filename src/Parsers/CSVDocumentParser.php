@@ -39,7 +39,7 @@ class CSVDocumentParser extends HelperAbstract {
     public static function fromString(string $csv, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, ?string $encoding = null): Document {
         $csv = trim($csv);
         if ($csv === '') {
-            throw new RuntimeException('Leere CSV-Zeichenkette');
+            static::logErrorAndThrow(RuntimeException::class, 'Leere CSV-Zeichenkette');
         }
 
         // Encoding-Erkennung und Konvertierung nach UTF-8 für internes Parsing
@@ -50,43 +50,43 @@ class CSVDocumentParser extends HelperAbstract {
 
         $lines = StringHelper::splitCsvByLogicalLine($csv, $enclosure);
         if ($lines === [] || $lines === false) {
-            static::logError('CSVDocumentParser::fromString() – keine gültigen Zeilen erkannt');
-            throw new RuntimeException('Keine gültigen CSV-Zeilen erkannt');
+            static::logErrorAndThrow(RuntimeException::class, 'CSVDocumentParser::fromString() – keine gültigen Zeilen erkannt');
         }
 
         $builder = new CSVDocumentBuilder($delimiter, $enclosure, null, $sourceEncoding);
 
         try {
+            $lineNumber = 0;
             if ($hasHeader) {
                 $headerLine = array_shift($lines);
+                $lineNumber++;
                 if ($headerLine === null) {
-                    static::logError('Header-Zeile fehlt');
-                    throw new RuntimeException('Header-Zeile fehlt');
+                    static::logErrorAndThrow(RuntimeException::class, 'Header-Zeile fehlt');
                 } elseif (!StringHelper::canParseCompleteCSVDataLine($headerLine, $delimiter, $enclosure)) {
-                    static::logError('Inkonsistente Quote-Struktur erkannt');
-                    throw new RuntimeException('Inkonsistente Quote-Struktur erkannt');
+                    $preview = self::getLinePreview($headerLine);
+                    static::logErrorAndThrow(RuntimeException::class, "Inkonsistente Quote-Struktur in Header-Zeile (Zeile 1): $preview");
                 }
                 $builder->setHeader(HeaderLine::fromString($headerLine, $delimiter, $enclosure));
             }
 
             foreach ($lines as $line) {
+                $lineNumber++;
                 if (trim($line) === '') continue;
                 elseif (!StringHelper::canParseCompleteCSVDataLine($line, $delimiter, $enclosure)) {
-                    static::logError('Inkonsistente Quote-Struktur erkannt');
-                    throw new RuntimeException('Inkonsistente Quote-Struktur erkannt');
+                    $preview = self::getLinePreview($line);
+                    $fieldCount = substr_count($line, $delimiter) + 1;
+                    static::logErrorAndThrow(RuntimeException::class, "Inkonsistente Quote-Struktur in Zeile $lineNumber (Felder: $fieldCount): $preview");
                 }
 
                 $builder->addRow(DataLine::fromString($line, $delimiter, $enclosure));
             }
         } catch (Throwable $e) {
-            static::logError("Fehler beim Parsen der CSV: " . $e->getMessage());
-            throw new RuntimeException("Fehler beim Parsen der CSV: " . $e->getMessage(), 0, $e);
+            static::logErrorAndThrow(RuntimeException::class, "Fehler beim Parsen der CSV: " . $e->getMessage());
         }
 
         $result = $builder->build();
         if (!$result->isConsistent()) {
-            static::logError('Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
-            throw new RuntimeException('Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
+            static::logErrorAndThrow(RuntimeException::class, 'Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
         }
         return $result;
     }
@@ -102,18 +102,26 @@ class CSVDocumentParser extends HelperAbstract {
      * @param int $startLine Ab welcher Zeile gelesen werden soll (1-basiert)
      * @param int|null $maxLines Maximale Anzahl zu lesender Zeilen (null = alle)
      * @param bool $skipEmpty Leere Zeilen überspringen
-     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
+     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren (ignoriert wenn sourceEncoding gesetzt)
+     * @param string|null $sourceEncoding Explizites Quell-Encoding (z.B. 'CP850', 'CP437').
+     *                                    Wenn gesetzt, wird dieses Encoding verwendet statt automatischer Erkennung.
+     *                                    Für DOS-Dateien sollte das Encoding explizit angegeben werden,
+     *                                    da automatische Erkennung von CP437/CP850 unzuverlässig ist.
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
-    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, int $startLine = 1, ?int $maxLines = null, bool $skipEmpty = false, bool $detectEncoding = true): Document {
+    public static function fromFile(string $file, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $hasHeader = true, int $startLine = 1, ?int $maxLines = null, bool $skipEmpty = false, bool $detectEncoding = true, ?string $sourceEncoding = null): Document {
         if (!File::isReadable($file)) {
-            static::logError("CSV-Datei nicht lesbar: $file");
-            throw new RuntimeException("CSV-Datei nicht lesbar: $file");
+            static::logErrorAndThrow(RuntimeException::class, "CSV-Datei nicht lesbar: $file");
         }
 
-        // Speichereffizientes zeilenweises Lesen mit automatischer Encoding-Konvertierung
-        if ($detectEncoding) {
+        // Speichereffizientes zeilenweises Lesen mit Encoding-Konvertierung
+        // Wenn sourceEncoding explizit angegeben ist, wird es verwendet (wichtig für CP437/CP850)
+        // Wenn detectEncoding true ist, wird das Encoding automatisch erkannt
+        if ($sourceEncoding !== null) {
+            $lines = File::readLinesAsArrayUtf8($file, $skipEmpty, $maxLines, $startLine, $sourceEncoding);
+            static::logDebug("Datei mit explizitem Encoding '$sourceEncoding' gelesen: $file");
+        } elseif ($detectEncoding) {
             $lines = File::readLinesAsArrayUtf8($file, $skipEmpty, $maxLines, $startLine);
             static::logDebug("Datei zeilenweise mit automatischer Encoding-Konvertierung gelesen: $file");
         } else {
@@ -121,8 +129,7 @@ class CSVDocumentParser extends HelperAbstract {
         }
 
         if (empty($lines)) {
-            static::logError("Keine Zeilen in CSV-Datei gefunden: $file");
-            throw new RuntimeException("Keine Zeilen in CSV-Datei gefunden: $file");
+            static::logErrorAndThrow(RuntimeException::class, "Keine Zeilen in CSV-Datei gefunden: $file");
         }
 
         $content = implode("\n", $lines);
@@ -141,25 +148,30 @@ class CSVDocumentParser extends HelperAbstract {
      * @param string $delimiter CSV-Trennzeichen
      * @param string $enclosure CSV-Textbegrenzer
      * @param bool $includeHeader Ob Header-Zeile aus Zeile 1 mit einbezogen werden soll
-     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
+     * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren (ignoriert wenn sourceEncoding gesetzt)
+     * @param string|null $sourceEncoding Explizites Quell-Encoding (z.B. 'CP850', 'CP437').
+     *                                    Wenn gesetzt, wird dieses Encoding verwendet statt automatischer Erkennung.
+     *                                    Für DOS-Dateien sollte das Encoding explizit angegeben werden,
+     *                                    da automatische Erkennung von CP437/CP850 unzuverlässig ist.
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
-    public static function fromFileRange(string $file, int $fromLine, int $toLine, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $includeHeader = true, bool $detectEncoding = true): Document {
+    public static function fromFileRange(string $file, int $fromLine, int $toLine, string $delimiter = LineInterface::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE, bool $includeHeader = true, bool $detectEncoding = true, ?string $sourceEncoding = null): Document {
         if ($fromLine > $toLine) {
-            throw new RuntimeException("Startzeile ($fromLine) darf nicht größer als Endzeile ($toLine) sein");
+            static::logErrorAndThrow(RuntimeException::class, "Startzeile ($fromLine) darf nicht größer als Endzeile ($toLine) sein");
         }
 
         if (!File::isReadable($file)) {
-            static::logError("CSV-Datei nicht lesbar: $file");
-            throw new RuntimeException("CSV-Datei nicht lesbar: $file");
+            static::logErrorAndThrow(RuntimeException::class, "CSV-Datei nicht lesbar: $file");
         }
 
         $lines = [];
 
         // Header hinzufügen falls gewünscht und Startzeile > 1
         if ($includeHeader && $fromLine > 1) {
-            if ($detectEncoding) {
+            if ($sourceEncoding !== null) {
+                $headerLines = File::readLinesAsArrayUtf8($file, false, 1, 1, $sourceEncoding);
+            } elseif ($detectEncoding) {
                 $headerLines = File::readLinesAsArrayUtf8($file, false, 1, 1);
             } else {
                 $headerLines = File::readLinesAsArray($file, false, 1, 1);
@@ -171,7 +183,10 @@ class CSVDocumentParser extends HelperAbstract {
 
         // Datenzeilen aus dem Bereich lesen
         $maxLines = $toLine - $fromLine + 1;
-        if ($detectEncoding) {
+        if ($sourceEncoding !== null) {
+            $dataLines = File::readLinesAsArrayUtf8($file, false, $maxLines, $fromLine, $sourceEncoding);
+            static::logDebug("Datei mit explizitem Encoding '$sourceEncoding' gelesen: $file");
+        } elseif ($detectEncoding) {
             $dataLines = File::readLinesAsArrayUtf8($file, false, $maxLines, $fromLine);
             static::logDebug("Datei zeilenweise mit automatischer Encoding-Konvertierung gelesen: $file");
         } else {
@@ -180,13 +195,30 @@ class CSVDocumentParser extends HelperAbstract {
         $lines = array_merge($lines, $dataLines);
 
         if (empty($lines)) {
-            static::logError("Keine Zeilen im angegebenen Bereich gefunden: $file (Zeilen $fromLine-$toLine)");
-            throw new RuntimeException("Keine Zeilen im angegebenen Bereich gefunden");
+            static::logErrorAndThrow(RuntimeException::class, "Keine Zeilen im angegebenen Bereich gefunden: $file (Zeilen $fromLine-$toLine)");
         }
 
         $content = implode("\n", $lines);
 
         // Encoding ist bereits UTF-8, daher null übergeben
         return self::fromString($content, $delimiter, $enclosure, $includeHeader, null);
+    }
+
+    /**
+     * Erzeugt eine gekürzte Vorschau einer CSV-Zeile für Fehlermeldungen.
+     *
+     * @param string $line Die Zeile
+     * @param int $maxLength Maximale Länge der Vorschau (Standard: 100)
+     * @return string Die gekürzte Vorschau
+     */
+    private static function getLinePreview(string $line, int $maxLength = 100): string {
+        // Steuerzeichen und Zeilenumbrüche sichtbar machen
+        $preview = preg_replace('/[\x00-\x1F]/', '�', $line) ?? $line;
+
+        if (strlen($preview) > $maxLength) {
+            $preview = substr($preview, 0, $maxLength) . '...';
+        }
+
+        return '"' . $preview . '"';
     }
 }

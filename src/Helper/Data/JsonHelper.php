@@ -41,8 +41,7 @@ class JsonHelper extends HelperAbstract {
             json_decode($json, true, 512, JSON_THROW_ON_ERROR);
             return true;
         } catch (JsonException $e) {
-            self::logError("JSON-Validierung fehlgeschlagen: " . $e->getMessage());
-            return false;
+            return self::logErrorAndReturn(false, "JSON-Validierung fehlgeschlagen: " . $e->getMessage());
         }
     }
 
@@ -59,8 +58,7 @@ class JsonHelper extends HelperAbstract {
         try {
             return json_decode($json, $associative, $depth, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            self::logError("JSON-Dekodierung fehlgeschlagen: " . $e->getMessage());
-            throw new InvalidArgumentException("Ungültiger JSON: " . $e->getMessage(), 0, $e);
+            self::logErrorAndThrow(InvalidArgumentException::class, "JSON-Dekodierung fehlgeschlagen: " . $e->getMessage());
         }
     }
 
@@ -77,8 +75,7 @@ class JsonHelper extends HelperAbstract {
         try {
             return json_encode($data, JSON_THROW_ON_ERROR | $flags, $depth);
         } catch (JsonException $e) {
-            self::logError("JSON-Kodierung fehlgeschlagen: " . $e->getMessage());
-            throw new InvalidArgumentException("JSON-Kodierung fehlgeschlagen: " . $e->getMessage(), 0, $e);
+            self::logErrorAndThrow(InvalidArgumentException::class, "JSON-Kodierung fehlgeschlagen: " . $e->getMessage());
         }
     }
 
@@ -278,7 +275,7 @@ class JsonHelper extends HelperAbstract {
         $data2 = self::decode($json2);
 
         if (!is_array($data1) || !is_array($data2)) {
-            throw new InvalidArgumentException('Beide JSON-Strings müssen Objekte repräsentieren');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Beide JSON-Strings müssen Objekte repräsentieren');
         }
 
         $merged = array_replace_recursive($data1, $data2);
@@ -299,8 +296,7 @@ class JsonHelper extends HelperAbstract {
             self::maskRecursive($data, $sensitiveFields, $mask);
             return self::encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } catch (InvalidArgumentException $e) {
-            self::logError("Fehler beim Maskieren sensitiver Daten: " . $e->getMessage());
-            return $json;
+            return self::logErrorAndReturn($json, "Fehler beim Maskieren sensitiver Daten: " . $e->getMessage());
         }
     }
 

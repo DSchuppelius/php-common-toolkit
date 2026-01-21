@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\XML;
 
 use CommonToolkit\Enums\CurrencyCode;
+use CommonToolkit\Helper\Data\XmlHelper;
 use DateTimeImmutable;
 use DOMDocument;
 use DOMElement;
@@ -65,13 +66,12 @@ class ExtendedDOMDocument extends DOMDocument {
      */
     public function initializeFromString(string $xmlContent): void {
         libxml_use_internal_errors(true);
+        libxml_clear_errors();
 
         if (!$this->loadXML($xmlContent)) {
-            $errors = libxml_get_errors();
-            libxml_clear_errors();
-            $errorMessage = "Ungültiges XML-Dokument: " . ($errors[0]->message ?? 'Unbekannter Fehler');
-            self::logError($errorMessage);
-            throw new RuntimeException($errorMessage);
+            $errors = XmlHelper::getLibXmlErrors();
+            $errorMessage = "Ungültiges XML-Dokument: " . ($errors[0] ?? 'Unbekannter Fehler');
+            self::logErrorAndThrow(RuntimeException::class, $errorMessage);
         }
 
         libxml_clear_errors();
@@ -255,8 +255,7 @@ class ExtendedDOMDocument extends DOMDocument {
     public function findRequiredNode(string $expression, string $errorMessage, ?DOMNode $context = null): DOMNode {
         $node = $this->findNode($expression, $context);
         if ($node === null) {
-            self::logError($errorMessage);
-            throw new RuntimeException($errorMessage);
+            self::logErrorAndThrow(RuntimeException::class, $errorMessage);
         }
         return $node;
     }

@@ -23,6 +23,9 @@ interface FieldInterface {
     public function withQuoted(bool $quoted): static;
 
     public function isQuoted(): bool;
+    public function isEmpty(): bool;
+    public function isNull(): bool;
+    public function isBlank(): bool;
     public function getEnclosureRepeat(): int;
     public function setEnclosureRepeat(int $count): void;
     public function toString(?string $enclosure = null): string;

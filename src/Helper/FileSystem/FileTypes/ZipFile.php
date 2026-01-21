@@ -18,7 +18,7 @@ use CommonToolkit\Helper\FileSystem\Folder;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Exception;
-use RuntimeException;
+use InvalidArgumentException;
 use ZipArchive;
 
 class ZipFile extends HelperAbstract {
@@ -35,8 +35,7 @@ class ZipFile extends HelperAbstract {
      */
     private static function checkZipExtension(): void {
         if (!class_exists('ZipArchive')) {
-            self::logError("PHP ZipArchive-Erweiterung fehlt. ZIP-Operationen nicht möglich.");
-            throw new RuntimeException("PHP ZipArchive-Erweiterung fehlt. Bitte installiere oder aktiviere die zip-Erweiterung.");
+            self::logErrorAndThrow(Exception::class, "PHP ZipArchive-Erweiterung fehlt. ZIP-Operationen nicht möglich.");
         }
     }
 
@@ -83,10 +82,8 @@ class ZipFile extends HelperAbstract {
         $destination = File::getRealPath($destination);
 
         $zip = new ZipArchive();
-        $result = $zip->open($destination, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        if ($result !== true) {
-            self::logError("Fehler beim Erstellen des ZIP-Archivs: $destination (Code: $result)");
-            throw new RuntimeException("Fehler beim Erstellen des ZIP-Archivs: $destination");
+        if ($zip->open($destination, ZipArchive::CREATE) !== true) {
+            self::logErrorAndThrow(Exception::class, "Fehler beim Erstellen des ZIP-Archivs: $destination");
         }
 
         $addedCount = 0;
@@ -111,59 +108,17 @@ class ZipFile extends HelperAbstract {
                 continue;
             }
 
-            if (!$zip->addFile($filePath, $archiveName)) {
-                self::logError("Fehler beim Hinzufügen der Datei zum ZIP-Archiv: $filePath");
-                throw new RuntimeException("Fehler beim Hinzufügen der Datei zum ZIP-Archiv: $filePath");
+            if (!$zip->addFile($file, basename($file))) {
+                self::logErrorAndThrow(Exception::class, "Fehler beim Hinzufügen der Datei zum ZIP-Archiv: $file");
             }
             $addedCount++;
         }
 
         if (!$zip->close()) {
-            self::logError("Fehler beim Abschließen des ZIP-Archivs: $destination");
-            throw new RuntimeException("Fehler beim Abschließen des ZIP-Archivs: $destination");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Abschließen des ZIP-Archivs: $destination");
         }
 
-        self::logInfo("ZIP-Archiv erfolgreich erstellt: $destination ($addedCount Dateien)");
-        return true;
-    }
-
-    /**
-     * Erstellt eine ZIP-Datei aus einem Verzeichnis.
-     *
-     * @param string $sourceDir Das Quellverzeichnis.
-     * @param string $destination Zielpfad für das ZIP-Archiv.
-     * @param string|null $baseName Optionaler Basis-Ordnername im Archiv (null = kein Präfix).
-     * @return bool Erfolg oder Misserfolg.
-     * @throws FolderNotFoundException Falls das Quellverzeichnis nicht existiert.
-     * @throws RuntimeException Falls das Archiv nicht erstellt werden kann.
-     */
-    public static function createFromDirectory(string $sourceDir, string $destination, ?string $baseName = null): bool {
-        $sourceDir = File::getRealPath($sourceDir);
-
-        if (!Folder::exists($sourceDir)) {
-            self::logError("Quellverzeichnis nicht gefunden: $sourceDir");
-            throw new FolderNotFoundException("Quellverzeichnis nicht gefunden: $sourceDir");
-        }
-
-        $files = [];
-        $foundFiles = Folder::findByPattern($sourceDir, '*', true);
-
-        foreach ($foundFiles as $filePath) {
-            // Berechne relativen Pfad zum Quellverzeichnis
-            $relativePath = substr($filePath, strlen($sourceDir) + 1);
-
-            if ($baseName !== null) {
-                $relativePath = $baseName . '/' . $relativePath;
-            }
-
-            $files[] = [
-                'path' => $filePath,
-                'archiveName' => $relativePath,
-            ];
-        }
-
-        self::logDebug("Erstelle ZIP aus Verzeichnis: $sourceDir mit " . count($files) . " Dateien");
-        return self::create($files, $destination);
+        return self::logInfoAndReturn(true, "ZIP-Archiv erfolgreich erstellt: $destination");
     }
 
     /**
@@ -172,8 +127,8 @@ class ZipFile extends HelperAbstract {
      * @param string $file ZIP-Datei, die extrahiert werden soll.
      * @param string $destinationFolder Zielverzeichnis.
      * @param bool $deleteSourceFile Ob die ZIP-Datei nach dem Extrahieren gelöscht werden soll.
-     * @throws FileNotFoundException Falls die ZIP-Datei nicht existiert.
-     * @throws RuntimeException Falls die Datei nicht extrahiert werden kann oder Zip-Slip erkannt wird.
+     * @throws Exception Falls die Datei nicht extrahiert werden kann.
+     * @throws InvalidArgumentException Falls ein Path-Traversal-Angriff erkannt wird.
      */
     public static function extract(string $file, string $destinationFolder, bool $deleteSourceFile = true): void {
         self::checkZipExtension();
@@ -182,30 +137,25 @@ class ZipFile extends HelperAbstract {
         $destinationFolder = File::getRealPath($destinationFolder);
 
         if (!File::exists($file)) {
-            self::logError("ZIP-Datei nicht gefunden: $file");
-            throw new FileNotFoundException("ZIP-Datei nicht gefunden: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "ZIP-Datei nicht gefunden: $file");
         }
 
         $zip = new ZipArchive();
-        $result = $zip->open($file);
-        if ($result !== true) {
-            self::logError("Fehler beim Öffnen der ZIP-Datei: $file (Code: $result)");
-            throw new RuntimeException("Fehler beim Öffnen der ZIP-Datei: $file");
+        if ($zip->open($file) !== true) {
+            self::logErrorAndThrow(Exception::class, "Fehler beim Öffnen der ZIP-Datei: $file");
         }
 
-        if (!Folder::exists($destinationFolder) && !Folder::create($destinationFolder, 0755, true)) {
-            $zip->close();
-            self::logError("Fehler beim Erstellen des Zielverzeichnisses: $destinationFolder");
-            throw new RuntimeException("Fehler beim Erstellen des Zielverzeichnisses: $destinationFolder");
+        if (!Folder::exists($destinationFolder)) {
+            Folder::create($destinationFolder, 0755, true);
         }
 
-        // Zip-Slip-Schutz: Prüfe alle Einträge vor dem Extrahieren
-        $realDestination = realpath($destinationFolder);
-        if ($realDestination === false) {
+        // Zip-Slip-Schutz: Jede Datei einzeln prüfen und extrahieren
+        $destinationReal = realpath($destinationFolder);
+        if ($destinationReal === false) {
             $zip->close();
-            throw new RuntimeException("Konnte Zielverzeichnis nicht auflösen: $destinationFolder");
+            self::logErrorAndThrow(Exception::class, "Zielverzeichnis konnte nicht aufgelöst werden: $destinationFolder");
         }
-        $realDestination = rtrim($realDestination, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $destinationReal = rtrim($destinationReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $entryName = $zip->getNameIndex($i);
@@ -213,36 +163,41 @@ class ZipFile extends HelperAbstract {
                 continue;
             }
 
-            // Normalisiere den Pfad und prüfe auf Path-Traversal
-            $targetPath = $realDestination . $entryName;
-            $normalizedTarget = realpath(dirname($realDestination . $entryName));
+            // Zieldatei-Pfad berechnen und normalisieren
+            $targetPath = $destinationReal . $entryName;
+            $targetPathReal = self::normalizePath($targetPath);
 
-            // Wenn das Verzeichnis noch nicht existiert, erstelle es temporär für die Prüfung
-            if ($normalizedTarget === false) {
-                // Prüfe auf verdächtige Muster im Pfad
-                if (str_contains($entryName, '..') || str_starts_with($entryName, '/') || str_starts_with($entryName, '\\')) {
-                    $zip->close();
-                    self::logError("Zip-Slip-Angriff erkannt: $entryName in $file");
-                    throw new RuntimeException("Zip-Slip-Angriff erkannt: Ungültiger Pfad '$entryName' in ZIP-Datei");
-                }
-            } else {
-                // Prüfe ob der aufgelöste Pfad innerhalb des Zielverzeichnisses liegt
-                $normalizedTarget = rtrim($normalizedTarget, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-                if (!str_starts_with($normalizedTarget, $realDestination)) {
-                    $zip->close();
-                    self::logError("Zip-Slip-Angriff erkannt: $entryName würde außerhalb von $destinationFolder extrahiert");
-                    throw new RuntimeException("Zip-Slip-Angriff erkannt: Datei würde außerhalb des Zielverzeichnisses extrahiert");
-                }
+            // Zip-Slip-Prüfung: Ist der Zielpfad innerhalb des Zielverzeichnisses?
+            if (!str_starts_with($targetPathReal, $destinationReal)) {
+                $zip->close();
+                self::logErrorAndThrow(
+                    InvalidArgumentException::class,
+                    "Zip-Slip-Angriff erkannt! Eintrag '$entryName' versucht außerhalb des Zielverzeichnisses zu schreiben."
+                );
             }
+
+            // Verzeichnis erstellen falls nötig
+            $targetDir = dirname($targetPathReal);
+            if (!Folder::exists($targetDir)) {
+                Folder::create($targetDir, 0755, true);
+            }
+
+            // Ist es ein Verzeichnis? (endet mit /)
+            if (str_ends_with($entryName, '/')) {
+                continue;
+            }
+
+            // Datei extrahieren
+            $content = $zip->getFromIndex($i);
+            if ($content === false) {
+                $zip->close();
+                self::logErrorAndThrow(Exception::class, "Fehler beim Lesen des Eintrags: $entryName");
+            }
+
+            File::write($targetPathReal, $content);
         }
 
-        if (!$zip->extractTo($destinationFolder)) {
-            $zip->close();
-            self::logError("Fehler beim Extrahieren der ZIP-Datei: $file nach $destinationFolder");
-            throw new RuntimeException("Fehler beim Extrahieren der ZIP-Datei: $file nach $destinationFolder");
-        }
-
-        $zip->close();
+        $zip->close();;
         self::logInfo("ZIP-Datei erfolgreich extrahiert: $file nach $destinationFolder");
 
         if ($deleteSourceFile) {
@@ -251,50 +206,36 @@ class ZipFile extends HelperAbstract {
     }
 
     /**
-     * Listet die Inhalte einer ZIP-Datei ohne Extraktion auf.
+     * Normalisiert einen Pfad und löst . und .. auf (ohne realpath, da Datei noch nicht existiert).
      *
-     * @param string $file ZIP-Datei, deren Inhalte aufgelistet werden sollen.
-     * @return array<int, array{name: string, size: int, compressedSize: int, isDirectory: bool}> Liste der Einträge.
-     * @throws FileNotFoundException Falls die ZIP-Datei nicht existiert.
-     * @throws RuntimeException Falls die ZIP-Datei nicht geöffnet werden kann.
+     * @param string $path Der zu normalisierende Pfad.
+     * @return string Der normalisierte Pfad.
      */
-    public static function listContents(string $file): array {
-        self::checkZipExtension();
+    private static function normalizePath(string $path): string {
+        // Backslashes durch Slashes ersetzen
+        $path = str_replace('\\', '/', $path);
 
-        $file = File::getRealPath($file);
+        // Doppelte Slashes entfernen
+        $path = preg_replace('#/+#', '/', $path);
 
-        if (!File::exists($file)) {
-            self::logError("ZIP-Datei nicht gefunden: $file");
-            throw new FileNotFoundException("ZIP-Datei nicht gefunden: $file");
-        }
+        // Pfadteile verarbeiten
+        $parts = explode('/', $path);
+        $result = [];
 
-        $zip = new ZipArchive();
-        $result = $zip->open($file);
-
-        if ($result !== true) {
-            self::logError("Fehler beim Öffnen der ZIP-Datei: $file (Code: $result)");
-            throw new RuntimeException("Fehler beim Öffnen der ZIP-Datei: $file");
-        }
-
-        $contents = [];
-
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $stat = $zip->statIndex($i);
-            if ($stat !== false) {
-                $contents[] = [
-                    'name' => $stat['name'],
-                    'size' => $stat['size'],
-                    'compressedSize' => $stat['comp_size'],
-                    'isDirectory' => str_ends_with($stat['name'], '/'),
-                ];
+        foreach ($parts as $part) {
+            if ($part === '..') {
+                if (!empty($result) && end($result) !== '') {
+                    array_pop($result);
+                }
+            } elseif ($part !== '.' && $part !== '') {
+                $result[] = $part;
+            } elseif ($part === '' && empty($result)) {
+                // Root-Slash beibehalten
+                $result[] = '';
             }
         }
 
-        $zip->close();
-
-        self::logDebug("ZIP-Inhalte aufgelistet: $file (" . count($contents) . " Einträge)");
-
-        return $contents;
+        return implode(DIRECTORY_SEPARATOR, $result);
     }
 
     /**
@@ -310,15 +251,14 @@ class ZipFile extends HelperAbstract {
         $file = File::getRealPath($file);
 
         if (!File::exists($file)) {
-            self::logError("Datei nicht gefunden: $file");
-            throw new FileNotFoundException("Datei nicht gefunden: $file");
+            self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht gefunden: $file");
         }
 
         $zip = new ZipArchive();
         $result = $zip->open($file);
 
         if ($result === true) {
-            self::logInfo("ZIP-Datei ist gültig: $file");
+            self::logDebug("ZIP-Datei ist gültig: $file");
             $zip->close();
             return true;
         }
@@ -334,29 +274,6 @@ class ZipFile extends HelperAbstract {
         ];
 
         $errorMessage = $errorMessages[$result] ?? "Unbekannter Fehler beim Öffnen der ZIP-Datei: $file";
-        self::logError($errorMessage);
-        return false;
-    }
-
-    /**
-     * Gibt eine lesbare Fehlermeldung für einen ZipArchive-Fehlercode zurück.
-     *
-     * @param int $errorCode Der Fehlercode von ZipArchive::open().
-     * @return string Die Fehlermeldung.
-     */
-    public static function getErrorMessage(int $errorCode): string {
-        return match ($errorCode) {
-            ZipArchive::ER_EXISTS => "Datei existiert bereits",
-            ZipArchive::ER_INCONS => "Inkonsistentes ZIP-Archiv",
-            ZipArchive::ER_INVAL => "Ungültiges Argument",
-            ZipArchive::ER_MEMORY => "Speicherfehler",
-            ZipArchive::ER_NOENT => "Datei nicht gefunden",
-            ZipArchive::ER_NOZIP => "Keine gültige ZIP-Datei",
-            ZipArchive::ER_OPEN => "Datei konnte nicht geöffnet werden",
-            ZipArchive::ER_READ => "Lesefehler",
-            ZipArchive::ER_SEEK => "Seek-Fehler",
-            ZipArchive::ER_CRC => "CRC-Prüfsummenfehler",
-            default => "Unbekannter Fehler (Code: $errorCode)",
-        };
+        return self::logErrorAndReturn(false, $errorMessage);
     }
 }

@@ -142,7 +142,7 @@ final class StringHelper extends BaseStringHelper {
      * @throws RuntimeException
      */
     private static function parseCSVLine(string $line, string $delimiter, string $enclosure, bool $withMeta = false): array {
-        if ($delimiter === '') throw new RuntimeException('Delimiter darf nicht leer sein');
+        if ($delimiter === '') self::logErrorAndThrow(RuntimeException::class, 'Delimiter darf nicht leer sein');
         if (empty(trim($line))) {
             return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
         }
@@ -284,6 +284,12 @@ final class StringHelper extends BaseStringHelper {
                 return true;
             }
 
+            // Prüfe auf Excel-Exponentialformat-Manipulation (z.B. "3,21001E+13" → "32100100000000")
+            if (self::hasExcelExponentialNotation($trimmed)) {
+                self::logWarning('CSV enthält Excel-Exponentialformat - Daten wurden möglicherweise durch Excel manipuliert: ' . $trimmed);
+                return true;
+            }
+
             // Falls normalisierte Variante (z. B. durch doppelte Quotes) übereinstimmt
             $normalizedInput2  = self::normalizeRepeatedEnclosures($trimmed, $delimiter, $enclosure);
             $normalizedRebuilt2 = self::normalizeRepeatedEnclosures($rebuilt, $delimiter, $enclosure);
@@ -292,6 +298,20 @@ final class StringHelper extends BaseStringHelper {
         } catch (Throwable) {
             return false;
         }
+    }
+
+    /**
+     * Prüft, ob eine Zeichenkette Excel-Exponentialnotation enthält.
+     * Excel konvertiert große Zahlen automatisch in wissenschaftliche Notation (z.B. 3,21001E+13).
+     * Dies führt oft zu Datenverlust bei Referenznummern, IBANs, etc.
+     *
+     * @param string $value Die zu prüfende Zeichenkette
+     * @return bool True, wenn Exponentialnotation gefunden wurde
+     */
+    public static function hasExcelExponentialNotation(string $value): bool {
+        // Deutsche Notation: 3,21001E+13 oder 3,21001E-13
+        // Englische Notation: 3.21001E+13 oder 3.21001E-13
+        return (bool) preg_match('/\d+[,\.]\d+E[+-]\d+/i', $value);
     }
 
     /**
@@ -389,8 +409,7 @@ final class StringHelper extends BaseStringHelper {
                     $i,
                     substr($line, max(0, $i - 10), 20)
                 );
-                self::logError($errormsg);
-                throw new RuntimeException($errormsg);
+                self::logErrorAndThrow(RuntimeException::class, $errormsg);
             }
 
             if ($char === $delimiter && !$inQuotes) {
@@ -400,14 +419,12 @@ final class StringHelper extends BaseStringHelper {
             }
 
             if (str_contains($current, $delimiter . $enclosure)) {
-                self::logError('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
-                throw new RuntimeException('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
+                self::logErrorAndThrow(RuntimeException::class, 'Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
             }
         }
 
         if ($inQuotes) {
-            self::logError('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
-            throw new RuntimeException('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
+            self::logErrorAndThrow(RuntimeException::class, 'Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
         }
 
         if ($current !== '' || str_ends_with($line, $delimiter)) {

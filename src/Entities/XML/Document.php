@@ -19,6 +19,7 @@ use CommonToolkit\Helper\Data\XmlHelper;
 use CommonToolkit\Helper\FileSystem\File;
 use DOMDocument;
 use DOMNode;
+use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
 
 /**
@@ -30,6 +31,8 @@ use InvalidArgumentException;
  * @package CommonToolkit\Entities\XML
  */
 class Document implements XmlDocumentInterface {
+    use ErrorLog;
+
     private string $version;
     private string $encoding;
     private XmlElementInterface $rootElement;
@@ -138,6 +141,16 @@ class Document implements XmlDocumentInterface {
     }
 
     /**
+     * Validiert das Dokument gegen ein XSD-Schema und gibt typisiertes Ergebnis zurück.
+     * 
+     * @param string $xsdFile Pfad zur XSD-Schema-Datei
+     * @return XsdValidationResult Typisiertes Validierungsergebnis
+     */
+    public function validateAgainstXsdTyped(string $xsdFile): XsdValidationResult {
+        return XmlHelper::validateAgainstXsdTyped($this->toString(), $xsdFile);
+    }
+
+    /**
      * Prüft ob das Dokument wohlgeformt ist.
      */
     public function isWellFormed(): bool {
@@ -187,13 +200,11 @@ class Document implements XmlDocumentInterface {
                 fn($e) => trim($e->message),
                 $errors
             );
-            throw new InvalidArgumentException(
-                'Ungültiges XML: ' . implode(', ', $errorMessages)
-            );
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiges XML: ' . implode(', ', $errorMessages));
         }
 
         if ($doc->documentElement === null) {
-            throw new InvalidArgumentException('XML hat kein Root-Element');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'XML hat kein Root-Element');
         }
 
         $rootElement = Element::fromDomElement($doc->documentElement);
@@ -220,7 +231,7 @@ class Document implements XmlDocumentInterface {
      */
     public static function fromDomDocument(DOMDocument $doc): self {
         if ($doc->documentElement === null) {
-            throw new InvalidArgumentException('DOMDocument hat kein Root-Element');
+            self::logErrorAndThrow(InvalidArgumentException::class, 'DOMDocument hat kein Root-Element');
         }
 
         $rootElement = Element::fromDomElement($doc->documentElement);

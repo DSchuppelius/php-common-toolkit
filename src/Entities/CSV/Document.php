@@ -94,9 +94,48 @@ class Document extends TextDocumentAbstract {
         return $this->delimiter;
     }
 
+    /**
+     * Gibt zurück, ob der Header beim Export ausgegeben wird.
+     *
+     * @return bool
+     */
+    public function getExportWithHeader(): bool {
+        return $this->exportWithHeader;
+    }
+
+    /**
+     * Setzt, ob der Header beim Export ausgegeben werden soll.
+     *
+     * @param bool $exportWithHeader
+     * @return void
+     */
+    public function setExportWithHeader(bool $exportWithHeader): void {
+        $this->exportWithHeader = $exportWithHeader;
+    }
+
+    /**
+     * Setzt das Trennzeichen für den CSV-Export.
+     *
+     * @param string $delimiter Das Trennzeichen (z.B. ',' oder ';').
+     * @return void
+     */
+    public function setDelimiter(string $delimiter): void {
+        $this->delimiter = $delimiter;
+    }
+
     /** @return string */
     public function getEnclosure(): string {
         return $this->enclosure;
+    }
+
+    /**
+     * Setzt das Einschlusszeichen für den CSV-Export.
+     *
+     * @param string $enclosure Das Einschlusszeichen (z.B. '"').
+     * @return void
+     */
+    public function setEnclosure(string $enclosure): void {
+        $this->enclosure = $enclosure;
     }
 
     /**
@@ -130,8 +169,7 @@ class Document extends TextDocumentAbstract {
         foreach ($this->rows as $i => $row) {
             $actual = $row->countFields();
             if ($actual !== $expected) {
-                $this->logError("CSV-Zeile $i hat abweichende Feldanzahl (erwartet: $expected, gefunden: $actual)");
-                return false;
+                return $this->logErrorAndReturn(false, "CSV-Zeile $i hat abweichende Feldanzahl (erwartet: $expected, gefunden: $actual)");
             }
         }
         return true;
@@ -207,8 +245,7 @@ class Document extends TextDocumentAbstract {
 
         if ($index === null) {
             $available = implode(', ', $this->getColumnNames());
-            $this->logError("Spalte '$columnName' nicht im Header gefunden. Verfügbar: $available");
-            throw new RuntimeException("Spalte '$columnName' nicht im Header gefunden");
+            $this->logErrorAndThrow(RuntimeException::class, "Spalte '$columnName' nicht im Header gefunden. Verfügbar: $available");
         }
 
         return $this->getFieldsByIndex($index);
@@ -237,8 +274,7 @@ class Document extends TextDocumentAbstract {
     public function getFieldsByIndex(int $index): array {
         if ($index < 0) {
             $maxIndex = ($this->header?->countFields() ?? 0) - 1;
-            $this->logError("Spalten-Index '$index' ist ungültig (gültiger Bereich: 0-$maxIndex)");
-            throw new RuntimeException("Spalten-Index '$index' ist ungültig");
+            $this->logErrorAndThrow(RuntimeException::class, "Spalten-Index '$index' ist ungültig (gültiger Bereich: 0-$maxIndex)");
         }
 
         $fields = [];
@@ -342,8 +378,7 @@ class Document extends TextDocumentAbstract {
     protected function setFieldValueWithQuoting(int $rowIndex, int $fieldIndex, mixed $value, bool $quoted): void {
         if (!isset($this->rows[$rowIndex])) {
             $maxRow = $this->countRows() - 1;
-            $this->logError("Zeile $rowIndex existiert nicht (gültiger Bereich: 0-$maxRow)");
-            throw new RuntimeException("Zeile $rowIndex existiert nicht");
+            $this->logErrorAndThrow(RuntimeException::class, "Zeile $rowIndex existiert nicht (gültiger Bereich: 0-$maxRow)");
         }
 
         $row = $this->rows[$rowIndex];
@@ -351,8 +386,7 @@ class Document extends TextDocumentAbstract {
 
         if (!isset($fields[$fieldIndex])) {
             $maxField = $row->countFields() - 1;
-            $this->logError("Feld $fieldIndex existiert nicht in Zeile $rowIndex (gültiger Bereich: 0-$maxField)");
-            throw new RuntimeException("Feld $fieldIndex existiert nicht in Zeile $rowIndex");
+            $this->logErrorAndThrow(RuntimeException::class, "Feld $fieldIndex existiert nicht in Zeile $rowIndex (gültiger Bereich: 0-$maxField)");
         }
 
         $stringValue = match (true) {

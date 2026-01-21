@@ -240,8 +240,7 @@ class PhoneNumberHelper {
 
         // Nationale Nummer - füge Ländervorwahl hinzu
         if (!isset(self::COUNTRY_CODES[$defaultCountry])) {
-            self::logError("Unbekannter Ländercode: {$defaultCountry}");
-            return null;
+            return self::logErrorAndReturn(null, "Unbekannter Ländercode: {$defaultCountry}");
         }
 
         $countryCode = self::COUNTRY_CODES[$defaultCountry];

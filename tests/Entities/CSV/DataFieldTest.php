@@ -93,9 +93,13 @@ class DataFieldTest extends BaseTestCase {
     }
 
     public function testWhitespaceAroundValue(): void {
-        $field = new DataField(' "ABC" ');
-        $this->assertTrue($field->isQuoted(), 'Whitespace außen soll erkannt, aber ignoriert werden');
+        $raw = ' "ABC" ';
+        $field = new DataField($raw);
+        $this->assertTrue($field->isQuoted(), 'Whitespace außen soll erkannt werden');
         $this->assertSame('ABC', $field->getValue());
+        // Bei quoted Fields wird Whitespace außerhalb der Quotes ignoriert
+        $this->assertSame('"ABC"', $field->toString(), 'toString() ignoriert äußeren Whitespace bei quoted');
+        $this->assertSame('"ABC"', $field->toString(null, true), 'toString(trimmed: true) identisch');
     }
 
     public function testRawValuePreserved(): void {
@@ -302,5 +306,205 @@ class DataFieldTest extends BaseTestCase {
         $newField = $field->withValue('immutable');
         $this->assertSame('mutable', $field->getValue(), 'Original unverändert');
         $this->assertSame('immutable', $newField->getValue(), 'Neues Objekt hat neuen Wert');
+    }
+
+    // ========== Tests für Whitespace-Erhaltung und toString() mit trimmed Parameter ==========
+
+    public function testUnquotedFieldPreservesTrailingWhitespace(): void {
+        $raw = 'Aussenanlage               ';
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted());
+        $this->assertSame('Aussenanlage', $field->getValue(), 'getValue() liefert getrimmten Wert');
+        $this->assertSame($raw, $field->toString(), 'toString() erhält Whitespace für Round-Trip');
+        $this->assertSame($raw, $field->getRaw(), 'getRaw() liefert Original');
+    }
+
+    public function testUnquotedFieldPreservesLeadingWhitespace(): void {
+        $raw = '   ABC';
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted());
+        $this->assertSame('ABC', $field->getValue());
+        $this->assertSame($raw, $field->toString(), 'toString() erhält Leading-Whitespace');
+    }
+
+    public function testUnquotedFieldPreservesBothWhitespaces(): void {
+        $raw = '  Value mit Spaces  ';
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted());
+        $this->assertSame('Value mit Spaces', $field->getValue());
+        $this->assertSame($raw, $field->toString(), 'toString() erhält beide Whitespaces');
+    }
+
+    public function testToStringTrimmedForUnquotedField(): void {
+        $raw = '  Aussenanlage               ';
+        $field = new DataField($raw);
+
+        $this->assertSame($raw, $field->toString(), 'toString() ohne Parameter erhält Whitespace');
+        $this->assertSame('Aussenanlage', $field->toString(null, true), 'toString(trimmed: true) liefert getrimmten Wert');
+    }
+
+    public function testToStringTrimmedForQuotedField(): void {
+        $raw = '"  Wert mit Spaces  "';
+        $field = new DataField($raw);
+
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame('  Wert mit Spaces  ', $field->getValue(), 'getValue() liefert inneren Wert mit Spaces');
+        $this->assertSame($raw, $field->toString(), 'toString() erhält Original');
+        // trimmed hat bei quoted Fields keine Auswirkung (kein äußerer Whitespace)
+        $this->assertSame($raw, $field->toString(null, true), 'toString(trimmed: true) identisch');
+    }
+
+    public function testToStringTrimmedWithCustomEnclosure(): void {
+        $field = new DataField("'  Value  '", "'");
+
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame("'  Value  '", $field->toString("'"), 'toString() erhält inneren Whitespace');
+        // trimmed hat bei quoted Fields keine Auswirkung
+        $this->assertSame("'  Value  '", $field->toString("'", true), 'toString(trimmed: true) identisch');
+    }
+
+    public function testWhitespaceFieldRoundTrip(): void {
+        // Ein Feld das nur aus Whitespace besteht
+        // Bei reinem Whitespace werden Leading und Trailing separat gespeichert,
+        // da der Wert nach trim() leer ist
+        $raw = '   ';
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted());
+        $this->assertSame('', $field->getValue(), 'getValue() ist leer nach Trim');
+        // Whitespace-only Fields: getRaw() zeigt das Original
+        $this->assertSame($raw, $field->getRaw(), 'getRaw() liefert Original');
+        $this->assertSame('', $field->toString(null, true), 'toString(trimmed: true) ist leer');
+    }
+
+    public function testTypedValueWithWhitespace(): void {
+        // Integer mit Leading/Trailing Whitespace
+        $raw = '  42  ';
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted());
+        $this->assertSame(42, $field->getTypedValue(), 'Integer wird erkannt trotz Whitespace');
+        $this->assertSame('42', $field->getValue());
+        $this->assertSame($raw, $field->toString(), 'toString() erhält Whitespace');
+        $this->assertSame('42', $field->toString(null, true), 'toString(trimmed: true) ohne Whitespace');
+    }
+
+    public function testFloatWithWhitespace(): void {
+        // Float mit Trailing Whitespace
+        $raw = '3,14   ';
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted());
+        $this->assertEquals(3.14, $field->getTypedValue(), 'Float wird erkannt');
+        $this->assertSame($raw, $field->toString(), 'toString() erhält Trailing-Whitespace');
+        $this->assertSame('3,14', $field->toString(null, true), 'toString(trimmed: true) ohne Whitespace');
+    }
+
+    public function testDateWithWhitespace(): void {
+        // Datum mit Leading Whitespace
+        $raw = '   2025-12-26';
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $field->getTypedValue(), 'Datum wird erkannt');
+        $this->assertSame('2025-12-26', $field->getValue());
+        $this->assertSame($raw, $field->toString(), 'toString() erhält Leading-Whitespace');
+        $this->assertSame('2025-12-26', $field->toString(null, true), 'toString(trimmed: true) ohne Whitespace');
+    }
+
+    public function testEmptyFieldPreservation(): void {
+        $raw = '';
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted());
+        $this->assertSame('', $field->getValue());
+        $this->assertSame('', $field->toString());
+        $this->assertSame('', $field->toString(null, true));
+    }
+
+    public function testRepeatedEnclosureWithTrimmed(): void {
+        $raw = '""  Inner Value  ""';
+        $field = new DataField($raw);
+
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame(2, $field->getEnclosureRepeat());
+        $this->assertSame('  Inner Value  ', $field->getValue());
+        $this->assertSame($raw, $field->toString(), 'toString() erhält Original');
+        // trimmed hat bei quoted Fields keine Auswirkung
+        $this->assertSame($raw, $field->toString(null, true), 'toString(trimmed: true) identisch');
+    }
+
+    public function testQuotedFieldWithOuterWhitespace(): void {
+        // Quoted Field mit Whitespace außerhalb der Quotes - wird ignoriert
+        $raw = '   "Quoted Value"   ';
+        $field = new DataField($raw);
+
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame('Quoted Value', $field->getValue());
+        // Äußerer Whitespace bei quoted Fields wird ignoriert
+        $this->assertSame('"Quoted Value"', $field->toString(), 'toString() ohne äußeren Whitespace');
+        $this->assertSame('"Quoted Value"', $field->toString(null, true), 'toString(trimmed: true) identisch');
+    }
+
+    public function testQuotedFieldWithInnerAndOuterWhitespace(): void {
+        // Quoted Field mit Whitespace innen UND außen
+        // Äußerer Whitespace wird ignoriert, innerer bleibt erhalten
+        $raw = '  "  Inner Spaces  "  ';
+        $field = new DataField($raw);
+
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame('  Inner Spaces  ', $field->getValue(), 'Innerer Whitespace bleibt im Value');
+        // Äußerer Whitespace wird ignoriert, innerer bleibt
+        $this->assertSame('"  Inner Spaces  "', $field->toString(), 'toString() ohne äußeren Whitespace');
+        $this->assertSame('"  Inner Spaces  "', $field->toString(null, true), 'toString(trimmed: true) identisch');
+    }
+
+    public function testEmptyQuotedFieldWithOuterWhitespace(): void {
+        // Leeres quoted Field mit Whitespace außen
+        // Hinweis: Reines Quote-Feld wird als Sonderfall behandelt (vor Whitespace-Extraktion)
+        $raw = '  ""  ';
+        $field = new DataField($raw);
+
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame('', $field->getValue());
+        // Bei reinen Quote-Feldern wird der äußere Whitespace nicht gespeichert (Sonderfall)
+        $this->assertSame('""', $field->toString(), 'toString() gibt nur Quotes zurück');
+        $this->assertSame('""', $field->toString(null, true), 'toString(trimmed: true) ohne äußeren Whitespace');
+    }
+
+    public function testUnquotedFieldWithOnlyWhitespace(): void {
+        // Unquoted Field, das nur aus Whitespace besteht (z.B. 27 Leerzeichen)
+        // Wichtig: Round-Trip muss exakt funktionieren, ohne Verdoppelung des Whitespace
+        $raw = str_repeat(' ', 27);
+        $field = new DataField($raw);
+
+        $this->assertFalse($field->isQuoted(), 'Nur-Whitespace-Feld ist nicht gequotet');
+        $this->assertSame('', $field->getValue(), 'getValue() gibt leeren String zurück');
+        $this->assertSame($raw, $field->getRaw(), 'getRaw() gibt Original zurück');
+        $this->assertSame($raw, $field->toString(), 'toString() muss exakt dem Original entsprechen');
+        $this->assertSame(27, strlen($field->toString()), 'toString() Länge muss 27 sein (nicht 54)');
+    }
+
+    public function testUnquotedFieldWithVariousWhitespaceOnlyContent(): void {
+        // Verschiedene Whitespace-Varianten testen
+        $tests = [
+            str_repeat(' ', 1),   // 1 Leerzeichen
+            str_repeat(' ', 5),   // 5 Leerzeichen
+            str_repeat(' ', 27),  // 27 Leerzeichen (Original-Problem)
+            str_repeat(' ', 100), // 100 Leerzeichen
+            "\t",                 // Tab
+            "\t\t\t",             // Mehrere Tabs
+            "   \t   ",           // Gemischt Leerzeichen und Tabs
+        ];
+
+        foreach ($tests as $raw) {
+            $field = new DataField($raw);
+
+            $this->assertFalse($field->isQuoted(), sprintf('Whitespace-Feld (%d Zeichen) sollte nicht gequotet sein', strlen($raw)));
+            $this->assertSame($raw, $field->toString(), sprintf('Round-Trip muss für "%s" (Länge %d) exakt funktionieren', addcslashes($raw, "\t"), strlen($raw)));
+        }
     }
 }

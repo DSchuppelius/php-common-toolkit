@@ -28,6 +28,13 @@ class FieldAbstract implements FieldInterface {
     private ?string $originalFormat = null;
     private CountryCode $country;
 
+    /** @var string Leading whitespace für unquoted Fields (für Round-Trip-Erhaltung) */
+    private string $leadingWhitespace = '';
+    /** @var string Trailing whitespace für unquoted Fields (für Round-Trip-Erhaltung) */
+    private string $trailingWhitespace = '';
+    /** @var int Anzahl innerer Leerzeichen bei quoted leeren Feldern (für Round-Trip-Erhaltung) */
+    private int $innerPadding = 0;
+
     public function __construct(string $raw, string $enclosure = self::DEFAULT_ENCLOSURE, CountryCode $country = CountryCode::Germany) {
         $this->raw = $raw;
         $this->country = $country;
@@ -59,6 +66,7 @@ class FieldAbstract implements FieldInterface {
 
         if (preg_match('/^(' . $enc . '+)(.*?)(?:' . $enc . '+)$/s', $trimmed, $matches)) {
             $this->quoted = true;
+            // Bei quoted Fields: Whitespace außerhalb der Quotes ignorieren
 
             $startRun = strlen($matches[1]);
             $endRun = 0;
@@ -67,8 +75,10 @@ class FieldAbstract implements FieldInterface {
             }
 
             // Leeres Feld mit symmetrischen Quotes → intdiv
+            // Innere Leerzeichen zählen für Round-Trip-Erhaltung
             if (trim($matches[2]) === '' && $startRun === $endRun) {
                 $this->enclosureRepeat = intdiv($startRun, 2);
+                $this->innerPadding = strlen($matches[2]);
                 $this->typedValue = '';
                 return;
             }
@@ -86,10 +96,29 @@ class FieldAbstract implements FieldInterface {
 
             $this->typedValue = $inner;
         } else {
-            // Unquoted Field
+            // Unquoted Field - Whitespace für Round-Trip erhalten
             $this->quoted = false;
             $this->enclosureRepeat = 0;
-            $this->analyzeUnquotedValue($trimmed);
+
+            // Sonderfall: Feld besteht nur aus Whitespace
+            // In diesem Fall würden beide Regexe den gesamten String matchen,
+            // was zu einer Verdoppelung beim Rekonstruieren führen würde.
+            if ($trimmed === '') {
+                // Alles als leadingWhitespace behandeln, trailingWhitespace bleibt leer
+                $this->leadingWhitespace = $raw;
+                $this->trailingWhitespace = '';
+                $this->typedValue = '';
+            } else {
+                // Leading/Trailing Whitespace extrahieren und speichern
+                if (preg_match('/^(\s*)/', $raw, $leadMatch)) {
+                    $this->leadingWhitespace = $leadMatch[1];
+                }
+                if (preg_match('/(\s*)$/', $raw, $trailMatch)) {
+                    $this->trailingWhitespace = $trailMatch[1];
+                }
+
+                $this->analyzeUnquotedValue($trimmed);
+            }
         }
     }
 
@@ -127,6 +156,26 @@ class FieldAbstract implements FieldInterface {
      */
     public function isEmpty(): bool {
         return $this->typedValue === '';
+    }
+
+    /**
+     * Prüft, ob das Feld null ist.
+     */
+    public function isNull(): bool {
+        return $this->typedValue === null;
+    }
+
+    /**
+     * Prüft, ob das Feld leer oder nur Whitespace enthält.
+     */
+    public function isBlank(): bool {
+        if ($this->typedValue === null || $this->typedValue === '') {
+            return true;
+        }
+        if (is_string($this->typedValue)) {
+            return trim($this->typedValue) === '';
+        }
+        return false;
     }
 
     /**
@@ -292,24 +341,31 @@ class FieldAbstract implements FieldInterface {
 
     /**
      * Gibt den Wert als String zurück.
+     *
+     * @param string|null $enclosure Das Enclosure-Zeichen (Standard: ")
+     * @param bool $trimmed Wenn true, wird Whitespace entfernt; wenn false, bleibt er für Round-Trip erhalten
+     * @return string Der formatierte Wert
      */
-    public function toString(?string $enclosure = null): string {
+    public function toString(?string $enclosure = null, bool $trimmed = false): string {
         $enclosure = $enclosure ?? self::DEFAULT_ENCLOSURE;
-
-        $quoteLevel = max(1, $this->enclosureRepeat);
         $value = $this->getValue();
 
         if ($this->quoted) {
+            $quoteLevel = max(1, $this->enclosureRepeat);
             $enc = str_repeat($enclosure, $quoteLevel);
 
-            if (str_contains($value, $enclosure)) {
-                $this->logWarning('Falsche CSV-Syntax: Value enthält Enclosure: "' . $value . '"');
+            // Innere Leerzeichen für Round-Trip wiederherstellen
+            $innerValue = $value;
+            if ($this->innerPadding > 0 && $value === '') {
+                $innerValue = str_repeat(' ', $this->innerPadding);
             }
 
-            return $enc . $value . $enc;
+            self::logWarningIf(str_contains($innerValue, $enclosure), 'Falsche CSV-Syntax: Value enthält Enclosure: "' . $innerValue . '"');
+            return $enc . $innerValue . $enc;
         }
 
-        return $value;
+        // Unquoted: Whitespace nur bei Round-Trip (trimmed=false) erhalten
+        return $trimmed ? $value : $this->leadingWhitespace . $value . $this->trailingWhitespace;
     }
 
     /**

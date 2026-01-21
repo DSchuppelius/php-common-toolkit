@@ -34,15 +34,11 @@ class Shell extends HelperAbstract {
     public static function executeShellCommand(string $command, array &$output = [], int &$resultCode = 0, bool $throwException = false, int $expectedResultCode = 0, bool $usePowerShell = false): bool {
         // Vorabprüfung
         if (!function_exists('exec')) {
-            $msg = "exec() ist deaktiviert. Der Befehl kann nicht ausgeführt werden.";
-            self::logError("$msg Befehl: $command");
-            throw new Exception($msg);
+            self::logErrorAndThrow(Exception::class, "exec() ist deaktiviert. Der Befehl kann nicht ausgeführt werden. Befehl: $command");
         }
 
         if (trim($command) === '') {
-            $msg = "Es wurde kein Befehl übergeben. Bitte einen gültigen Befehl angeben.";
-            self::logError($msg);
-            throw new Exception($msg);
+            self::logErrorAndThrow(Exception::class, "Es wurde kein Befehl übergeben. Bitte einen gültigen Befehl angeben.");
         }
 
         // Plattformabhängige Shell-Vorbereitung
@@ -64,12 +60,10 @@ class Shell extends HelperAbstract {
             $errorMessage = "Fehler bei der Ausführung des Kommandos: $command";
 
             if ($throwException) {
-                self::logError($errorMessage);
-                throw new Exception("$errorMessage Ausgabe: " . implode("\n", $output));
+                self::logErrorAndThrow(Exception::class, "$errorMessage Ausgabe: " . implode("\n", $output));
             }
 
-            self::logWarning("$errorMessage (keine Exception geworfen)");
-            return false;
+            return self::logWarningAndReturn(false, "$errorMessage (keine Exception geworfen)");
         }
 
         return true;

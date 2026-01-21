@@ -76,8 +76,7 @@ abstract class XmlParserAbstract {
             $errors = libxml_get_errors();
             libxml_clear_errors();
             $errorMessage = "Ungültiges XML-Dokument: " . ($errors[0]->message ?? 'Unbekannter Fehler');
-            self::logError($errorMessage);
-            throw new RuntimeException($errorMessage);
+            self::logErrorAndThrow(RuntimeException::class, $errorMessage);
         }
 
         libxml_clear_errors();
@@ -275,8 +274,7 @@ abstract class XmlParserAbstract {
     protected function findRequiredNode(string $expression, string $errorMessage, ?DOMNode $context = null): DOMNode {
         $node = $this->findNode($expression, $context);
         if ($node === null) {
-            self::logError($errorMessage);
-            throw new RuntimeException($errorMessage);
+            self::logErrorAndThrow(RuntimeException::class, $errorMessage);
         }
         return $node;
     }

@@ -62,8 +62,7 @@ class ColumnWidthConfig {
      */
     public function setColumnWidth(string|int $column, int $width): self {
         if ($width < 1) {
-            $this->logError('Spaltenbreite muss mindestens 1 Zeichen betragen', ['column' => $column, 'width' => $width]);
-            throw new RuntimeException('Spaltenbreite muss mindestens 1 Zeichen betragen');
+            $this->logErrorAndThrow(RuntimeException::class, 'Spaltenbreite muss mindestens 1 Zeichen betragen');
         }
 
         $this->columnWidths[$column] = $width;
@@ -101,8 +100,7 @@ class ColumnWidthConfig {
      */
     public function setDefaultWidth(?int $width): self {
         if ($width !== null && $width < 1) {
-            $this->logError('Standardbreite muss mindestens 1 Zeichen betragen', ['width' => $width]);
-            throw new RuntimeException('Standardbreite muss mindestens 1 Zeichen betragen');
+            $this->logErrorAndThrow(RuntimeException::class, 'Standardbreite muss mindestens 1 Zeichen betragen');
         }
 
         $this->defaultWidth = $width;

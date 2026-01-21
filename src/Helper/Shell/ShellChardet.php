@@ -29,8 +29,7 @@ class ShellChardet {
 
         $process = proc_open('chardet -', $descriptorspec, $pipes);
         if (!is_resource($process)) {
-            self::logError("Konnte chardet-Prozess nicht starten.");
-            throw new RuntimeException("chardet konnte nicht gestartet werden.");
+            self::logErrorAndThrow(RuntimeException::class, "Konnte chardet-Prozess nicht starten.");
         }
 
         self::$process = $process;
@@ -86,8 +85,7 @@ class ShellChardet {
 
         $process = proc_open('chardet -', $descriptorspec, $pipes);
         if (!is_resource($process)) {
-            self::logError("Konnte temporären chardet-Prozess nicht starten.");
-            return false;
+            return self::logErrorAndReturn(false, "Konnte temporären chardet-Prozess nicht starten.");
         }
 
         fwrite($pipes[0], $text);
@@ -99,8 +97,7 @@ class ShellChardet {
 
         $exitCode = proc_close($process);
         if ($exitCode !== 0 || $result === false) {
-            self::logError("Temporärer chardet-Prozess lieferte keinen Output.");
-            return false;
+            return self::logErrorAndReturn(false, "Temporärer chardet-Prozess lieferte keinen Output.");
         }
 
         return self::normalizeEncoding(trim($result));
@@ -116,8 +113,7 @@ class ShellChardet {
         self::start();
 
         if (!is_resource(self::$stdin) || !is_resource(self::$stdout)) {
-            self::logError("Persistente chardet-Streams sind nicht verfügbar.");
-            return false;
+            return self::logErrorAndReturn(false, "Persistente chardet-Streams sind nicht verfügbar.");
         }
 
         fwrite(self::$stdin, $text . "\n");
@@ -126,8 +122,7 @@ class ShellChardet {
         // Lese eine Zeile vom Output
         $result = fgets(self::$stdout);
         if ($result === false) {
-            self::logError("Persistente chardet-Instanz hat nichts zurückgegeben.");
-            return false;
+            return self::logErrorAndReturn(false, "Persistente chardet-Instanz hat nichts zurückgegeben.");
         }
 
         return self::normalizeEncoding(trim($result));

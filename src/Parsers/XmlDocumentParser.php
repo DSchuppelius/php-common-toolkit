@@ -67,7 +67,8 @@ class XmlDocumentParser extends HelperAbstract {
         $result = $document->validateAgainstXsd($xsdFile);
 
         if (!$result['valid']) {
-            throw new RuntimeException(
+            self::logErrorAndThrow(
+                RuntimeException::class,
                 'XSD-Validierung fehlgeschlagen: ' . implode(', ', $result['errors'])
             );
         }
@@ -94,8 +95,7 @@ class XmlDocumentParser extends HelperAbstract {
 
         $result = $xpathObj->query($xpath);
         if ($result === false) {
-            self::logError("Ungültiger XPath-Ausdruck: {$xpath}");
-            return [];
+            return self::logErrorAndReturn([], "Ungültiger XPath-Ausdruck: {$xpath}");
         }
 
         $elements = [];
