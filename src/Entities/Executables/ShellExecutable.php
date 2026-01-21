@@ -18,6 +18,6 @@ class ShellExecutable extends ExecutableAbstract {
     public function execute(array $overrideArgs = []): string {
         $args = $this->prepareArguments($overrideArgs);
         $cmd = escapeshellcmd($this->path) . ' ' . implode(' ', array_map('escapeshellarg', $args));
-        return shell_exec($cmd);
+        return shell_exec($cmd) ?? '';
     }
 }

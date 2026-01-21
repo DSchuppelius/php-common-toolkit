@@ -15,17 +15,29 @@ use CommonToolkit\Helper\FileSystem\Folder;
 use CommonToolkit\Helper\FileSystem\FileTypes\ZipFile;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
-use RuntimeException;
+use Exception;
 use Tests\Contracts\BaseTestCase;
 
 class ZipFileTest extends BaseTestCase {
     private string $tempDir;
     private array $tempFiles = [];
+    private static bool $zipAvailable;
+
+    public static function setUpBeforeClass(): void {
+        parent::setUpBeforeClass();
+        self::$zipAvailable = class_exists('ZipArchive');
+    }
 
     protected function setUp(): void {
         parent::setUp();
         $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'zipfile_test_' . uniqid();
         Folder::create($this->tempDir, 0755, true);
+    }
+
+    protected function skipIfNoZipExtension(): void {
+        if (!self::$zipAvailable) {
+            $this->markTestSkipped('PHP ZipArchive-Erweiterung ist nicht verfügbar.');
+        }
     }
 
     protected function tearDown(): void {
@@ -60,6 +72,8 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testCreateAndExtract(): void {
+        $this->skipIfNoZipExtension();
+
         // Erstelle Testdateien
         $file1 = $this->createTempFile('test1.txt', 'Inhalt Datei 1');
         $file2 = $this->createTempFile('test2.txt', 'Inhalt Datei 2');
@@ -90,6 +104,8 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testCreateWithCustomArchiveNames(): void {
+        $this->skipIfNoZipExtension();
+
         $file1 = $this->createTempFile('original.txt', 'Test content');
 
         $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'custom_names.zip';
@@ -116,6 +132,8 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testCreateFromDirectory(): void {
+        $this->skipIfNoZipExtension();
+
         // Erstelle Testverzeichnisstruktur
         $sourceDir = $this->tempDir . DIRECTORY_SEPARATOR . 'source';
         Folder::create($sourceDir . DIRECTORY_SEPARATOR . 'subdir', 0755, true);
@@ -138,6 +156,8 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testCreateFromDirectoryWithBaseName(): void {
+        $this->skipIfNoZipExtension();
+
         $sourceDir = $this->tempDir . DIRECTORY_SEPARATOR . 'source2';
         Folder::create($sourceDir, 0755, true);
         file_put_contents($sourceDir . DIRECTORY_SEPARATOR . 'file.txt', 'Content');
@@ -158,6 +178,8 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testListContents(): void {
+        $this->skipIfNoZipExtension();
+
         $file1 = $this->createTempFile('list_test.txt', 'Content for size test');
         $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'list_test.zip';
 
@@ -177,6 +199,8 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testIsZipFile(): void {
+        $this->skipIfNoZipExtension();
+
         // Erstelle eine echte ZIP-Datei
         $file = $this->createTempFile('mimetype_test.txt', 'test');
         $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'mimetype_test.zip';
@@ -190,12 +214,16 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testIsValidWithInvalidFile(): void {
+        $this->skipIfNoZipExtension();
+
         $invalidFile = $this->createTempFile('not_a_zip.zip', 'This is not a valid ZIP file');
 
         $this->assertFalse(ZipFile::isValid($invalidFile));
     }
 
     public function testExtractDeletesSourceFile(): void {
+        $this->skipIfNoZipExtension();
+
         $file = $this->createTempFile('delete_test.txt', 'content');
         $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'delete_source.zip';
         $extractDir = $this->tempDir . DIRECTORY_SEPARATOR . 'extract_delete';
@@ -213,11 +241,15 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testExtractNonExistentFileThrows(): void {
+        $this->skipIfNoZipExtension();
+
         $this->expectException(FileNotFoundException::class);
         ZipFile::extract('/nonexistent/file.zip', $this->tempDir);
     }
 
     public function testListContentsNonExistentFileThrows(): void {
+        $this->skipIfNoZipExtension();
+
         $this->expectException(FileNotFoundException::class);
         ZipFile::listContents('/nonexistent/file.zip');
     }
@@ -228,6 +260,8 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testGetErrorMessage(): void {
+        $this->skipIfNoZipExtension();
+
         $this->assertStringContainsString('ZIP', ZipFile::getErrorMessage(\ZipArchive::ER_NOZIP));
         $this->assertStringContainsString('Speicher', ZipFile::getErrorMessage(\ZipArchive::ER_MEMORY));
         $this->assertStringContainsString('CRC', ZipFile::getErrorMessage(\ZipArchive::ER_CRC));
@@ -235,6 +269,8 @@ class ZipFileTest extends BaseTestCase {
     }
 
     public function testCreateSkipsMissingFiles(): void {
+        $this->skipIfNoZipExtension();
+
         $existingFile = $this->createTempFile('exists.txt', 'content');
         $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'skip_missing.zip';
 

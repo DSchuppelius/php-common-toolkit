@@ -20,6 +20,7 @@
     "ext-bcmath": "*",
     "ext-dom": "*",
     "ext-intl": "*",
+    "ext-zip": "*",
     "dschuppelius/php-config-toolkit": "^0.2.26"
   },
 
