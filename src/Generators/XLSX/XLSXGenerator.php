@@ -136,8 +136,8 @@ class XLSXGenerator extends HelperAbstract {
      * Generiert [Content_Types].xml
      */
     protected function generateContentTypes(Document $document): string {
-        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">';
     $xml .= '
     <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" />';
     $xml .= '
@@ -174,13 +174,12 @@ $xml .= '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-ty
 return $xml;
 }
 
-/**
-* Generiert _rels/.rels
-*/
-protected function generateRootRels(): string {
-$xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+    /**
+     * Generiert _rels/.rels
+     */
+    protected function generateRootRels(): string {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
     $xml .= '
     <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
         Target="xl/workbook.xml" />';
@@ -197,13 +196,12 @@ $xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/re
 return $xml;
 }
 
-/**
-* Generiert docProps/app.xml
-*/
-protected function generateAppProps(Document $document): string {
-$xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">';
+    /**
+     * Generiert docProps/app.xml
+     */
+    protected function generateAppProps(Document $document): string {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">';
     $xml .= '<Application>CommonToolkit</Application>';
     $xml .= '<DocSecurity>0</DocSecurity>';
     $xml .= '<ScaleCrop>false</ScaleCrop>';
@@ -222,9 +220,8 @@ return $xml;
 protected function generateCoreProps(Document $document): string {
 $now = (new \DateTimeImmutable())->format('Y-m-d\TH:i:s\Z');
 
-$xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" ';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" ';
         $xml .= ' xmlns:dc="http://purl.org/dc/elements/1.1/" ';
         $xml .= ' xmlns:dcterms="http://purl.org/dc/terms/" ';
         $xml .= ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">';
@@ -251,13 +248,12 @@ $xml .= '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/
 return $xml;
 }
 
-/**
-* Generiert xl/workbook.xml
-*/
-protected function generateWorkbook(Document $document): string {
-$xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ';
+    /**
+     * Generiert xl/workbook.xml
+     */
+    protected function generateWorkbook(Document $document): string {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ';
         $xml .= ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
     $xml .= '<sheets>';
 
@@ -274,13 +270,12 @@ $xml .= '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/m
 return $xml;
 }
 
-/**
-* Generiert xl/_rels/workbook.xml.rels
-*/
-protected function generateWorkbookRels(Document $document): string {
-$xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+    /**
+     * Generiert xl/_rels/workbook.xml.rels
+     */
+    protected function generateWorkbookRels(Document $document): string {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
 
     $rId = 1;
 
@@ -310,13 +305,12 @@ $xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/re
 return $xml;
 }
 
-/**
-* Generiert xl/styles.xml
-*/
-protected function generateStyles(): string {
-$xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+    /**
+     * Generiert xl/styles.xml
+     */
+    protected function generateStyles(): string {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
 
     // Fonts
     $xml .= '<fonts count="1">';
@@ -366,15 +360,14 @@ $xml .= '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006
 return $xml;
 }
 
-/**
-* Generiert xl/sharedStrings.xml
-*/
-protected function generateSharedStrings(): string {
-$count = count($this->sharedStrings);
+    /**
+     * Generiert xl/sharedStrings.xml
+     */
+    protected function generateSharedStrings(): string {
+        $count = count($this->sharedStrings);
 
-$xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' . $count . '"
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' . $count . '"
     uniqueCount="' . $count . '">';
 
     foreach ($this->sharedStrings as $str) {
@@ -388,13 +381,12 @@ $xml .= '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" 
 return $xml;
 }
 
-/**
-* Generiert ein Worksheet.
-*/
-protected function generateSheet(Sheet $sheet): string {
-$xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' . "\n";
-$xml .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+    /**
+     * Generiert ein Worksheet.
+     */
+    protected function generateSheet(Sheet $sheet): string {
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
     $xml .= '<sheetData>';
 
         $rowIndex = 1;
