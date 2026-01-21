@@ -48,7 +48,7 @@ class ShellChardetTest extends BaseTestCase {
         $this->assertLessThan(1.5, $duration, "ShellChardet::detect($variant) hat zu lange gebraucht (evtl. blockiert?)");
 
         if ($encoding === false) {
-            $this->markTestIncomplete("ShellChardet ($variant) konnte Kodierung nicht ermitteln – chardet installiert?");
+            $this->markTestSkipped("ShellChardet ($variant) konnte Kodierung nicht ermitteln – chardet/uchardet nicht installiert.");
         } else {
             $this->assertMatchesRegularExpression('/utf-?8|iso-8859/i', $encoding, "Kodierung ($variant) plausibel?");
         }

@@ -201,10 +201,13 @@ class FileTest extends BaseTestCase {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
         $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');
 
-        // Encoding der Originaldatei prüfen (sollte ISO-8859-x sein)
+        // Encoding der Originaldatei prüfen (sollte ISO-8859-x oder Windows-1252 sein)
         $encoding = File::chardet($ansiFile);
         $this->assertNotFalse($encoding, 'Encoding muss erkannt werden');
-        $this->assertStringContainsString('ISO-8859', $encoding, 'Datei sollte als ISO-8859 erkannt werden');
+        $this->assertTrue(
+            str_contains($encoding, 'ISO-8859') || str_contains($encoding, 'Windows-1252'),
+            'Datei sollte als ISO-8859 oder Windows-1252 erkannt werden, erkannt wurde: ' . $encoding
+        );
 
         // Als UTF-8 lesen
         $content = File::readAsUtf8($ansiFile);

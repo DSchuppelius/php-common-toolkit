@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e92bf72693e94ca0934e5344991e3e9b",
+    "content-hash": "e073b971e7ce945fe991783023d32e54",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.2.30",
+            "version": "v0.2.31",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "05031152d946994aa722b63275659110f5aab7c9"
+                "reference": "8a69cfa9d3b637d7b2d5f56769412412ff73e850"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/05031152d946994aa722b63275659110f5aab7c9",
-                "reference": "05031152d946994aa722b63275659110f5aab7c9",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/8a69cfa9d3b637d7b2d5f56769412412ff73e850",
+                "reference": "8a69cfa9d3b637d7b2d5f56769412412ff73e850",
                 "shasum": ""
             },
             "require": {
@@ -46,9 +46,9 @@
             "description": "Ein Toolkit für JSON-basierte Konfigurationsverwaltung",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.2.30"
+                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.2.31"
             },
-            "time": "2026-01-20T08:28:22+00:00"
+            "time": "2026-01-21T10:43:04+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
@@ -1926,7 +1926,8 @@
         "php": ">=8.2 <8.5",
         "ext-bcmath": "*",
         "ext-dom": "*",
-        "ext-intl": "*"
+        "ext-intl": "*",
+        "ext-zip": "*"
     },
     "platform-dev": [],
     "plugin-api-version": "2.6.0"

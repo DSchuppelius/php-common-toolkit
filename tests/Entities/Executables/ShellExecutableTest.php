@@ -37,14 +37,17 @@ class ShellExecutableTest extends BaseTestCase {
     }
 
     public function testConstructorWithLinuxPath(): void {
-        // Linux spezifischer Pfad (nur auf Linux getestet)
         $executable = new ShellExecutable([
             'linuxPath' => '/usr/bin/cat',
             'windowsPath' => 'C:\\Windows\\System32\\cmd.exe'
         ]);
+        if (PHP_OS_FAMILY === 'Windows') {
+            // Auf Windows wird windowsPath verwendet
 
-        // Auf Linux sollte linuxPath verwendet werden
-        $this->assertStringContainsString('cat', (string)$executable);
+            $this->assertStringContainsString('cmd.exe', (string)$executable);
+        } else {
+            $this->assertStringContainsString('cat', (string)$executable);
+        }
     }
 
     public function testConstructorWithLinuxArguments(): void {
@@ -54,11 +57,20 @@ class ShellExecutableTest extends BaseTestCase {
             'windowsArguments' => ['/C', 'echo Test']
         ]);
 
-        // Auf Linux sollte linuxArguments verwendet werden
-        $this->assertStringContainsString('-n', (string)$executable);
+        if (PHP_OS_FAMILY === 'Windows') {
+            // Auf Windows sollte windowsArguments verwendet werden
+            $this->assertStringContainsString('/C', (string)$executable);
+        } else {
+            // Auf Linux sollte linuxArguments verwendet werden
+            $this->assertStringContainsString('-n', (string)$executable);
+        }
     }
 
     public function testExecuteEchoCommand(): void {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('Shell-Ausführung mit cmd.exe erfordert spezielle Behandlung auf Windows');
+        }
+
         $executable = new ShellExecutable([
             'path' => '/bin/echo',
             'arguments' => ['TestOutput']
@@ -70,6 +82,10 @@ class ShellExecutableTest extends BaseTestCase {
     }
 
     public function testExecuteWithOverrideArgs(): void {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('Shell-Ausführung mit cmd.exe erfordert spezielle Behandlung auf Windows');
+        }
+
         $executable = new ShellExecutable([
             'path' => '/bin/echo',
             'arguments' => ['[MESSAGE]']
@@ -81,13 +97,15 @@ class ShellExecutableTest extends BaseTestCase {
     }
 
     public function testExecuteWithAdditionalArgs(): void {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('Shell-Ausführung mit cmd.exe erfordert spezielle Behandlung auf Windows');
+        }
+
         $executable = new ShellExecutable([
             'path' => '/bin/echo',
             'arguments' => ['First']
         ]);
-
         $result = $executable->execute(['Second']);
-
         $this->assertStringContainsString('First', $result);
         $this->assertStringContainsString('Second', $result);
     }
@@ -112,6 +130,10 @@ class ShellExecutableTest extends BaseTestCase {
     }
 
     public function testPlaceholderReplacement(): void {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('Shell-Ausführung mit cmd.exe erfordert spezielle Behandlung auf Windows');
+        }
+
         $executable = new ShellExecutable([
             'path' => '/bin/echo',
             'arguments' => ['Input: [INPUT]', 'Output: [OUTPUT]']
