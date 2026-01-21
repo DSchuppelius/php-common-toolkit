@@ -119,7 +119,7 @@ class ZipFile extends HelperAbstract {
             self::logErrorAndThrow(Exception::class, "Fehler beim Abschließen des ZIP-Archivs: $destination");
         }
 
-        return self::logInfoAndReturn(true, "ZIP-Archiv erfolgreich erstellt: $destination ($addedCount Dateien)");
+        return self::logDebugAndReturn(true, "ZIP-Archiv erfolgreich erstellt: $destination ($addedCount Dateien)");
     }
 
     /**
@@ -237,7 +237,7 @@ class ZipFile extends HelperAbstract {
         }
 
         $zip->close();
-        self::logInfo("ZIP-Datei erfolgreich extrahiert: $file nach $destinationFolder");
+        self::logDebug("ZIP-Datei erfolgreich extrahiert: $file nach $destinationFolder");
 
         if ($deleteSourceFile) {
             File::delete($file);
