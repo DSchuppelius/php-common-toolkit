@@ -404,6 +404,9 @@ phpunit.xml
 /.phpunit.cache
 /.phpunit.result.cache
 
+# OpenSSL random seed file
+.rnd
+
 # symfony/framework-bundle
 .env
 /public/bundles/
