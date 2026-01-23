@@ -146,6 +146,97 @@ $country = CountryCode::fromStringValue('DE'); // CountryCode::Germany
 $creditDebit = CreditDebit::fromMt940Code('C'); // CreditDebit::CREDIT
 ```
 
+### Configured Helper mit CommandBuilder
+
+Das Toolkit nutzt den `CommandBuilder` aus dem `php-config-toolkit` für elegantes Command-Building mit externen Tools:
+
+```php
+use CommonToolkit\Helper\FileSystem\FileTypes\PdfFile;
+
+// PDF-Metadaten abrufen (nutzt intern pdfinfo)
+$metadata = PdfFile::getMetaData('/path/to/document.pdf');
+echo $metadata['Title'];
+echo $metadata['Pages'];
+
+// Prüfen ob PDF verschlüsselt ist
+if (PdfFile::isEncrypted('/path/to/document.pdf')) {
+    // PDF entschlüsseln
+    PdfFile::decrypt('/path/to/encrypted.pdf', '/path/to/decrypted.pdf', 'password');
+}
+
+// PDF validieren
+if (PdfFile::isValid('/path/to/document.pdf')) {
+    echo "PDF ist gültig!";
+}
+```
+
+### Eigene Helper mit Executable-Konfiguration
+
+Erstelle eigene Helper-Klassen die externe Tools nutzen:
+
+```php
+use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
+use CommonToolkit\Helper\Shell;
+
+class MyImageHelper extends ConfiguredHelperAbstract {
+    protected const CONFIG_FILE = __DIR__ . '/../config/image_executables.json';
+
+    public static function convertToJpeg(string $input, string $output): bool {
+        $command = self::getConfiguredCommand('convert', [
+            '[INPUT]' => $input,
+            '[OUTPUT]' => $output
+        ]);
+        
+        if ($command === null) {
+            return false;
+        }
+        
+        return Shell::executeShellCommand($command);
+    }
+    
+    public static function isToolAvailable(string $toolName): bool {
+        return self::isExecutableAvailable($toolName);
+    }
+}
+```
+
+Mit passender Konfigurationsdatei (`config/image_executables.json`):
+
+```json
+{
+  "shellExecutables": {
+    "convert": {
+      "path": "convert",
+      "required": false,
+      "description": "ImageMagick Converter",
+      "package": "imagemagick",
+      "arguments": ["[INPUT]", "-quality", "85", "[OUTPUT]"]
+    }
+  }
+}
+```
+
+---
+
+## Executable Configuration
+
+Das Toolkit nutzt JSON-Konfigurationsdateien für externe Tools. Die Konfiguration ermöglicht:
+
+- **Platzhalter-Ersetzung**: `[INPUT]`, `[OUTPUT]` werden zur Laufzeit ersetzt
+- **Pfad-Validierung**: Automatische Prüfung ob Tools installiert sind
+- **Cross-Platform**: Unterschiedliche Pfade für Windows/Linux möglich
+- **Zentrale Verwaltung**: Alle Tool-Konfigurationen an einem Ort
+
+### Verfügbare Methoden in ConfiguredHelperAbstract
+
+| Methode | Beschreibung |
+|---------|--------------|
+| `getConfiguredCommand($name, $params)` | Baut einen Shell-Befehl mit Platzhalter-Ersetzung |
+| `getConfiguredJavaCommand($name, $params)` | Baut einen Java-Befehl (java -jar ...) |
+| `isExecutableAvailable($name)` | Prüft ob ein Tool verfügbar ist |
+| `getExecutablePath($name)` | Gibt den konfigurierten Pfad zurück |
+| `getResolvedExecutableConfig($name, $params)` | Gibt die vollständige Tool-Konfiguration zurück |
+
 ---
 
 ## License

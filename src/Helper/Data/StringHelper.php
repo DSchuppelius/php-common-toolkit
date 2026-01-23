@@ -157,7 +157,7 @@ class StringHelper {
     public static function isMbEncodingSupported(string $encoding): bool {
         $encoding = strtoupper(trim($encoding));
         // DOS-Codepages werden von mb_* nicht unterstützt
-        $unsupported = ['CP437', 'IBM437', '437', 'CP850', 'IBM850', '850', 'CP852', 'IBM852', '852'];
+        $unsupported = ['CP437', 'IBM437', '437', 'CP850', 'IBM850', '850', 'CP852', 'IBM852', '852', 'CP865', 'IBM865', '865'];
         return !in_array($encoding, $unsupported, true);
     }
 

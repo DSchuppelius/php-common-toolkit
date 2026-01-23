@@ -41,7 +41,7 @@ class TifFile extends ConfiguredHelperAbstract {
         if ($mimeType === 'image/jpeg' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
             $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".jpg", $file);
 
-            $command = self::getConfiguredCommand("convert", ["[OUTPUT]" => escapeshellarg($newFilename), "[INPUT]" => escapeshellarg($file)]);
+            $command = self::getConfiguredCommand("convert", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
             if (empty($command)) {
                 self::logErrorAndThrow(Exception::class, "ImageMagick wurde nicht konfiguriert oder ist nicht installiert.");
             }
@@ -67,7 +67,7 @@ class TifFile extends ConfiguredHelperAbstract {
                 self::logNotice("Erzwinge Reparatur der TIFF-Datei: $file");
                 $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".original.tif", $file);
 
-                $command = self::getConfiguredCommand("convert-monochrome", ["[OUTPUT]" => escapeshellarg($newFilename), "[INPUT]" => escapeshellarg($file)]);
+                $command = self::getConfiguredCommand("convert-monochrome", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
                 if (empty($command)) {
                     self::logErrorAndThrow(Exception::class, "ImageMagick wurde nicht konfiguriert oder ist nicht installiert.");
                 }
@@ -126,7 +126,7 @@ class TifFile extends ConfiguredHelperAbstract {
         }
 
         $commandName = $compressed ? "tiff2pdf-compressed" : "tiff2pdf";
-        $command = self::getConfiguredCommand($commandName, ["[INPUT]" => escapeshellarg($tiffFile), "[OUTPUT]" => escapeshellarg($pdfFile)]);
+        $command = self::getConfiguredCommand($commandName, ["[INPUT]" => $tiffFile, "[OUTPUT]" => $pdfFile]);
 
         if (empty($command)) {
             self::logErrorAndThrow(Exception::class, "tiff2pdf wurde nicht konfiguriert oder ist nicht installiert.");
@@ -176,7 +176,7 @@ class TifFile extends ConfiguredHelperAbstract {
             self::logErrorAndThrow(FileNotFoundException::class, "Die Dateien existieren nicht: " . implode(", ", $tiffFiles));
         }
 
-        $command = self::getConfiguredCommand("tiffcp", ["[INPUT]" => implode(" ", array_map('escapeshellarg', $tiffFiles)), "[OUTPUT]" => escapeshellarg($mergedFile)]);
+        $command = self::getConfiguredCommand("tiffcp", ["[INPUT]" => implode(" ", array_map('escapeshellarg', $tiffFiles)), "[OUTPUT]" => $mergedFile]);
 
         if (empty($command)) {
             self::logErrorAndThrow(Exception::class, "tiffcp wurde nicht konfiguriert oder ist nicht installiert.");
@@ -203,7 +203,7 @@ class TifFile extends ConfiguredHelperAbstract {
         $file = self::resolveFile($file);
 
         if (preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
-            $command = self::getConfiguredCommand("tiffinfo", ["[INPUT]" => escapeshellarg($file)]);
+            $command = self::getConfiguredCommand("tiffinfo", ["[INPUT]" => $file]);
             $output = [];
 
             if (empty($command)) {

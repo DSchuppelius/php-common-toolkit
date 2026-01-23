@@ -71,7 +71,7 @@ class Java extends ConfiguredHelperAbstract {
      */
     public static function exists(): bool {
         // Versuche den Java-Befehl aus der Konfiguration zu ermitteln
-        $command = self::getConfiguredCommand("java") . "-version 2>&1";
+        $command = self::getConfiguredCommand("java") . " -version 2>&1";
         $output = [];
 
         if (Shell::executeShellCommand($command, $output)) {

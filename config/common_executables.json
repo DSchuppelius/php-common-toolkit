@@ -11,7 +11,8 @@
             "arguments": [
                 "-b",
                 "--mime-type",
-                "-m /usr/share/misc/magic",
+                "-m",
+                "/usr/share/misc/magic",
                 "[INPUT]"
             ]
         },
@@ -26,7 +27,8 @@
             "arguments": [
                 "-b",
                 "--mime-encoding",
-                "-m /usr/share/misc/magic",
+                "-m",
+                "/usr/share/misc/magic",
                 "[INPUT]"
             ]
         },
@@ -36,7 +38,8 @@
             "description": "Character Set Detector",
             "package": "python3-chardet",
             "arguments": [
-                "--minimal [INPUT]"
+                "--minimal",
+                "[INPUT]"
             ]
         },
         "uchardet": {
@@ -58,14 +61,14 @@
             "required": true,
             "description": "Runtime Environment for Java-Programs",
             "package": "default-jre",
-            "arguments": ["-jar [PROGRAM]"]
+            "arguments": ["-jar", "[PROGRAM]"]
         },
         "java-class": {
             "path": "java",
             "required": true,
             "description": "Runtime Environment for Javaclasses",
             "package": "default-jre",
-            "arguments": ["-cp [CLASSPATH] [MAINCLASS]", "class [CLASS]"]
+            "arguments": ["-cp", "[CLASSPATH]", "[MAINCLASS]", "class", "[CLASS]"]
         }
     }
 }

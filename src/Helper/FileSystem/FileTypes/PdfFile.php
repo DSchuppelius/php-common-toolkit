@@ -33,12 +33,14 @@ class PdfFile extends ConfiguredHelperAbstract {
     public static function getMetaData(string $file, ?string $password = null): array {
         $file = self::resolveFile($file);
 
+        // Wähle den richtigen Befehl basierend auf dem Passwort
+        $commandName = $password !== null && $password !== '' ? 'pdfinfo-password' : 'pdfinfo';
         $args = [
-            "[INPUT]" => escapeshellarg($file),
-            "[PASSWORD]" => $password ? "-opw " . escapeshellarg($password) : ""
+            "[INPUT]" => $file,
+            "[PASSWORD]" => $password ?? ''
         ];
 
-        $command = self::getConfiguredCommand("pdfinfo", $args);
+        $command = self::getConfiguredCommand($commandName, $args);
         $output = [];
         $resultCode = 0;
 
@@ -100,7 +102,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         }
 
         // Fallback über qpdf --check (Konfiguration)
-        $command = self::getConfiguredCommand("pdf-check", ["[INPUT]" => escapeshellarg($file)]);
+        $command = self::getConfiguredCommand("pdf-check", ["[INPUT]" => $file]);
         if (empty($command)) {
             return self::logWarningAndReturn(false, "pdf-check nicht konfiguriert, keine Fallback-Prüfung möglich.");
         }
@@ -136,7 +138,7 @@ class PdfFile extends ConfiguredHelperAbstract {
     public static function isValid(string $file): bool {
         $file = self::resolveFile($file);
 
-        $command = self::getConfiguredCommand("valid-pdf", ["[INPUT]" => escapeshellarg($file)]);
+        $command = self::getConfiguredCommand("valid-pdf", ["[INPUT]" => $file]);
         $output = [];
         $resultCode = 0;
 
@@ -172,9 +174,9 @@ class PdfFile extends ConfiguredHelperAbstract {
         $command = self::getConfiguredCommand(
             "pdf-decrypt",
             [
-                "[INPUT]"  => escapeshellarg($inputFile),
-                "[OUTPUT]" => escapeshellarg($outputFile),
-                "[PASS]" => escapeshellarg($password ?? '')
+                "[INPUT]"  => $inputFile,
+                "[OUTPUT]" => $outputFile,
+                "[PASS]" => $password ?? ''
             ]
         );
 
@@ -207,10 +209,11 @@ class PdfFile extends ConfiguredHelperAbstract {
         $inputFile = self::resolveFile($inputFile);
 
         $params = [
-            "[INPUT]"  => escapeshellarg($inputFile),
-            "[OUTPUT]" => escapeshellarg($outputFile),
-            "[UPASS]" => escapeshellarg($userPass ?? ''),
-            "[OPASS]" => escapeshellarg($ownerPass ?? $userPass ?? ''),
+            "[INPUT]"  => $inputFile,
+            "[OUTPUT]" => $outputFile,
+            // Bei qpdf müssen leere Passwörter explizit als leerer escaped String übergeben werden
+            "[UPASS]" => $userPass !== null && $userPass !== '' ? $userPass : "''",
+            "[OPASS]" => ($ownerPass ?? $userPass) !== null && ($ownerPass ?? $userPass) !== '' ? ($ownerPass ?? $userPass) : "''",
             "[PERM]"   => trim((string)($permissions ?? ''))
         ];
 

@@ -3,7 +3,7 @@
  * Created on   : Sun Oct 06 2024
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : FileTest.php
+ * Filename     : TiffFileTest.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -15,92 +15,117 @@ use CommonToolkit\Helper\FileSystem\FileTypes\TifFile;
 use Tests\Contracts\BaseTestCase;
 
 class TiffFileTest extends BaseTestCase {
-    private $testFile;
+    private string $testFile;
+    private string $testFileBak;
+    private string $samplesDir;
 
     protected function setUp(): void {
-        $this->testFile = realpath(__DIR__ . '/../../.samples/fakejpg.tiff');
-    }
+        // Absolute Pfade verwenden
+        $this->samplesDir = realpath(__DIR__ . '/../../.samples');
+        $this->testFileBak = $this->samplesDir . '/fakejpg.tiff.bak';
+        $this->testFile = $this->samplesDir . '/fakejpg.tiff';
 
-    protected function tearDown(): void {
-        File::delete($this->testFile);
-        if (!File::exists($this->testFile)) {
-            copy($this->testFile . '.bak', $this->testFile);
+        // Stelle sicher, dass die Testdatei existiert
+        if (!File::exists($this->testFile) && File::exists($this->testFileBak)) {
+            File::copy($this->testFileBak, $this->testFile);
         }
     }
 
-    public function testMimeType() {
+    protected function tearDown(): void {
+        // Cleanup: Entferne alle von Tests erstellte Dateien
+        $filesToClean = [
+            $this->samplesDir . '/fakejpg.jpg',      // Durch repair() erstellt
+            $this->samplesDir . '/fakejpg.pdf',      // Durch convertToPdf() erstellt
+            $this->samplesDir . '/MergedFile.tif',   // Durch merge() erstellt
+            $this->samplesDir . '/MergedFile.pdf',   // Durch convertToPdf() erstellt
+        ];
+
+        foreach ($filesToClean as $file) {
+            if (File::exists($file)) {
+                File::delete($file);
+            }
+        }
+
+        // Stelle die Testdateien aus dem Backup wieder her
+        $this->restoreFromBackup($this->testFile, $this->testFileBak);
+        $this->restoreFromBackup(
+            $this->samplesDir . '/MergeFile_1.tif',
+            $this->samplesDir . '/MergeFile_1.tif.bak'
+        );
+        $this->restoreFromBackup(
+            $this->samplesDir . '/MergeFile_2.tif',
+            $this->samplesDir . '/MergeFile_2.tif.bak'
+        );
+    }
+
+    private function restoreFromBackup(string $file, string $backup): void {
+        // Lösche existierende Datei (könnte verändert worden sein)
+        if (File::exists($file)) {
+            File::delete($file);
+        }
+        // Stelle aus Backup wieder her
+        if (File::exists($backup)) {
+            File::copy($backup, $file);
+        }
+    }
+
+    public function testMimeType(): void {
         $mimeType = File::mimeType($this->testFile);
         $this->assertEquals('image/jpeg', $mimeType);
     }
 
-    public function testConvertToTiff() {
+    public function testConvertToTiff(): void {
         $tiffFile = TifFile::repair($this->testFile);
         $this->assertFileExists($tiffFile);
         $this->assertEquals('image/tiff', File::mimeType($tiffFile));
-        File::delete($this->testFile);
-        if (!File::exists($this->testFile)) {
-            copy($this->testFile . '.bak', $this->testFile);
-        }
+        // Wiederherstellung erfolgt in tearDown()
     }
 
-    public function testConvertToPDF() {
-        if (empty($this->testFile)) {
+    public function testConvertToPDF(): void {
+        if (!File::exists($this->testFile)) {
             $this->markTestSkipped('Test file not found');
         }
 
-        $pdfFile = str_replace('.tiff', '.pdf', $this->testFile); // Ziel PDF-Dateiname
+        $pdfFile = $this->samplesDir . '/fakejpg.pdf';
 
-        TifFile::convertToPdf($this->testFile);
+        // deleteSourceFile = false, damit die Testdatei erhalten bleibt
+        TifFile::convertToPdf($this->testFile, $pdfFile, true, false);
 
         $this->assertTrue(File::exists($pdfFile), "Das PDF wurde nicht erfolgreich erstellt.");
-
-        if (!File::exists($this->testFile)) {
-            copy($this->testFile . '.bak', $this->testFile);
-        }
-
-        $this->assertTrue(File::exists($this->testFile), "Die ursprüngliche TIFF-Datei wurde nicht korrekt wiederhergestellt.");
-
-        File::delete($pdfFile);
+        // Cleanup erfolgt in tearDown()
     }
 
-    public function testMerge() {
-        $tiffFiles = [
-            realpath(__DIR__ . '/../../.samples/MergeFile_1.tif'),
-            realpath(__DIR__ . '/../../.samples/MergeFile_2.tif')
-        ];
-        $bakTiffFiles = [
-            realpath(__DIR__ . '/../../.samples/MergeFile_1.tif.bak'),
-            realpath(__DIR__ . '/../../.samples/MergeFile_2.tif.bak')
-        ];
+    public function testMerge(): void {
+        $mergeFile1 = $this->samplesDir . '/MergeFile_1.tif';
+        $mergeFile2 = $this->samplesDir . '/MergeFile_2.tif';
+        $bakFile1 = $this->samplesDir . '/MergeFile_1.tif.bak';
+        $bakFile2 = $this->samplesDir . '/MergeFile_2.tif.bak';
 
-        for ($i = 0; $i < count($tiffFiles); $i++) {
-            if (!$tiffFiles[$i] && File::exists($bakTiffFiles[$i])) {
-                File::copy($bakTiffFiles[$i], str_replace('.bak', '', $bakTiffFiles[$i]));
-                $tiffFiles[$i] = realpath(str_replace('.bak', '', $bakTiffFiles[$i]));
-            }
+        // Stelle sicher, dass Testdateien existieren
+        $this->restoreFromBackup($mergeFile1, $bakFile1);
+        $this->restoreFromBackup($mergeFile2, $bakFile2);
+
+        if (!File::exists($mergeFile1) || !File::exists($mergeFile2)) {
+            $this->markTestSkipped('Merge test files not found');
         }
 
+        $tiffFiles = [$mergeFile1, $mergeFile2];
+        $mergedFile = $this->samplesDir . '/MergedFile.tif';
+        $pdfFile = $this->samplesDir . '/MergedFile.pdf';
 
-        $mergedFile = __DIR__ . '/../../.samples/MergedFile.tif';
-        $pdfFile = __DIR__ . '/../../.samples/MergedFile.pdf';
-
+        // Vorher aufräumen
         File::delete($mergedFile);
         File::delete($pdfFile);
 
-
-        TifFile::merge($tiffFiles, $mergedFile);
+        // deleteSourceFiles = false, damit die Quelldateien erhalten bleiben
+        TifFile::merge($tiffFiles, $mergedFile, false);
 
         $this->assertFileExists($mergedFile);
 
-        TifFile::convertToPdf(realpath($mergedFile));
+        // deleteSourceFile = false, damit die merged-Datei noch existiert für Assertion
+        TifFile::convertToPdf($mergedFile, $pdfFile, true, false);
 
-        File::delete($mergedFile);
-        File::delete($pdfFile);
-
-        foreach ($tiffFiles as $tiffFile) {
-            if (!File::exists($tiffFile)) {
-                copy($tiffFile . '.bak', $tiffFile);
-            }
-        }
+        $this->assertFileExists($pdfFile);
+        // Cleanup erfolgt in tearDown()
     }
 }

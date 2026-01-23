@@ -13,12 +13,26 @@ declare(strict_types=1);
 namespace CommonToolkit\Contracts\Abstracts;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use ConfigToolkit\CommandBuilder;
 use ConfigToolkit\ConfigLoader;
 use Exception;
 
+/**
+ * Abstrakte Basisklasse für Helper mit Executable-Konfiguration.
+ * 
+ * Nutzt den CommandBuilder aus dem ConfigToolkit für elegantes Command-Building.
+ * Jede abgeleitete Klasse definiert ihre CONFIG_FILE Konstante.
+ */
 abstract class ConfiguredHelperAbstract extends HelperAbstract {
     protected const CONFIG_FILE = '';
+
     private static ?ConfigLoader $configLoader = null;
+
+    /**
+     * Statische Speicherung der CommandBuilder pro Klasse/Config-Datei.
+     * @var array<string, CommandBuilder>
+     */
+    private static array $commandBuilders = [];
 
     /**
      * Gibt den vollständigen Befehl zurück, der in der Konfiguration definiert ist und fügt die Parameter hinzu.
@@ -29,16 +43,58 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
      * @return string|null Der vollständige Befehl oder null bei Fehler.
      */
     protected static function getConfiguredCommand(string $commandName, array $params = [], string $type = 'shellExecutables'): ?string {
-        $executable = self::getResolvedExecutableConfig($commandName, $params, $type);
+        $builder = self::getCommandBuilder();
+        $command = $builder->build($commandName, $params, [], $type);
 
-        if (!$executable) {
-            return null; // Fehler wurde bereits in getResolvedExecutableConfig() geloggt
+        if ($command !== null) {
+            self::logDebug("Kommando generiert für '$commandName': $command");
         }
 
-        $finalCommand = escapeshellarg($executable['path']) . ' ' . implode(' ', $executable['arguments'] ?? []);
-        return self::logDebugAndReturn($finalCommand, "Kommando generiert für '$commandName': $finalCommand");
+        return $command;
     }
 
+    /**
+     * Gibt den vollständigen Java-Befehl zurück (java -jar ...).
+     *
+     * @param string $commandName Der Name des Java-Executables.
+     * @param array $params Die Parameter, die in der Konfiguration ersetzt werden sollen.
+     * @param string $javaSection Die Sektion für Java-Executables.
+     * @return string|null Der vollständige Befehl oder null bei Fehler.
+     */
+    protected static function getConfiguredJavaCommand(string $commandName, array $params = [], string $javaSection = 'javaExecutables'): ?string {
+        $builder = self::getCommandBuilder();
+        $command = $builder->buildJava($commandName, $params, [], $javaSection);
+
+        if ($command !== null) {
+            self::logDebug("Java-Kommando generiert für '$commandName': $command");
+        }
+
+        return $command;
+    }
+
+    /**
+     * Prüft ob ein Executable verfügbar ist.
+     *
+     * @param string $commandName Der Name des Kommandos.
+     * @param string $type Der Typ der Konfiguration (z.B. 'shellExecutables').
+     * @return bool True wenn das Executable verfügbar ist.
+     */
+    protected static function isExecutableAvailable(string $commandName, string $type = 'shellExecutables'): bool {
+        $builder = self::getCommandBuilder();
+        return $builder->isAvailable($commandName, $type);
+    }
+
+    /**
+     * Gibt den Pfad eines Executables zurück.
+     *
+     * @param string $commandName Der Name des Kommandos.
+     * @param string $type Der Typ der Konfiguration (z.B. 'shellExecutables').
+     * @return string|null Der Pfad oder null wenn nicht gefunden.
+     */
+    protected static function getExecutablePath(string $commandName, string $type = 'shellExecutables'): ?string {
+        $builder = self::getCommandBuilder();
+        return $builder->getPath($commandName, $type);
+    }
 
     /**
      * Holt die Konfiguration für ein bestimmtes Kommando und ersetzt Platzhalter.
@@ -81,6 +137,21 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
     }
 
     /**
+     * Gibt den CommandBuilder zurück, initialisiert ihn bei Bedarf.
+     * WICHTIG: Jede Config-Datei bekommt ihren eigenen CommandBuilder.
+     */
+    protected static function getCommandBuilder(): CommandBuilder {
+        $configFile = static::CONFIG_FILE;
+
+        if (!isset(self::$commandBuilders[$configFile])) {
+            $configLoader = self::getConfigLoader();
+            self::$commandBuilders[$configFile] = new CommandBuilder($configLoader);
+        }
+
+        return self::$commandBuilders[$configFile];
+    }
+
+    /**
      * Initialisiert ConfigLoader, falls noch nicht geschehen
      */
     protected static function getConfigLoader(): ConfigLoader {
@@ -98,5 +169,20 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
         }
 
         return self::$configLoader;
+    }
+
+    /**
+     * Setzt den CommandBuilder zurück (nützlich für Tests).
+     */
+    protected static function resetCommandBuilder(): void {
+        $configFile = static::CONFIG_FILE;
+        unset(self::$commandBuilders[$configFile]);
+    }
+
+    /**
+     * Setzt alle CommandBuilder zurück (nützlich für Tests).
+     */
+    protected static function resetAllCommandBuilders(): void {
+        self::$commandBuilders = [];
     }
 }

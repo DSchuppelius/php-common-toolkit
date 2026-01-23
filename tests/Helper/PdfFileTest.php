@@ -10,6 +10,8 @@
 
 declare(strict_types=1);
 
+namespace Tests\Helper;
+
 use CommonToolkit\Helper\FileSystem\FileTypes\PdfFile;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use ERRORToolkit\Exceptions\InvalidPasswordException;

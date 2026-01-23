@@ -178,8 +178,7 @@ class XLSXGenerator extends HelperAbstract {
      * Generiert _rels/.rels
      */
     protected function generateRootRels(): string {
-        $xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
         $xml .= '
     <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
@@ -201,8 +200,7 @@ class XLSXGenerator extends HelperAbstract {
      * Generiert docProps/app.xml
      */
     protected function generateAppProps(Document $document): string {
-        $xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">';
         $xml .= '<Application>CommonToolkit</Application>';
         $xml .= '<DocSecurity>0</DocSecurity>';
@@ -222,8 +220,7 @@ class XLSXGenerator extends HelperAbstract {
     protected function generateCoreProps(Document $document): string {
         $now = (new \DateTimeImmutable())->format('Y-m-d\TH:i:s\Z');
 
-        $xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" ';
         $xml .= ' xmlns:dc="http://purl.org/dc/elements/1.1/" ';
         $xml .= ' xmlns:dcterms="http://purl.org/dc/terms/" ';
@@ -255,8 +252,7 @@ class XLSXGenerator extends HelperAbstract {
      * Generiert xl/workbook.xml
      */
     protected function generateWorkbook(Document $document): string {
-        $xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ';
         $xml .= ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
         $xml .= '<sheets>';
@@ -278,8 +274,7 @@ class XLSXGenerator extends HelperAbstract {
      * Generiert xl/_rels/workbook.xml.rels
      */
     protected function generateWorkbookRels(Document $document): string {
-        $xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
 
         $rId = 1;
@@ -314,8 +309,7 @@ class XLSXGenerator extends HelperAbstract {
      * Generiert xl/styles.xml
      */
     protected function generateStyles(): string {
-        $xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
 
         // Fonts
@@ -372,8 +366,7 @@ class XLSXGenerator extends HelperAbstract {
     protected function generateSharedStrings(): string {
         $count = count($this->sharedStrings);
 
-        $xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' . $count . '"
     uniqueCount="' . $count . '">';
 
@@ -392,8 +385,7 @@ class XLSXGenerator extends HelperAbstract {
      * Generiert ein Worksheet.
      */
     protected function generateSheet(Sheet $sheet): string {
-        $xml = '
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
         $xml .= '<sheetData>';
 

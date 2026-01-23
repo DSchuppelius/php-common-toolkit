@@ -47,7 +47,7 @@ class JavaTest extends BaseTestCase {
         }
 
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage("JAVA-Ausführung benötigt eine JAVA-Runtime.");
+        $this->expectExceptionMessage("Java ist auf diesem System nicht verfügbar.");
 
         $executable = new JavaExecutable([
             'path' => '/path/to/some.jar',
