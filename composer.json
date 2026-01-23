@@ -21,7 +21,7 @@
     "ext-dom": "*",
     "ext-intl": "*",
     "ext-zip": "*",
-    "dschuppelius/php-config-toolkit": "^0.4.0"
+    "dschuppelius/php-config-toolkit": "^0.4.2"
   },
 
   "autoload-dev": {
