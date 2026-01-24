@@ -712,10 +712,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function isReadable(string $file): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            return self::logErrorAndReturn(false, "Datei existiert nicht: $file");
+            return self::logWarningAndReturn(false, "Datei existiert nicht: $file");
         }
         if (!is_readable($file)) {
-            return self::logErrorAndReturn(false, "Datei ist nicht lesbar: $file");
+            return self::logInfoAndReturn(false, "Datei ist nicht lesbar: $file");
         }
         return true;
     }
@@ -729,10 +729,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function isWritable(string $file): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            return self::logErrorAndReturn(false, "Datei existiert nicht: $file");
+            return self::logWarningAndReturn(false, "Datei existiert nicht: $file");
         }
         if (!is_writable($file)) {
-            return self::logErrorAndReturn(false, "Datei ist nicht beschreibbar: $file");
+            return self::logInfoAndReturn(false, "Datei ist nicht beschreibbar: $file");
         }
         return true;
     }
@@ -747,7 +747,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function isReady(string $file, bool $logging = true): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            self::logErrorIf($logging, "Datei existiert nicht: $file");
+            self::logWarningIf($logging, "Datei existiert nicht: $file");
             return false;
         }
         $handle = @fopen($file, 'r');
