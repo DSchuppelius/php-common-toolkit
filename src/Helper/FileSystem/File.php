@@ -667,7 +667,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if (file_put_contents($file, $data) === false) {
             self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Schreiben in die Datei: $file");
         }
-        self::logInfo("Daten erfolgreich in Datei geschrieben: $file");
+        self::logDebug("Daten erfolgreich in Datei geschrieben: $file");
     }
 
     /**

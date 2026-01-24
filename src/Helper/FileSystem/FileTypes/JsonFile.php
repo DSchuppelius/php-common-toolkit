@@ -110,7 +110,7 @@ class JsonFile extends HelperAbstract {
             $targetFile = $outputFile ?? $file;
             File::write($targetFile, $prettyJson);
 
-            return self::logInfoAndReturn(true, "JSON Pretty-Print gespeichert: {$targetFile}");
+            return self::logDebugAndReturn(true, "JSON Pretty-Print gespeichert: {$targetFile}");
         } catch (Exception $e) {
             self::logException($e);
             return false;
@@ -133,7 +133,7 @@ class JsonFile extends HelperAbstract {
             $targetFile = $outputFile ?? $file;
             File::write($targetFile, $minifiedJson);
 
-            return self::logInfoAndReturn(true, "JSON minified und gespeichert: {$targetFile}");
+            return self::logDebugAndReturn(true, "JSON minified und gespeichert: {$targetFile}");
         } catch (Exception $e) {
             self::logException($e);
             return false;
@@ -204,7 +204,7 @@ class JsonFile extends HelperAbstract {
             $targetFile = $outputFile ?? $file1;
             File::write($targetFile, $mergedJson);
 
-            return self::logInfoAndReturn(true, "JSON-Dateien erfolgreich gemergt: {$targetFile}");
+            return self::logDebugAndReturn(true, "JSON-Dateien erfolgreich gemergt: {$targetFile}");
         } catch (Exception $e) {
             self::logException($e);
             return false;

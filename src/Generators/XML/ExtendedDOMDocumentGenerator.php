@@ -201,7 +201,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
             self::logErrorAndThrow(RuntimeException::class, "Fehler beim Speichern der XML-Datei: {$filePath}");
         }
 
-        self::logInfo("XML-Datei gespeichert: {$filePath} ({$result} Bytes)");
+        self::logDebug("XML-Datei gespeichert: {$filePath} ({$result} Bytes)");
     }
 
     /**

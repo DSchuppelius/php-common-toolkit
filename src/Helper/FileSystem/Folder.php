@@ -185,7 +185,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             }
         }
 
-        self::logInfo("Verzeichnis kopiert von $sourceDirectory nach $destinationDirectory");
+        self::logDebug("Verzeichnis kopiert von $sourceDirectory nach $destinationDirectory");
     }
 
     /**
@@ -233,7 +233,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             self::logErrorAndThrow(Exception::class, "Fehler beim Umbenennen des Verzeichnisses von $oldName nach $newName");
         }
 
-        self::logInfo("Verzeichnis umbenannt von $oldName zu $newName");
+        self::logDebug("Verzeichnis umbenannt von $oldName zu $newName");
     }
 
     /**
@@ -268,7 +268,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             self::logErrorAndThrow(Exception::class, "Fehler beim Löschen des Verzeichnisses $directory");
         }
 
-        self::logInfo("Verzeichnis gelöscht: $directory");
+        self::logDebug("Verzeichnis gelöscht: $directory");
     }
 
     /**
@@ -293,7 +293,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             self::logErrorAndThrow(Exception::class, "Fehler beim Verschieben des Verzeichnisses von $sourceDirectory nach $destinationDirectory");
         }
 
-        self::logInfo("Verzeichnis verschoben von $sourceDirectory nach $destinationDirectory");
+        self::logDebug("Verzeichnis verschoben von $sourceDirectory nach $destinationDirectory");
     }
 
     /**
@@ -417,7 +417,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             }
         }
 
-        self::logInfo("Verzeichnis geleert: $directory");
+        self::logDebug("Verzeichnis geleert: $directory");
     }
 
     /**
