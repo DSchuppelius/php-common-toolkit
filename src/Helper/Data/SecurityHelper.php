@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\Data;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Helper\FileSystem\File;
 use Exception;
 use InvalidArgumentException;
 
@@ -369,10 +370,12 @@ class SecurityHelper extends HelperAbstract {
             $rateLimitFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $key . '.tmp';
 
             $attempts = [];
-            if (file_exists($rateLimitFile)) {
-                $data = file_get_contents($rateLimitFile);
-                if ($data !== false) {
-                    $attempts = json_decode($data, true) ?: [];
+            if (File::exists($rateLimitFile)) {
+                try {
+                    $data = File::read($rateLimitFile);
+                    $attempts = JsonHelper::decode($data);
+                } catch (Exception) {
+                    $attempts = [];
                 }
             }
 
@@ -388,7 +391,7 @@ class SecurityHelper extends HelperAbstract {
 
             // Aktuellen Versuch hinzufügen
             $attempts[] = $currentTime;
-            file_put_contents($rateLimitFile, json_encode($attempts), LOCK_EX);
+            File::write($rateLimitFile, JsonHelper::encode($attempts));
 
             return self::logDebugAndReturn(true, "Rate-Limit geprüft: {$identifier}, Versuche: " . count($attempts) . "/{$maxAttempts}");
         } catch (Exception $e) {

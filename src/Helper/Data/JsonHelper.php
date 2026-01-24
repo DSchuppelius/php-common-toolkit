@@ -38,9 +38,9 @@ class JsonHelper extends HelperAbstract {
      */
     public static function isValid(string $json): bool {
         try {
-            json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            self::decode($json);
             return true;
-        } catch (JsonException $e) {
+        } catch (InvalidArgumentException $e) {
             return self::logErrorAndReturn(false, "JSON-Validierung fehlgeschlagen: " . $e->getMessage());
         }
     }

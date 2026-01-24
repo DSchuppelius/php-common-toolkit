@@ -85,12 +85,9 @@ class JsonFile extends HelperAbstract {
                 }
             }
 
-            $result = file_put_contents($file, $json);
-            if ($result === false) {
-                return self::logErrorAndReturn(false, "Konnte JSON nicht in Datei schreiben: {$file}");
-            }
+            File::write($file, $json);
 
-            return self::logInfoAndReturn(true, "JSON erfolgreich gespeichert: {$file}");
+            return self::logDebugAndReturn(true, "JSON erfolgreich gespeichert: {$file}");
         } catch (InvalidArgumentException $e) {
             self::logException($e);
             return false;
@@ -111,11 +108,7 @@ class JsonFile extends HelperAbstract {
             $prettyJson = JsonHelper::prettyPrint($content);
 
             $targetFile = $outputFile ?? $file;
-            $result = file_put_contents($targetFile, $prettyJson);
-
-            if ($result === false) {
-                return self::logErrorAndReturn(false, "Konnte Pretty-Print JSON nicht speichern: {$targetFile}");
-            }
+            File::write($targetFile, $prettyJson);
 
             return self::logInfoAndReturn(true, "JSON Pretty-Print gespeichert: {$targetFile}");
         } catch (Exception $e) {
@@ -138,11 +131,7 @@ class JsonFile extends HelperAbstract {
             $minifiedJson = JsonHelper::minify($content);
 
             $targetFile = $outputFile ?? $file;
-            $result = file_put_contents($targetFile, $minifiedJson);
-
-            if ($result === false) {
-                return self::logErrorAndReturn(false, "Konnte minified JSON nicht speichern: {$targetFile}");
-            }
+            File::write($targetFile, $minifiedJson);
 
             return self::logInfoAndReturn(true, "JSON minified und gespeichert: {$targetFile}");
         } catch (Exception $e) {
@@ -213,11 +202,7 @@ class JsonFile extends HelperAbstract {
             $mergedJson = JsonHelper::merge($content1, $content2);
 
             $targetFile = $outputFile ?? $file1;
-            $result = file_put_contents($targetFile, $mergedJson);
-
-            if ($result === false) {
-                return self::logErrorAndReturn(false, "Konnte gemergtes JSON nicht speichern: {$targetFile}");
-            }
+            File::write($targetFile, $mergedJson);
 
             return self::logInfoAndReturn(true, "JSON-Dateien erfolgreich gemergt: {$targetFile}");
         } catch (Exception $e) {
@@ -247,11 +232,7 @@ class JsonFile extends HelperAbstract {
             $maskedJson = JsonHelper::maskSensitiveData($content, $sensitiveFields, $mask);
 
             $targetFile = $outputFile ?? $file;
-            $result = file_put_contents($targetFile, $maskedJson);
-
-            if ($result === false) {
-                return self::logErrorAndReturn(false, "Konnte maskiertes JSON nicht speichern: {$targetFile}");
-            }
+            File::write($targetFile, $maskedJson);
 
             return self::logInfoAndReturn(true, "Sensitive Daten in JSON maskiert: {$targetFile}");
         } catch (Exception $e) {
