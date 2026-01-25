@@ -154,11 +154,13 @@ class BankHelper {
             return false;
         }
 
-        $countries = self::countryLengths();
         $chars = self::ibanCharMap();
 
-        $countryCode = substr($iban, 0, 2);
-        if (!isset($countries[$countryCode]) || strlen($iban) !== $countries[$countryCode]) {
+        $countryCodeStr = substr($iban, 0, 2);
+        $country = CountryCode::tryFrom($countryCodeStr);
+        $expectedLength = $country?->getIBANLength();
+
+        if ($expectedLength === null || strlen($iban) !== $expectedLength) {
             return false;
         }
 
@@ -221,22 +223,26 @@ class BankHelper {
     public static function generateIBAN(CountryCode|string $countryCode, string $accountNumber): string {
         self::requireBcMath();
 
-        if ($countryCode instanceof CountryCode) {
-            $countryCode = $countryCode->value;
-        }
+        $country = $countryCode instanceof CountryCode
+            ? $countryCode
+            : CountryCode::tryFrom(strtoupper($countryCode));
 
-        $countryCode = strtoupper($countryCode);
-        $countries = self::countryLengths();
-        $chars = self::ibanCharMap();
-
-        if (!isset($countries[$countryCode])) {
+        if ($country === null) {
             self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiger Ländercode: '$countryCode'");
         }
 
-        $expectedLength = $countries[$countryCode] - 4; // ohne Prüfziffer und Länderkennung
-        if (strlen($accountNumber) !== $expectedLength) {
-            self::logErrorAndThrow(InvalidArgumentException::class, "Die Kontonummer hat nicht die richtige Länge ($expectedLength) für $countryCode. Eingabe: '$accountNumber'");
+        $ibanLength = $country->getIBANLength();
+        if ($ibanLength === null) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Land '{$country->value}' unterstützt kein IBAN-System.");
         }
+
+        $chars = self::ibanCharMap();
+        $expectedLength = $ibanLength - 4; // ohne Prüfziffer und Länderkennung
+        if (strlen($accountNumber) !== $expectedLength) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Die Kontonummer hat nicht die richtige Länge ($expectedLength) für {$country->value}. Eingabe: '$accountNumber'");
+        }
+
+        $countryCode = $country->value;
 
         $rearranged = $accountNumber . $countryCode . '00';
 
@@ -372,23 +378,25 @@ class BankHelper {
             return false;
         }
 
-        $countryCode = substr($iban, 0, 2);
+        $countryCodeStr = substr($iban, 0, 2);
         $checkDigits = substr($iban, 2, 2);
         $bban = substr($iban, 4);
 
-        $countries = self::countryLengths();
-        if (!isset($countries[$countryCode]) || strlen($iban) !== $countries[$countryCode]) {
+        $country = CountryCode::tryFrom($countryCodeStr);
+        $expectedLength = $country?->getIBANLength();
+
+        if ($expectedLength === null || strlen($iban) !== $expectedLength) {
             return false;
         }
 
         $result = [
-            'countryCode' => $countryCode,
+            'countryCode' => $countryCodeStr,
             'checkDigits' => $checkDigits,
             'bban' => $bban,
         ];
 
         // Länderspezifische BBAN-Zerlegung
-        $result = array_merge($result, self::parseBBAN($countryCode, $bban));
+        $result = array_merge($result, self::parseBBAN($countryCodeStr, $bban));
 
         return $result;
     }
@@ -396,12 +404,14 @@ class BankHelper {
     /**
      * Zerlegt den BBAN (Basic Bank Account Number) nach länderspezifischen Regeln.
      *
-     * @param string $countryCode Der 2-stellige ISO-Ländercode.
+     * @param CountryCode|string $countryCode Der Ländercode.
      * @param string $bban Der BBAN-Teil der IBAN.
      * @return array<string, string> Länderspezifische Komponenten.
      */
-    private static function parseBBAN(string $countryCode, string $bban): array {
-        return match ($countryCode) {
+    private static function parseBBAN(CountryCode|string $countryCode, string $bban): array {
+        $code = $countryCode instanceof CountryCode ? $countryCode->value : strtoupper($countryCode);
+
+        return match ($code) {
             // Deutschland: 8 BLZ + 10 Konto
             'DE' => [
                 'bankCode' => substr($bban, 0, 8),
@@ -750,17 +760,17 @@ class BankHelper {
      * Extrahiert den Ländercode aus einer IBAN.
      *
      * @param string|null $iban Die IBAN.
-     * @return string|null Der 2-stellige ISO-Ländercode oder null bei ungültiger IBAN.
+     * @return CountryCode|null Das Land oder null bei ungültiger IBAN.
      */
-    public static function getCountryCodeFromIBAN(?string $iban): ?string {
+    public static function getCountryCodeFromIBAN(?string $iban): ?CountryCode {
         if ($iban === null || strlen($iban) < 2) {
             return null;
         }
 
-        $countryCode = strtoupper(substr($iban, 0, 2));
-        $countries = self::countryLengths();
+        $countryCodeStr = strtoupper(substr($iban, 0, 2));
+        $country = CountryCode::tryFrom($countryCodeStr);
 
-        return isset($countries[$countryCode]) ? $countryCode : null;
+        return $country?->hasIBAN() === true ? $country : null;
     }
 
     /**
@@ -771,12 +781,16 @@ class BankHelper {
      * @return bool True, wenn die IBAN zum angegebenen Land gehört.
      */
     public static function isIBANFromCountry(?string $iban, CountryCode|string $countryCode): bool {
-        if ($countryCode instanceof CountryCode) {
-            $countryCode = $countryCode->value;
+        $expectedCountry = $countryCode instanceof CountryCode
+            ? $countryCode
+            : CountryCode::tryFrom(strtoupper($countryCode));
+
+        if ($expectedCountry === null) {
+            return false;
         }
 
         $ibanCountry = self::getCountryCodeFromIBAN($iban);
-        return $ibanCountry !== null && strtoupper($countryCode) === $ibanCountry;
+        return $ibanCountry === $expectedCountry;
     }
 
     /**
@@ -786,74 +800,8 @@ class BankHelper {
      * @return bool True, wenn die IBAN aus einem SEPA-Land stammt.
      */
     public static function isSepaIBAN(?string $iban): bool {
-        $countryCode = self::getCountryCodeFromIBAN($iban);
-        if ($countryCode === null) {
-            return false;
-        }
-
-        return in_array($countryCode, self::sepaCountries(), true);
-    }
-
-    /**
-     * Gibt die Liste der SEPA-Länder zurück.
-     *
-     * @return string[] ISO-2 Ländercodes aller SEPA-Teilnehmerländer.
-     */
-    private static function sepaCountries(): array {
-        return [
-            // EU-Mitgliedstaaten
-            'AT',
-            'BE',
-            'BG',
-            'HR',
-            'CY',
-            'CZ',
-            'DK',
-            'EE',
-            'FI',
-            'FR',
-            'DE',
-            'GR',
-            'HU',
-            'IE',
-            'IT',
-            'LV',
-            'LT',
-            'LU',
-            'MT',
-            'NL',
-            'PL',
-            'PT',
-            'RO',
-            'SK',
-            'SI',
-            'ES',
-            'SE',
-            // EWR-Länder
-            'IS',
-            'LI',
-            'NO',
-            // Weitere SEPA-Teilnehmer
-            'CH',
-            'MC',
-            'SM',
-            'AD',
-            'VA',
-            'GB',
-            'GI',
-            // Territorien
-            'GG',
-            'IM',
-            'JE', // Kanalinseln & Isle of Man
-            'PM',
-            'BL',
-            'MF',
-            'GP',
-            'MQ',
-            'GF',
-            'RE',
-            'YT', // Französische Überseegebiete
-        ];
+        $country = self::getCountryCodeFromIBAN($iban);
+        return $country?->isSEPA() === true;
     }
 
     /**
@@ -926,100 +874,22 @@ class BankHelper {
             }
         }
 
-        if (!file_exists($path) || filemtime($path) < strtotime("-$expiry days")) {
-            if (!empty($url)) {
-                try {
-                    File::write($path, File::read($url));
-                } catch (Exception) {
-                    // URL nicht erreichbar - bestehende Datei behalten falls vorhanden
-                }
+        $needsDownload = !File::exists($path) || File::modifiedTime($path) < strtotime("-$expiry days");
+
+        if ($needsDownload && !empty($url)) {
+            $result = File::download($url, $path);
+            if ($result === false) {
+                self::logWarning("Download von $url fehlgeschlagen, verwende lokale Datei falls vorhanden.");
             }
         }
 
-        return file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    }
-
-    /**
-     * Gibt die Länge der IBAN für verschiedene Länder zurück.
-     *
-     * @return array
-     */
-    private static function countryLengths(): array {
-        return [
-            'AL' => 28, // Albanien
-            'AD' => 24, // Andorra
-            'AT' => 20, // Österreich
-            'AZ' => 28, // Aserbaidschan
-            'BH' => 22, // Bahrain
-            'BE' => 16, // Belgien
-            'BA' => 20, // Bosnien und Herzegowina
-            'BR' => 29, // Brasilien
-            'BG' => 22, // Bulgarien
-            'CR' => 22, // Costa Rica
-            'HR' => 21, // Kroatien
-            'CY' => 28, // Zypern
-            'CZ' => 24, // Tschechien
-            'DK' => 18, // Dänemark
-            'DO' => 28, // Dominikanische Republik
-            'EE' => 20, // Estland
-            'FO' => 18, // Färöer
-            'FI' => 18, // Finnland
-            'FR' => 27, // Frankreich
-            'GE' => 22, // Georgien
-            'DE' => 22, // Deutschland
-            'GI' => 23, // Gibraltar
-            'GR' => 27, // Griechenland
-            'GL' => 18, // Grönland
-            'GT' => 28, // Guatemala
-            'HU' => 28, // Ungarn
-            'IS' => 26, // Island
-            'IE' => 22, // Irland
-            'IL' => 23, // Israel
-            'IT' => 27, // Italien
-            'JO' => 30, // Jordanien
-            'KZ' => 20, // Kasachstan
-            'XK' => 20, // Kosovo
-            'KW' => 30, // Kuwait
-            'LV' => 21, // Lettland
-            'LB' => 28, // Libanon
-            'LI' => 21, // Liechtenstein
-            'LT' => 20, // Litauen
-            'LU' => 20, // Luxemburg
-            'MT' => 31, // Malta
-            'MR' => 27, // Mauretanien
-            'MU' => 30, // Mauritius
-            'MD' => 24, // Moldawien
-            'MC' => 27, // Monaco
-            'ME' => 22, // Montenegro
-            'NL' => 18, // Niederlande
-            'NO' => 15, // Norwegen
-            'PK' => 24, // Pakistan
-            'PS' => 29, // Palästina
-            'PL' => 28, // Polen
-            'PT' => 25, // Portugal
-            'QA' => 29, // Katar
-            'RO' => 24, // Rumänien
-            'SM' => 27, // San Marino
-            'SA' => 24, // Saudi-Arabien
-            'RS' => 22, // Serbien
-            'SK' => 24, // Slowakei
-            'SI' => 19, // Slowenien
-            'ES' => 24, // Spanien
-            'SE' => 24, // Schweden
-            'CH' => 21, // Schweiz
-            'TN' => 24, // Tunesien
-            'TR' => 26, // Türkei
-            'AE' => 23, // Vereinigte Arabische Emirate
-            'GB' => 22, // Großbritannien
-            'VG' => 24, // Britische Jungferninseln
-            // TODO: Add more countries
-        ];
+        return File::readLinesAsArray($path, skipEmpty: true);
     }
 
     /**
      * Gibt eine Zuordnung von Buchstaben zu Zahlen zurück, die für die IBAN-Prüfziffernberechnung verwendet wird.
      *
-     * @return array
+     * @return array<string, int>
      */
     private static function ibanCharMap(): array {
         return array_combine(range('a', 'z'), range(10, 35));

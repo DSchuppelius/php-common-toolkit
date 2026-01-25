@@ -8,6 +8,7 @@
  * License Uri  : https://opensource.org/license/mit
  */
 
+use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Helper\Data\BankHelper;
 use Tests\Contracts\BaseTestCase;
 
@@ -173,11 +174,11 @@ class BankHelperTest extends BaseTestCase {
     }
 
     public function testGetCountryCodeFromIBAN() {
-        $this->assertEquals("DE", BankHelper::getCountryCodeFromIBAN("DE44500105175407324931"));
-        $this->assertEquals("AT", BankHelper::getCountryCodeFromIBAN("AT611904300234573201"));
-        $this->assertEquals("CH", BankHelper::getCountryCodeFromIBAN("CH9300762011623852957"));
-        $this->assertEquals("FR", BankHelper::getCountryCodeFromIBAN("FR1420041010050500013M02606"));
-        $this->assertEquals("GB", BankHelper::getCountryCodeFromIBAN("GB29NWBK60161331926819"));
+        $this->assertEquals(CountryCode::Germany, BankHelper::getCountryCodeFromIBAN("DE44500105175407324931"));
+        $this->assertEquals(CountryCode::Austria, BankHelper::getCountryCodeFromIBAN("AT611904300234573201"));
+        $this->assertEquals(CountryCode::Switzerland, BankHelper::getCountryCodeFromIBAN("CH9300762011623852957"));
+        $this->assertEquals(CountryCode::France, BankHelper::getCountryCodeFromIBAN("FR1420041010050500013M02606"));
+        $this->assertEquals(CountryCode::UnitedKingdomOfGreatBritainAndNorthernIreland, BankHelper::getCountryCodeFromIBAN("GB29NWBK60161331926819"));
         $this->assertNull(BankHelper::getCountryCodeFromIBAN(null));
         $this->assertNull(BankHelper::getCountryCodeFromIBAN("XX"));
     }

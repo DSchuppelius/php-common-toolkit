@@ -929,4 +929,171 @@ enum CountryCode: string {
             default => DateTimeFormatGroup::European,
         };
     }
+
+    /**
+     * Gibt die IBAN-Länge für das Land zurück.
+     *
+     * @return int|null Die Länge der IBAN oder null, wenn das Land kein IBAN-System hat.
+     */
+    public function getIBANLength(): ?int {
+        return match ($this) {
+            self::Albania => 28,
+            self::Andorra => 24,
+            self::Austria => 20,
+            self::Azerbaijan => 28,
+            self::Bahrain => 22,
+            self::Belgium => 16,
+            self::BosniaAndHerzegovina => 20,
+            self::Brazil => 29,
+            self::Bulgaria => 22,
+            self::CostaRica => 22,
+            self::Croatia => 21,
+            self::Cyprus => 28,
+            self::Czechia => 24,
+            self::Denmark => 18,
+            self::DominicanRepublic => 28,
+            self::Estonia => 20,
+            self::FaroeIslands => 18,
+            self::Finland => 18,
+            self::France => 27,
+            self::Georgia => 22,
+            self::Germany => 22,
+            self::Gibraltar => 23,
+            self::Greece => 27,
+            self::Greenland => 18,
+            self::Guatemala => 28,
+            self::Hungary => 28,
+            self::Iceland => 26,
+            self::Ireland => 22,
+            self::Israel => 23,
+            self::Italy => 27,
+            self::Jordan => 30,
+            self::Kazakhstan => 20,
+            self::Kosovo => 20,
+            self::Kuwait => 30,
+            self::Latvia => 21,
+            self::Lebanon => 28,
+            self::Liechtenstein => 21,
+            self::Lithuania => 20,
+            self::Luxembourg => 20,
+            self::Malta => 31,
+            self::Mauritania => 27,
+            self::Mauritius => 30,
+            self::MoldovaRepublicOf => 24,
+            self::Monaco => 27,
+            self::Montenegro => 22,
+            self::Netherlands => 18,
+            self::Norway => 15,
+            self::Pakistan => 24,
+            self::PalestineStateOf => 29,
+            self::Poland => 28,
+            self::Portugal => 25,
+            self::Qatar => 29,
+            self::Romania => 24,
+            self::SanMarino => 27,
+            self::SaudiArabia => 24,
+            self::Serbia => 22,
+            self::Slovakia => 24,
+            self::Slovenia => 19,
+            self::Spain => 24,
+            self::Sweden => 24,
+            self::Switzerland => 21,
+            self::Tunisia => 24,
+            self::Turkey => 26,
+            self::UnitedArabEmirates => 23,
+            self::UnitedKingdomOfGreatBritainAndNorthernIreland => 22,
+            self::VirginIslandsBritish => 24,
+            default => null,
+        };
+    }
+
+    /**
+     * Prüft, ob das Land am IBAN-System teilnimmt.
+     *
+     * @return bool True, wenn das Land IBANs verwendet.
+     */
+    public function hasIBAN(): bool {
+        return $this->getIBANLength() !== null;
+    }
+
+    /**
+     * Prüft, ob das Land am SEPA-System teilnimmt.
+     *
+     * @return bool True, wenn das Land SEPA-Teilnehmer ist.
+     */
+    public function isSEPA(): bool {
+        return match ($this) {
+            // EU-Mitgliedstaaten
+            self::Austria,
+            self::Belgium,
+            self::Bulgaria,
+            self::Croatia,
+            self::Cyprus,
+            self::Czechia,
+            self::Denmark,
+            self::Estonia,
+            self::Finland,
+            self::France,
+            self::Germany,
+            self::Greece,
+            self::Hungary,
+            self::Ireland,
+            self::Italy,
+            self::Latvia,
+            self::Lithuania,
+            self::Luxembourg,
+            self::Malta,
+            self::Netherlands,
+            self::Poland,
+            self::Portugal,
+            self::Romania,
+            self::Slovakia,
+            self::Slovenia,
+            self::Spain,
+            self::Sweden,
+            // EWR-Länder
+            self::Iceland,
+            self::Liechtenstein,
+            self::Norway,
+            // Weitere SEPA-Teilnehmer
+            self::Switzerland,
+            self::Monaco,
+            self::SanMarino,
+            self::Andorra,
+            self::HolySee,
+            self::UnitedKingdomOfGreatBritainAndNorthernIreland,
+            self::Gibraltar,
+            // Territorien
+            self::Guernsey,
+            self::IsleOfMan,
+            self::Jersey,
+            self::SaintPierreAndMiquelon,
+            self::SaintBarthélemy,
+            self::SaintMartinFrenchPart,
+            self::Guadeloupe,
+            self::Martinique,
+            self::FrenchGuiana,
+            self::Réunion,
+            self::Mayotte => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Gibt alle Länder zurück, die am IBAN-System teilnehmen.
+     *
+     * @return self[]
+     */
+    public static function getIBANCountries(): array {
+        return array_filter(self::cases(), fn(self $country) => $country->hasIBAN());
+    }
+
+    /**
+     * Gibt alle SEPA-Teilnehmerländer zurück.
+     *
+     * @return self[]
+     */
+    public static function getSEPACountries(): array {
+        return array_filter(self::cases(), fn(self $country) => $country->isSEPA());
+    }
 }
