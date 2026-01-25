@@ -379,6 +379,285 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Öffnet eine Datei oder URL als Stream (Resource) zum Lesen.
+     * Der Aufrufer ist verantwortlich für das Schließen des Streams mit fclose().
+     * Unterstützt lokale Dateien sowie HTTP/HTTPS URLs.
+     *
+     * @param string $file Der Pfad zur Datei oder URL.
+     * @param string $mode Der Öffnungsmodus (Standard: 'r' für Lesen).
+     *                     Für URLs nur Lesemodi ('r', 'rb') unterstützt.
+     *                     Unterstützte Modi für Dateien: 'r', 'rb', 'r+', 'r+b', 'w', 'wb', 'w+', 'w+b', 'a', 'ab', 'a+', 'a+b', 'x', 'xb', 'x+', 'x+b', 'c', 'cb', 'c+', 'c+b'.
+     * @param array<string, mixed>|null $httpOptions HTTP-Optionen für URL-Streams (z.B. ['header' => 'Accept: application/json']).
+     * @return resource|false Der Datei-/URL-Stream oder false bei Fehler.
+     */
+    public static function openStream(string $file, string $mode = 'r', ?array $httpOptions = null): mixed {
+        // URL-Unterstützung: http:// und https:// Protokolle
+        if (preg_match('#^https?://#i', $file)) {
+            // Für URLs nur Lesemodi erlaubt
+            if (!in_array($mode, ['r', 'rb'], true)) {
+                return self::logErrorAndReturn(false, "Für URLs nur Lesemodi (r, rb) unterstützt: $file");
+            }
+
+            $context = self::createHttpStreamContext($httpOptions);
+            $handle = @fopen($file, $mode, false, $context);
+            if ($handle === false) {
+                return self::logErrorAndReturn(false, "Fehler beim Öffnen der URL als Stream: $file");
+            }
+            return self::logDebugAndReturn($handle, "URL-Stream geöffnet: $file");
+        }
+
+        // Für Schreibmodi keine Existenzprüfung erforderlich
+        $isWriteMode = str_contains($mode, 'w') || str_contains($mode, 'a') || str_contains($mode, 'x') || str_contains($mode, 'c');
+
+        if (!$isWriteMode) {
+            $file = self::getRealExistingFile($file);
+            if ($file === false) {
+                return self::logErrorAndReturn(false, "Datei nicht gefunden für Stream: $file");
+            }
+        } else {
+            $file = self::getRealPath($file);
+        }
+
+        $handle = @fopen($file, $mode);
+        if ($handle === false) {
+            return self::logErrorAndReturn(false, "Fehler beim Öffnen des Streams für $file (Modus: $mode)");
+        }
+
+        return self::logDebugAndReturn($handle, "Stream geöffnet für $file (Modus: $mode)");
+    }
+
+    /**
+     * Erstellt einen HTTP-Stream-Context mit optionalen Einstellungen.
+     *
+     * @param array<string, mixed>|null $options Optionale HTTP-Einstellungen.
+     * @return resource Der erstellte Stream-Context.
+     */
+    private static function createHttpStreamContext(?array $options = null): mixed {
+        $httpDefaults = [
+            'method' => 'GET',
+            'timeout' => 30,
+            'follow_location' => true,
+            'max_redirects' => 5,
+            'ignore_errors' => false,
+            'user_agent' => 'PHP CommonToolkit/1.0',
+        ];
+
+        $httpOptions = array_merge($httpDefaults, $options ?? []);
+
+        return stream_context_create([
+            'http' => $httpOptions,
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+    }
+
+    /**
+     * Liest Daten blockweise aus einer Datei oder URL als Generator.
+     * Speichereffizient für sehr große Dateien oder Downloads (z.B. Binärdateien, Logs).
+     * Unterstützt lokale Dateien sowie HTTP/HTTPS URLs.
+     *
+     * @param string $file Der Pfad zur Datei oder URL.
+     * @param int $chunkSize Größe der Blöcke in Bytes (Standard: 8192).
+     * @param array<string, mixed>|null $httpOptions HTTP-Optionen für URL-Streams.
+     * @return Generator<string> Generator, der Datenblöcke liefert.
+     * @throws FileNotFoundException Wenn die Datei nicht gefunden oder lesbar ist.
+     */
+    public static function readChunks(string $file, int $chunkSize = 8192, ?array $httpOptions = null): Generator {
+        $isUrl = preg_match('#^https?://#i', $file);
+
+        if ($isUrl) {
+            $handle = self::openStream($file, 'rb', $httpOptions);
+            if ($handle === false) {
+                self::logErrorAndThrow(FileNotFoundException::class, "URL nicht erreichbar: $file");
+            }
+        } else {
+            $file = self::getRealPath($file);
+            if (!self::isReadable($file)) {
+                self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
+            }
+
+            $handle = fopen($file, 'rb');
+            if ($handle === false) {
+                self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Öffnen der Datei für readChunks: $file");
+            }
+        }
+
+        try {
+            while (!feof($handle)) {
+                $chunk = fread($handle, $chunkSize);
+                if ($chunk === false) {
+                    break;
+                }
+                if ($chunk !== '') {
+                    yield $chunk;
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Lädt eine Datei von einer URL herunter und speichert sie lokal.
+     * Speichereffizient durch blockweises Lesen und Schreiben.
+     *
+     * @param string $url Die URL der herunterzuladenden Datei.
+     * @param string $destination Der lokale Zielpfad.
+     * @param int $chunkSize Größe der Blöcke in Bytes (Standard: 8192).
+     * @param array<string, mixed>|null $httpOptions HTTP-Optionen für den Download.
+     * @param callable|null $progressCallback Optionaler Callback für Fortschrittsanzeige: function(int $bytesDownloaded, ?int $totalBytes): void
+     * @return int|false Anzahl heruntergeladener Bytes oder false bei Fehler.
+     */
+    public static function download(string $url, string $destination, int $chunkSize = 8192, ?array $httpOptions = null, ?callable $progressCallback = null): int|false {
+        if (!preg_match('#^https?://#i', $url)) {
+            return self::logErrorAndReturn(false, "Ungültige URL für Download: $url");
+        }
+
+        $sourceHandle = self::openStream($url, 'rb', $httpOptions);
+        if ($sourceHandle === false) {
+            return false;
+        }
+
+        // Versuche die Gesamtgröße aus den HTTP-Headern zu ermitteln
+        $totalBytes = null;
+        $meta = stream_get_meta_data($sourceHandle);
+        if (isset($meta['wrapper_data']) && is_array($meta['wrapper_data'])) {
+            foreach ($meta['wrapper_data'] as $header) {
+                if (preg_match('/^Content-Length:\s*(\d+)/i', $header, $matches)) {
+                    $totalBytes = (int) $matches[1];
+                    break;
+                }
+            }
+        }
+
+        $destHandle = self::openStream($destination, 'wb');
+        if ($destHandle === false) {
+            fclose($sourceHandle);
+            return self::logErrorAndReturn(false, "Fehler beim Öffnen des Ziel-Streams: $destination");
+        }
+
+        $bytesDownloaded = 0;
+        try {
+            while (!feof($sourceHandle)) {
+                $chunk = fread($sourceHandle, $chunkSize);
+                if ($chunk === false) {
+                    return self::logErrorAndReturn(false, "Fehler beim Lesen von $url");
+                }
+                if ($chunk !== '') {
+                    if (fwrite($destHandle, $chunk) === false) {
+                        return self::logErrorAndReturn(false, "Fehler beim Schreiben nach $destination");
+                    }
+                    $bytesDownloaded += strlen($chunk);
+
+                    if ($progressCallback !== null) {
+                        $progressCallback($bytesDownloaded, $totalBytes);
+                    }
+                }
+            }
+            return self::logInfoAndReturn($bytesDownloaded, "Download abgeschlossen: $url -> $destination ($bytesDownloaded Bytes)");
+        } finally {
+            fclose($sourceHandle);
+            fclose($destHandle);
+        }
+    }
+
+    /**
+     * Lädt Daten von einer URL herunter und gibt sie als Generator zurück.
+     * Nützlich für Streaming-Verarbeitung ohne lokale Speicherung.
+     *
+     * @param string $url Die URL der herunterzuladenden Daten.
+     * @param int $chunkSize Größe der Blöcke in Bytes (Standard: 8192).
+     * @param array<string, mixed>|null $httpOptions HTTP-Optionen für den Download.
+     * @return Generator<string> Generator, der Datenblöcke liefert.
+     * @throws FileNotFoundException Wenn die URL nicht erreichbar ist.
+     */
+    public static function downloadStream(string $url, int $chunkSize = 8192, ?array $httpOptions = null): Generator {
+        if (!preg_match('#^https?://#i', $url)) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige URL für downloadStream: $url");
+        }
+
+        yield from self::readChunks($url, $chunkSize, $httpOptions);
+    }
+
+    /**
+     * Kopiert eine Datei oder URL streambasiert zu einem Ziel.
+     * Speichereffizient für große Dateien, da blockweise kopiert wird.
+     * Unterstützt lokale Dateien sowie HTTP/HTTPS URLs als Quelle.
+     *
+     * @param string $source Quellpfad oder URL.
+     * @param string $destination Zielpfad (nur lokale Dateien).
+     * @param int $chunkSize Größe der Blöcke in Bytes (Standard: 8192).
+     * @param array<string, mixed>|null $httpOptions HTTP-Optionen für URL-Quellen.
+     * @return bool True bei Erfolg, false bei Fehler.
+     */
+    public static function copyStream(string $source, string $destination, int $chunkSize = 8192, ?array $httpOptions = null): bool {
+        $isUrl = preg_match('#^https?://#i', $source);
+
+        if ($isUrl) {
+            $result = self::download($source, $destination, $chunkSize, $httpOptions);
+            return $result !== false;
+        }
+
+        $sourceHandle = self::openStream($source, 'rb');
+        if ($sourceHandle === false) {
+            return false;
+        }
+
+        $destHandle = self::openStream($destination, 'wb');
+        if ($destHandle === false) {
+            fclose($sourceHandle);
+            return self::logErrorAndReturn(false, "Fehler beim Öffnen des Ziel-Streams: $destination");
+        }
+
+        try {
+            while (!feof($sourceHandle)) {
+                $chunk = fread($sourceHandle, $chunkSize);
+                if ($chunk === false) {
+                    return self::logErrorAndReturn(false, "Fehler beim Lesen von $source");
+                }
+                if ($chunk !== '' && fwrite($destHandle, $chunk) === false) {
+                    return self::logErrorAndReturn(false, "Fehler beim Schreiben nach $destination");
+                }
+            }
+            return self::logDebugAndReturn(true, "Datei streambasiert kopiert: $source -> $destination");
+        } finally {
+            fclose($sourceHandle);
+            fclose($destHandle);
+        }
+    }
+
+    /**
+     * Schreibt Daten streambasiert aus einem Generator oder Iterator in eine Datei.
+     *
+     * @param string $file Zielpfad.
+     * @param iterable<string> $data Iterator/Generator mit Datenblöcken.
+     * @param string $mode Schreibmodus (Standard: 'wb' für binäres Überschreiben).
+     * @return int|false Anzahl geschriebener Bytes oder false bei Fehler.
+     */
+    public static function writeStream(string $file, iterable $data, string $mode = 'wb'): int|false {
+        $handle = self::openStream($file, $mode);
+        if ($handle === false) {
+            return false;
+        }
+
+        $totalBytes = 0;
+        try {
+            foreach ($data as $chunk) {
+                $written = fwrite($handle, $chunk);
+                if ($written === false) {
+                    return self::logErrorAndReturn(false, "Fehler beim Schreiben nach $file");
+                }
+                $totalBytes += $written;
+            }
+            return self::logDebugAndReturn($totalBytes, "Stream geschrieben: $file ($totalBytes Bytes)");
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
      * Liefert die Zeilen einer Textdatei als Generator zurück.
      *
      * @param string $file        Pfad zur Datei.
