@@ -283,6 +283,19 @@ enum CountryCode: string {
         throw new InvalidArgumentException("Ungültiger ISO-Ländercode: $value");
     }
 
+    public static function fromGermanName(string $name): self {
+        $name = trim($name);
+        $nameLower = mb_strtolower($name);
+
+        foreach (self::cases() as $case) {
+            if (mb_strtolower($case->getLabel()) === $nameLower) {
+                return $case;
+            }
+        }
+
+        throw new InvalidArgumentException("Ungültiger deutscher Ländername: $name");
+    }
+
     public function isEU(): bool {
         return match ($this) {
             self::Austria,
