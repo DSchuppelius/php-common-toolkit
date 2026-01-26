@@ -379,6 +379,20 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Erkennt das BOM-Encoding einer Datei anhand der ersten Bytes.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return string|null Das erkannte BOM-Encoding ('UTF-8', 'UTF-16LE', 'UTF-16BE', 'UTF-32LE', 'UTF-32BE') oder null.
+     */
+    public static function detectBomEncoding(string $file): ?string {
+        $content = self::readPartial($file, 4);
+        if ($content === false) {
+            return null;
+        }
+        return StringHelper::detectBomEncoding($content);
+    }
+
+    /**
      * Öffnet eine Datei oder URL als Stream (Resource) zum Lesen.
      * Der Aufrufer ist verantwortlich für das Schließen des Streams mit fclose().
      * Unterstützt lokale Dateien sowie HTTP/HTTPS URLs.
