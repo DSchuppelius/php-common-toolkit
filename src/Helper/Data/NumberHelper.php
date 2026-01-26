@@ -726,4 +726,139 @@ class NumberHelper {
         }
         return abs($a * $b) / self::gcd($a, $b);
     }
+
+    // ==================== Präzise Berechnungen (BC Math) ====================
+
+    /**
+     * Addiert zwei große Zahlen ohne Präzisionsverlust.
+     *
+     * @param string $a Erste Zahl (als String).
+     * @param string $b Zweite Zahl (als String).
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Das Ergebnis.
+     */
+    public static function addPrecise(string $a, string $b, int $scale = 0): string {
+        return bcadd($a, $b, $scale);
+    }
+
+    /**
+     * Subtrahiert zwei große Zahlen ohne Präzisionsverlust.
+     *
+     * @param string $a Erste Zahl (Minuend).
+     * @param string $b Zweite Zahl (Subtrahend).
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Das Ergebnis.
+     */
+    public static function subtractPrecise(string $a, string $b, int $scale = 0): string {
+        return bcsub($a, $b, $scale);
+    }
+
+    /**
+     * Multipliziert zwei große Zahlen ohne Präzisionsverlust.
+     *
+     * @param string $a Erste Zahl.
+     * @param string $b Zweite Zahl.
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Das Ergebnis.
+     */
+    public static function multiplyPrecise(string $a, string $b, int $scale = 0): string {
+        return bcmul($a, $b, $scale);
+    }
+
+    /**
+     * Dividiert zwei große Zahlen ohne Präzisionsverlust.
+     *
+     * @param string $a Dividend.
+     * @param string $b Divisor.
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Das Ergebnis.
+     * @throws RuntimeException Bei Division durch Null.
+     */
+    public static function dividePrecise(string $a, string $b, int $scale = 0): string {
+        if (bccomp($b, '0', $scale) === 0) {
+            self::logErrorAndThrow(RuntimeException::class, "Division durch Null nicht erlaubt");
+        }
+        return bcdiv($a, $b, $scale);
+    }
+
+    /**
+     * Berechnet die Summe eines Arrays großer Zahlen ohne Präzisionsverlust.
+     *
+     * @param array<string> $numbers Array von Zahlen als Strings.
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Die Summe.
+     */
+    public static function sumPrecise(array $numbers, int $scale = 0): string {
+        $result = '0';
+        foreach ($numbers as $number) {
+            $result = bcadd($result, (string) $number, $scale);
+        }
+        return $result;
+    }
+
+    /**
+     * Berechnet die Differenz eines Arrays großer Zahlen (erstes Element minus alle weiteren).
+     *
+     * @param array<string> $numbers Array von Zahlen als Strings.
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Die Differenz.
+     */
+    public static function subtractAllPrecise(array $numbers, int $scale = 0): string {
+        if (empty($numbers)) {
+            return '0';
+        }
+
+        $result = (string) array_shift($numbers);
+        foreach ($numbers as $number) {
+            $result = bcsub($result, (string) $number, $scale);
+        }
+        return $result;
+    }
+
+    /**
+     * Vergleicht zwei große Zahlen.
+     *
+     * @param string $a Erste Zahl.
+     * @param string $b Zweite Zahl.
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return int -1 wenn a < b, 0 wenn gleich, 1 wenn a > b.
+     */
+    public static function comparePrecise(string $a, string $b, int $scale = 0): int {
+        return bccomp($a, $b, $scale);
+    }
+
+    /**
+     * Berechnet den Modulo großer Zahlen ohne Präzisionsverlust.
+     *
+     * @param string $a Dividend.
+     * @param string $b Divisor.
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Der Rest.
+     */
+    public static function modPrecise(string $a, string $b, int $scale = 0): string {
+        return bcmod($a, $b, $scale);
+    }
+
+    /**
+     * Potenziert eine große Zahl ohne Präzisionsverlust.
+     *
+     * @param string $base Basis.
+     * @param string $exponent Exponent.
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Das Ergebnis.
+     */
+    public static function powPrecise(string $base, string $exponent, int $scale = 0): string {
+        return bcpow($base, $exponent, $scale);
+    }
+
+    /**
+     * Berechnet die Quadratwurzel einer großen Zahl.
+     *
+     * @param string $number Die Zahl.
+     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * @return string Die Quadratwurzel.
+     */
+    public static function sqrtPrecise(string $number, int $scale = 0): string {
+        return bcsqrt($number, $scale);
+    }
 }
