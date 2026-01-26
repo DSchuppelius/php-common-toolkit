@@ -41,7 +41,7 @@ class TifFile extends ConfiguredHelperAbstract {
         if ($mimeType === 'image/jpeg' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
             $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".jpg", $file);
 
-            $command = self::getConfiguredCommand("convert", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
+            $command = self::getConfiguredCommand("tiffconvert", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
             if (empty($command)) {
                 self::logErrorAndThrow(Exception::class, "ImageMagick wurde nicht konfiguriert oder ist nicht installiert.");
             }
@@ -67,7 +67,7 @@ class TifFile extends ConfiguredHelperAbstract {
                 self::logNotice("Erzwinge Reparatur der TIFF-Datei: $file");
                 $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".original.tif", $file);
 
-                $command = self::getConfiguredCommand("convert-monochrome", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
+                $command = self::getConfiguredCommand("tiffconvert-monochrome", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
                 if (empty($command)) {
                     self::logErrorAndThrow(Exception::class, "ImageMagick wurde nicht konfiguriert oder ist nicht installiert.");
                 }

@@ -220,8 +220,8 @@ Mit passender Konfigurationsdatei (`config/image_executables.json`):
 ```json
 {
   "shellExecutables": {
-    "convert": {
-      "path": "convert",
+    "tiffconvert": {
+      "path": "tiffconvert",
       "required": false,
       "description": "ImageMagick Converter",
       "package": "imagemagick",

@@ -1,6 +1,6 @@
 {
     "shellExecutables": {
-        "convert": {
+        "tiffconvert": {
             "linuxPath": "convert",
             "windowsPath": "magick",
             "package": "imagemagick",
@@ -9,7 +9,7 @@
             "arguments": ["[OUTPUT]", "[INPUT]"],
             "debugArguments": ["[OUTPUT]", "[INPUT]"]
         },
-        "convert-monochrome": {
+        "tiffconvert-monochrome": {
             "linuxPath": "convert",
             "windowsPath": "magick",
             "package": "imagemagick",
