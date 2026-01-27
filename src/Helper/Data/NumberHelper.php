@@ -143,6 +143,59 @@ class NumberHelper {
     }
 
     /**
+     * Konvertiert einen Betrag zu deutschem Format mit optionalen Tausendertrennern.
+     * 
+     * Akzeptiert US-Format (1,234.56), deutsches Format (1.234,56) und gemischte Formate.
+     * Normalisiert den Eingabestring und gibt das deutsche Format zurück.
+     * Ohne Tausendertrenner (Standard) ideal für Datenfelder, CSV, APIs.
+     * 
+     * @param string|float|int $amount Betrag in beliebigem Format.
+     * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
+     * @param bool $withThousandsSeparator Tausendertrenner anzeigen (Standard: false).
+     * @return string Betrag im deutschen Format (z.B. "1234,56" oder "1.234,56").
+     * 
+     * @see formatCurrency() Für Anzeige-Formatierung mit Währungssymbol und Tausendertrennern.
+     */
+    public static function toGermanFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false): string {
+        if (is_string($amount)) {
+            $amount = trim($amount);
+            if ($amount === '') {
+                return number_format(0, $decimals, ',', $withThousandsSeparator ? '.' : '');
+            }
+            $floatVal = self::normalizeDecimal($amount);
+        } else {
+            $floatVal = (float) $amount;
+        }
+
+        return number_format($floatVal, $decimals, ',', $withThousandsSeparator ? '.' : '');
+    }
+
+    /**
+     * Konvertiert einen Betrag zu US-Format mit optionalen Tausendertrennern.
+     * 
+     * Akzeptiert deutsches Format (1.234,56), US-Format (1,234.56) und gemischte Formate.
+     * Ohne Tausendertrenner (Standard) ideal für Datenfelder, CSV, APIs.
+     * 
+     * @param string|float|int $amount Betrag in beliebigem Format.
+     * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
+     * @param bool $withThousandsSeparator Tausendertrenner anzeigen (Standard: false).
+     * @return string Betrag im US-Format (z.B. "1234.56" oder "1,234.56").
+     */
+    public static function toUSFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false): string {
+        if (is_string($amount)) {
+            $amount = trim($amount);
+            if ($amount === '') {
+                return number_format(0, $decimals, '.', $withThousandsSeparator ? ',' : '');
+            }
+            $floatVal = self::normalizeDecimal($amount);
+        } else {
+            $floatVal = (float) $amount;
+        }
+
+        return number_format($floatVal, $decimals, '.', $withThousandsSeparator ? ',' : '');
+    }
+
+    /**
      * Normalisiert eine Dezimalzahl mit automatischer Format-Erkennung.
      * 
      * Unterstützt:

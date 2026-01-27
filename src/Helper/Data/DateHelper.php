@@ -189,6 +189,96 @@ class DateHelper {
     }
 
     /**
+     * Erweitert ein Kurzdatum mit zweistelliger Jahreszahl zu einem vollständigen Datum.
+     *
+     * Unterstützt verschiedene Formate wie "1.1.26", "01.01.26", "26-01-01", "01/01/26".
+     * Verwendet ein dynamisches 50-Jahres-Fenster basierend auf dem aktuellen Jahr.
+     *
+     * @param string $date Das Kurzdatum mit zweistelliger Jahreszahl.
+     * @return string Das expandierte Datum im selben Format aber mit vierstelliger Jahreszahl.
+     * @throws InvalidArgumentException Wenn das Datum nicht erkannt werden kann.
+     *
+     * @see expandYear() Für die Jahres-Konvertierungslogik.
+     */
+    public static function expandShortYear(string $date): string {
+        $date = trim($date);
+
+        // Muster: Tag.Monat.Jahr (deutsch) - z.B. 1.1.26, 01.01.26
+        if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{2})$/', $date, $m)) {
+            $year = self::expandYear((int) $m[3]);
+            return sprintf('%02d.%02d.%04d', (int) $m[1], (int) $m[2], $year);
+        }
+
+        // Muster: Tag-Monat-Jahr - z.B. 01-01-26
+        if (preg_match('/^(\d{1,2})-(\d{1,2})-(\d{2})$/', $date, $m)) {
+            $year = self::expandYear((int) $m[3]);
+            return sprintf('%02d-%02d-%04d', (int) $m[1], (int) $m[2], $year);
+        }
+
+        // Muster: Tag/Monat/Jahr - z.B. 01/01/26
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/', $date, $m)) {
+            $year = self::expandYear((int) $m[3]);
+            return sprintf('%02d/%02d/%04d', (int) $m[1], (int) $m[2], $year);
+        }
+
+        // Muster: Jahr-Monat-Tag (ISO kurz) - z.B. 26-01-31
+        if (preg_match('/^(\d{2})-(\d{2})-(\d{2})$/', $date, $m)) {
+            // Heuristik: Wenn erstes Segment > 31, ist es wahrscheinlich das Jahr
+            if ((int) $m[1] > 31) {
+                $year = self::expandYear((int) $m[1]);
+                return sprintf('%04d-%02d-%02d', $year, (int) $m[2], (int) $m[3]);
+            }
+        }
+
+        // Muster: JJMMTT oder TTMMJJ (6 Ziffern)
+        if (preg_match('/^(\d{2})(\d{2})(\d{2})$/', $date, $m)) {
+            // Heuristik: Wenn erstes Segment > 31, vermutlich Jahr vorne (JJMMTT)
+            if ((int) $m[1] > 31) {
+                $year = self::expandYear((int) $m[1]);
+                return sprintf('%04d%02d%02d', $year, (int) $m[2], (int) $m[3]);
+            }
+            // Sonst TTMMJJ
+            $year = self::expandYear((int) $m[3]);
+            return sprintf('%02d%02d%04d', (int) $m[1], (int) $m[2], $year);
+        }
+
+        self::logErrorAndThrow(InvalidArgumentException::class, "Kein erkennbares Kurzdatum: $date");
+    }
+
+    /**
+     * Konvertiert eine zweistellige Jahreszahl in eine vierstellige.
+     *
+     * Verwendet ein dynamisches 50-Jahres-Fenster basierend auf dem aktuellen Jahr.
+     * Das Ergebnis liegt immer im Bereich [aktuellesJahr - 50, aktuellesJahr + 49].
+     *
+     * Beispiel bei aktuellem Jahr 2026:
+     * - 26 → 2026, 75 → 2075, 76 → 1976, 99 → 1999
+     *
+     * @param int $shortYear Die zweistellige Jahreszahl (0-99).
+     * @return int Die vierstellige Jahreszahl.
+     */
+    public static function expandYear(int $shortYear): int {
+        if ($shortYear < 0 || $shortYear > 99) {
+            return $shortYear; // Bereits vierstellig oder ungültig
+        }
+
+        $currentYear = (int) date('Y');
+        $currentCentury = (int) floor($currentYear / 100) * 100;
+        $currentTwoDigit = $currentYear % 100;
+
+        // Pivot = aktuelle zweistellige Jahreszahl + 50 (mod 100)
+        $pivot = ($currentTwoDigit + 50) % 100;
+
+        if ($pivot > $currentTwoDigit) {
+            // Kein Überlauf: Jahre < pivot → aktuelles Jahrhundert, >= pivot → vorheriges
+            return $shortYear < $pivot ? $currentCentury + $shortYear : ($currentCentury - 100) + $shortYear;
+        } else {
+            // Überlauf (z.B. 2076): Jahre >= pivot UND < 100 → aktuelles, < pivot → nächstes Jahrhundert
+            return $shortYear >= $pivot ? $currentCentury + $shortYear : ($currentCentury + 100) + $shortYear;
+        }
+    }
+
+    /**
      * Konvertiert ein Datum in das Format 'dd.mm.yyyy'.
      *
      * @param string $date Das Datum, das konvertiert werden soll.

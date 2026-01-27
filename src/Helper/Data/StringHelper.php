@@ -659,8 +659,10 @@ class StringHelper {
      * @param string $suffix Das Suffix, das hinzugefügt wird (Standard: '...'). Leerer String für kein Suffix.
      * @return string Der gekürzte Text mit Suffix, oder der Original-Text wenn kürzer.
      */
-    public static function truncate(?string $text, int $maxLength, string $suffix = '...'): string {
+    public static function truncate(?string $text, int $maxLength, string $suffix = '...', bool $trim = false): string {
         if (self::isNullOrEmpty($text)) return '';
+        if ($trim) $text = trim($text);
+
         return mb_strlen($text) > $maxLength
             ? mb_substr($text, 0, $maxLength - mb_strlen($suffix)) . $suffix
             : $text;
@@ -1198,6 +1200,36 @@ class StringHelper {
         $maskLength = $length - $visibleStart - $visibleEnd;
 
         return $start . str_repeat($maskChar, $maskLength) . $end;
+    }
+
+    /**
+     * Teilt einen Text in ein Array von gleichmäßigen Blöcken auf.
+     *
+     * @param string|null $text Der zu teilende Text (null wird als leerer String behandelt).
+     * @param int $count Die maximale Anzahl der Blöcke (Standard: 14).
+     * @param int $length Die maximale Länge pro Block (Standard: 27).
+     * @param bool $trimEmpty Leere Blöcke am Ende entfernen (Standard: true).
+     * @return string[] Ein Array mit den Textblöcken.
+     *
+     * @see splitFixedWidth() Für SEPA-konforme Blöcke mit Padding auf feste Länge.
+     */
+    public static function splitTextToArray(?string $text, int $count = 14, int $length = 27, bool $trimEmpty = true): array {
+        if ($text === null || trim($text) === '') {
+            return $trimEmpty ? [] : array_fill(0, $count, '');
+        }
+
+        $text = trim($text);
+        $parts = [];
+
+        for ($i = 0; $i < $count; $i++) {
+            $part = mb_substr($text, $i * $length, $length);
+            if ($trimEmpty && $part === '') {
+                break;
+            }
+            $parts[] = $part;
+        }
+
+        return $parts;
     }
 
     /**
