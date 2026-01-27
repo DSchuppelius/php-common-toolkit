@@ -191,11 +191,12 @@ class DateHelper {
     /**
      * Erweitert ein Kurzdatum mit zweistelliger Jahreszahl zu einem vollständigen Datum.
      *
-     * Unterstützt verschiedene Formate wie "1.1.26", "01.01.26", "26-01-01", "01/01/26".
+     * Unterstützt verschiedene Formate wie "1.1.26", "01.01.26", "01/01/26".
      * Verwendet ein dynamisches 50-Jahres-Fenster basierend auf dem aktuellen Jahr.
+     * Daten mit bereits vierstelliger Jahreszahl werden normalisiert zurückgegeben.
      *
-     * @param string $date Das Kurzdatum mit zweistelliger Jahreszahl.
-     * @return string Das expandierte Datum im selben Format aber mit vierstelliger Jahreszahl.
+     * @param string $date Das Datum (mit zwei- oder vierstelliger Jahreszahl).
+     * @return string Das Datum mit vierstelliger Jahreszahl im selben Format.
      * @throws InvalidArgumentException Wenn das Datum nicht erkannt werden kann.
      *
      * @see expandYear() Für die Jahres-Konvertierungslogik.
@@ -203,46 +204,63 @@ class DateHelper {
     public static function expandShortYear(string $date): string {
         $date = trim($date);
 
-        // Muster: Tag.Monat.Jahr (deutsch) - z.B. 1.1.26, 01.01.26
-        if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{2})$/', $date, $m)) {
-            $year = self::expandYear((int) $m[3]);
-            return sprintf('%02d.%02d.%04d', (int) $m[1], (int) $m[2], $year);
-        }
-
-        // Muster: Tag-Monat-Jahr - z.B. 01-01-26
-        if (preg_match('/^(\d{1,2})-(\d{1,2})-(\d{2})$/', $date, $m)) {
-            $year = self::expandYear((int) $m[3]);
-            return sprintf('%02d-%02d-%04d', (int) $m[1], (int) $m[2], $year);
-        }
-
-        // Muster: Tag/Monat/Jahr - z.B. 01/01/26
-        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/', $date, $m)) {
-            $year = self::expandYear((int) $m[3]);
-            return sprintf('%02d/%02d/%04d', (int) $m[1], (int) $m[2], $year);
-        }
-
-        // Muster: Jahr-Monat-Tag (ISO kurz) - z.B. 26-01-31
-        if (preg_match('/^(\d{2})-(\d{2})-(\d{2})$/', $date, $m)) {
-            // Heuristik: Wenn erstes Segment > 31, ist es wahrscheinlich das Jahr
-            if ((int) $m[1] > 31) {
-                $year = self::expandYear((int) $m[1]);
-                return sprintf('%04d-%02d-%02d', $year, (int) $m[2], (int) $m[3]);
+        // Trennzeichen erkennen
+        $separator = null;
+        foreach (['.', '/', '-'] as $sep) {
+            if (str_contains($date, $sep)) {
+                $separator = $sep;
+                break;
             }
         }
 
-        // Muster: JJMMTT oder TTMMJJ (6 Ziffern)
-        if (preg_match('/^(\d{2})(\d{2})(\d{2})$/', $date, $m)) {
-            // Heuristik: Wenn erstes Segment > 31, vermutlich Jahr vorne (JJMMTT)
-            if ((int) $m[1] > 31) {
-                $year = self::expandYear((int) $m[1]);
-                return sprintf('%04d%02d%02d', $year, (int) $m[2], (int) $m[3]);
+        // Kompaktes Format ohne Trennzeichen (6 oder 8 Ziffern)
+        if ($separator === null && preg_match('/^\d{6,8}$/', $date)) {
+            if (strlen($date) === 8) {
+                return $date; // YYYYMMDD oder DDMMYYYY - bereits vollständig
             }
-            // Sonst TTMMJJ
-            $year = self::expandYear((int) $m[3]);
-            return sprintf('%02d%02d%04d', (int) $m[1], (int) $m[2], $year);
+            // 6 Ziffern: DDMMYY
+            if (preg_match('/^(\d{2})(\d{2})(\d{2})$/', $date, $m)) {
+                $year = self::expandYear((int) $m[3]);
+                return sprintf('%02d%02d%04d', (int) $m[1], (int) $m[2], $year);
+            }
         }
 
-        self::logErrorAndThrow(InvalidArgumentException::class, "Kein erkennbares Kurzdatum: $date");
+        if ($separator === null) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Kein erkennbares Datumsformat: $date");
+        }
+
+        // Mit Trennzeichen: In Teile zerlegen
+        $parts = explode($separator, $date);
+        if (count($parts) !== 3) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiges Datumsformat: $date");
+        }
+
+        [$a, $b, $c] = array_map('intval', $parts);
+
+        // Vierstellig am Ende (DE/US: TT.MM.JJJJ oder MM/DD/YYYY)
+        if (strlen($parts[2]) === 4) {
+            return sprintf('%02d%s%02d%s%04d', $a, $separator, $b, $separator, $c);
+        }
+
+        // Vierstellig am Anfang (ISO: JJJJ-MM-TT)
+        if (strlen($parts[0]) === 4) {
+            return sprintf('%04d%s%02d%s%02d', $a, $separator, $b, $separator, $c);
+        }
+
+        // Zweistellig: Expandieren
+        // Jahr am Ende (DE/US Format) - häufigster Fall
+        if (strlen($parts[2]) === 2) {
+            $year = self::expandYear($c);
+            return sprintf('%02d%s%02d%s%04d', $a, $separator, $b, $separator, $year);
+        }
+
+        // Jahr am Anfang (kurzes ISO: JJ-MM-TT) - selten, nur wenn > 31
+        if (strlen($parts[0]) === 2 && $a > 31) {
+            $year = self::expandYear($a);
+            return sprintf('%04d%s%02d%s%02d', $year, $separator, $b, $separator, $c);
+        }
+
+        self::logErrorAndThrow(InvalidArgumentException::class, "Kein erkennbares Datumsformat: $date");
     }
 
     /**

@@ -232,4 +232,69 @@ class DateHelperTest extends BaseTestCase {
         // USA
         $this->assertTrue(DateHelper::isDateTime('12/22/2024', null, CountryCode::UnitedStatesOfAmerica));
     }
+
+    public function testExpandYear(): void {
+        $currentYear = (int) date('Y');
+        $currentTwoDigit = $currentYear % 100;
+        $pivot = ($currentTwoDigit + 50) % 100;
+        $currentCentury = (int) floor($currentYear / 100) * 100;
+
+        // Aktuelles Jahr
+        $this->assertEquals($currentYear, DateHelper::expandYear($currentTwoDigit));
+
+        // Jahre im 50-Jahres-Fenster (Zukunft)
+        if ($pivot > $currentTwoDigit) {
+            $this->assertEquals($currentCentury + ($pivot - 1), DateHelper::expandYear($pivot - 1));
+            $this->assertEquals(($currentCentury - 100) + $pivot, DateHelper::expandYear($pivot));
+        }
+
+        // Bereits vierstellige Jahre werden unverändert zurückgegeben
+        $this->assertEquals(2024, DateHelper::expandYear(2024));
+        $this->assertEquals(-5, DateHelper::expandYear(-5));
+    }
+
+    public function testExpandShortYearGermanFormat(): void {
+        // Deutsches Format mit zweistelligem Jahr
+        $result = DateHelper::expandShortYear('1.1.26');
+        $this->assertMatchesRegularExpression('/^\d{2}\.\d{2}\.\d{4}$/', $result);
+        $this->assertEquals('01.01.2026', $result);
+
+        $result = DateHelper::expandShortYear('15.03.85');
+        $this->assertEquals('15.03.1985', $result);
+
+        // Bereits vierstelliges Jahr
+        $result = DateHelper::expandShortYear('20.12.2024');
+        $this->assertEquals('20.12.2024', $result);
+    }
+
+    public function testExpandShortYearIsoFormat(): void {
+        // ISO Format bleibt unverändert
+        $this->assertEquals('2024-12-20', DateHelper::expandShortYear('2024-12-20'));
+    }
+
+    public function testExpandShortYearSlashFormat(): void {
+        // Slash-Format
+        $this->assertEquals('01/01/2026', DateHelper::expandShortYear('01/01/26'));
+        $this->assertEquals('15/03/2024', DateHelper::expandShortYear('15/03/2024'));
+    }
+
+    public function testExpandShortYearCompactFormat(): void {
+        // Kompaktes Format ohne Trennzeichen
+        $this->assertEquals('20241220', DateHelper::expandShortYear('20241220'));
+
+        // 6 Ziffern: DDMMYY → expandiert
+        $result = DateHelper::expandShortYear('260115');
+        $this->assertEquals('26012015', $result);
+    }
+
+    public function testExpandShortYearInvalidInput(): void {
+        $this->expectException(InvalidArgumentException::class);
+        DateHelper::expandShortYear('invalid');
+    }
+
+    public function testExpandShortYearNormalizesLeadingZeros(): void {
+        // Einstellige Tage/Monate werden auf zweistellig normalisiert
+        $this->assertEquals('01.01.2026', DateHelper::expandShortYear('1.1.26'));
+        $this->assertEquals('05.03.2024', DateHelper::expandShortYear('5.3.24'));
+    }
 }
