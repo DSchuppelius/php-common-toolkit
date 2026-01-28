@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.4.3",
+            "version": "v0.4.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "437aa8dd8f70ea24f3fe4944620f842dfc44b0c8"
+                "reference": "4f1000f3bcc33b7f6a75f093db1a143b04497422"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/437aa8dd8f70ea24f3fe4944620f842dfc44b0c8",
-                "reference": "437aa8dd8f70ea24f3fe4944620f842dfc44b0c8",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/4f1000f3bcc33b7f6a75f093db1a143b04497422",
+                "reference": "4f1000f3bcc33b7f6a75f093db1a143b04497422",
                 "shasum": ""
             },
             "require": {
@@ -46,22 +46,22 @@
             "description": "Ein Toolkit für JSON-basierte Konfigurationsverwaltung",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.4.3"
+                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.4.5"
             },
-            "time": "2026-01-25T17:17:04+00:00"
+            "time": "2026-01-28T09:50:03+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.1",
+            "version": "v2.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "91197c7726c555a602dce5e6ed5126c3ebd3c02f"
+                "reference": "94b6d3e22488f7e622acafe64233d2252b64bb6e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/91197c7726c555a602dce5e6ed5126c3ebd3c02f",
-                "reference": "91197c7726c555a602dce5e6ed5126c3ebd3c02f",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/94b6d3e22488f7e622acafe64233d2252b64bb6e",
+                "reference": "94b6d3e22488f7e622acafe64233d2252b64bb6e",
                 "shasum": ""
             },
             "require": {
@@ -90,9 +90,9 @@
             "description": "Reused codes for my api php sdks",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.1"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.1.2"
             },
-            "time": "2026-01-25T17:12:23+00:00"
+            "time": "2026-01-26T15:28:29+00:00"
         },
         {
             "name": "psr/log",
@@ -719,16 +719,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "11.5.49",
+            "version": "11.5.50",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "4f1750675ba411dd6c2d5fa8a3cca07f6742020e"
+                "reference": "fdfc727f0fcacfeb8fcb30c7e5da173125b58be3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/4f1750675ba411dd6c2d5fa8a3cca07f6742020e",
-                "reference": "4f1750675ba411dd6c2d5fa8a3cca07f6742020e",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/fdfc727f0fcacfeb8fcb30c7e5da173125b58be3",
+                "reference": "fdfc727f0fcacfeb8fcb30c7e5da173125b58be3",
                 "shasum": ""
             },
             "require": {
@@ -800,7 +800,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.49"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.50"
             },
             "funding": [
                 {
@@ -824,7 +824,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-01-24T16:09:28+00:00"
+            "time": "2026-01-27T05:59:18+00:00"
         },
         {
             "name": "sebastian/cli-parser",
