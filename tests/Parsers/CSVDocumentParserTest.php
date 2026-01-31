@@ -280,4 +280,189 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertTrue(mb_check_encoding($rowString, 'UTF-8'), 'Datenzeile muss gültiges UTF-8 sein');
         $this->assertStringContainsString('München', $rowString, 'München muss korrekt konvertiert sein');
     }
+
+    // ===== Streaming-Tests für große CSV-Dateien =====
+
+    public function testStreamRows(): void {
+        if (!file_exists($this->testFileComma)) {
+            $this->markTestSkipped('Test-Datei nicht gefunden');
+        }
+
+        $rowCount = 0;
+        foreach (CSVDocumentParser::streamRows($this->testFileComma, ',', '"', true) as $lineNumber => $row) {
+            $this->assertInstanceOf(DataLine::class, $row);
+            $this->assertGreaterThan(0, $lineNumber);
+            $rowCount++;
+        }
+
+        $this->assertGreaterThan(0, $rowCount, 'Mindestens eine Datenzeile erwartet');
+    }
+
+    public function testStreamRowsWithoutHeader(): void {
+        if (!file_exists($this->testFileComma)) {
+            $this->markTestSkipped('Test-Datei nicht gefunden');
+        }
+
+        $rowCountWithHeader = 0;
+        foreach (CSVDocumentParser::streamRows($this->testFileComma, ',', '"', true) as $row) {
+            $rowCountWithHeader++;
+        }
+
+        $rowCountWithoutHeader = 0;
+        foreach (CSVDocumentParser::streamRows($this->testFileComma, ',', '"', false) as $row) {
+            $rowCountWithoutHeader++;
+        }
+
+        // Ohne Header sollte eine Zeile mehr geben (Header wird als DataLine behandelt)
+        $this->assertEquals($rowCountWithHeader + 1, $rowCountWithoutHeader);
+    }
+
+    public function testStreamAll(): void {
+        if (!file_exists($this->testFileComma)) {
+            $this->markTestSkipped('Test-Datei nicht gefunden');
+        }
+
+        $headerFound = false;
+        $rowCount = 0;
+
+        foreach (CSVDocumentParser::streamAll($this->testFileComma, ',', '"', true) as $index => $line) {
+            if ($index === 0) {
+                $this->assertInstanceOf(HeaderLine::class, $line, 'Erste Zeile sollte HeaderLine sein');
+                $headerFound = true;
+            } else {
+                $this->assertInstanceOf(DataLine::class, $line);
+                $rowCount++;
+            }
+        }
+
+        $this->assertTrue($headerFound, 'Header sollte gefunden werden');
+        $this->assertGreaterThan(0, $rowCount, 'Mindestens eine Datenzeile erwartet');
+    }
+
+    public function testStreamRowsWithMultiLineFields(): void {
+        if (!file_exists($this->testFileMultiLine)) {
+            $this->markTestSkipped('multiline.csv Test-Datei nicht gefunden');
+        }
+
+        $foundMultiLine = false;
+        foreach (CSVDocumentParser::streamRows($this->testFileMultiLine, ',', '"', true) as $row) {
+            $this->assertInstanceOf(DataLine::class, $row);
+
+            // Prüfe ob eine Zeile einen Zeilenumbruch enthält
+            foreach ($row->getFields() as $field) {
+                if (str_contains($field->getValue(), "\n")) {
+                    $foundMultiLine = true;
+                    break 2;
+                }
+            }
+        }
+
+        $this->assertTrue($foundMultiLine, 'Mehrzeiliges Feld sollte erkannt werden');
+    }
+
+    public function testReadHeader(): void {
+        if (!file_exists($this->testFileComma)) {
+            $this->markTestSkipped('Test-Datei nicht gefunden');
+        }
+
+        $header = CSVDocumentParser::readHeader($this->testFileComma, ',', '"');
+
+        $this->assertInstanceOf(HeaderLine::class, $header);
+        $this->assertGreaterThan(0, $header->countFields());
+    }
+
+    public function testProcessBatches(): void {
+        if (!file_exists($this->testFileComma)) {
+            $this->markTestSkipped('Test-Datei nicht gefunden');
+        }
+
+        $batchesProcessed = 0;
+        $totalRowsFromBatches = 0;
+
+        $totalRows = CSVDocumentParser::processBatches(
+            $this->testFileComma,
+            function (array $batch, int $batchNumber) use (&$batchesProcessed, &$totalRowsFromBatches) {
+                $batchesProcessed++;
+                $totalRowsFromBatches += count($batch);
+
+                // Prüfe dass alle Elemente DataLines sind
+                foreach ($batch as $row) {
+                    $this->assertInstanceOf(DataLine::class, $row);
+                }
+            },
+            batchSize: 2, // Kleine Batch-Größe für Tests
+            delimiter: ',',
+            enclosure: '"',
+            hasHeader: true
+        );
+
+        $this->assertGreaterThan(0, $batchesProcessed, 'Mindestens ein Batch sollte verarbeitet werden');
+        $this->assertEquals($totalRows, $totalRowsFromBatches, 'Gesamtzeilen sollten übereinstimmen');
+    }
+
+    public function testStreamRowsWithEncodingConversion(): void {
+        if (!file_exists($this->testFileAnsi)) {
+            $this->markTestSkipped('ansi.csv Test-Datei nicht gefunden');
+        }
+
+        $foundMuenchen = false;
+        foreach (CSVDocumentParser::streamRows($this->testFileAnsi, ';', '"', true, false, true) as $row) {
+            $rowString = $row->toString();
+            $this->assertTrue(mb_check_encoding($rowString, 'UTF-8'), 'Zeile muss gültiges UTF-8 sein');
+
+            if (str_contains($rowString, 'München')) {
+                $foundMuenchen = true;
+            }
+        }
+
+        $this->assertTrue($foundMuenchen, 'München sollte korrekt konvertiert gefunden werden');
+    }
+
+    public function testStreamRowsComparedToFromFile(): void {
+        if (!file_exists($this->testFileComma)) {
+            $this->markTestSkipped('Test-Datei nicht gefunden');
+        }
+
+        // Vergleiche Streaming mit normalem Parsing
+        $docFromFile = CSVDocumentParser::fromFile($this->testFileComma, ',', '"', true);
+
+        $streamedRows = [];
+        foreach (CSVDocumentParser::streamRows($this->testFileComma, ',', '"', true) as $row) {
+            $streamedRows[] = $row;
+        }
+
+        $this->assertEquals($docFromFile->countRows(), count($streamedRows), 'Anzahl der Zeilen sollte übereinstimmen');
+
+        // Vergleiche einzelne Zeilen
+        for ($i = 0; $i < min(5, count($streamedRows)); $i++) {
+            $fromFileRow = $docFromFile->getRow($i);
+            $streamedRow = $streamedRows[$i];
+
+            $this->assertNotNull($fromFileRow);
+            $this->assertEquals(
+                $fromFileRow->toString(),
+                $streamedRow->toString(),
+                "Zeile $i sollte übereinstimmen"
+            );
+        }
+    }
+
+    public function testCountRows(): void {
+        if (!file_exists($this->testFileComma)) {
+            $this->markTestSkipped('Test-Datei nicht gefunden');
+        }
+
+        // Zähle mit Header
+        $countWithHeader = CSVDocumentParser::countRows($this->testFileComma, true);
+
+        // Zähle ohne Header (Header wird mitgezählt)
+        $countWithoutHeader = CSVDocumentParser::countRows($this->testFileComma, false);
+
+        // Mit Header sollte eine Zeile weniger sein
+        $this->assertEquals($countWithHeader + 1, $countWithoutHeader);
+
+        // Vergleiche mit normalem Parsing
+        $doc = CSVDocumentParser::fromFile($this->testFileComma, ',', '"', true);
+        $this->assertEquals($doc->countRows(), $countWithHeader, 'countRows sollte gleiche Anzahl wie Document liefern');
+    }
 }
