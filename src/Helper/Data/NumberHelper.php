@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\Data;
 
 use CommonToolkit\Enums\CountryCode;
+use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Enums\MetricPrefix;
 use CommonToolkit\Enums\TemperatureUnit;
 use ERRORToolkit\Traits\ErrorLog;
@@ -412,25 +413,47 @@ class NumberHelper {
     }
 
     /**
+     * Formatiert eine Zahl mit explizitem Vorzeichen.
+     *
+     * Positive Zahlen erhalten ein '+', negative ein '-', null kann konfiguriert werden.
+     *
+     * @param float|int $number Die zu formatierende Zahl.
+     * @param int $decimals Anzahl der Dezimalstellen (Standard: 2).
+     * @param string $decimalSeparator Dezimaltrennzeichen (Standard: ',').
+     * @param string $thousandsSeparator Tausendertrennzeichen (Standard: '.').
+     * @param string $zeroSign Vorzeichen für Null (Standard: '' für kein Vorzeichen, kann '+' oder '±' sein).
+     * @return string Die formatierte Zahl mit Vorzeichen.
+     */
+    public static function formatWithSign(float|int $number, int $decimals = 2, string $decimalSeparator = ',', string $thousandsSeparator = '.', string $zeroSign = ''): string {
+        $formatted = number_format(abs($number), $decimals, $decimalSeparator, $thousandsSeparator);
+
+        if ($number > 0) return '+' . $formatted;
+        elseif ($number < 0) return '-' . $formatted;
+
+        // Null
+        return $zeroSign . $formatted;
+    }
+
+    /**
      * Formatiert einen Betrag als Währung.
      *
      * @param float|int $amount Der Betrag.
-     * @param string $currencySymbol Das Währungssymbol (Standard: '€').
+     * @param CurrencyCode $currency Die Währung (Standard: EUR).
      * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
      * @param string $decimalSeparator Dezimaltrennzeichen (Standard: ',').
      * @param string $thousandsSeparator Tausendertrennzeichen (Standard: '.').
      * @param bool $symbolBefore Symbol vor dem Betrag (Standard: false für deutsch).
      * @return string Der formatierte Währungsbetrag.
      */
-    public static function formatCurrency(
-        float|int $amount,
-        string $currencySymbol = '€',
-        int $decimals = 2,
-        string $decimalSeparator = ',',
-        string $thousandsSeparator = '.',
-        bool $symbolBefore = false
-    ): string {
+    public static function formatCurrency(float|int $amount, CurrencyCode $currency = CurrencyCode::Euro, int $decimals = 2, string $decimalSeparator = ',', string $thousandsSeparator = '.', bool $symbolBefore = false): string {
         $formatted = number_format(abs($amount), $decimals, $decimalSeparator, $thousandsSeparator);
+        $currencySymbol = $currency->getSymbol();
+
+        // Fallback auf ISO-Code wenn kein Symbol definiert
+        if ($currencySymbol === '') {
+            $currencySymbol = $currency->value;
+        }
+
         $sign = $amount < 0 ? '-' : '';
 
         if ($symbolBefore) {
@@ -438,6 +461,43 @@ class NumberHelper {
         }
 
         return $sign . $formatted . ' ' . $currencySymbol;
+    }
+
+    /**
+     * Formatiert eine Zahl mit explizitem Vorzeichen und Währungssymbol.
+     *
+     * @param float|int $amount Der Betrag.
+     * @param CurrencyCode $currency Die Währung (Standard: EUR).
+     * @param int $decimals Anzahl der Dezimalstellen (Standard: 2).
+     * @param string $decimalSeparator Dezimaltrennzeichen (Standard: ',').
+     * @param string $thousandsSeparator Tausendertrennzeichen (Standard: '.').
+     * @param bool $symbolBefore Symbol vor dem Betrag (Standard: false für deutsch).
+     * @param string $zeroSign Vorzeichen für Null (Standard: '').
+     * @return string Der formatierte Währungsbetrag mit Vorzeichen.
+     */
+    public static function formatCurrencyWithSign(float|int $amount, CurrencyCode $currency = CurrencyCode::Euro, int $decimals = 2, string $decimalSeparator = ',', string $thousandsSeparator = '.', bool $symbolBefore = false, string $zeroSign = ''): string {
+        $formattedWithSign = self::formatWithSign($amount, $decimals, $decimalSeparator, $thousandsSeparator, $zeroSign);
+        $currencySymbol = $currency->getSymbol();
+
+        // Fallback auf ISO-Code wenn kein Symbol definiert
+        if ($currencySymbol === '') {
+            $currencySymbol = $currency->value;
+        }
+
+        if ($symbolBefore) {
+            // Vorzeichen extrahieren und Symbol einfügen
+            $sign = '';
+            if (str_starts_with($formattedWithSign, '+') || str_starts_with($formattedWithSign, '-')) {
+                $sign = $formattedWithSign[0];
+                $formattedWithSign = substr($formattedWithSign, 1);
+            } elseif ($zeroSign !== '' && str_starts_with($formattedWithSign, $zeroSign)) {
+                $sign = $zeroSign;
+                $formattedWithSign = substr($formattedWithSign, strlen($zeroSign));
+            }
+            return $sign . $currencySymbol . ' ' . $formattedWithSign;
+        }
+
+        return $formattedWithSign . ' ' . $currencySymbol;
     }
 
     /**

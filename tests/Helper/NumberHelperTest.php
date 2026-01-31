@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 use CommonToolkit\Enums\TemperatureUnit;
 use CommonToolkit\Enums\CountryCode;
+use CommonToolkit\Enums\CurrencyCode;
 use PHPUnit\Framework\TestCase;
 use CommonToolkit\Helper\Data\NumberHelper;
 
@@ -180,5 +181,51 @@ final class NumberHelperTest extends TestCase {
         // Template mit verschiedenen Tausendertrennzeichen - vereinfacht
         $this->assertEquals('12345', NumberHelper::formatNumberByTemplate(12345, '00000'));  // Ohne Trennzeichen
         $this->assertEquals('12,345', NumberHelper::formatNumberByTemplate(12345, '00,000')); // US-Stil
+    }
+
+    public function testFormatWithSign(): void {
+        // Positive Zahlen
+        $this->assertEquals('+10,00', NumberHelper::formatWithSign(10));
+        $this->assertEquals('+1.234,56', NumberHelper::formatWithSign(1234.56));
+
+        // Negative Zahlen
+        $this->assertEquals('-10,00', NumberHelper::formatWithSign(-10));
+        $this->assertEquals('-1.234,56', NumberHelper::formatWithSign(-1234.56));
+
+        // Null
+        $this->assertEquals('0,00', NumberHelper::formatWithSign(0));
+        $this->assertEquals('+0,00', NumberHelper::formatWithSign(0, 2, ',', '.', '+'));
+        $this->assertEquals('±0,00', NumberHelper::formatWithSign(0, 2, ',', '.', '±'));
+
+        // Dezimalstellen
+        $this->assertEquals('+10', NumberHelper::formatWithSign(10, 0));
+        $this->assertEquals('+10,5', NumberHelper::formatWithSign(10.5, 1));
+        $this->assertEquals('+10,500', NumberHelper::formatWithSign(10.5, 3));
+
+        // Englisches Format
+        $this->assertEquals('+1,234.56', NumberHelper::formatWithSign(1234.56, 2, '.', ','));
+    }
+
+    public function testFormatCurrencyWithSign(): void {
+        // Positive Beträge
+        $this->assertEquals('+10,00 €', NumberHelper::formatCurrencyWithSign(10));
+        $this->assertEquals('+1.234,56 €', NumberHelper::formatCurrencyWithSign(1234.56));
+
+        // Negative Beträge
+        $this->assertEquals('-10,00 €', NumberHelper::formatCurrencyWithSign(-10));
+        $this->assertEquals('-1.234,56 €', NumberHelper::formatCurrencyWithSign(-1234.56));
+
+        // Null
+        $this->assertEquals('0,00 €', NumberHelper::formatCurrencyWithSign(0));
+        $this->assertEquals('+0,00 €', NumberHelper::formatCurrencyWithSign(0, CurrencyCode::Euro, 2, ',', '.', false, '+'));
+
+        // Symbol vor Betrag (englisches Format mit USD)
+        $this->assertEquals('+$ 1,234.56', NumberHelper::formatCurrencyWithSign(1234.56, CurrencyCode::USDollar, 2, '.', ',', true));
+        $this->assertEquals('-$ 1,234.56', NumberHelper::formatCurrencyWithSign(-1234.56, CurrencyCode::USDollar, 2, '.', ',', true));
+
+        // Weitere Währungen
+        $this->assertEquals('+100,00 £', NumberHelper::formatCurrencyWithSign(100, CurrencyCode::BritishPound));
+        $this->assertEquals('+1.000,00 ¥', NumberHelper::formatCurrencyWithSign(1000, CurrencyCode::JapaneseYen));
+        $this->assertEquals('-500,00 CHF', NumberHelper::formatCurrencyWithSign(-500, CurrencyCode::SwissFranc));
     }
 }

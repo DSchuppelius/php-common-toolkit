@@ -10,6 +10,7 @@
 
 namespace Tests\Helper;
 
+use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Helper\Data\NumberHelper;
 use Tests\Contracts\BaseTestCase;
 
@@ -17,7 +18,7 @@ class NumberHelperExtendedTest extends BaseTestCase {
     public function testFormatCurrency(): void {
         $this->assertEquals('1.234,56 €', NumberHelper::formatCurrency(1234.56));
         $this->assertEquals('-100,00 €', NumberHelper::formatCurrency(-100));
-        $this->assertEquals('$ 1,234.56', NumberHelper::formatCurrency(1234.56, '$', 2, '.', ',', true));
+        $this->assertEquals('$ 1,234.56', NumberHelper::formatCurrency(1234.56, CurrencyCode::USDollar, 2, '.', ',', true));
     }
 
     public function testOrdinalize(): void {
