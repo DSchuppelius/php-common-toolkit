@@ -73,4 +73,55 @@ enum Month: int {
     public static function fromDate(DateTimeInterface $date): self {
         return self::from((int) $date->format('n'));
     }
+
+    /**
+     * Erstellt Month aus englischem 3-Buchstaben-Kürzel (JAN, FEB, MAR, ...).
+     *
+     * @param string $abbreviation Das 3-Buchstaben-Kürzel (case-insensitive).
+     * @return self|null Der entsprechende Monat oder null wenn nicht erkannt.
+     */
+    public static function fromAbbreviation(string $abbreviation): ?self {
+        return match (strtoupper(trim($abbreviation))) {
+            'JAN' => self::JANUARY,
+            'FEB' => self::FEBRUARY,
+            'MAR' => self::MARCH,
+            'APR' => self::APRIL,
+            'MAY' => self::MAY,
+            'JUN' => self::JUNE,
+            'JUL' => self::JULY,
+            'AUG' => self::AUGUST,
+            'SEP' => self::SEPTEMBER,
+            'OCT' => self::OCTOBER,
+            'NOV' => self::NOVEMBER,
+            'DEC' => self::DECEMBER,
+            default => null,
+        };
+    }
+
+    /**
+     * Gibt das 3-Buchstaben-Kürzel (englisch) zurück.
+     */
+    public function getAbbreviation(): string {
+        return match ($this) {
+            self::JANUARY => 'JAN',
+            self::FEBRUARY => 'FEB',
+            self::MARCH => 'MAR',
+            self::APRIL => 'APR',
+            self::MAY => 'MAY',
+            self::JUNE => 'JUN',
+            self::JULY => 'JUL',
+            self::AUGUST => 'AUG',
+            self::SEPTEMBER => 'SEP',
+            self::OCTOBER => 'OCT',
+            self::NOVEMBER => 'NOV',
+            self::DECEMBER => 'DEC',
+        };
+    }
+
+    /**
+     * Gibt die Monatszahl als zweistelligen String zurück (01-12).
+     */
+    public function toTwoDigitString(): string {
+        return str_pad((string) $this->value, 2, '0', STR_PAD_LEFT);
+    }
 }
