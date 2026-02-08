@@ -681,7 +681,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @return Generator<string>
      * @throws FileNotFoundException
      */
-    public static function readLines(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1): Generator {
+    public static function readLines(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1, bool $trimLines = false): Generator {
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
             self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
@@ -702,6 +702,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             } elseif ($skipEmpty && empty(trim($line))) {
                 continue;
             }
+
+            if ($trimLines) $line = trim($line);
+
             yield rtrim($line, "\r\n");
 
             $count++;
@@ -742,7 +745,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @return Generator<string>
      * @throws FileNotFoundException
      */
-    public static function readLinesAsUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1, ?string $sourceEncoding = null): Generator {
+    public static function readLinesAsUtf8(string $file, bool $skipEmpty = false, ?int $maxLines = null, int $startLine = 1, ?string $sourceEncoding = null, bool $trimLines = false): Generator {
         $file = self::getRealPath($file);
         if (!self::isReadable($file)) {
             self::logErrorAndThrow(FileNotFoundException::class, "Datei nicht lesbar: $file");
@@ -799,9 +802,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             }
 
             // Konvertierung nur wenn nötig - verwendet iconv für DOS-Codepages
-            if ($needsConversion) {
-                $line = StringHelper::convertToUtf8($line, $encoding);
-            }
+            if ($needsConversion) $line = StringHelper::convertToUtf8($line, $encoding);
+            if ($trimLines) $line = trim($line);
 
             yield $line;
 
