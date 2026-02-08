@@ -197,4 +197,65 @@ class CurrencyHelper {
         $amount = str_replace('.', '', $amount);
         return str_replace(',', '.', $amount);
     }
+
+    /**
+     * Entfernt Währungssymbole und -codes aus einem Betrag.
+     *
+     * Unterstützt:
+     * - Symbole: € $ £ ¥ ₣ ₹ ₽ ₩ ₴ ₪ ₦ ₡ ₿ CHF
+     * - Codes: EUR, USD, GBP, JPY, CHF, etc. (3-Buchstaben ISO-Codes)
+     * - Unicode-Minuszeichen (–) wird zu normalem Minus (-) konvertiert
+     * - Schweizer Tausendertrennzeichen (') wird entfernt
+     *
+     * @param string|null $amount Der Betrag mit Währungssymbolen
+     * @param bool $trim Ob Whitespace getrimmt werden soll (default: true)
+     * @return string Der bereinigte Betrag
+     */
+    public static function stripSymbols(?string $amount, bool $trim = true): string {
+        if ($amount === null || $amount === '') {
+            return '';
+        }
+
+        // Währungssymbole entfernen
+        $amount = preg_replace('/[€$£¥₣₹₽₩₴₪₦₡₿]/', '', $amount) ?? $amount;
+
+        // CHF als Text entfernen (vor dem allgemeinen 3-Buchstaben-Pattern)
+        $amount = preg_replace('/\bCHF\b/i', '', $amount) ?? $amount;
+
+        // 3-Buchstaben ISO-Währungscodes entfernen (EUR, USD, GBP, etc.)
+        $amount = preg_replace('/\b[A-Z]{3}\b/', '', $amount) ?? $amount;
+
+        // Unicode-Minuszeichen (–, U+2013) zu normalem Minus (-) konvertieren
+        $amount = str_replace(['–', '−'], '-', $amount);
+
+        // Schweizer Tausendertrennzeichen (Apostroph) entfernen
+        $amount = str_replace("'", '', $amount);
+
+        return $trim ? trim($amount) : $amount;
+    }
+
+    /**
+     * Normalisiert einen Betrag: entfernt Währungssymbole und konvertiert ins deutsche Format.
+     *
+     * Kombiniert stripSymbols() mit Format-Erkennung und Konvertierung.
+     *
+     * @param string|null $amount Der Eingabebetrag
+     * @return string Der normalisierte Betrag im deutschen Format (z.B. "1.234,56" oder "-99,00")
+     */
+    public static function normalizeAmount(?string $amount): string {
+        if ($amount === null || $amount === '') {
+            return '';
+        }
+
+        $cleaned = self::stripSymbols($amount);
+
+        // Format erkennen und ggf. konvertieren
+        $format = self::detectCurrencyFormat($cleaned);
+
+        return match ($format) {
+            'US' => self::usToDe($cleaned),
+            'DE' => $cleaned,
+            default => $cleaned,
+        };
+    }
 }

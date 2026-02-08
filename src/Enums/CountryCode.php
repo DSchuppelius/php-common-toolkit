@@ -359,7 +359,6 @@ enum CountryCode: string {
         };
     }
 
-
     public function getLabel(): string {
         return match ($this) {
             self::Afghanistan => 'Afghanistan',
