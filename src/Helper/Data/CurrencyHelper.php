@@ -216,16 +216,16 @@ class CurrencyHelper {
             return '';
         }
 
-        // Währungssymbole entfernen
-        $amount = preg_replace('/[€$£¥₣₹₽₩₴₪₦₡₿]/', '', $amount) ?? $amount;
+        // Währungssymbole entfernen (mit UTF-8 Support)
+        $amount = preg_replace('/[€$£¥₣₹₽₩₴₪₦₡₿]/u', '', $amount) ?? $amount;
 
         // CHF als Text entfernen (vor dem allgemeinen 3-Buchstaben-Pattern)
-        $amount = preg_replace('/\bCHF\b/i', '', $amount) ?? $amount;
+        $amount = preg_replace('/\bCHF\b/iu', '', $amount) ?? $amount;
 
         // 3-Buchstaben ISO-Währungscodes entfernen (EUR, USD, GBP, etc.)
-        $amount = preg_replace('/\b[A-Z]{3}\b/', '', $amount) ?? $amount;
+        $amount = preg_replace('/\b[A-Z]{3}\b/u', '', $amount) ?? $amount;
 
-        // Unicode-Minuszeichen (–, U+2013) zu normalem Minus (-) konvertieren
+        // Unicode-Minuszeichen (– U+2013, − U+2212) zu normalem Minus (-) konvertieren
         $amount = str_replace(['–', '−'], '-', $amount);
 
         // Schweizer Tausendertrennzeichen (Apostroph) entfernen
