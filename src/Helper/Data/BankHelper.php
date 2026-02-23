@@ -263,15 +263,16 @@ class BankHelper {
      * @param string $iban Die IBAN.
      * @return string Die BIC oder ein leerer String, wenn keine BIC gefunden wurde.
      */
-    public static function bicFromIBAN(string $iban): string {
+    public static function bicFromIBAN(string $iban): ?string {
         $blz = substr($iban, 4, 8);
         $index = self::getBlzIndex();
 
         if (isset($index[$blz])) {
-            return trim(substr($index[$blz], 139, 11));
+            $bic = trim(substr($index[$blz], 139, 11));
+            return $bic !== '' ? $bic : null;
         }
 
-        return '';
+        return null;
     }
 
     /**
