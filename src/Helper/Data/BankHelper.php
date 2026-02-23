@@ -256,15 +256,15 @@ class BankHelper {
     }
 
     /**
-     * Gibt die BIC aus einer IBAN zurück.
+     * Gibt die BIC aus einer BLZ zurück.
      *
      * Nutzt einen BLZ-Index für O(1) Lookups statt linearer Suche.
      *
-     * @param string $iban Die IBAN.
-     * @return string Die BIC oder ein leerer String, wenn keine BIC gefunden wurde.
+     * @param string $blz Die Bankleitzahl (8-stellig).
+     * @return string|null Die BIC oder null, wenn keine BIC gefunden wurde.
      */
-    public static function bicFromIBAN(string $iban): ?string {
-        $blz = substr($iban, 4, 8);
+    public static function bicFromBLZ(string $blz): ?string {
+        $blz = trim($blz);
         $index = self::getBlzIndex();
 
         if (isset($index[$blz])) {
@@ -273,6 +273,19 @@ class BankHelper {
         }
 
         return null;
+    }
+
+    /**
+     * Gibt die BIC aus einer IBAN zurück.
+     *
+     * Nutzt einen BLZ-Index für O(1) Lookups statt linearer Suche.
+     *
+     * @param string $iban Die IBAN.
+     * @return string|null Die BIC oder null, wenn keine BIC gefunden wurde.
+     */
+    public static function bicFromIBAN(string $iban): ?string {
+        $blz = substr($iban, 4, 8);
+        return self::bicFromBLZ($blz);
     }
 
     /**
