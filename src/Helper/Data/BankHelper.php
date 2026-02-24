@@ -289,6 +289,30 @@ class BankHelper {
     }
 
     /**
+     * Gibt die erste passende BLZ zu einer BIC zurück.
+     *
+     * Durchsucht den BLZ-Index nach der BIC (8 Zeichen ohne Suffix).
+     * Bei Banken mit mehreren BLZs wird die erste gefundene (Hauptstelle) zurückgegeben.
+     *
+     * @param string $bic Die BIC (8 oder 11 Zeichen).
+     * @return string|null Die BLZ (8-stellig) oder null, wenn keine gefunden wurde.
+     */
+    public static function blzFromBIC(string $bic): ?string {
+        $bic = strtoupper(trim($bic));
+        $bic8 = substr($bic, 0, 8);
+        $index = self::getBlzIndex();
+
+        foreach ($index as $blz => $entry) {
+            $entryBic = trim(substr($entry, 139, 11));
+            if ($entryBic !== '' && strtoupper(substr($entryBic, 0, 8)) === $bic8) {
+                return str_pad((string) $blz, 8, '0', STR_PAD_LEFT);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Gibt den BLZ-Index zurück (lazy-loaded und gecached).
      *
      * @return array<string, string> BLZ => Bundesbank-Zeile
