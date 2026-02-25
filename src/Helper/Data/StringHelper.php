@@ -966,6 +966,18 @@ class StringHelper {
             }
         }
 
+        // Deutsche/europäische Zahlenformatierung: Punkt als Tausendertrennzeichen erkennen
+        // Beispiele: 2.000 → 2000, 1.234.567 → 1234567, -2.000,50 → -2000.50
+        // Nicht betroffen: -902.36 (nur 2 Ziffern nach Punkt), 2.5 (nur 1 Ziffer)
+        if ($country === CountryCode::Germany && preg_match('/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/', $trimmed)) {
+            $normalized = NumberHelper::normalizeDecimal($trimmed, $country);
+            // Ohne Dezimalkomma im Original → int, sonst float
+            if (!str_contains($trimmed, ',')) {
+                return (int) $normalized;
+            }
+            return $normalized;
+        }
+
         // Integer prüfen (aber nicht bei mehrstelligen Zahlen mit führenden Nullen)
         if (filter_var($trimmed, FILTER_VALIDATE_INT) !== false) {
             // Führende Nullen bei mehrstelligen Zahlen beibehalten

@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\{CurrencyCode, MetricPrefix, TemperatureUnit};
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, TemperatureUnit};
 use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
 use RuntimeException;
@@ -205,12 +205,26 @@ class NumberHelper {
      * Dezimal bevorzugt. Für eindeutige Tausender-Erkennung beide Trenner verwenden
      * (z.B. "1.234,00" oder "1,234.00").
      * 
+     * Mit CountryCode::Germany wird das deutsche Tausendertrennzeichen-Pattern
+     * eindeutig erkannt: 2.000 → 2000, 1.234.567 → 1234567, 2.000,50 → 2000.50.
+     * 
      * @param string $value Der zu normalisierende Wert.
+     * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
      * @return float Der normalisierte Wert.
      */
-    public static function normalizeDecimal(string $value): float {
+    public static function normalizeDecimal(string $value, ?CountryCode $country = null): float {
         $value = trim(str_replace(' ', '', $value));
         if ($value === '') return 0.0;
+
+        // Deutsche/europäische Tausendertrennzeichen eindeutig erkennen:
+        // Pattern: 1-3 Ziffern, dann Gruppen von exakt 3 Ziffern nach Punkt, optional Dezimalkomma
+        // Beispiele: 2.000 → 2000, 1.234.567 → 1234567, -2.000,50 → -2000.50
+        // Nicht betroffen: -902.36 (nur 2 Ziffern nach Punkt), 2.5 (nur 1 Ziffer)
+        if ($country === CountryCode::Germany && preg_match('/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/', $value)) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+            return (float) $value;
+        }
 
         // Position von Punkt und Komma finden
         $lastComma = strrpos($value, ',');
