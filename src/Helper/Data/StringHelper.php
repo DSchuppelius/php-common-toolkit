@@ -15,6 +15,7 @@ namespace CommonToolkit\Helper\Data;
 use CommonToolkit\Enums\CaseType;
 use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Enums\SearchMode;
+use CommonToolkit\Helper\Data\NumberHelper;
 use CommonToolkit\Helper\Shell\ShellChardet;
 use DateTimeImmutable;
 use ERRORToolkit\Traits\ErrorLog;
@@ -949,6 +950,9 @@ class StringHelper {
         }
 
         $trimmed = trim($value);
+
+        // Excel-Textpräfix entfernen: '-902.36' → -902.36
+        $trimmed = NumberHelper::stripExcelTextPrefix($trimmed);
 
         // Spezialfall: Unix Timestamps (10 Stellen) als DateTime erkennen
         if (ctype_digit($trimmed) && strlen($trimmed) === 10) {
