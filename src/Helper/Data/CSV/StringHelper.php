@@ -493,4 +493,43 @@ final class StringHelper extends BaseStringHelper {
 
         return $fields;
     }
+
+    /**
+     * Entfernt das Excel-Textpräfix (führendes einfaches Anführungszeichen) von numerischen Werten.
+     *
+     * Excel verwendet ein führendes `'` um Zellen als Text zu kennzeichnen.
+     * Beim CSV-Export können negative Zahlen als `'-902.36'` erscheinen.
+     * Diese Methode entfernt solche Anführungszeichen, damit der Wert korrekt geparst werden kann.
+     *
+     * Beispiele:
+     * - `'-902.36'` → `-902.36`
+     * - `'123`      → `123`
+     * - `'-1.234,56'` → `-1.234,56`
+     * - `hello`     → `hello` (unverändert, kein Anführungszeichen)
+     *
+     * @param string $value Der zu bereinigende Wert.
+     * @return string Der bereinigte Wert oder der Originalwert wenn kein Textpräfix vorhanden.
+     */
+    public static function stripExcelTextPrefix(string $value): string {
+        if ($value === '' || $value === "'") {
+            return $value;
+        }
+
+        // Führendes ' entfernen wenn Rest numerisch aussieht
+        if (str_starts_with($value, "'")) {
+            $stripped = substr($value, 1);
+            // Trailing ' ebenfalls entfernen falls vorhanden
+            if (str_ends_with($stripped, "'")) {
+                $stripped = substr($stripped, 0, -1);
+            }
+            // Nur übernehmen wenn der Rest wie eine Zahl aussieht (mit optionalen Trennern)
+            $check = str_replace(['.', ',', ' ', '-', '+'], '', $stripped);
+            if ($check !== '' && ctype_digit($check)) {
+                static::logInfo("Excel Textpräfix gefunden. Wurde die Datei bearbeitet?");
+                return $stripped;
+            }
+        }
+
+        return $value;
+    }
 }
