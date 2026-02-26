@@ -80,9 +80,9 @@ final class StringHelper extends BaseStringHelper {
      * @param bool        $withDelimiter Ob die generierten Werte mit Delimiter zurückgegeben werden sollen
      * @return array<string>             Array der generierten leeren Feldwerte
      */
-    private static function genEmptyValuesFromCSVString(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null, bool $withDelimiter = true): array {
-        $strictRepeat    = self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, $started, $closed, true);
-        $nonStrictRepeat = self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, $started, $closed, false);
+    private static function genEmptyValuesFromCSVString(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null, bool $withDelimiter = true, ?int $strictRepeat = null, ?int $nonStrictRepeat = null): array {
+        $strictRepeat    ??= self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, $started, $closed, true);
+        $nonStrictRepeat ??= self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, $started, $closed, false);
 
         $repeats = array_unique(
             array_filter([$strictRepeat, $nonStrictRepeat], fn($v) => $v > 0)
@@ -125,13 +125,15 @@ final class StringHelper extends BaseStringHelper {
      * @param string $enclosure Enclosure-Zeichen (z. B. '"')
      * @return string           Normalisierte CSV-Zeile
      */
-    private static function normalizeRepeatedEnclosures(string $line, string $delimiter = ',', string $enclosure = '"'): string {
+    private static function normalizeRepeatedEnclosures(string $line, string $delimiter = ',', string $enclosure = '"', ?int $maxRepeat = null, ?int $minRepeat = null): string {
         if ($line === '' || $enclosure === '') return $line;
 
-        $max = self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, null, null, false);
+        $max = $maxRepeat ?? self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, null, null, false);
         if ($max < 2) return $line;
 
-        $with = self::genEmptyValuesFromCSVString($line, $delimiter, $enclosure, null, null, true);
+        $min = $minRepeat ?? self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, null, null, true);
+
+        $with = self::genEmptyValuesFromCSVString($line, $delimiter, $enclosure, null, null, true, $min, $max);
 
         // 1) Leere Felder an Feldgrenzen auf doppeltes $enclosure normalisieren
         foreach ($with as $v) {
@@ -317,8 +319,11 @@ final class StringHelper extends BaseStringHelper {
                 return true;
             }
 
+            // Repeat-Info aus bereits geparseter DataLine nutzen (kein erneutes Parsen)
+            [$minRepeat, $maxRepeat] = $CSVDataLine->getEnclosureRepeatRange(true);
+
             // Falls normalisierte Variante (z. B. durch doppelte Quotes) übereinstimmt
-            $normalizedInput2  = self::normalizeRepeatedEnclosures($trimmed, $delimiter, $enclosure);
+            $normalizedInput2  = self::normalizeRepeatedEnclosures($trimmed, $delimiter, $enclosure, $maxRepeat, $minRepeat);
             $normalizedRebuilt2 = self::normalizeRepeatedEnclosures($rebuilt, $delimiter, $enclosure);
 
             return $normalizedInput2 === $normalizedRebuilt2;
@@ -478,17 +483,32 @@ final class StringHelper extends BaseStringHelper {
         $raw = is_array($lines) ? implode("\n", $lines) : (string)$lines;
         $s   = self::stripStartEnd($raw, $started, $closed);
 
-        // Nur normalisieren, wenn es wiederholte Enclosures gibt (>=2)
-        if (self::detectCSVEnclosureRepeat($s, $enclosure, $delimiter, null, null, false) >= 2) {
-            $s = self::normalizeRepeatedEnclosures($s, $delimiter, $enclosure);
+        if (empty(trim($s))) {
+            return [];
         }
 
+        // DataLine einmal parsen und Enclosure-Repeat-Info daraus extrahieren
+        $dataLine = DataLine::fromString($s, $delimiter, $enclosure);
+        [$minRepeat, $maxRepeat] = $dataLine->getEnclosureRepeatRange(true);
+
+        // Nur normalisieren, wenn es wiederholte Enclosures gibt (>=2)
+        if ($maxRepeat >= 2) {
+            $s = self::normalizeRepeatedEnclosures($s, $delimiter, $enclosure, $maxRepeat, $minRepeat);
+            // Nach Normalisierung neu parsen
+            $dataLine = DataLine::fromString($s, $delimiter, $enclosure);
+        }
+
+        // Felder direkt aus DataLine extrahieren (kein redundantes parseCSVLine)
+        $fields = array_map(fn($f) => $f->getValue(), $dataLine->getFields());
+
+        // Multiline-Replacement in gequoteten Feldern anwenden
         if (self::hasMultilineFields($s, $delimiter, $enclosure)) {
-            $parsed = self::parseCSVMultiLine($s, $delimiter, $enclosure, $multiLineReplacement);
-            $fields = $parsed['fields'];
-        } else {
-            $parsed  = self::parseCSVLine($s, $delimiter, $enclosure); // Regex-Parser
-            $fields  = $parsed['fields'] ?? [];
+            $nlRe = "/\r\n|\r|\n/u";
+            foreach ($dataLine->getFields() as $i => $field) {
+                if ($field->isQuoted() && ($fields[$i] ?? '') !== '') {
+                    $fields[$i] = preg_replace($nlRe, $multiLineReplacement, $fields[$i]) ?? $fields[$i];
+                }
+            }
         }
 
         return $fields;

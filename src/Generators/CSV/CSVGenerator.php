@@ -59,17 +59,12 @@ class CSVGenerator extends HelperAbstract {
         $targetEncoding ??= $document->getEncoding();
         $columnWidthConfig = $document->getColumnWidthConfig();
 
-        // Enclosure-Repeat auf alle Felder anwenden
-        if ($enclosureRepeat !== null) {
-            $this->applyEnclosureRepeat($document, $enclosureRepeat);
-        }
-
         $lines = [];
 
         // Header generieren (ohne Spaltenbreiten-Kürzung)
         $header = $document->getHeader();
         if ($header !== null && $includeHeader) {
-            $lines[] = $this->generateLine($header, $delimiter, $enclosure);
+            $lines[] = $this->generateLineWithEnclosureRepeat($header, $delimiter, $enclosure, $enclosureRepeat);
         }
 
         // Datenzeilen generieren
@@ -83,7 +78,7 @@ class CSVGenerator extends HelperAbstract {
                     $enclosure
                 );
             } else {
-                $lines[] = $this->generateLine($row, $delimiter, $enclosure);
+                $lines[] = $this->generateLineWithEnclosureRepeat($row, $delimiter, $enclosure, $enclosureRepeat);
             }
         }
 
@@ -91,6 +86,31 @@ class CSVGenerator extends HelperAbstract {
 
         // Encoding-Konvertierung
         return $this->convertEncoding($result, $targetEncoding);
+    }
+
+    /**
+     * Generiert eine CSV-Zeile mit optionalem Enclosure-Repeat.
+     * Erzeugt bei Bedarf temporäre Felder statt das Quelldokument zu mutieren.
+     *
+     * @param HeaderLine|DataLine $line Die Zeile
+     * @param string $delimiter Das Trennzeichen
+     * @param string $enclosure Das Einschlusszeichen
+     * @param int|null $enclosureRepeat Optionale Enclosure-Wiederholungen
+     * @return string Die formatierte CSV-Zeile
+     */
+    protected function generateLineWithEnclosureRepeat(HeaderLine|DataLine $line, string $delimiter, string $enclosure, ?int $enclosureRepeat = null): string {
+        if ($enclosureRepeat === null) {
+            return $line->toString($delimiter, $enclosure);
+        }
+
+        $parts = [];
+        foreach ($line->getFields() as $field) {
+            $tempField = clone $field;
+            $tempField->setEnclosureRepeat($enclosureRepeat);
+            $parts[] = $tempField->toString($enclosure);
+        }
+
+        return implode($delimiter, $parts);
     }
 
     /**
@@ -164,28 +184,6 @@ class CSVGenerator extends HelperAbstract {
         }
 
         return $index;
-    }
-
-    /**
-     * Wendet Enclosure-Repeat auf alle Felder an.
-     *
-     * @param Document $document Das Dokument
-     * @param int $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen
-     */
-    protected function applyEnclosureRepeat(Document $document, int $enclosureRepeat): void {
-        $header = $document->getHeader();
-
-        if ($header !== null) {
-            foreach ($header->getFields() as $field) {
-                $field->setEnclosureRepeat($enclosureRepeat);
-            }
-        }
-
-        foreach ($document->getRows() as $row) {
-            foreach ($row->getFields() as $field) {
-                $field->setEnclosureRepeat($enclosureRepeat);
-            }
-        }
     }
 
     /**

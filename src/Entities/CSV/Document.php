@@ -11,6 +11,7 @@
 
 namespace CommonToolkit\Entities\CSV;
 
+use Closure;
 use CommonToolkit\Contracts\Abstracts\TextDocumentAbstract;
 use CommonToolkit\Contracts\Interfaces\CSV\FieldInterface;
 use CommonToolkit\Enums\CountryCode;
@@ -86,9 +87,117 @@ class Document extends TextDocumentAbstract {
         return $this->rows[$index] ?? null;
     }
 
+    /**
+     * Gibt die erste Datenzeile zurück.
+     *
+     * @return DataLine|null Die erste Datenzeile oder null wenn keine Zeilen vorhanden
+     */
+    public function getFirstRow(): ?DataLine {
+        return $this->rows[0] ?? null;
+    }
+
+    /**
+     * Gibt die letzte Datenzeile zurück.
+     *
+     * @return DataLine|null Die letzte Datenzeile oder null wenn keine Zeilen vorhanden
+     */
+    public function getLastRow(): ?DataLine {
+        if ($this->rows === []) {
+            return null;
+        }
+
+        return $this->rows[array_key_last($this->rows)];
+    }
+
     /** @return int */
     public function countRows(): int {
         return count($this->rows);
+    }
+
+    /**
+     * Filtert Zeilen anhand einer Callback-Funktion und gibt ein neues Document zurück.
+     * Das Callback erhält jede DataLine und den Zeilen-Index als Parameter.
+     *
+     * Beispiel: Nur Zeilen mit Betrag > 100:
+     *   $filtered = $doc->filterRows(fn(DataLine $row) => (float) $row->getField(2)?->getValue() > 100);
+     *
+     * @param Closure(DataLine, int): bool $predicate Callback das true für beizubehaltende Zeilen zurückgibt
+     * @return static Neues Document mit gefilterten Zeilen
+     */
+    public function filterRows(Closure $predicate): static {
+        $filtered = [];
+        foreach ($this->rows as $index => $row) {
+            if ($predicate($row, $index)) {
+                $filtered[] = $row;
+            }
+        }
+
+        return new static($this->header, $filtered, $this->delimiter, $this->enclosure, $this->columnWidthConfig, $this->encoding);
+    }
+
+    /**
+     * Gibt ein neues Document mit einem Ausschnitt der Zeilen zurück.
+     * Analog zu array_slice() – nützlich bei CSVs mit Vor-/Nachspann-Zeilen.
+     *
+     * @param int $offset Start-Index (0-basiert). Negative Werte zählen vom Ende.
+     * @param int|null $length Anzahl der Zeilen. Null = bis zum Ende.
+     * @return static Neues Document mit dem Zeilenausschnitt
+     */
+    public function sliceRows(int $offset, ?int $length = null): static {
+        $sliced = array_slice($this->rows, $offset, $length);
+
+        return new static($this->header, $sliced, $this->delimiter, $this->enclosure, $this->columnWidthConfig, $this->encoding);
+    }
+
+    /**
+     * Sortiert die Zeilen nach einer Spalte und gibt ein neues Document zurück.
+     *
+     * @param string $columnName Name der Spalte zum Sortieren
+     * @param bool $ascending Aufsteigend sortieren (Standard: true)
+     * @param bool $numeric Numerische Sortierung verwenden (Standard: false = alphabetisch)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat bei numerischer Sortierung
+     * @return static Neues Document mit sortierten Zeilen
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    public function sortByColumn(string $columnName, bool $ascending = true, bool $numeric = false, ?CountryCode $country = null): static {
+        $index = $this->getColumnIndex($columnName);
+
+        if ($index === null) {
+            $available = implode(', ', $this->getColumnNames());
+            $this->logErrorAndThrow(RuntimeException::class, "Spalte '$columnName' nicht im Header gefunden. Verfügbar: $available");
+        }
+
+        return $this->sortByColumnIndex($index, $ascending, $numeric, $country);
+    }
+
+    /**
+     * Sortiert die Zeilen nach einem Spalten-Index und gibt ein neues Document zurück.
+     *
+     * @param int $index Index der Spalte zum Sortieren
+     * @param bool $ascending Aufsteigend sortieren (Standard: true)
+     * @param bool $numeric Numerische Sortierung verwenden (Standard: false = alphabetisch)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat bei numerischer Sortierung
+     * @return static Neues Document mit sortierten Zeilen
+     */
+    public function sortByColumnIndex(int $index, bool $ascending = true, bool $numeric = false, ?CountryCode $country = null): static {
+        $sorted = $this->rows;
+
+        usort($sorted, function (DataLine $a, DataLine $b) use ($index, $ascending, $numeric, $country): int {
+            $valA = $a->getField($index)?->getValue() ?? '';
+            $valB = $b->getField($index)?->getValue() ?? '';
+
+            if ($numeric) {
+                $numA = NumberHelper::normalizeDecimal($valA, $country);
+                $numB = NumberHelper::normalizeDecimal($valB, $country);
+                $cmp = $numA <=> $numB;
+            } else {
+                $cmp = strnatcasecmp($valA, $valB);
+            }
+
+            return $ascending ? $cmp : -$cmp;
+        });
+
+        return new static($this->header, $sorted, $this->delimiter, $this->enclosure, $this->columnWidthConfig, $this->encoding);
     }
 
     /** @return string */
@@ -301,6 +410,37 @@ class Document extends TextDocumentAbstract {
     }
 
     /**
+     * Liefert eindeutige Werte einer Spalte anhand des Header-Namens.
+     *
+     * @param string $columnName Name der Spalte
+     * @return array Array mit eindeutigen Werten (Reihenfolge des ersten Vorkommens)
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    public function uniqueColumnByName(string $columnName): array {
+        $index = $this->getColumnIndex($columnName);
+
+        if ($index === null) {
+            $available = implode(', ', $this->getColumnNames());
+            $this->logErrorAndThrow(RuntimeException::class, "Spalte '$columnName' nicht im Header gefunden. Verfügbar: $available");
+        }
+
+        return $this->uniqueColumnByIndex($index);
+    }
+
+    /**
+     * Liefert eindeutige Werte einer Spalte anhand des Index.
+     *
+     * @param int $index Index der Spalte
+     * @return array Array mit eindeutigen Werten (Reihenfolge des ersten Vorkommens)
+     * @throws RuntimeException Wenn der Index ungültig ist
+     */
+    public function uniqueColumnByIndex(int $index): array {
+        $values = $this->getColumnByIndex($index);
+
+        return array_values(array_unique($values));
+    }
+
+    /**
      * Berechnet die Summe einer Spalte anhand des Header-Namens.
      * Verwendet NumberHelper für präzise Berechnung (BC Math).
      *
@@ -312,12 +452,7 @@ class Document extends TextDocumentAbstract {
      * @throws RuntimeException Wenn die Spalte nicht gefunden wird
      */
     public function sumColumnByName(string $columnName, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
-        $index = $this->getColumnIndex($columnName);
-
-        if ($index === null) {
-            $available = implode(', ', $this->getColumnNames());
-            $this->logErrorAndThrow(RuntimeException::class, "Spalte '$columnName' nicht im Header gefunden. Verfügbar: $available");
-        }
+        $index = $this->resolveColumnIndex($columnName);
 
         return $this->sumColumnByIndex($index, $scale, $country, $skipNonNumeric);
     }
@@ -334,49 +469,181 @@ class Document extends TextDocumentAbstract {
      * @throws RuntimeException Wenn der Index ungültig ist oder nicht-numerische Werte gefunden werden
      */
     public function sumColumnByIndex(int $index, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
-        $fields = $this->getFieldsByIndex($index);
-        $numbers = [];
-
-        foreach ($fields as $rowIndex => $field) {
-            if ($field === null || $field->isBlank()) {
-                if ($skipNonNumeric) {
-                    continue;
-                }
-                $this->logErrorAndThrow(RuntimeException::class, "Leerer Wert in Zeile $rowIndex, Spalte $index");
-            }
-
-            $typed = $field->getTypedValue();
-
-            if (is_int($typed) || is_float($typed)) {
-                // Bereits korrekt typisiert (unquoted numerische Felder)
-                $numbers[] = number_format((float) $typed, $scale, '.', '');
-                continue;
-            }
-
-            // Quoted Felder oder nicht-numerische Strings: normalizeDecimal versuchen
-            $value = is_string($typed) ? trim($typed) : trim($field->getValue());
-
-            if ($value === '') {
-                if ($skipNonNumeric) {
-                    continue;
-                }
-                $this->logErrorAndThrow(RuntimeException::class, "Leerer Wert in Zeile $rowIndex, Spalte $index");
-            }
-
-            $normalized = NumberHelper::normalizeDecimal($value, $country);
-
-            if (!is_finite($normalized)) {
-                if ($skipNonNumeric) {
-                    continue;
-                }
-                $this->logErrorAndThrow(RuntimeException::class, "Nicht-numerischer Wert '$value' in Zeile $rowIndex, Spalte $index");
-            }
-
-            $numbers[] = number_format($normalized, $scale, '.', '');
-        }
+        $numbers = $this->extractNumericValues($index, $scale, $country, $skipNonNumeric);
 
         // bcadd sicherstellt korrekte Dezimalstellen auch bei leerem Array
         return bcadd(NumberHelper::sumPrecise($numbers, $scale), '0', $scale);
+    }
+
+    /**
+     * Berechnet den Durchschnitt einer Spalte anhand des Header-Namens.
+     * Verwendet BC Math für präzise Berechnung.
+     *
+     * @param string $columnName Name der Spalte
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string Der Durchschnitt als String (im US-Format für BC Math Kompatibilität)
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    public function avgColumnByName(string $columnName, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
+        $index = $this->resolveColumnIndex($columnName);
+
+        return $this->avgColumnByIndex($index, $scale, $country, $skipNonNumeric);
+    }
+
+    /**
+     * Berechnet den Durchschnitt einer Spalte anhand des Index.
+     * Verwendet BC Math für präzise Berechnung.
+     *
+     * @param int $index Index der Spalte
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string Der Durchschnitt als String (im US-Format für BC Math Kompatibilität)
+     * @throws RuntimeException Wenn der Index ungültig ist
+     */
+    public function avgColumnByIndex(int $index, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
+        $numbers = $this->extractNumericValues($index, $scale, $country, $skipNonNumeric);
+
+        if ($numbers === []) {
+            return bcadd('0', '0', $scale);
+        }
+
+        $sum = NumberHelper::sumPrecise($numbers, $scale);
+        $count = (string) count($numbers);
+
+        return bcdiv($sum, $count, $scale);
+    }
+
+    /**
+     * Ermittelt den Minimalwert einer Spalte anhand des Header-Namens.
+     * Verwendet BC Math für präzise Berechnung.
+     *
+     * @param string $columnName Name der Spalte
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string|null Der Minimalwert als String oder null bei leerem Ergebnis
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    public function minColumnByName(string $columnName, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): ?string {
+        $index = $this->resolveColumnIndex($columnName);
+
+        return $this->minColumnByIndex($index, $scale, $country, $skipNonNumeric);
+    }
+
+    /**
+     * Ermittelt den Minimalwert einer Spalte anhand des Index.
+     * Verwendet BC Math für präzise Berechnung.
+     *
+     * @param int $index Index der Spalte
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string|null Der Minimalwert als String oder null bei leerem Ergebnis
+     * @throws RuntimeException Wenn der Index ungültig ist
+     */
+    public function minColumnByIndex(int $index, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): ?string {
+        $numbers = $this->extractNumericValues($index, $scale, $country, $skipNonNumeric);
+
+        if ($numbers === []) {
+            return null;
+        }
+
+        $min = $numbers[0];
+        foreach ($numbers as $number) {
+            if (bccomp($number, $min, $scale) < 0) {
+                $min = $number;
+            }
+        }
+
+        return $min;
+    }
+
+    /**
+     * Ermittelt den Maximalwert einer Spalte anhand des Header-Namens.
+     * Verwendet BC Math für präzise Berechnung.
+     *
+     * @param string $columnName Name der Spalte
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string|null Der Maximalwert als String oder null bei leerem Ergebnis
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    public function maxColumnByName(string $columnName, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): ?string {
+        $index = $this->resolveColumnIndex($columnName);
+
+        return $this->maxColumnByIndex($index, $scale, $country, $skipNonNumeric);
+    }
+
+    /**
+     * Ermittelt den Maximalwert einer Spalte anhand des Index.
+     * Verwendet BC Math für präzise Berechnung.
+     *
+     * @param string $columnName Name der Spalte
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string|null Der Maximalwert als String oder null bei leerem Ergebnis
+     * @throws RuntimeException Wenn der Index ungültig ist
+     */
+    public function maxColumnByIndex(int $index, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): ?string {
+        $numbers = $this->extractNumericValues($index, $scale, $country, $skipNonNumeric);
+
+        if ($numbers === []) {
+            return null;
+        }
+
+        $max = $numbers[0];
+        foreach ($numbers as $number) {
+            if (bccomp($number, $max, $scale) > 0) {
+                $max = $number;
+            }
+        }
+
+        return $max;
+    }
+
+    /**
+     * Berechnet die Differenz zweier Spalten (Soll - Haben) anhand der Header-Namen.
+     * Nützlich für Soll/Haben-Verrechnung in Buchhaltungs-CSVs.
+     * Verwendet BC Math für präzise Berechnung.
+     *
+     * @param string $positiveColumn Name der Soll-Spalte (wird addiert)
+     * @param string $negativeColumn Name der Haben-Spalte (wird subtrahiert)
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string Die Differenz als String (im US-Format für BC Math Kompatibilität)
+     * @throws RuntimeException Wenn eine Spalte nicht gefunden wird
+     */
+    public function diffColumnsByName(string $positiveColumn, string $negativeColumn, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
+        $positiveIndex = $this->resolveColumnIndex($positiveColumn);
+        $negativeIndex = $this->resolveColumnIndex($negativeColumn);
+
+        return $this->diffColumnsByIndex($positiveIndex, $negativeIndex, $scale, $country, $skipNonNumeric);
+    }
+
+    /**
+     * Berechnet die Differenz zweier Spalten (A - B) anhand der Spalten-Indizes.
+     * Nützlich für Soll/Haben-Verrechnung in Buchhaltungs-CSVs.
+     * Verwendet BC Math für präzise Berechnung.
+     *
+     * @param int $positiveIndex Index der Spalte die addiert wird
+     * @param int $negativeIndex Index der Spalte die subtrahiert wird
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string Die Differenz als String (im US-Format für BC Math Kompatibilität)
+     * @throws RuntimeException Wenn ein Index ungültig ist
+     */
+    public function diffColumnsByIndex(int $positiveIndex, int $negativeIndex, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
+        $sumPositive = $this->sumColumnByIndex($positiveIndex, $scale, $country, $skipNonNumeric);
+        $sumNegative = $this->sumColumnByIndex($negativeIndex, $scale, $country, $skipNonNumeric);
+
+        return bcsub($sumPositive, $sumNegative, $scale);
     }
 
     /**
@@ -406,6 +673,79 @@ class Document extends TextDocumentAbstract {
             if (!$row->equals($other->rows[$i])) return false;
         }
         return true;
+    }
+
+    /**
+     * Löst einen Spalten-Namen zu einem Index auf.
+     * Wirft eine Exception wenn die Spalte nicht gefunden wird.
+     *
+     * @param string $columnName Name der Spalte
+     * @return int Index der Spalte
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    protected function resolveColumnIndex(string $columnName): int {
+        $index = $this->getColumnIndex($columnName);
+
+        if ($index === null) {
+            $available = implode(', ', $this->getColumnNames());
+            $this->logErrorAndThrow(RuntimeException::class, "Spalte '$columnName' nicht im Header gefunden. Verfügbar: $available");
+        }
+
+        return $index;
+    }
+
+    /**
+     * Extrahiert alle numerischen Werte einer Spalte als normalisierte Strings.
+     * Zentrale Helper-Methode für sum, avg, min, max Berechnungen.
+     *
+     * @param int $index Index der Spalte
+     * @param int $scale Anzahl Dezimalstellen
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler
+     * @return string[] Normalisierte Zahlenwerte als Strings (US-Format)
+     * @throws RuntimeException Bei ungültigem Index oder nicht-numerischen Werten (wenn skipNonNumeric=false)
+     */
+    protected function extractNumericValues(int $index, int $scale, ?CountryCode $country, bool $skipNonNumeric): array {
+        $fields = $this->getFieldsByIndex($index);
+        $numbers = [];
+
+        foreach ($fields as $rowIndex => $field) {
+            if ($field === null || $field->isBlank()) {
+                if ($skipNonNumeric) {
+                    continue;
+                }
+                $this->logErrorAndThrow(RuntimeException::class, "Leerer Wert in Zeile $rowIndex, Spalte $index");
+            }
+
+            $typed = $field->getTypedValue();
+
+            if (is_int($typed) || is_float($typed)) {
+                $numbers[] = number_format((float) $typed, $scale, '.', '');
+                continue;
+            }
+
+            $value = is_string($typed) ? trim($typed) : trim($field->getValue());
+
+            if ($value === '') {
+                if ($skipNonNumeric) {
+                    continue;
+                }
+                $this->logErrorAndThrow(RuntimeException::class, "Leerer Wert in Zeile $rowIndex, Spalte $index");
+            }
+
+            $normalized = NumberHelper::normalizeDecimal($value, $country);
+
+            if (!is_finite($normalized)) {
+                if ($skipNonNumeric) {
+                    continue;
+                }
+                $this->logErrorAndThrow(RuntimeException::class, "Nicht-numerischer Wert '$value' in Zeile $rowIndex, Spalte $index");
+            }
+
+            $numbers[] = number_format($normalized, $scale, '.', '');
+        }
+
+        return $numbers;
     }
 
     /**

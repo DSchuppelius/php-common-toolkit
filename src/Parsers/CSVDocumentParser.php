@@ -125,52 +125,23 @@ class CSVDocumentParser extends HelperAbstract {
         $builder = new CSVDocumentBuilder($delimiter, $enclosure);
         $linesGenerator = self::createLinesGenerator($file, $skipEmpty, $startLine, $detectEncoding, $sourceEncoding);
 
-        $lineNumber = $startLine - 1;
-        $buffer = '';
         $headerParsed = !$hasHeader;
         $rowCount = 0;
 
-        foreach ($linesGenerator as $line) {
-            $lineNumber++;
-
-            // Multi-Line-Feld-Handling
-            $buffer .= ($buffer !== '' ? "\n" : '') . $line;
-
-            if (self::isIncompleteQuotedField($buffer, $enclosure)) {
-                continue;
-            }
-
-            // Leere Zeilen überspringen
-            if (trim($buffer) === '') {
-                $buffer = '';
-                continue;
-            }
-
+        foreach (self::resolveLogicalLines($linesGenerator, $enclosure, $startLine - 1) as $lineNumber => $logicalLine) {
             // Header parsen
             if (!$headerParsed) {
-                $builder->setHeader(self::parseHeaderLine($buffer, $delimiter, $enclosure, $lineNumber));
+                $builder->setHeader(self::parseHeaderLine($logicalLine, $delimiter, $enclosure, $lineNumber));
                 $headerParsed = true;
-                $buffer = '';
                 continue;
             }
 
             // Datenzeile parsen
-            $builder->addRow(self::parseDataLine($buffer, $delimiter, $enclosure, $lineNumber));
-            $buffer = '';
+            $builder->addRow(self::parseDataLine($logicalLine, $delimiter, $enclosure, $lineNumber));
             $rowCount++;
 
             if ($maxLines !== null && $rowCount >= $maxLines) {
                 break;
-            }
-        }
-
-        // Verbleibenden Buffer verarbeiten
-        if (trim($buffer) !== '') {
-            $lineNumber++;
-            if (!$headerParsed) {
-                $builder->setHeader(self::parseHeaderLine($buffer, $delimiter, $enclosure, $lineNumber));
-            } else {
-                $builder->addRow(self::parseDataLine($buffer, $delimiter, $enclosure, $lineNumber));
             }
         }
 
@@ -234,50 +205,27 @@ class CSVDocumentParser extends HelperAbstract {
         // Datenzeilen aus dem Bereich lesen
         $linesGenerator = self::createLinesGenerator($file, false, $fromLine, $detectEncoding, $sourceEncoding);
 
-        $lineNumber = $fromLine - 1;
-        $buffer = '';
         $headerParsed = !$includeHeader || $fromLine > 1;
         $rowCount = 0;
         $maxRows = $toLine - $fromLine + 1;
 
-        foreach ($linesGenerator as $line) {
-            $lineNumber++;
-
+        foreach (self::resolveLogicalLines($linesGenerator, $enclosure, $fromLine - 1) as $lineNumber => $logicalLine) {
             if ($lineNumber > $toLine) {
                 break;
             }
 
-            $buffer .= ($buffer !== '' ? "\n" : '') . $line;
-
-            if (self::isIncompleteQuotedField($buffer, $enclosure)) {
-                continue;
-            }
-
-            if (trim($buffer) === '') {
-                $buffer = '';
-                continue;
-            }
-
             if (!$headerParsed) {
-                $builder->setHeader(self::parseHeaderLine($buffer, $delimiter, $enclosure, $lineNumber));
+                $builder->setHeader(self::parseHeaderLine($logicalLine, $delimiter, $enclosure, $lineNumber));
                 $headerParsed = true;
-                $buffer = '';
                 continue;
             }
 
-            $builder->addRow(self::parseDataLine($buffer, $delimiter, $enclosure, $lineNumber));
-            $buffer = '';
+            $builder->addRow(self::parseDataLine($logicalLine, $delimiter, $enclosure, $lineNumber));
             $rowCount++;
 
             if ($rowCount >= $maxRows) {
                 break;
             }
-        }
-
-        // Verbleibenden Buffer
-        if (trim($buffer) !== '' && $rowCount < $maxRows) {
-            $lineNumber++;
-            $builder->addRow(self::parseDataLine($buffer, $delimiter, $enclosure, $lineNumber));
         }
 
         $result = $builder->build();
@@ -318,38 +266,15 @@ class CSVDocumentParser extends HelperAbstract {
 
         $linesGenerator = self::createLinesGenerator($file, $skipEmpty, 1, $detectEncoding, $sourceEncoding);
 
-        $lineNumber = 0;
-        $buffer = '';
         $headerSkipped = !$hasHeader;
 
-        foreach ($linesGenerator as $line) {
-            $lineNumber++;
-
-            $buffer .= ($buffer !== '' ? "\n" : '') . $line;
-
-            if (self::isIncompleteQuotedField($buffer, $enclosure)) {
-                continue;
-            }
-
-            if ($skipEmpty && trim($buffer) === '') {
-                $buffer = '';
-                continue;
-            }
-
+        foreach (self::resolveLogicalLines($linesGenerator, $enclosure) as $lineNumber => $logicalLine) {
             if (!$headerSkipped) {
                 $headerSkipped = true;
-                $buffer = '';
                 continue;
             }
 
-            yield $lineNumber => self::parseDataLine($buffer, $delimiter, $enclosure, $lineNumber);
-            $buffer = '';
-        }
-
-        // Verbleibenden Buffer
-        if (trim($buffer) !== '') {
-            $lineNumber++;
-            yield $lineNumber => self::parseDataLine($buffer, $delimiter, $enclosure, $lineNumber);
+            yield $lineNumber => self::parseDataLine($logicalLine, $delimiter, $enclosure, $lineNumber);
         }
     }
 
@@ -381,37 +306,15 @@ class CSVDocumentParser extends HelperAbstract {
 
         $linesGenerator = self::createLinesGenerator($file, $skipEmpty, 1, $detectEncoding, $sourceEncoding);
 
-        $lineNumber = 0;
-        $buffer = '';
         $headerYielded = !$hasHeader;
 
-        foreach ($linesGenerator as $line) {
-            $lineNumber++;
-
-            $buffer .= ($buffer !== '' ? "\n" : '') . $line;
-
-            if (self::isIncompleteQuotedField($buffer, $enclosure)) {
-                continue;
-            }
-
-            if ($skipEmpty && trim($buffer) === '') {
-                $buffer = '';
-                continue;
-            }
-
+        foreach (self::resolveLogicalLines($linesGenerator, $enclosure) as $lineNumber => $logicalLine) {
             if (!$headerYielded) {
-                yield 0 => self::parseHeaderLine($buffer, $delimiter, $enclosure, $lineNumber);
+                yield 0 => self::parseHeaderLine($logicalLine, $delimiter, $enclosure, $lineNumber);
                 $headerYielded = true;
             } else {
-                yield $lineNumber => self::parseDataLine($buffer, $delimiter, $enclosure, $lineNumber);
+                yield $lineNumber => self::parseDataLine($logicalLine, $delimiter, $enclosure, $lineNumber);
             }
-            $buffer = '';
-        }
-
-        // Verbleibenden Buffer
-        if (trim($buffer) !== '') {
-            $lineNumber++;
-            yield $lineNumber => self::parseDataLine($buffer, $delimiter, $enclosure, $lineNumber);
         }
     }
 
@@ -439,21 +342,9 @@ class CSVDocumentParser extends HelperAbstract {
         }
 
         $linesGenerator = self::createLinesGenerator($file, false, 1, $detectEncoding, $sourceEncoding);
-        $buffer = '';
 
-        foreach ($linesGenerator as $line) {
-            $buffer .= ($buffer !== '' ? "\n" : '') . $line;
-
-            if (self::isIncompleteQuotedField($buffer, $enclosure)) {
-                continue;
-            }
-
-            return self::parseHeaderLine($buffer, $delimiter, $enclosure, 1);
-        }
-
-        // Falls Buffer noch gefüllt
-        if (trim($buffer) !== '') {
-            return self::parseHeaderLine($buffer, $delimiter, $enclosure, 1);
+        foreach (self::resolveLogicalLines($linesGenerator, $enclosure) as $logicalLine) {
+            return self::parseHeaderLine($logicalLine, $delimiter, $enclosure, 1);
         }
 
         static::logErrorAndThrow(RuntimeException::class, "Keine Header-Zeile in CSV-Datei gefunden: $file");
@@ -510,14 +401,16 @@ class CSVDocumentParser extends HelperAbstract {
 
     /**
      * Zählt die Zeilen einer CSV-Datei ohne sie vollständig zu laden.
+     * Berücksichtigt Multi-Line-Felder in gequoteten Bereichen.
      *
      * @param string $file Der Pfad zur CSV-Datei
      * @param bool $hasHeader Ob ein Header vorhanden ist (wird nicht mitgezählt)
      * @param bool $skipEmpty Leere Zeilen nicht mitzählen
+     * @param string $enclosure Enclosure-Zeichen für Multi-Line-Erkennung
      * @return int Anzahl der Datenzeilen
      * @throws RuntimeException Bei Dateizugriffs-Fehlern
      */
-    public static function countRows(string $file, bool $hasHeader = true, bool $skipEmpty = true): int {
+    public static function countRows(string $file, bool $hasHeader = true, bool $skipEmpty = true, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE): int {
         if (!File::isReadable($file)) {
             static::logErrorAndThrow(RuntimeException::class, "CSV-Datei nicht lesbar: $file");
         }
@@ -526,7 +419,7 @@ class CSVDocumentParser extends HelperAbstract {
         $linesGenerator = File::readLines($file, $skipEmpty);
         $headerSkipped = !$hasHeader;
 
-        foreach ($linesGenerator as $line) {
+        foreach (self::resolveLogicalLines($linesGenerator, $enclosure) as $logicalLine) {
             if (!$headerSkipped) {
                 $headerSkipped = true;
                 continue;
@@ -538,6 +431,42 @@ class CSVDocumentParser extends HelperAbstract {
     }
 
     // ===== Private Hilfsmethoden =====
+
+    /**
+     * Löst physische Zeilen in logische CSV-Zeilen auf (Multi-Line-Feld-Handling).
+     *
+     * Fasst aufeinanderfolgende Zeilen zusammen, die unvollständige gequotete Felder
+     * enthalten, und liefert nur vollständige logische Zeilen. Leere logische Zeilen
+     * werden übersprungen.
+     *
+     * @param Generator<string> $rawLines Generator der physischen Zeilen
+     * @param string $enclosure Enclosure-Zeichen
+     * @param int $lineOffset Offset für die Zeilennummerierung (Standard: 0)
+     * @return Generator<int, string> Generator: Zeilennummer => logische Zeile
+     */
+    private static function resolveLogicalLines(Generator $rawLines, string $enclosure, int $lineOffset = 0): Generator {
+        $buffer = '';
+        $lineNumber = $lineOffset;
+
+        foreach ($rawLines as $line) {
+            $lineNumber++;
+            $buffer .= ($buffer !== '' ? "\n" : '') . $line;
+
+            if (self::isIncompleteQuotedField($buffer, $enclosure)) {
+                continue;
+            }
+
+            if (trim($buffer) !== '') {
+                yield $lineNumber => $buffer;
+            }
+            $buffer = '';
+        }
+
+        if (trim($buffer) !== '') {
+            $lineNumber++;
+            yield $lineNumber => $buffer;
+        }
+    }
 
     /**
      * Erstellt einen Generator für zeilenweises Lesen mit Encoding-Konvertierung.
