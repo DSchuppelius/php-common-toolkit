@@ -154,13 +154,13 @@ class NumberHelper {
      * 
      * @see formatCurrency() Für Anzeige-Formatierung mit Währungssymbol und Tausendertrennern.
      */
-    public static function toGermanFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false): string {
+    public static function toGermanFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false, ?CountryCode $country = null): string {
         if (is_string($amount)) {
             $amount = trim($amount);
             if ($amount === '') {
                 return number_format(0, $decimals, ',', $withThousandsSeparator ? '.' : '');
             }
-            $floatVal = self::normalizeDecimal($amount);
+            $floatVal = self::normalizeDecimal($amount, $country);
         } else {
             $floatVal = (float) $amount;
         }
@@ -177,15 +177,16 @@ class NumberHelper {
      * @param string|float|int $amount Betrag in beliebigem Format.
      * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
      * @param bool $withThousandsSeparator Tausendertrenner anzeigen (Standard: false).
+     * @param CountryCode|null $country Optionales Land für eindeutige Tausendertrenner-Erkennung.
      * @return string Betrag im US-Format (z.B. "1234.56" oder "1,234.56").
      */
-    public static function toUSFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false): string {
+    public static function toUSFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false, ?CountryCode $country = null): string {
         if (is_string($amount)) {
             $amount = trim($amount);
             if ($amount === '') {
                 return number_format(0, $decimals, '.', $withThousandsSeparator ? ',' : '');
             }
-            $floatVal = self::normalizeDecimal($amount);
+            $floatVal = self::normalizeDecimal($amount, $country);
         } else {
             $floatVal = (float) $amount;
         }

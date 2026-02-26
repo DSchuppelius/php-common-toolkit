@@ -117,7 +117,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertTrue($field->isQuoted());
         $this->assertEquals('42', $field->getValue()); // String value bleibt verfügbar
 
-        // Type detection gibt false zurück für quoted Fields
+        // Quoted Fields bleiben als Literal-String erhalten (keine Typisierung)
         $this->assertFalse($field->isInt());
         $this->assertFalse($field->isFloat());
         $this->assertFalse($field->isBool());
@@ -199,10 +199,10 @@ final class TypedFieldTest extends BaseTestCase {
         $field = new DataField('2025-12-22');
         $this->assertInstanceOf(DateTimeImmutable::class, $field->getTypedValue());
 
-        // Quoted stays string
+        // Quoted fields bleiben als Literal-String erhalten
         $field = new DataField('"42"');
         $this->assertSame('42', $field->getTypedValue());
-        $this->assertTrue($field->isString());
+        $this->assertFalse($field->isInt());
 
         // String fallback
         $field = new DataField('not-a-type');

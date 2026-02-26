@@ -13,7 +13,9 @@ namespace CommonToolkit\Entities\CSV;
 
 use CommonToolkit\Contracts\Abstracts\TextDocumentAbstract;
 use CommonToolkit\Contracts\Interfaces\CSV\FieldInterface;
+use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Generators\CSV\CSVGenerator;
+use CommonToolkit\Helper\Data\NumberHelper;
 use RuntimeException;
 
 /**
@@ -296,6 +298,85 @@ class Document extends TextDocumentAbstract {
     public function getColumnByIndex(int $index): array {
         $fields = $this->getFieldsByIndex($index);
         return array_map(fn($field) => $field ? $field->getValue() : '', $fields);
+    }
+
+    /**
+     * Berechnet die Summe einer Spalte anhand des Header-Namens.
+     * Verwendet NumberHelper für präzise Berechnung (BC Math).
+     *
+     * @param string $columnName Name der Spalte
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string Die Summe als String (im US-Format für BC Math Kompatibilität)
+     * @throws RuntimeException Wenn die Spalte nicht gefunden wird
+     */
+    public function sumColumnByName(string $columnName, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
+        $index = $this->getColumnIndex($columnName);
+
+        if ($index === null) {
+            $available = implode(', ', $this->getColumnNames());
+            $this->logErrorAndThrow(RuntimeException::class, "Spalte '$columnName' nicht im Header gefunden. Verfügbar: $available");
+        }
+
+        return $this->sumColumnByIndex($index, $scale, $country, $skipNonNumeric);
+    }
+
+    /**
+     * Berechnet die Summe einer Spalte anhand des Index.
+     * Verwendet NumberHelper für präzise Berechnung (BC Math).
+     *
+     * @param int $index Index der Spalte
+     * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
+     * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
+     * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
+     * @return string Die Summe als String (im US-Format für BC Math Kompatibilität)
+     * @throws RuntimeException Wenn der Index ungültig ist oder nicht-numerische Werte gefunden werden
+     */
+    public function sumColumnByIndex(int $index, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
+        $fields = $this->getFieldsByIndex($index);
+        $numbers = [];
+
+        foreach ($fields as $rowIndex => $field) {
+            if ($field === null || $field->isBlank()) {
+                if ($skipNonNumeric) {
+                    continue;
+                }
+                $this->logErrorAndThrow(RuntimeException::class, "Leerer Wert in Zeile $rowIndex, Spalte $index");
+            }
+
+            $typed = $field->getTypedValue();
+
+            if (is_int($typed) || is_float($typed)) {
+                // Bereits korrekt typisiert (unquoted numerische Felder)
+                $numbers[] = number_format((float) $typed, $scale, '.', '');
+                continue;
+            }
+
+            // Quoted Felder oder nicht-numerische Strings: normalizeDecimal versuchen
+            $value = is_string($typed) ? trim($typed) : trim($field->getValue());
+
+            if ($value === '') {
+                if ($skipNonNumeric) {
+                    continue;
+                }
+                $this->logErrorAndThrow(RuntimeException::class, "Leerer Wert in Zeile $rowIndex, Spalte $index");
+            }
+
+            $normalized = NumberHelper::normalizeDecimal($value, $country);
+
+            if (!is_finite($normalized)) {
+                if ($skipNonNumeric) {
+                    continue;
+                }
+                $this->logErrorAndThrow(RuntimeException::class, "Nicht-numerischer Wert '$value' in Zeile $rowIndex, Spalte $index");
+            }
+
+            $numbers[] = number_format($normalized, $scale, '.', '');
+        }
+
+        // bcadd sicherstellt korrekte Dezimalstellen auch bei leerem Array
+        return bcadd(NumberHelper::sumPrecise($numbers, $scale), '0', $scale);
     }
 
     /**

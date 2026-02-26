@@ -17,6 +17,7 @@ use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Entities\CSV\DataLine;
 use CommonToolkit\Entities\CSV\HeaderLine;
 use CommonToolkit\Entities\CSV\Document;
+use CommonToolkit\Enums\CountryCode;
 use RuntimeException;
 use Tests\Contracts\BaseTestCase;
 
@@ -175,5 +176,153 @@ class DocumentTest extends BaseTestCase {
 
         $phones = $doc->getColumnByName('Phone');
         $this->assertEquals(['', '555-1234', '555-5678'], $phones);
+    }
+
+    // =========================================================================
+    // sumColumnByIndex / sumColumnByName Tests
+    // =========================================================================
+
+    private function createNumericDocument(): Document {
+        $builder = new CSVDocumentBuilder();
+        $header = HeaderLine::fromString('Artikel;Menge;Preis', ';', '"');
+        $builder->setHeader($header);
+        $builder->addRow(DataLine::fromString('Widget;3;10.50', ';', '"'));
+        $builder->addRow(DataLine::fromString('Gadget;7;25.99', ';', '"'));
+        $builder->addRow(DataLine::fromString('Gizmo;2;5.00', ';', '"'));
+        return $builder->build();
+    }
+
+    public function testSumColumnByNameSimple(): void {
+        $doc = $this->createNumericDocument();
+
+        $sum = $doc->sumColumnByName('Preis', 2);
+        $this->assertEquals('41.49', $sum);
+    }
+
+    public function testSumColumnByNameInteger(): void {
+        $doc = $this->createNumericDocument();
+
+        $sum = $doc->sumColumnByName('Menge', 0);
+        $this->assertEquals('12', $sum);
+    }
+
+    public function testSumColumnByIndexSimple(): void {
+        $doc = $this->createNumericDocument();
+
+        // Index 2 = Preis
+        $sum = $doc->sumColumnByIndex(2, 2);
+        $this->assertEquals('41.49', $sum);
+    }
+
+    public function testSumColumnByNameGermanFormat(): void {
+        $builder = new CSVDocumentBuilder(';', '"');
+        $header = HeaderLine::fromString('Bezeichnung;Betrag', ';', '"');
+        $builder->setHeader($header);
+        $builder->addRow(DataLine::fromString('Miete;"1.200,50"', ';', '"'));
+        $builder->addRow(DataLine::fromString('Strom;"85,30"', ';', '"'));
+        $builder->addRow(DataLine::fromString('Wasser;"42,20"', ';', '"'));
+        $doc = $builder->build();
+
+        $sum = $doc->sumColumnByName('Betrag', 2, CountryCode::Germany);
+        $this->assertEquals('1328.00', $sum);
+    }
+
+    public function testSumColumnByNameMixedFormats(): void {
+        // Simuliert ApoBank-Szenario: gemischte Formate in einer Spalte
+        $builder = new CSVDocumentBuilder(';', '"');
+        $header = HeaderLine::fromString('Buchung;Saldo', ';', '"');
+        $builder->setHeader($header);
+        $builder->addRow(DataLine::fromString('Gehalt;"6.068,16"', ';', '"'));
+        $builder->addRow(DataLine::fromString('Abbuchung;\'-902.36', ';', '"'));
+        $builder->addRow(DataLine::fromString('Zinsen;"2.000,00"', ';', '"'));
+        $doc = $builder->build();
+
+        $sum = $doc->sumColumnByName('Saldo', 2, CountryCode::Germany);
+        $this->assertEquals('7165.80', $sum);
+    }
+
+    public function testSumColumnByNameWithNegativeValues(): void {
+        $builder = new CSVDocumentBuilder(';', '"');
+        $header = HeaderLine::fromString('Posten;Betrag', ';', '"');
+        $builder->setHeader($header);
+        $builder->addRow(DataLine::fromString('Einnahme;"500,00"', ';', '"'));
+        $builder->addRow(DataLine::fromString('Ausgabe;"-200,00"', ';', '"'));
+        $builder->addRow(DataLine::fromString('Ausgabe;"-150,50"', ';', '"'));
+        $doc = $builder->build();
+
+        $sum = $doc->sumColumnByName('Betrag', 2, CountryCode::Germany);
+        $this->assertEquals('149.50', $sum);
+    }
+
+    public function testSumColumnByNameSkipsNonNumeric(): void {
+        $builder = new CSVDocumentBuilder(';', '"');
+        $header = HeaderLine::fromString('Name;Wert', ';', '"');
+        $builder->setHeader($header);
+        $builder->addRow(DataLine::fromString('A;100', ';', '"'));
+        $builder->addRow(DataLine::fromString('B;N/A', ';', '"'));
+        $builder->addRow(DataLine::fromString('C;200', ';', '"'));
+        $doc = $builder->build();
+
+        // skipNonNumeric=true (Standard) → N/A wird übersprungen
+        $sum = $doc->sumColumnByName('Wert', 2, null, true);
+        $this->assertEquals('300.00', $sum);
+    }
+
+    public function testSumColumnByNameSkipsEmptyValues(): void {
+        $builder = new CSVDocumentBuilder(';', '"');
+        $header = HeaderLine::fromString('Name;Wert', ';', '"');
+        $builder->setHeader($header);
+        $builder->addRow(DataLine::fromString('A;100', ';', '"'));
+        $builder->addRow(DataLine::fromString('B;', ';', '"'));
+        $builder->addRow(DataLine::fromString('C;300', ';', '"'));
+        $doc = $builder->build();
+
+        $sum = $doc->sumColumnByName('Wert', 2, null, true);
+        $this->assertEquals('400.00', $sum);
+    }
+
+    public function testSumColumnByNameThrowsOnNonExistentColumn(): void {
+        $doc = $this->createNumericDocument();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Spalte 'Gewinn' nicht im Header gefunden");
+        $doc->sumColumnByName('Gewinn');
+    }
+
+    public function testSumColumnByNameHighPrecision(): void {
+        $builder = new CSVDocumentBuilder(';', '"');
+        $header = HeaderLine::fromString('ID;Wert', ';', '"');
+        $builder->setHeader($header);
+        $builder->addRow(DataLine::fromString('1;0,001', ';', '"'));
+        $builder->addRow(DataLine::fromString('2;0,002', ';', '"'));
+        $builder->addRow(DataLine::fromString('3;0,003', ';', '"'));
+        $doc = $builder->build();
+
+        $sum = $doc->sumColumnByName('Wert', 4, CountryCode::Germany);
+        $this->assertEquals('0.0060', $sum);
+    }
+
+    public function testSumColumnByIndexWithoutHeader(): void {
+        $builder = new CSVDocumentBuilder(';', '"');
+        $builder->addRow(DataLine::fromString('100;200;300', ';', '"'));
+        $builder->addRow(DataLine::fromString('10;20;30', ';', '"'));
+        $doc = $builder->build();
+
+        $sum = $doc->sumColumnByIndex(0, 0);
+        $this->assertEquals('110', $sum);
+
+        $sum = $doc->sumColumnByIndex(2, 0);
+        $this->assertEquals('330', $sum);
+    }
+
+    public function testSumColumnEmptyDocument(): void {
+        $builder = new CSVDocumentBuilder(';', '"');
+        $header = HeaderLine::fromString('Name;Wert', ';', '"');
+        $builder->setHeader($header);
+        $doc = $builder->build();
+
+        // Leeres Dokument → Summe 0
+        $sum = $doc->sumColumnByName('Wert', 2);
+        $this->assertEquals('0.00', $sum);
     }
 }
