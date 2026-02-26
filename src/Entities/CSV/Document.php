@@ -397,8 +397,10 @@ class Document extends TextDocumentAbstract {
     public function equals(Document $other): bool {
         if ($this->delimiter !== $other->delimiter) return false;
         if ($this->enclosure !== $other->enclosure) return false;
-        if (($this->header && !$other->header) || (!$this->header && $other->header)) return false;
-        if ($this->header && !$this->header->equals($other->header)) return false;
+        if (($this->header === null) !== ($other->header === null)) return false;
+        if ($this->header !== null) {
+            if (!$this->header->equals($other->header)) return false;
+        }
         if ($this->countRows() !== $other->countRows()) return false;
         foreach ($this->rows as $i => $row) {
             if (!$row->equals($other->rows[$i])) return false;

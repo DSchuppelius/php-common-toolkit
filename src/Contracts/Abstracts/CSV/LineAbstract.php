@@ -134,7 +134,7 @@ abstract class LineAbstract implements LineInterface {
     /**
      * Vergleicht diese CSV-Zeile mit einer anderen auf Gleichheit.
      *
-     * @param CSVLineInterface $other Die andere CSV-Zeile zum Vergleichen.
+     * @param LineInterface $other Die andere CSV-Zeile zum Vergleichen.
      * @return bool
      */
     public function equals(LineInterface $other): bool {
