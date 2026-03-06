@@ -1,0 +1,20 @@
+{
+    "shellExecutables": {
+        "image-crop": {
+            "linuxPath": "convert",
+            "windowsPath": "magick",
+            "required": false,
+            "description": "ImageMagick Bild-Zuschnitt",
+            "package": "imagemagick",
+            "arguments": ["[INPUT]", "-crop", "[GEOMETRY]", "+repage", "[OUTPUT]"]
+        },
+        "image-identify": {
+            "linuxPath": "identify",
+            "windowsPath": "magick identify",
+            "required": false,
+            "description": "ImageMagick Bild-Informationen",
+            "package": "imagemagick",
+            "arguments": ["-format", "[FORMAT]", "[INPUT]"]
+        }
+    }
+}
