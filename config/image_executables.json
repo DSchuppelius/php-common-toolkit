@@ -6,7 +6,13 @@
             "required": false,
             "description": "ImageMagick Bild-Zuschnitt",
             "package": "imagemagick",
-            "arguments": ["[INPUT]", "-crop", "[GEOMETRY]", "+repage", "[OUTPUT]"]
+            "arguments": [
+                "[INPUT]",
+                "-crop",
+                "[GEOMETRY]",
+                "+repage",
+                "[OUTPUT]"
+            ]
         },
         "image-identify": {
             "linuxPath": "identify",
@@ -14,7 +20,11 @@
             "required": false,
             "description": "ImageMagick Bild-Informationen",
             "package": "imagemagick",
-            "arguments": ["-format", "[FORMAT]", "[INPUT]"]
+            "arguments": [
+                "-format",
+                "[FORMAT]",
+                "[INPUT]"
+            ]
         }
     }
 }
