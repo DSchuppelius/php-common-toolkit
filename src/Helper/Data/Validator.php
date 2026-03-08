@@ -137,6 +137,23 @@ class Validator {
     }
 
     /**
+     * Prüft, ob der Wert eine alphanumerische ID ist (nur Großbuchstaben und Ziffern).
+     *
+     * Wird verwendet für eindeutige Transaktions-IDs, z.B. in agree21 GDPdU-Exporten.
+     *
+     * @param string $value
+     * @return boolean
+     */
+    public static function isAlphaNumericUppercase(string $value): bool {
+        $value = trim($value);
+        if (empty($value)) {
+            return false;
+        }
+
+        return (bool) preg_match('/\A[0-9A-Z]+\z/', $value);
+    }
+
+    /**
      * Validiert den Wert basierend auf dem Symbol.
      *
      * @param string $symbol Das Symbol, das den Typ angibt.
@@ -153,6 +170,7 @@ class Validator {
             'I'      => self::isMaskedIBAN($value),
             'c'      => self::isBIC($value),
             't'      => self::isText($value),
+            'u'      => self::isAlphaNumericUppercase($value),
             '_'      => true,
             default  => false,
         };
