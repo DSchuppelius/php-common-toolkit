@@ -13,14 +13,28 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Entities\CSV\DataLine;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use CommonToolkit\Helper\Data\Validator;
 use CommonToolkit\Helper\FileSystem\File;
 use Exception;
 use Generator;
-use RuntimeException;
 use Throwable;
 
+/**
+ * CSV-Datei-Helfer für schnelle Validierung und Struktur-Checks.
+ *
+ * Diese Klasse ist für effiziente Datei-Level-Operationen optimiert:
+ * - Delimiter-Erkennung
+ * - Struktur-Validierung
+ * - Header-Pattern-Matching
+ *
+ * Für vollständiges CSV-Parsing zu Document-Objekten nutze CSVDocumentParser.
+ * Für String-Level-Operationen nutze CSV\StringHelper.
+ *
+ * @see \CommonToolkit\Parsers\CSVDocumentParser Für vollständiges Parsing
+ * @see \CommonToolkit\Helper\Data\CSV\StringHelper Für String-Operationen
+ */
 class CsvFile extends HelperAbstract {
     protected static array $commonDelimiters = [',', ';', "\t", '|'];
     protected static string $defaultEnclosure = '"';
@@ -28,23 +42,48 @@ class CsvFile extends HelperAbstract {
 
     /**
      * Liest eine CSV-Datei und gibt die Zeilen als Generator zurück.
+     * Nutzt intern DataLine für konsistentes Parsing mit dem restlichen CSV-System.
      *
      * @param string $file       Der Pfad zur CSV-Datei.
-     * @param string $delimiter  Das Trennzeichen (Standard: ',').
+     * @param string $delimiter  Das Trennzeichen.
+     * @return Generator<int, array<string>> Generator mit geparsten Zeilen als String-Arrays
      */
     private static function readLines(string $file, string $delimiter): Generator {
-        $handle = fopen($file, 'r');
-        if (!$handle) {
-            self::logErrorAndThrow(RuntimeException::class, "CSV-Datei konnte nicht geöffnet werden: $file");
-        }
-
-        while (($row = fgetcsv($handle, 0, $delimiter, self::$defaultEnclosure, self::$defaultEscape)) !== false) {
+        foreach (self::readLinesAsDataLine($file, $delimiter) as $dataLine) {
+            $row = array_map(fn($f) => $f->getValue(), $dataLine->getFields());
             if (!empty(array_filter($row))) {
                 yield $row;
             }
         }
+    }
 
-        fclose($handle);
+    /**
+     * Liest eine CSV-Datei und gibt DataLine-Objekte als Generator zurück.
+     * Behandelt Multi-Line-Felder korrekt.
+     *
+     * @param string $file       Der Pfad zur CSV-Datei.
+     * @param string $delimiter  Das Trennzeichen.
+     * @return Generator<int, DataLine> Generator mit DataLine-Objekten
+     */
+    private static function readLinesAsDataLine(string $file, string $delimiter): Generator {
+        $buffer = '';
+
+        foreach (File::readLines($file, false) as $line) {
+            $buffer .= ($buffer !== '' ? "\n" : '') . $line;
+
+            // Prüfe ob die Zeile komplett ist (alle Quotes geschlossen)
+            if (!StringHelper::hasMultilineFields($buffer, $delimiter, self::$defaultEnclosure)) {
+                if (trim($buffer) !== '') {
+                    yield DataLine::fromString($buffer, $delimiter, self::$defaultEnclosure);
+                }
+                $buffer = '';
+            }
+        }
+
+        // Rest-Buffer verarbeiten
+        if (trim($buffer) !== '') {
+            yield DataLine::fromString($buffer, $delimiter, self::$defaultEnclosure);
+        }
     }
 
     /**
@@ -337,6 +376,7 @@ class CsvFile extends HelperAbstract {
 
     /**
      * Gibt die Anzahl der Datenzeilen in der CSV-Datei zurück.
+     * Optimiert: Zählt nur Zeilen ohne vollständiges Parsen.
      *
      * @param string $file Der Pfad zur CSV-Datei.
      * @param string|null $delimiter Das Trennzeichen (optional).
@@ -345,13 +385,36 @@ class CsvFile extends HelperAbstract {
      */
     public static function countDataRows(string $file, ?string $delimiter = null, bool $hasHeader = true): int {
         try {
-            $meta = self::getMetaData($file, $delimiter);
-            $rowCount = $meta['RowCount'];
-            $dataRows = $hasHeader ? max(0, $rowCount - 1) : $rowCount;
+            $file = self::resolveFile($file);
+            $delimiter ??= self::detectDelimiter($file);
 
+            $count = 0;
+            foreach (self::readLines($file, $delimiter) as $_) {
+                $count++;
+            }
+
+            $dataRows = $hasHeader ? max(0, $count - 1) : $count;
             return self::logDebugAndReturn($dataRows, "Anzahl der Datenzeilen in $file: $dataRows (Header: " . ($hasHeader ? "ja" : "nein") . ")");
         } catch (Throwable $e) {
             return self::logErrorAndReturn(0, "Fehler beim Ermitteln der Datenzeilen: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Gibt das Standard-Enclosure-Zeichen zurück.
+     *
+     * @return string Das Enclosure-Zeichen (Standard: ")
+     */
+    public static function getDefaultEnclosure(): string {
+        return self::$defaultEnclosure;
+    }
+
+    /**
+     * Gibt die unterstützten Delimiter zurück.
+     *
+     * @return array<string> Liste der unterstützten Delimiter
+     */
+    public static function getSupportedDelimiters(): array {
+        return self::$commonDelimiters;
     }
 }

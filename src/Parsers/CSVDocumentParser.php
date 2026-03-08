@@ -13,18 +13,47 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
-use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Contracts\Abstracts\{HelperAbstract, TextDocumentAbstract};
 use CommonToolkit\Entities\CSV\{HeaderLine, DataLine};
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use CommonToolkit\Helper\Data\StringHelper as DataStringHelper;
 use CommonToolkit\Contracts\Interfaces\CSV\{LineInterface, FieldInterface};
 use CommonToolkit\Entities\CSV\Document;
 use CommonToolkit\Helper\FileSystem\File;
+use CommonToolkit\Helper\FileSystem\FileTypes\CsvFile;
 use Generator;
 use RuntimeException;
 use Throwable;
 
+/**
+ * CSV-Dokument-Parser für vollständiges Parsing zu Document-Objekten.
+ *
+ * Bietet verschiedene Parsing-Modi:
+ * - fromString() / fromFile() - Vollständiges Parsing
+ * - fromFileRange() - Bereichs-Parsing für große Dateien
+ * - streamRows() / streamAll() - Generator-basiertes Streaming
+ * - processBatches() - Batch-Verarbeitung großer Dateien
+ *
+ * Für schnelle Datei-Validierung ohne Parsing nutze CsvFile.
+ * Für String-Level-Operationen nutze CSV\StringHelper.
+ *
+ * @see \CommonToolkit\Helper\FileSystem\FileTypes\CsvFile Für Validierung
+ * @see \CommonToolkit\Helper\Data\CSV\StringHelper Für String-Operationen
+ */
 class CSVDocumentParser extends HelperAbstract {
+
+    /**
+     * Erkennt automatisch das Trennzeichen einer CSV-Datei.
+     * Delegiert an CsvFile::detectDelimiter().
+     *
+     * @param string $file Der Pfad zur CSV-Datei
+     * @param int $maxLines Anzahl der zu analysierenden Zeilen (Standard: 10)
+     * @return string Das erkannte Trennzeichen
+     * @throws RuntimeException Bei Dateizugriffs-Fehlern
+     */
+    public static function detectDelimiter(string $file, int $maxLines = 10): string {
+        return CsvFile::detectDelimiter($file, $maxLines);
+    }
 
     /**
      * Parst eine CSV-Zeichenkette in ein CSVDocument.
@@ -50,9 +79,9 @@ class CSVDocumentParser extends HelperAbstract {
         }
 
         // Encoding-Konvertierung nach UTF-8 für internes Parsing
-        $sourceEncoding = $encoding ?? Document::DEFAULT_ENCODING;
-        if ($sourceEncoding !== Document::DEFAULT_ENCODING) {
-            $csv = DataStringHelper::convertEncoding($csv, $sourceEncoding, Document::DEFAULT_ENCODING);
+        $sourceEncoding = $encoding ?? TextDocumentAbstract::DEFAULT_ENCODING;
+        if ($sourceEncoding !== TextDocumentAbstract::DEFAULT_ENCODING) {
+            $csv = DataStringHelper::convertEncoding($csv, $sourceEncoding, TextDocumentAbstract::DEFAULT_ENCODING);
         }
 
         $lines = StringHelper::splitCsvByLogicalLine($csv, $enclosure);
