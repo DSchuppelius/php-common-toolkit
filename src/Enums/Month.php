@@ -124,4 +124,46 @@ enum Month: int {
     public function toTwoDigitString(): string {
         return str_pad((string) $this->value, 2, '0', STR_PAD_LEFT);
     }
+
+    /**
+     * Parst einen Monatsnamen (DE/EN) in verschiedenen Formaten.
+     * 
+     * Unterstützte Formate:
+     * - Englisch: January, Jan, Feb, March, etc.
+     * - Deutsch: Januar, Jan, Feb, Mär, März, etc.
+     * 
+     * @param string $name Monatsname (Case-insensitive, mit/ohne Punkt).
+     * @return self|null Der entsprechende Monat oder null wenn nicht erkannt.
+     */
+    public static function fromName(string $name): ?self {
+        $name = mb_strtolower(trim($name, '. '));
+
+        return match ($name) {
+            // Januar
+            'jan', 'januar', 'january' => self::JANUARY,
+            // Februar
+            'feb', 'februar', 'february' => self::FEBRUARY,
+            // März
+            'mär', 'mar', 'märz', 'maerz', 'march' => self::MARCH,
+            // April
+            'apr', 'april' => self::APRIL,
+            // Mai
+            'mai', 'may' => self::MAY,
+            // Juni
+            'jun', 'juni', 'june' => self::JUNE,
+            // Juli
+            'jul', 'juli', 'july' => self::JULY,
+            // August
+            'aug', 'august' => self::AUGUST,
+            // September
+            'sep', 'sept', 'september' => self::SEPTEMBER,
+            // Oktober
+            'okt', 'oct', 'oktober', 'october' => self::OCTOBER,
+            // November
+            'nov', 'november' => self::NOVEMBER,
+            // Dezember
+            'dez', 'dec', 'dezember', 'december' => self::DECEMBER,
+            default => null,
+        };
+    }
 }
