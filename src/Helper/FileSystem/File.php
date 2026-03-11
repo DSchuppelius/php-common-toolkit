@@ -1002,15 +1002,18 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Überprüft, ob die Datei lesbar ist.
      *
      * @param string $file Der Pfad zur Datei.
+     * @param bool $logging Ob Protokollierung aktiviert ist (Standard: true).
      * @return bool True, wenn die Datei lesbar ist, andernfalls false.
      */
-    public static function isReadable(string $file): bool {
+    public static function isReadable(string $file, bool $logging = true): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            return self::logWarningAndReturn(false, "Datei existiert nicht: $file");
+            self::logWarningIf($logging, "Datei existiert nicht: $file");
+            return false;
         }
         if (!is_readable($file)) {
-            return self::logInfoAndReturn(false, "Datei ist nicht lesbar: $file");
+            self::logInfoIf($logging, "Datei ist nicht lesbar: $file");
+            return false;
         }
         return true;
     }
@@ -1019,15 +1022,18 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Überprüft, ob die Datei beschreibbar ist.
      *
      * @param string $file Der Pfad zur Datei.
+     * @param bool $logging Ob Protokollierung aktiviert ist (Standard: true).
      * @return bool True, wenn die Datei beschreibbar ist, andernfalls false.
      */
-    public static function isWritable(string $file): bool {
+    public static function isWritable(string $file, bool $logging = true): bool {
         $file = self::getRealPath($file);
         if (!self::exists($file)) {
-            return self::logWarningAndReturn(false, "Datei existiert nicht: $file");
+            self::logWarningIf($logging, "Datei existiert nicht: $file");
+            return false;
         }
         if (!is_writable($file)) {
-            return self::logInfoAndReturn(false, "Datei ist nicht beschreibbar: $file");
+            self::logInfoIf($logging, "Datei ist nicht beschreibbar: $file");
+            return false;
         }
         return true;
     }
