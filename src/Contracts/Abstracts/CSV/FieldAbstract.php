@@ -208,9 +208,9 @@ class FieldAbstract implements FieldInterface {
     /**
      * Gibt den Wert als String zurück.
      *
-     * Floats werden immer im Country-Format ausgegeben (nicht im Originalformat),
-     * damit getValue() konsistente Ergebnisse liefert – unabhängig davon, ob der
-     * Rohwert deutsch oder US-formatiert war.
+     * Floats werden im Original-Format ausgegeben, wenn erkannt.
+     * Falls kein Original-Format bekannt ist, wird das Country-Format verwendet.
+     * Dies ermöglicht Round-Trip-Erhaltung bei CSV-Verarbeitung.
      */
     public function getValue(): string {
         if ($this->typedValue instanceof DateTimeImmutable) {
@@ -220,9 +220,11 @@ class FieldAbstract implements FieldInterface {
             }
             return $this->typedValue->format('Y-m-d H:i:s');
         } elseif (is_float($this->typedValue)) {
-            // Dezimalstellen aus dem Originalformat ableiten
-            if ($this->originalFormat !== null && preg_match('/[.,](0+)$/', $this->originalFormat, $m)) {
-                $decimals = strlen($m[1]);
+            // Dezimalstellen und Dezimaltrenner aus dem Originalformat ableiten
+            $decimalSeparator = null;
+            if ($this->originalFormat !== null && preg_match('/([.,])(0+)$/', $this->originalFormat, $m)) {
+                $decimalSeparator = $m[1];
+                $decimals = strlen($m[2]);
             } else {
                 // Kein Originalformat → tatsächliche Dezimalstellen des Float-Werts nutzen
                 // sprintf('%.10f') statt number_format(14) um Float-Precision-Artefakte zu vermeiden
@@ -230,7 +232,17 @@ class FieldAbstract implements FieldInterface {
                 $dotPos = strpos($str, '.');
                 $decimals = $dotPos !== false ? strlen($str) - $dotPos - 1 : 0;
             }
-            // Immer im Country-Format ausgeben (keine Tausendertrenner)
+
+            // Original-Dezimalformat beibehalten für Round-Trip-Erhaltung
+            // Der Dezimaltrenner ist der LETZTE Trenner vor den Dezimalstellen
+            if ($decimalSeparator === '.') {
+                return NumberHelper::toUSFormat($this->typedValue, $decimals);
+            }
+            if ($decimalSeparator === ',') {
+                return NumberHelper::toGermanFormat($this->typedValue, $decimals);
+            }
+
+            // Fallback: Country-Format verwenden
             if ($this->country === CountryCode::Germany) {
                 return NumberHelper::toGermanFormat($this->typedValue, $decimals);
             }
