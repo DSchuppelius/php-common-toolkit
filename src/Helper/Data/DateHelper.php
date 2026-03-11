@@ -12,9 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\CountryCode;
-use CommonToolkit\Enums\DateTimeFormat;
-use CommonToolkit\Enums\Month;
+use CommonToolkit\Enums\{CountryCode, DateTimeFormat, Month};
 use DateInterval;
 use DateTime;
 use DateTimeImmutable;

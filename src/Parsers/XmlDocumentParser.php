@@ -13,9 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Entities\XML\Document;
-use CommonToolkit\Entities\XML\Element;
-use CommonToolkit\Helper\FileSystem\File;
+use CommonToolkit\Entities\XML\{Document, Element};
 use DOMDocument;
 use DOMElement;
 use DOMXPath;

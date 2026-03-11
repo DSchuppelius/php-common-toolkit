@@ -12,12 +12,10 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Parsers;
 
-use CommonToolkit\Entities\HTML\Document;
-use CommonToolkit\Entities\HTML\Element;
+use CommonToolkit\Entities\HTML\{Document, Element};
 use CommonToolkit\Helper\FileSystem\File;
 use DOMDocument;
 use DOMElement;
-use DOMNode;
 use DOMXPath;
 
 /**
@@ -94,7 +92,7 @@ class HTMLDocumentParser {
     public static function extractTitle(string $html): ?string {
         $dom = self::createDOMDocument($html);
         $titles = $dom->getElementsByTagName('title');
-        
+
         if ($titles->length > 0) {
             return $titles->item(0)->textContent;
         }

@@ -13,10 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Entities\XLSX\Cell;
-use CommonToolkit\Entities\XLSX\Document;
-use CommonToolkit\Entities\XLSX\Row;
-use CommonToolkit\Entities\XLSX\Sheet;
+use CommonToolkit\Entities\XLSX\{Cell, Document, Row, Sheet};
 use CommonToolkit\Helper\FileSystem\File;
 use DateTimeImmutable;
 use DOMDocument;

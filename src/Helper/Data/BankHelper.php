@@ -13,8 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\Data;
 
 use CommonToolkit\Enums\CountryCode;
-use CommonToolkit\Helper\FileSystem\File;
-use CommonToolkit\Helper\FileSystem\Folder;
+use CommonToolkit\Helper\FileSystem\{File, Folder};
 use ConfigToolkit\ConfigLoader;
 use ERRORToolkit\Traits\ErrorLog;
 use Exception;

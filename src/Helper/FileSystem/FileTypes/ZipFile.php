@@ -13,11 +13,8 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Helper\FileSystem\File;
-use CommonToolkit\Helper\FileSystem\Files;
-use CommonToolkit\Helper\FileSystem\Folder;
-use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
-use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
+use CommonToolkit\Helper\FileSystem\{File, Files, Folder};
+use ERRORToolkit\Exceptions\FileSystem\{FileNotFoundException, FolderNotFoundException};
 use Exception;
 use InvalidArgumentException;
 use ZipArchive;

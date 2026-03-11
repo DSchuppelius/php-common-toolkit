@@ -3,7 +3,7 @@
  * Created on   : Thu Apr 24 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : CaseType.php
+ * Filename     : CreditDebit.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */

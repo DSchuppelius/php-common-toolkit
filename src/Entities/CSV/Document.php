@@ -3,7 +3,7 @@
  * Created on   : Wed Oct 29 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : CSVDocument.php
+ * Filename     : Document.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */

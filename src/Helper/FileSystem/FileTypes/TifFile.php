@@ -13,12 +13,9 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
-use CommonToolkit\Helper\FileSystem\File;
-use CommonToolkit\Helper\FileSystem\Files;
+use CommonToolkit\Helper\FileSystem\{File, Files};
 use CommonToolkit\Helper\Shell;
-use ERRORToolkit\Exceptions\FileSystem\FileExistsException;
-use ERRORToolkit\Exceptions\FileSystem\FileInvalidException;
-use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\{FileExistsException, FileInvalidException, FileNotFoundException};
 use Exception;
 
 class TifFile extends ConfiguredHelperAbstract {

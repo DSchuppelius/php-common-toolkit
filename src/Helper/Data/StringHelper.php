@@ -12,11 +12,8 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\CaseType;
-use CommonToolkit\Enums\CountryCode;
-use CommonToolkit\Enums\SearchMode;
-use CommonToolkit\Helper\Data\CSV;
-use CommonToolkit\Helper\Data\NumberHelper;
+use CommonToolkit\Enums\{CaseType, CountryCode, SearchMode};
+use CommonToolkit\Helper\Data\{CSV, NumberHelper};
 use CommonToolkit\Helper\Shell\ShellChardet;
 use DateTimeImmutable;
 use ERRORToolkit\Traits\ErrorLog;

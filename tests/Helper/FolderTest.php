@@ -10,8 +10,7 @@
 
 namespace Tests\Helper;
 
-use CommonToolkit\Helper\FileSystem\File;
-use CommonToolkit\Helper\FileSystem\Folder;
+use CommonToolkit\Helper\FileSystem\{File, Folder};
 use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Tests\Contracts\BaseTestCase;
 
