@@ -14,8 +14,7 @@ declare(strict_types=1);
 namespace Tests\CommonToolkit\Entities\CSV;
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
-use CommonToolkit\Entities\CSV\DataLine;
-use CommonToolkit\Entities\CSV\HeaderLine;
+use CommonToolkit\Entities\CSV\{DataLine, HeaderLine};
 use CommonToolkit\Entities\CSV\Document;
 use CommonToolkit\Enums\CountryCode;
 use RuntimeException;
