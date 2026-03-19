@@ -65,6 +65,32 @@ class XmlHelper extends HelperAbstract {
     }
 
     /**
+     * Lädt einen XML-String sicher als SimpleXMLElement (XXE-geschützt).
+     *
+     * Deaktiviert externe Entities und Netzwerkzugriffe, um XXE-Angriffe,
+     * SSRF und Billion-Laughs-DoS zu verhindern.
+     *
+     * @param string $xml Der XML-String
+     * @param int $additionalFlags Zusätzliche LIBXML_*-Flags (z.B. LIBXML_NOCDATA)
+     * @return \SimpleXMLElement|false SimpleXMLElement oder false bei Fehler
+     */
+    public static function safeLoadString(string $xml, int $additionalFlags = 0): \SimpleXMLElement|false {
+        $useInternalErrors = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+
+        $result = simplexml_load_string(
+            $xml,
+            'SimpleXMLElement',
+            LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING | $additionalFlags
+        );
+
+        libxml_clear_errors();
+        libxml_use_internal_errors($useInternalErrors);
+
+        return $result;
+    }
+
+    /**
      * Validiert XML gegen ein XSD-Schema.
      *
      * @param string $xml Der XML-String
