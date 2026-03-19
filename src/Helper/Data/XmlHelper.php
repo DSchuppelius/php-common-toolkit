@@ -245,9 +245,9 @@ class XmlHelper extends HelperAbstract {
         $result = [];
 
         // Attribute hinzufügen
-        if ($preserveAttributes && $node->hasAttributes()) {
+        if ($preserveAttributes && $node instanceof DOMElement && $node->hasAttributes()) {
             foreach ($node->attributes as $attribute) {
-                $result['@' . $attribute->name] = $attribute->value;
+                $result['@' . $attribute->nodeName] = $attribute->nodeValue;
             }
         }
 
