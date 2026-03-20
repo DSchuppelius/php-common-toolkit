@@ -16,14 +16,13 @@
   },
   "prefer-stable": true,
   "require": {
-    "php": ">=8.2 <8.5",
+    "php": ">=8.2 <=8.5",
     "ext-bcmath": "*",
     "ext-dom": "*",
     "ext-intl": "*",
     "ext-zip": "*",
     "dschuppelius/php-config-toolkit": "^0.4.3"
   },
-
   "autoload-dev": {
     "psr-4": {
       "Tests\\": "tests/"
