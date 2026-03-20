@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "64051dae9fc8c39d134a1e7e02f6e690",
+    "content-hash": "de6943bc538f7dcc3b24c4a96760375e",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
@@ -52,16 +52,16 @@
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.1.2",
+            "version": "v2.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "94b6d3e22488f7e622acafe64233d2252b64bb6e"
+                "reference": "107ea388a9b3cd967588f4cff7e340d56d1dfea9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/94b6d3e22488f7e622acafe64233d2252b64bb6e",
-                "reference": "94b6d3e22488f7e622acafe64233d2252b64bb6e",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/107ea388a9b3cd967588f4cff7e340d56d1dfea9",
+                "reference": "107ea388a9b3cd967588f4cff7e340d56d1dfea9",
                 "shasum": ""
             },
             "require": {
@@ -90,9 +90,9 @@
             "description": "Reused codes for my api php sdks",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.1.2"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.1.3"
             },
-            "time": "2026-01-26T15:28:29+00:00"
+            "time": "2026-03-08T10:32:34+00:00"
         },
         {
             "name": "psr/log",
@@ -1936,7 +1936,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=8.2 <8.5",
+        "php": ">=8.2 <=8.5",
         "ext-bcmath": "*",
         "ext-dom": "*",
         "ext-intl": "*",
