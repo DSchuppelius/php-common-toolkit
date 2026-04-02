@@ -414,3 +414,6 @@ phpunit.xml
 
 /data/blz-aktuell-txt-data.txt
 /data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv
+
+# PHPStan
+/var/phpstan

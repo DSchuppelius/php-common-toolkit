@@ -4,25 +4,25 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "174845df917b4c6852fbeeefcd7782ef",
+    "content-hash": "a1c428aeb86dfffda4555bad2377d800",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.4.5",
+            "version": "v0.4.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "4f1000f3bcc33b7f6a75f093db1a143b04497422"
+                "reference": "27ee677e483b2ee4353c36deb27989f22e75080a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/4f1000f3bcc33b7f6a75f093db1a143b04497422",
-                "reference": "4f1000f3bcc33b7f6a75f093db1a143b04497422",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/27ee677e483b2ee4353c36deb27989f22e75080a",
+                "reference": "27ee677e483b2ee4353c36deb27989f22e75080a",
                 "shasum": ""
             },
             "require": {
                 "dschuppelius/php-error-toolkit": "^2.1",
-                "php": ">=8.0 <8.5"
+                "php": ">=8.0 <8.6"
             },
             "require-dev": {
                 "phpunit/phpunit": "^11.3@dev"
@@ -46,26 +46,26 @@
             "description": "Ein Toolkit für JSON-basierte Konfigurationsverwaltung",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.4.5"
+                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.4.5.1"
             },
-            "time": "2026-01-28T09:50:03+00:00"
+            "time": "2026-03-20T09:31:12+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.1.3",
+            "version": "v2.1.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "107ea388a9b3cd967588f4cff7e340d56d1dfea9"
+                "reference": "5f652cfd4e5c15650d71f2b82b9c4380ecef40df"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/107ea388a9b3cd967588f4cff7e340d56d1dfea9",
-                "reference": "107ea388a9b3cd967588f4cff7e340d56d1dfea9",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/5f652cfd4e5c15650d71f2b82b9c4380ecef40df",
+                "reference": "5f652cfd4e5c15650d71f2b82b9c4380ecef40df",
                 "shasum": ""
             },
             "require": {
-                "php": ">=8.1 <8.5",
+                "php": ">=8.1 <8.6",
                 "psr/log": "^3.0"
             },
             "require-dev": {
@@ -90,9 +90,9 @@
             "description": "Reused codes for my api php sdks",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.1.3"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.1.3.1"
             },
-            "time": "2026-03-08T10:32:34+00:00"
+            "time": "2026-03-20T09:08:45+00:00"
         },
         {
             "name": "psr/log",
@@ -381,6 +381,59 @@
                 "source": "https://github.com/phar-io/version/tree/3.2.1"
             },
             "time": "2022-02-21T01:04:05+00:00"
+        },
+        {
+            "name": "phpstan/phpstan",
+            "version": "2.1.46",
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/a193923fc2d6325ef4e741cf3af8c3e8f54dbf25",
+                "reference": "a193923fc2d6325ef4e741cf3af8c3e8f54dbf25",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4|^8.0"
+            },
+            "conflict": {
+                "phpstan/phpstan-shim": "*"
+            },
+            "bin": [
+                "phpstan",
+                "phpstan.phar"
+            ],
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "bootstrap.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "PHPStan - PHP Static Analysis Tool",
+            "keywords": [
+                "dev",
+                "static analysis"
+            ],
+            "support": {
+                "docs": "https://phpstan.org/user-guide/getting-started",
+                "forum": "https://github.com/phpstan/phpstan/discussions",
+                "issues": "https://github.com/phpstan/phpstan/issues",
+                "security": "https://github.com/phpstan/phpstan/security/policy",
+                "source": "https://github.com/phpstan/phpstan-src"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/ondrejmirtes",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/phpstan",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-04-01T09:25:14+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -1930,9 +1983,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "phpunit/phpunit": 20
-    },
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
