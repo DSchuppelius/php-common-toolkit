@@ -1,4 +1,5 @@
 {
+    "phpstan.configPath": "phpstan.neon.dist",
     "fileHeaderComment.parameter": {
         "date": "YYYY-MM-DD",
         "commentbegin": "/*",
@@ -35,8 +36,7 @@
     "prettier.documentSelectors": [
         "*.php"
     ],
-    "phpunit.environment": {
-    },
+    "phpunit.environment": {},
     "redhat.telemetry.enabled": true,
     "prettier.requireConfig": true,
     "editor.unicodeHighlight.nonBasicASCII": false,
@@ -56,7 +56,5 @@
     "github.copilot.chat.localeOverride": "de",
     "gitlens.defaultDateLocale": "de-DE",
     "typescript.locale": "de",
-    "editor.codeActionsOnSave": {
-        
-    },
+    "editor.codeActionsOnSave": {},
 }
