@@ -51,7 +51,15 @@ final class PdfFileTest extends BaseTestCase {
         $outputEnc = $this->outputDir . '/encrypted.pdf';
         $outputDec = $this->outputDir . '/decrypted.pdf';
 
-        $this->assertTrue(PdfFile::encrypt($this->testFile, $outputEnc));
+        try {
+            $result = PdfFile::encrypt($this->testFile, $outputEnc);
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'nicht konfiguriert oder ist nicht installiert')) {
+                $this->markTestSkipped('pdf-encrypt ist nicht verfügbar');
+            }
+            throw $e;
+        }
+        $this->assertTrue($result);
         $this->assertFileExists($outputEnc);
         $this->assertTrue(PdfFile::isEncrypted($outputEnc));
 
@@ -81,7 +89,15 @@ final class PdfFileTest extends BaseTestCase {
         $outputEnc = $this->outputDir . '/enc_pw.pdf';
         $outputDec = $this->outputDir . '/dec_pw.pdf';
 
-        $this->assertTrue(PdfFile::encrypt($this->testFile, $outputEnc, '1234'));
+        try {
+            $result = PdfFile::encrypt($this->testFile, $outputEnc, '1234');
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'nicht konfiguriert oder ist nicht installiert')) {
+                $this->markTestSkipped('pdf-encrypt ist nicht verfügbar');
+            }
+            throw $e;
+        }
+        $this->assertTrue($result);
         $this->assertTrue(PdfFile::isEncrypted($outputEnc));
         $meta = PdfFile::getMetaData($outputEnc, '1234');
         $this->assertIsArray($meta);
