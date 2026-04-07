@@ -608,4 +608,23 @@ enum CurrencyCode: string {
             default => throw new InvalidArgumentException("Unbekannter ISO-4217-Code: $code")
         };
     }
+
+    /**
+     * Prüft ob der übergebene Wert diesem Währungscode entspricht.
+     * Akzeptiert CurrencyCode-Enum oder String (case-insensitive, trimmed).
+     */
+    public function is(self|string $other): bool {
+        if ($other instanceof self) {
+            return $this === $other;
+        }
+
+        return strtoupper(trim($other)) === $this->value;
+    }
+
+    /**
+     * Negierte Prüfung – Gegenstück zu is().
+     */
+    public function isNot(self|string $other): bool {
+        return !$this->is($other);
+    }
 }
