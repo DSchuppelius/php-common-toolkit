@@ -205,7 +205,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             if (!mkdir($directory, $permissions, $recursive)) {
                 self::logErrorAndThrow(Exception::class, "Fehler beim Erstellen des Verzeichnisses: $directory");
             }
-            self::logDebug("Verzeichnis erstellt: $directory mit Berechtigungen $permissions");
+            self::logDebug("Verzeichnis erstellt: $directory mit Berechtigungen 0" . decoct($permissions));
         } else {
             self::logDebug("Verzeichnis existiert bereits: $directory");
         }

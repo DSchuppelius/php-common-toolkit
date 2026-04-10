@@ -1205,10 +1205,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         if (!chmod($file, $permissions)) {
-            self::logErrorAndThrow(Exception::class, "Fehler beim Setzen von Rechten ($permissions) für Datei: $file");
+            self::logErrorAndThrow(Exception::class, "Fehler beim Setzen von Rechten (0" . decoct($permissions) . ") für Datei: $file");
         }
 
-        self::logInfo("Datei erstellt: $file mit Rechten $permissions");
+        self::logInfo("Datei erstellt: $file mit Rechten 0" . decoct($permissions));
     }
 
     /**
