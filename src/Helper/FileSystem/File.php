@@ -1456,6 +1456,47 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Bereinigt einen Dateinamen für sichere Verwendung im Dateisystem.
+     * Entfernt Pfade und ungültige Zeichen. Ersetzt Sonderzeichen durch Unterstriche.
+     *
+     * @param string $filename Der zu bereinigende Dateiname (kann Pfad und Extension enthalten).
+     * @param bool $keepExtension True um die originale Dateierweiterung beizubehalten (Standard: false).
+     * @param int $maxLength Maximale Länge des bereinigten Namens (Standard: 255, ohne Extension).
+     * @return string Bereinigter Dateiname, leer wenn nichts übrig bleibt.
+     */
+    public static function sanitizeFilename(string $filename, bool $keepExtension = false, int $maxLength = 255): string {
+        if (empty($filename)) {
+            return '';
+        }
+
+        $base = basename($filename);
+        $name = pathinfo($base, PATHINFO_FILENAME);
+        $ext = pathinfo($base, PATHINFO_EXTENSION);
+
+        // Nur alphanumerisch, Bindestrich, Unterstrich und Punkt erlauben
+        $name = preg_replace('/[^a-zA-Z0-9\-_.]/', '_', $name);
+
+        // Mehrfache Unterstriche/Bindestriche zusammenfassen
+        $name = preg_replace('/[_\-]{2,}/', '_', $name);
+
+        // Trim und Längenbegrenzung
+        $name = substr(trim($name, '_-.'), 0, $maxLength);
+
+        // Windows-reservierte Namen abfangen
+        if (self::isWindowsReservedName($name)) {
+            $name = '_' . $name;
+        }
+
+        if ($keepExtension && !empty($ext)) {
+            // Extension ebenfalls bereinigen (nur alphanumerisch)
+            $ext = preg_replace('/[^a-zA-Z0-9]/', '', $ext);
+            return !empty($name) ? $name . '.' . $ext : '';
+        }
+
+        return $name;
+    }
+
+    /**
      * Liest die ersten N Zeilen einer Datei (wie Unix 'head').
      *
      * @param string $file      Pfad zur Datei.

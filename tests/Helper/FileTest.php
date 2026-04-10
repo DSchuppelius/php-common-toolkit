@@ -462,4 +462,58 @@ class FileTest extends BaseTestCase {
         // Standard-Test: Nicht-existierende Datei
         $this->assertFalse(File::exists('/nonexistent/path/file.txt'));
     }
+
+    public function testSanitizeFilenameBasic(): void {
+        $this->assertSame('mein-dokument', File::sanitizeFilename('mein-dokument.csv'));
+        $this->assertSame('export-2026', File::sanitizeFilename('export-2026.xlsx'));
+        $this->assertSame('Kontoauszug_2026', File::sanitizeFilename('Kontoauszug 2026.pdf'));
+    }
+
+    public function testSanitizeFilenameWithPath(): void {
+        $this->assertSame('report', File::sanitizeFilename('/home/user/downloads/report.csv'));
+        // Windows-Pfade: basename() auf Linux erkennt \ nicht als Trenner
+        $this->assertSame('data', File::sanitizeFilename('C:/Users/test/data.txt'));
+    }
+
+    public function testSanitizeFilenameSpecialChars(): void {
+        $this->assertSame('Umsatz_bersicht_M_rz', File::sanitizeFilename('Umsatzübersicht März.csv'));
+        $this->assertSame('file_with_many_spaces', File::sanitizeFilename('file   with   many   spaces.txt'));
+    }
+
+    public function testSanitizeFilenameEmpty(): void {
+        $this->assertSame('', File::sanitizeFilename(''));
+        $this->assertSame('', File::sanitizeFilename('.csv'));
+    }
+
+    public function testSanitizeFilenameMaxLength(): void {
+        $longName = str_repeat('a', 300) . '.txt';
+        $result = File::sanitizeFilename($longName);
+        $this->assertLessThanOrEqual(255, strlen($result));
+
+        $result10 = File::sanitizeFilename($longName, false, 10);
+        $this->assertLessThanOrEqual(10, strlen($result10));
+    }
+
+    public function testSanitizeFilenameWindowsReserved(): void {
+        $this->assertSame('_CON', File::sanitizeFilename('CON.txt'));
+        $this->assertSame('_NUL', File::sanitizeFilename('NUL.csv'));
+    }
+
+    public function testSanitizeFilenameKeepExtension(): void {
+        $this->assertSame('mein-dokument.csv', File::sanitizeFilename('mein-dokument.csv', true));
+        $this->assertSame('Kontoauszug_2026.pdf', File::sanitizeFilename('Kontoauszug 2026.pdf', true));
+        $this->assertSame('report.csv', File::sanitizeFilename('/home/user/downloads/report.csv', true));
+    }
+
+    public function testSanitizeFilenameKeepExtensionSpecialChars(): void {
+        // Extension mit Sonderzeichen wird bereinigt ($ wird entfernt)
+        $this->assertSame('test.cv', File::sanitizeFilename('test.c$v', true));
+        // Ohne Extension bleibt ohne Extension
+        $this->assertSame('', File::sanitizeFilename('.csv', true));
+    }
+
+    public function testSanitizeFilenameKeepExtensionWindowsReserved(): void {
+        $this->assertSame('_CON.txt', File::sanitizeFilename('CON.txt', true));
+        $this->assertSame('_NUL.csv', File::sanitizeFilename('NUL.csv', true));
+    }
 }
