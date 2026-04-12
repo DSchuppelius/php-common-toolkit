@@ -55,22 +55,22 @@ class SecurityHelper extends HelperAbstract {
     public static function hashPassword(string $password, array $options = []): string {
         try {
             if (strlen($password) < 8) {
-                throw new InvalidArgumentException('Password muss mindestens 8 Zeichen lang sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Password muss mindestens 8 Zeichen lang sein');
             }
 
             if (strlen($password) > 4096) {
-                throw new InvalidArgumentException('Password zu lang (max. 4096 Zeichen)');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Password zu lang (max. 4096 Zeichen)');
             }
 
             $cost = $options['cost'] ?? 12;
             if ($cost < 10 || $cost > 15) {
-                throw new InvalidArgumentException('Cost-Parameter muss zwischen 10 und 15 liegen');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Cost-Parameter muss zwischen 10 und 15 liegen');
             }
 
             $hash = password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 65536, 'time_cost' => 4, 'threads' => 3]);
 
             if ($hash === false) {
-                throw new InvalidArgumentException('Password-Hashing fehlgeschlagen');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Password-Hashing fehlgeschlagen');
             }
 
             return self::logDebugAndReturn($hash, "Sicherer Password-Hash erstellt");
@@ -130,7 +130,7 @@ class SecurityHelper extends HelperAbstract {
     public static function generateSecureToken(int $length = 32, bool $base64 = true): string {
         try {
             if ($length < 16 || $length > 256) {
-                throw new InvalidArgumentException('Token-Länge muss zwischen 16 und 256 Bytes liegen');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Token-Länge muss zwischen 16 und 256 Bytes liegen');
             }
 
             $randomBytes = random_bytes($length);
@@ -273,7 +273,7 @@ class SecurityHelper extends HelperAbstract {
                     // Nur Alphanumerisch, max 34 Zeichen
                     $data = preg_replace('/[^A-Z0-9]/', '', strtoupper($data));
                     if (strlen($data) > 34) {
-                        throw new InvalidArgumentException('IBAN zu lang');
+                        self::logErrorAndThrow(InvalidArgumentException::class, 'IBAN zu lang');
                     }
                     break;
 
@@ -281,7 +281,7 @@ class SecurityHelper extends HelperAbstract {
                     // Nur Alphanumerisch, 8 oder 11 Zeichen
                     $data = preg_replace('/[^A-Z0-9]/', '', strtoupper($data));
                     if (!in_array(strlen($data), [8, 11])) {
-                        throw new InvalidArgumentException('BIC muss 8 oder 11 Zeichen haben');
+                        self::logErrorAndThrow(InvalidArgumentException::class, 'BIC muss 8 oder 11 Zeichen haben');
                     }
                     break;
 

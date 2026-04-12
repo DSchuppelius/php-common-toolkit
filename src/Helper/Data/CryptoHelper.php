@@ -61,11 +61,11 @@ class CryptoHelper extends HelperAbstract {
     public static function encrypt(string $plaintext, string $key, string $cipher = self::DEFAULT_CIPHER): array {
         try {
             if (empty($plaintext)) {
-                throw new InvalidArgumentException('Plaintext darf nicht leer sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Plaintext darf nicht leer sein');
             }
 
             if (!in_array($cipher, self::ALLOWED_CIPHERS)) {
-                throw new InvalidArgumentException('Nicht unterstützter Verschlüsselungsalgorithmus: ' . $cipher);
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Verschlüsselungsalgorithmus: ' . $cipher);
             }
 
             // Key-Länge validieren
@@ -77,7 +77,7 @@ class CryptoHelper extends HelperAbstract {
             };
 
             if (strlen($key) !== $expectedKeyLength) {
-                throw new InvalidArgumentException("Key muss {$expectedKeyLength} Bytes lang sein für {$cipher}");
+                self::logErrorAndThrow(InvalidArgumentException::class, "Key muss {$expectedKeyLength} Bytes lang sein für {$cipher}");
             }
 
             // IV generieren
@@ -94,7 +94,7 @@ class CryptoHelper extends HelperAbstract {
             }
 
             if ($ciphertext === false) {
-                throw new InvalidArgumentException('Verschlüsselung fehlgeschlagen: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Verschlüsselung fehlgeschlagen: ' . openssl_error_string());
             }
 
             $result = [
@@ -124,31 +124,31 @@ class CryptoHelper extends HelperAbstract {
             $requiredKeys = ['ciphertext', 'iv', 'algorithm'];
             foreach ($requiredKeys as $reqKey) {
                 if (!array_key_exists($reqKey, $encryptedData)) {
-                    throw new InvalidArgumentException("Fehlender Key in verschlüsselten Daten: {$reqKey}");
+                    self::logErrorAndThrow(InvalidArgumentException::class, "Fehlender Key in verschlüsselten Daten: {$reqKey}");
                 }
             }
 
             $cipher = $encryptedData['algorithm'];
             if (!in_array($cipher, self::ALLOWED_CIPHERS)) {
-                throw new InvalidArgumentException('Nicht unterstützter Verschlüsselungsalgorithmus: ' . $cipher);
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Verschlüsselungsalgorithmus: ' . $cipher);
             }
 
             $ciphertext = base64_decode($encryptedData['ciphertext'], true);
             $iv = base64_decode($encryptedData['iv'], true);
 
             if ($ciphertext === false || $iv === false) {
-                throw new InvalidArgumentException('Ungültige Base64-Kodierung in verschlüsselten Daten');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültige Base64-Kodierung in verschlüsselten Daten');
             }
 
             if (str_contains($cipher, 'gcm')) {
                 // GCM Mode mit Tag-Verifikation
                 if (empty($encryptedData['tag'])) {
-                    throw new InvalidArgumentException('Authentication Tag fehlt für GCM-Mode');
+                    self::logErrorAndThrow(InvalidArgumentException::class, 'Authentication Tag fehlt für GCM-Mode');
                 }
 
                 $tag = base64_decode($encryptedData['tag'], true);
                 if ($tag === false) {
-                    throw new InvalidArgumentException('Ungültiger Authentication Tag');
+                    self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger Authentication Tag');
                 }
 
                 $plaintext = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
@@ -158,7 +158,7 @@ class CryptoHelper extends HelperAbstract {
             }
 
             if ($plaintext === false) {
-                throw new InvalidArgumentException('Entschlüsselung fehlgeschlagen: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Entschlüsselung fehlgeschlagen: ' . openssl_error_string());
             }
 
             return self::logDebugAndReturn($plaintext, "Daten erfolgreich entschlüsselt mit {$cipher}");
@@ -179,7 +179,7 @@ class CryptoHelper extends HelperAbstract {
     public static function generateKey(int $length = 32, bool $base64 = false): string {
         try {
             if ($length < 16 || $length > 256) {
-                throw new InvalidArgumentException('Schlüssellänge muss zwischen 16 und 256 Bytes liegen');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Schlüssellänge muss zwischen 16 und 256 Bytes liegen');
             }
 
             $key = random_bytes($length);
@@ -205,19 +205,19 @@ class CryptoHelper extends HelperAbstract {
     public static function deriveKey(string $password, string $salt, int $iterations = 100000, int $length = 32, string $algorithm = 'sha256'): string {
         try {
             if (strlen($password) < 1) {
-                throw new InvalidArgumentException('Password darf nicht leer sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Password darf nicht leer sein');
             }
 
             if (strlen($salt) < 16) {
-                throw new InvalidArgumentException('Salt muss mindestens 16 Bytes lang sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Salt muss mindestens 16 Bytes lang sein');
             }
 
             if ($iterations < 10000) {
-                throw new InvalidArgumentException('Mindestens 10000 Iterationen erforderlich');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Mindestens 10000 Iterationen erforderlich');
             }
 
             if (!in_array($algorithm, self::ALLOWED_HASHES)) {
-                throw new InvalidArgumentException('Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
             }
 
             $derivedKey = hash_pbkdf2($algorithm, $password, $salt, $iterations, $length, true);
@@ -242,11 +242,11 @@ class CryptoHelper extends HelperAbstract {
     public static function secureHash(string $data, string $salt = '', string $algorithm = self::DEFAULT_HASH): array {
         try {
             if (empty($data)) {
-                throw new InvalidArgumentException('Zu hashende Daten dürfen nicht leer sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Zu hashende Daten dürfen nicht leer sein');
             }
 
             if (!in_array($algorithm, self::ALLOWED_HASHES)) {
-                throw new InvalidArgumentException('Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
             }
 
             if (empty($salt)) {
@@ -313,15 +313,15 @@ class CryptoHelper extends HelperAbstract {
     public static function createHmac(string $data, string $key, string $algorithm = self::DEFAULT_HASH): string {
         try {
             if (empty($data)) {
-                throw new InvalidArgumentException('Zu signierende Daten dürfen nicht leer sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Zu signierende Daten dürfen nicht leer sein');
             }
 
             if (empty($key)) {
-                throw new InvalidArgumentException('HMAC-Schlüssel darf nicht leer sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'HMAC-Schlüssel darf nicht leer sein');
             }
 
             if (!in_array($algorithm, self::ALLOWED_HASHES)) {
-                throw new InvalidArgumentException('Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
             }
 
             $hmac = hash_hmac($algorithm, $data, $key, true);
@@ -366,7 +366,7 @@ class CryptoHelper extends HelperAbstract {
     public static function generateRsaKeyPair(int $keySize = 2048): array {
         try {
             if (!in_array($keySize, [2048, 3072, 4096])) {
-                throw new InvalidArgumentException('RSA-Schlüsselgröße muss 2048, 3072 oder 4096 Bits sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'RSA-Schlüsselgröße muss 2048, 3072 oder 4096 Bits sein');
             }
 
             $config = [
@@ -377,16 +377,16 @@ class CryptoHelper extends HelperAbstract {
 
             $resource = openssl_pkey_new($config);
             if ($resource === false) {
-                throw new InvalidArgumentException('RSA-Schlüsselgenerierung fehlgeschlagen: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'RSA-Schlüsselgenerierung fehlgeschlagen: ' . openssl_error_string());
             }
 
             if (!openssl_pkey_export($resource, $privateKey)) {
-                throw new InvalidArgumentException('Export des privaten Schlüssels fehlgeschlagen: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Export des privaten Schlüssels fehlgeschlagen: ' . openssl_error_string());
             }
 
             $publicKeyDetails = openssl_pkey_get_details($resource);
             if ($publicKeyDetails === false) {
-                throw new InvalidArgumentException('Extraktion des öffentlichen Schlüssels fehlgeschlagen');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Extraktion des öffentlichen Schlüssels fehlgeschlagen');
             }
 
             $result = [
@@ -412,16 +412,16 @@ class CryptoHelper extends HelperAbstract {
     public static function rsaEncrypt(string $data, string $publicKey): string {
         try {
             if (empty($data)) {
-                throw new InvalidArgumentException('Zu verschlüsselnde Daten dürfen nicht leer sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Zu verschlüsselnde Daten dürfen nicht leer sein');
             }
 
             $key = openssl_pkey_get_public($publicKey);
             if ($key === false) {
-                throw new InvalidArgumentException('Ungültiger öffentlicher RSA-Schlüssel: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger öffentlicher RSA-Schlüssel: ' . openssl_error_string());
             }
 
             if (!openssl_public_encrypt($data, $encrypted, $key, OPENSSL_PKCS1_OAEP_PADDING)) {
-                throw new InvalidArgumentException('RSA-Verschlüsselung fehlgeschlagen: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'RSA-Verschlüsselung fehlgeschlagen: ' . openssl_error_string());
             }
 
             $result = base64_encode($encrypted);
@@ -444,16 +444,16 @@ class CryptoHelper extends HelperAbstract {
         try {
             $encrypted = base64_decode($encryptedData, true);
             if ($encrypted === false) {
-                throw new InvalidArgumentException('Ungültige Base64-kodierte Daten');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültige Base64-kodierte Daten');
             }
 
             $key = openssl_pkey_get_private($privateKey);
             if ($key === false) {
-                throw new InvalidArgumentException('Ungültiger privater RSA-Schlüssel: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger privater RSA-Schlüssel: ' . openssl_error_string());
             }
 
             if (!openssl_private_decrypt($encrypted, $decrypted, $key, OPENSSL_PKCS1_OAEP_PADDING)) {
-                throw new InvalidArgumentException('RSA-Entschlüsselung fehlgeschlagen: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'RSA-Entschlüsselung fehlgeschlagen: ' . openssl_error_string());
             }
 
             return self::logDebugAndReturn($decrypted, "Daten erfolgreich RSA-entschlüsselt");
@@ -475,16 +475,16 @@ class CryptoHelper extends HelperAbstract {
     public static function rsaSign(string $data, string $privateKey, string $algorithm = 'SHA256'): string {
         try {
             if (empty($data)) {
-                throw new InvalidArgumentException('Zu signierende Daten dürfen nicht leer sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Zu signierende Daten dürfen nicht leer sein');
             }
 
             $key = openssl_pkey_get_private($privateKey);
             if ($key === false) {
-                throw new InvalidArgumentException('Ungültiger privater RSA-Schlüssel: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger privater RSA-Schlüssel: ' . openssl_error_string());
             }
 
             if (!openssl_sign($data, $signature, $key, $algorithm)) {
-                throw new InvalidArgumentException('RSA-Signierung fehlgeschlagen: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'RSA-Signierung fehlgeschlagen: ' . openssl_error_string());
             }
 
             $result = base64_encode($signature);
@@ -508,12 +508,12 @@ class CryptoHelper extends HelperAbstract {
         try {
             $signatureData = base64_decode($signature, true);
             if ($signatureData === false) {
-                throw new InvalidArgumentException('Ungültige Base64-kodierte Signatur');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültige Base64-kodierte Signatur');
             }
 
             $key = openssl_pkey_get_public($publicKey);
             if ($key === false) {
-                throw new InvalidArgumentException('Ungültiger öffentlicher RSA-Schlüssel: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger öffentlicher RSA-Schlüssel: ' . openssl_error_string());
             }
 
             $result = openssl_verify($data, $signatureData, $key, $algorithm);
@@ -523,7 +523,7 @@ class CryptoHelper extends HelperAbstract {
             } elseif ($result === 0) {
                 return self::logWarningAndReturn(false, "RSA-Signatur-Verifikation fehlgeschlagen");
             } else {
-                throw new InvalidArgumentException('RSA-Verifikation Fehler: ' . openssl_error_string());
+                self::logErrorAndThrow(InvalidArgumentException::class, 'RSA-Verifikation Fehler: ' . openssl_error_string());
             }
         } catch (Exception $e) {
             self::logException($e);
@@ -586,7 +586,7 @@ class CryptoHelper extends HelperAbstract {
     public static function secureRandomInt(int $min, int $max): int {
         try {
             if ($min >= $max) {
-                throw new InvalidArgumentException('Min-Wert muss kleiner als Max-Wert sein');
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Min-Wert muss kleiner als Max-Wert sein');
             }
 
             $result = random_int($min, $max);
