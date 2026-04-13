@@ -1300,4 +1300,14 @@ class DateHelper {
         $formatted = "$value $unit";
         return sprintf($isPast ? $t['ago'] : $t['in'], $formatted);
     }
+
+    /**
+     * Prüft ob ein String ein deutsches Datum im Format DD.MM.YYYY ist.
+     *
+     * @param string $value Der zu prüfende Wert.
+     * @return bool True wenn der Wert ein gültiges deutsches Datum ist.
+     */
+    public static function isGermanDate(string $value): bool {
+        return self::isValidDate($value, ['d.m.Y']);
+    }
 }

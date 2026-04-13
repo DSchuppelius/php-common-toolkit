@@ -235,6 +235,24 @@ class CurrencyHelper {
     }
 
     /**
+     * Prüft ob ein String ein gültiges deutsches Betragsformat ist.
+     *
+     * Erkennt Formate wie: -1.234,56, 1234,56, -12,34, 0,00
+     *
+     * @param string $value Der zu prüfende Wert.
+     * @return bool True wenn der Wert ein erkennbares Währungsformat hat.
+     */
+    public static function isGermanAmount(string $value): bool {
+        $cleaned = str_replace(' ', '', $value);
+        if ($cleaned === '') {
+            return false;
+        }
+
+        $format = null;
+        return self::isCurrency($cleaned, $format) && $format === 'DE';
+    }
+
+    /**
      * Normalisiert einen Betrag: entfernt Währungssymbole und konvertiert ins deutsche Format.
      *
      * Kombiniert stripSymbols() mit Format-Erkennung und Konvertierung.
