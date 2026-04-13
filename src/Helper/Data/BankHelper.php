@@ -23,6 +23,12 @@ use RuntimeException;
 class BankHelper {
     use ErrorLog;
 
+    /** IBAN-Suchmuster: 2 Buchstaben + 2 Ziffern + 12-30 alphanumerische Zeichen (ohne Anker/Delimiter) */
+    public const IBAN_REGEX = '[A-Z]{2}\d{2}[A-Z0-9]{12,30}';
+
+    /** BIC-Suchmuster: 4+2 Buchstaben + 2-5 alphanumerische Zeichen, 8 oder 11 Zeichen (ohne Anker/Delimiter) */
+    public const BIC_REGEX = '[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?';
+
     /** @var array<string, string>|null Cache für BLZ-Index (BLZ => Zeile) */
     private static ?array $blzIndex = null;
 
