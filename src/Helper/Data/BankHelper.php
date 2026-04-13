@@ -146,6 +146,23 @@ class BankHelper {
     }
 
     /**
+     * Prüft, ob der String wie eine BIC formatiert ist (4+2 Buchstaben + 2-5 alphanumerische Zeichen).
+     * 
+     * Diese Methode ist weniger strikt als isBIC() und prüft nur das grundlegende Format
+     * (8 oder 11 Zeichen, case-insensitive), nicht die strengen SWIFT-Regeln für Position 7/8.
+     * Geeignet für Formaterkennung, wo auch unvollständige BICs akzeptiert werden sollen.
+     *
+     * @param string|null $value Der zu prüfende String.
+     * @return bool True, wenn der String wie eine BIC aussieht.
+     */
+    public static function hasBICFormat(?string $value): bool {
+        if ($value === null || $value === '') {
+            return false;
+        }
+        return (bool) preg_match('/^' . self::BIC_REGEX . '$/i', $value);
+    }
+
+    /**
      * Überprüft die IBAN auf Gültigkeit.
      *
      * @param string $iban Die IBAN.
