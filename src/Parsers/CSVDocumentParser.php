@@ -84,7 +84,7 @@ class CSVDocumentParser extends HelperAbstract {
             $csv = DataStringHelper::convertEncoding($csv, $sourceEncoding, TextDocumentAbstract::DEFAULT_ENCODING);
         }
 
-        $lines = StringHelper::splitCsvByLogicalLine($csv, $enclosure);
+        $lines = StringHelper::splitCsvByLogicalLine($csv, $delimiter, $enclosure);
         if ($lines === [] || $lines === false) {
             static::logErrorAndThrow(RuntimeException::class, 'CSVDocumentParser::fromString() – keine gültigen Zeilen erkannt');
         }

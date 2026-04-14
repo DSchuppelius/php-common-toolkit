@@ -50,8 +50,8 @@ class LineTests extends BaseTestCase {
         ];
 
         foreach ($tests as $test) {
-            $strictResult = StringHelper::detectCSVEnclosureRepeat($test['line'], '"', ',', null, null, true);
-            $nonStrictResult = StringHelper::detectCSVEnclosureRepeat($test['line'], '"', ',', null, null, false);
+            $strictResult = StringHelper::detectCSVEnclosureRepeat($test['line'], ',', '"', null, null, true);
+            $nonStrictResult = StringHelper::detectCSVEnclosureRepeat($test['line'], ',', '"', null, null, false);
 
             $this->assertSame(
                 $test['expected_strict'],

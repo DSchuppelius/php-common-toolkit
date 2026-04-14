@@ -39,24 +39,23 @@ final class StringHelper extends BaseStringHelper {
             return false;
         }
 
-        $expectedStart = str_repeat($enclosure, $minRepeat);
-        $expectedEnd   = str_repeat($enclosure, $minRepeat);
+        $expected = str_repeat($enclosure, $minRepeat);
 
-        return str_starts_with($value, $expectedStart) && str_ends_with($value, $expectedEnd);
+        return str_starts_with($value, $expected) && str_ends_with($value, $expected);
     }
 
     /**
      * Erkennt die Anzahl der wiederholten Enclosures in einer CSV-Zeile.
      *
      * @param string      $line       Eingabezeile (z. B. aus einer CSV-Datei)
-     * @param string      $enclosure  Enclosure-Zeichen (z. B. '"')
      * @param string      $delimiter  Spaltentrennzeichen (z. B. "," oder ";")
+     * @param string      $enclosure  Enclosure-Zeichen (z. B. '"')
      * @param string|null $started    Optional: Startzeichen der Zeile
      * @param string|null $closed     Optional: Endzeichen der Zeile
      * @param bool        $strict     Ob der strikte (min) oder non-strikte (max) Wert zurückgegeben werden soll
      * @return int                    Die erkannte Anzahl der wiederholten Enclosures
      */
-    public static function detectCSVEnclosureRepeat(string $line, string $enclosure = '"', string $delimiter = ',', ?string $started = null, ?string $closed = null, bool $strict = true): int {
+    public static function detectCSVEnclosureRepeat(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null, bool $strict = true): int {
         $s = self::stripStartEnd($line, $started, $closed);
         if (empty($s)) return 0;
 
@@ -81,8 +80,8 @@ final class StringHelper extends BaseStringHelper {
      * @return array<string>             Array der generierten leeren Feldwerte
      */
     private static function genEmptyValuesFromCSVString(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null, bool $withDelimiter = true, ?int $strictRepeat = null, ?int $nonStrictRepeat = null): array {
-        $strictRepeat    ??= self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, $started, $closed, true);
-        $nonStrictRepeat ??= self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, $started, $closed, false);
+        $strictRepeat    ??= self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, $started, $closed, true);
+        $nonStrictRepeat ??= self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, $started, $closed, false);
 
         $repeats = array_unique(
             array_filter([$strictRepeat, $nonStrictRepeat], fn($v) => $v > 0)
@@ -128,10 +127,10 @@ final class StringHelper extends BaseStringHelper {
     private static function normalizeRepeatedEnclosures(string $line, string $delimiter = ',', string $enclosure = '"', ?int $maxRepeat = null, ?int $minRepeat = null): string {
         if ($line === '' || $enclosure === '') return $line;
 
-        $max = $maxRepeat ?? self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, null, null, false);
+        $max = $maxRepeat ?? self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, null, null, false);
         if ($max < 2) return $line;
 
-        $min = $minRepeat ?? self::detectCSVEnclosureRepeat($line, $enclosure, $delimiter, null, null, true);
+        $min = $minRepeat ?? self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, null, null, true);
 
         $with = self::genEmptyValuesFromCSVString($line, $delimiter, $enclosure, null, null, true, $min, $max);
 
@@ -158,86 +157,6 @@ final class StringHelper extends BaseStringHelper {
         }
 
         return $line;
-    }
-
-    /**
-     * Parst eine CSV-Zeile in Felder.
-     *
-     * @param string $line          Eingabezeile (z. B. aus einer CSV-Datei)
-     * @param string $delimiter     Spaltentrennzeichen (z. B. "," oder ";")
-     * @param string $enclosure     Enclosure-Zeichen (z. B. '"')
-     * @param bool   $withMeta      Ob Metadaten zu den Feldern zurückgegeben werden sollen
-     * @return array{fields:array<int,string>,enclosed:int,total:int,meta?:array<int,array{quoted:bool,repeat:int,raw:string}>}
-     * @throws RuntimeException
-     */
-    private static function parseCSVLine(string $line, string $delimiter, string $enclosure, bool $withMeta = false): array {
-        if ($delimiter === '') self::logErrorAndThrow(RuntimeException::class, 'Delimiter darf nicht leer sein');
-        if (empty(trim($line))) {
-            return ['fields' => [], 'enclosed' => 0, 'total' => 0] + ($withMeta ? ['meta' => []] : []);
-        }
-
-        $fields = DataLine::fromString($line, $delimiter, $enclosure)->getFields();
-        $meta   = [];
-
-        foreach ($fields as $field) {
-            $meta[] = [
-                'quoted'   => $field->isQuoted(),
-                'repeat'   => $field->getEnclosureRepeat(),
-                'raw'      => $field->getRaw(),
-            ];
-        }
-
-        $enclosed = count(array_filter($fields, fn($f) => $f->isQuoted()));
-
-        $out = [
-            'fields'   => array_map(fn($f) => $f->getValue(), $fields),
-            'enclosed' => $enclosed,
-            'total'    => count($fields),
-        ];
-        if ($withMeta) $out['meta'] = $meta;
-
-        return $out;
-    }
-
-    /**
-     * Ersetzt Zeilenumbrüche in gequoteten Feldern durch einen Ersatzstring.
-     *
-     * @param array<int,string> $fields      Die Felder der CSV-Zeile.
-     * @param array<int,array{quoted:bool,repeat:int,raw:string}> $meta Metadaten zu den Feldern.
-     * @param string            $replacement Der Ersatzstring für Zeilenumbrüche.
-     * @return array<int,string>             Die Felder mit ersetzten Zeilenumbrüchen.
-     */
-    private static function replaceNewlinesInQuoted(array $fields, array $meta, string $replacement): array {
-        $nlRe = "/\r\n|\r|\n/u";
-        foreach ($fields as $i => $val) {
-            if (($meta[$i]['quoted'] ?? false) && $val !== '') {
-                $fields[$i] = preg_replace($nlRe, $replacement, $val) ?? $val;
-            }
-        }
-        return $fields;
-    }
-
-    /**
-     * Wrapper für CSV mit optionalem Newline-Ersatz in gequoteten Feldern.
-     *
-     * @param string      $lines          Eingabezeilen (z. B. aus einer CSV-Datei)
-     * @param string      $delimiter      Spaltentrennzeichen (z. B. "," oder ";")
-     * @param string      $enclosure      Enclosure-Zeichen (z. B. '"')
-     * @param string|null $nlReplacement  Ersatz für \r,\n,\r\n in gequoteten Feldern.
-     *                                    null = nicht ersetzen (Default: ' ').
-     * @return array{fields:array<int,string>,enclosed:int,total:int}
-     */
-    private static function parseCSVMultiLine(string $lines, string $delimiter = ',', string $enclosure = '"', ?string $nlReplacement = ' '): array {
-        $parsed = self::parseCSVLine($lines, $delimiter, $enclosure, true);
-        $fields = $nlReplacement === null
-            ? $parsed['fields']
-            : self::replaceNewlinesInQuoted($parsed['fields'], $parsed['meta'] ?? [], $nlReplacement);
-
-        return [
-            'fields'   => $fields,
-            'enclosed' => $parsed['enclosed'],
-            'total'    => $parsed['total'],
-        ];
     }
 
     /**
@@ -374,10 +293,11 @@ final class StringHelper extends BaseStringHelper {
      * Felder mit Zeilenumbrüchen berücksichtigen.
      *
      * @param string $csv       Eingabe-CSV-Zeichenkette
+     * @param string $delimiter Spaltentrennzeichen (z. B. "," oder ";")
      * @param string $enclosure Enclosure-Zeichen (z. B. '"')
      * @return array<string>    Array der logischen CSV-Zeilen
      */
-    public static function splitCsvByLogicalLine(string $csv, string $enclosure = '"'): array {
+    public static function splitCsvByLogicalLine(string $csv, string $delimiter = ',', string $enclosure = '"'): array {
         $lines = preg_split('/\r\n|\r|\n/', $csv);
         $result = [];
         $buffer = '';
@@ -385,7 +305,7 @@ final class StringHelper extends BaseStringHelper {
         foreach ($lines as $line) {
             $buffer .= ($buffer !== '' ? "\n" : '') . $line;
 
-            if (!self::hasMultilineFields($buffer, ',', $enclosure)) {
+            if (!self::hasMultilineFields($buffer, $delimiter, $enclosure)) {
                 $result[] = $buffer;
                 $buffer = '';
             }
@@ -470,16 +390,16 @@ final class StringHelper extends BaseStringHelper {
      * Extrahiert Felder aus einer CSV-ähnlichen Zeile, die mit wiederholten Enclosures
      * und einem Delimiter strukturiert ist.
      *
-     * @param string      $line             Eingabezeile (z. B. aus einer CSV-Datei)
-     * @param string      $delimiter        Spaltentrennzeichen (z. B. "," oder ";")
-     * @param string      $enclosure        Enclosure-Zeichen (z. B. '"')
-     * @param int         $enclosureRepeat  Anzahl der zu erwartenden Wiederholungen
-     * @param ?string     $started          Optionales Startzeichen der Zeile
-     * @param ?string     $closed           Optionales Endzeichen der Zeile
-     * @return array<string>                Array der Felder
-     * @throws RuntimeException             Wenn die Struktur inkonsistent ist
+     * @param array|string $lines                Eingabezeile (z. B. aus einer CSV-Datei)
+     * @param string       $delimiter            Spaltentrennzeichen (z. B. "," oder ";")
+     * @param string       $enclosure            Enclosure-Zeichen (z. B. '"')
+     * @param ?string      $started              Optionales Startzeichen der Zeile
+     * @param ?string      $closed               Optionales Endzeichen der Zeile
+     * @param string       $multiLineReplacement Optional: Ersetzung für Zeilenumbrüche in gequoteten Feldern (Standard: " ")
+     * @return array<string>                     Array der Felder
+     * @throws RuntimeException                  Wenn die Struktur inkonsistent ist
      */
-    public static function extractFields(array|string $lines, string $delimiter = ';', string $enclosure = '"', ?string $started = null, ?string $closed = null, string $multiLineReplacement = " "): array {
+    public static function extractFields(array|string $lines, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null, string $multiLineReplacement = " "): array {
         $raw = is_array($lines) ? implode("\n", $lines) : (string)$lines;
         $s   = self::stripStartEnd($raw, $started, $closed);
 
