@@ -87,10 +87,10 @@ class CsvFile extends HelperAbstract {
     }
 
     /**
-     * Liest eine CSV-Datei und gibt die Zeilen als Generator zurück.
+     * Erkennt das Trennzeichen einer CSV-Datei anhand der häufigsten Vorkommen.
      *
-     * @param string $file       Der Pfad zur CSV-Datei.
-     * @param string $delimiter  Das Trennzeichen (Standard: ',').
+     * @param string $file      Der Pfad zur CSV-Datei.
+     * @param int $maxLines     Anzahl der zu prüfenden Zeilen (Standard: 10).
      */
     public static function detectDelimiter(string $file, int $maxLines = 10): string {
         $file = self::resolveFile($file);
@@ -198,7 +198,7 @@ class CsvFile extends HelperAbstract {
         $lines = self::readLines($file, $delimiter);
         $header = $lines->current();
 
-        if ($header === false) {
+        if ($header === null) {
             return self::logDebugAndReturn(false, "Header konnte nicht gelesen werden: $file");
         }
 
@@ -293,7 +293,7 @@ class CsvFile extends HelperAbstract {
         } elseif (implode('', $row) === '') {
             return self::logDebugAndReturn(false, "Leere Zeile erkannt, kein Vergleich notwendig.");
         } elseif ($strict && count($row) != count($patterns)) {
-            return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($row) . ") enstpricht nicht der Musteranzahl (" . count($patterns) . ").");
+            return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($row) . ") entspricht nicht der Musteranzahl (" . count($patterns) . ").");
         } elseif (!$strict && count($row) < count($patterns)) {
             return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($row) . ") ist kleiner als die Musteranzahl (" . count($patterns) . ").");
         }
@@ -319,9 +319,10 @@ class CsvFile extends HelperAbstract {
     /**
      * Prüft eine CSV-Zeile gegen ein Strukturmuster.
      *
-     * @param array $row   Die CSV-Zeile als Array.
-     * @param string $patterns Ein Strukturmuster (z. B. "dbkti").
-     * @param int $columns   Erwartete Spaltenanzahl (optional).
+     * @param array $row        Die CSV-Zeile als Array.
+     * @param string $patterns  Ein Strukturmuster (z. B. "dbkti").
+     * @param int|null $columns Erwartete Spaltenanzahl (optional).
+     * @param bool $strict      Strikte Übereinstimmung (Standard: true).
      */
     public static function checkStructure(array $row, string $patterns, ?int $columns = null, bool $strict = true): bool {
         if (!is_null($columns) && count($row) !== $columns) {
