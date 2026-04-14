@@ -222,6 +222,12 @@ class CSVDocumentBuilder extends HelperAbstract {
         }
 
         $headerValues = array_map(fn($f) => $f->getValue(), $this->header->getFields());
+
+        // Duplikate erkennen – array_flip() würde bei doppelten Header-Namen den ersten Index überschreiben
+        if (count($headerValues) !== count(array_unique($headerValues))) {
+            $this->logErrorAndThrow(RuntimeException::class, 'Header enthält doppelte Spaltennamen – reorderColumns() ist nicht sicher anwendbar.');
+        }
+
         $headerMap = array_flip($headerValues);
 
         foreach ($newOrder as $name) {

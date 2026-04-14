@@ -38,7 +38,6 @@ use Throwable;
 class CsvFile extends HelperAbstract {
     protected static array $commonDelimiters = [',', ';', "\t", '|'];
     protected static string $defaultEnclosure = '"';
-    protected static string $defaultEscape = '\\';
 
     /**
      * Liest eine CSV-Datei und gibt die Zeilen als Generator zurück.
@@ -87,6 +86,19 @@ class CsvFile extends HelperAbstract {
     }
 
     /**
+     * Löst den Dateipfad auf und erkennt den Delimiter.
+     *
+     * @param string $file           Der Pfad zur CSV-Datei.
+     * @param string|null $delimiter Das Trennzeichen (optional, wird erkannt wenn null).
+     * @return array{0: string, 1: string} [aufgelöster Pfad, Delimiter]
+     */
+    private static function resolveAndDetect(string $file, ?string $delimiter = null): array {
+        $file = self::resolveFile($file);
+        $delimiter ??= self::detectDelimiter($file);
+        return [$file, $delimiter];
+    }
+
+    /**
      * Erkennt das Trennzeichen einer CSV-Datei anhand der häufigsten Vorkommen.
      *
      * @param string $file      Der Pfad zur CSV-Datei.
@@ -94,21 +106,14 @@ class CsvFile extends HelperAbstract {
      */
     public static function detectDelimiter(string $file, int $maxLines = 10): string {
         $file = self::resolveFile($file);
-        $handle = fopen($file, 'r');
-        if (!$handle) {
-            self::logErrorAndThrow(Exception::class, "Fehler beim Öffnen der Datei: $file");
-        }
 
         $delimiterCounts = array_fill_keys(self::$commonDelimiters, 0);
-        $lineCount = 0;
 
-        while (($line = fgets($handle)) !== false && $lineCount < $maxLines) {
+        foreach (File::readLines($file, true, $maxLines) as $line) {
             foreach (self::$commonDelimiters as $delimiter) {
                 $delimiterCounts[$delimiter] += substr_count($line, $delimiter);
             }
-            $lineCount++;
         }
-        fclose($handle);
 
         arsort($delimiterCounts);
         $detectedDelimiter = key($delimiterCounts);
@@ -127,8 +132,7 @@ class CsvFile extends HelperAbstract {
      * @param string|null $delimiter  Das Trennzeichen (optional).
      */
     public static function getMetaData(string $file, ?string $delimiter = null): array {
-        $file = self::resolveFile($file);
-        $delimiter ??= self::detectDelimiter($file);
+        [$file, $delimiter] = self::resolveAndDetect($file, $delimiter);
         $lines = self::readLines($file, $delimiter);
 
         $rowCount = 0;
@@ -208,10 +212,13 @@ class CsvFile extends HelperAbstract {
         }
 
         if ($wellFormed) {
-            foreach ($lines as $index => $row) {
+            $lines->next();
+            while ($lines->valid()) {
+                $row = $lines->current();
                 if (count($row) !== count($header)) {
-                    return self::logDebugAndReturn(false, "Zeile $index hat nicht die gleiche Anzahl Spalten wie der Header.");
+                    return self::logDebugAndReturn(false, "Datenzeile hat nicht die gleiche Anzahl Spalten wie der Header.");
                 }
+                $lines->next();
             }
         }
 
@@ -230,12 +237,10 @@ class CsvFile extends HelperAbstract {
      */
     public static function checkStructureFile(string $file, string $structurePattern, ?string $delimiter = null, ?int $expectedColumns = null, bool $checkAllRows = false, bool $strict = true): bool {
         try {
-            $file = self::resolveFile($file);
+            [$file, $delimiter] = self::resolveAndDetect($file, $delimiter);
         } catch (Throwable $e) {
             return self::logDebugAndReturn(false, "Fehler beim Öffnen der Datei: " . $e->getMessage());
         }
-
-        $delimiter ??= self::detectDelimiter($file);
 
         foreach (self::readLines($file, $delimiter) as $row) {
             if (!self::checkStructure($row, $structurePattern, $expectedColumns, $strict)) {
@@ -260,12 +265,10 @@ class CsvFile extends HelperAbstract {
      */
     public static function matchRow(string $file, array $columnPatterns, ?string $delimiter = null, string $encoding = 'UTF-8', ?array &$matchingRow = null, bool $strict = true): bool {
         try {
-            $file = self::resolveFile($file);
+            [$file, $delimiter] = self::resolveAndDetect($file, $delimiter);
         } catch (Throwable $e) {
             return self::logDebugAndReturn(false, "Fehler beim Öffnen der Datei: " . $e->getMessage());
         }
-
-        $delimiter ??= self::detectDelimiter($file);
 
         foreach (self::readLines($file, $delimiter) as $row) {
             if (self::matchColumns($row, $columnPatterns, $encoding, $strict)) {
@@ -359,8 +362,7 @@ class CsvFile extends HelperAbstract {
      * @return bool
      */
     public static function hasRepeatedEnclosureColumns(string $file, ?string $delimiter = null, int $maxLines = 5, int $enclosureRepeat = 2): bool {
-        $file = self::resolveFile($file);
-        $delimiter ??= self::detectDelimiter($file);
+        [$file, $delimiter] = self::resolveAndDetect($file, $delimiter);
 
         $checked = 0;
         $hits = 0;
@@ -377,7 +379,6 @@ class CsvFile extends HelperAbstract {
 
     /**
      * Gibt die Anzahl der Datenzeilen in der CSV-Datei zurück.
-     * Optimiert: Zählt nur Zeilen ohne vollständiges Parsen.
      *
      * @param string $file Der Pfad zur CSV-Datei.
      * @param string|null $delimiter Das Trennzeichen (optional).
@@ -386,8 +387,7 @@ class CsvFile extends HelperAbstract {
      */
     public static function countDataRows(string $file, ?string $delimiter = null, bool $hasHeader = true): int {
         try {
-            $file = self::resolveFile($file);
-            $delimiter ??= self::detectDelimiter($file);
+            [$file, $delimiter] = self::resolveAndDetect($file, $delimiter);
 
             $count = 0;
             foreach (self::readLines($file, $delimiter) as $_) {
