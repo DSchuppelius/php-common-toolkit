@@ -20,7 +20,6 @@ use CommonToolkit\Helper\{Platform, Shell};
 use CommonToolkit\Traits\RealPathTrait;
 use ERRORToolkit\Exceptions\FileSystem\{FileExistsException, FileNotFoundException, FileNotWrittenException, FolderNotFoundException};
 use Exception;
-use finfo;
 use Generator;
 use InvalidArgumentException;
 
@@ -36,11 +35,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     private static array $chardetCache = [];
 
     /**
-     * Gibt den konfigurierten Shell-Befehl zurück.
+     * Gibt den realen Dateipfad zurück oder false, wenn die Datei nicht gefunden wurde.
      *
-     * @param string $commandName Der Name des Befehls.
-     * @param array $params Die Parameter für den Befehl.
-     * @return string|null Der konfigurierte Befehl oder null, wenn nicht gefunden.
+     * @param string $file Der Dateipfad.
+     * @return string|false Der reale Dateipfad oder false, wenn nicht gefunden.
      */
     private static function getRealExistingFile(string $file): string|false {
         try {
@@ -92,7 +90,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         if (class_exists('finfo')) {
             self::logDebug("Nutze finfo für MIME-Typ: $file");
-            $finfo ??= new finfo(FILEINFO_MIME_TYPE);
+            $finfo ??= new \finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->file($file);
             if ($result !== false) {
                 $cache[$file] = $result;
@@ -124,7 +122,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         if (class_exists('finfo')) {
             self::logDebug("Nutze finfo für MIME-Encoding: $file");
-            $finfo = new finfo(FILEINFO_MIME_ENCODING);
+            $finfo = new \finfo(FILEINFO_MIME_ENCODING);
             $result = $finfo->file($file);
             if ($result !== false) return $result;
         }
@@ -434,9 +432,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $isWriteMode = str_contains($mode, 'w') || str_contains($mode, 'a') || str_contains($mode, 'x') || str_contains($mode, 'c');
 
         if (!$isWriteMode) {
+            $originalFile = $file;
             $file = self::getRealExistingFile($file);
             if ($file === false) {
-                return self::logErrorAndReturn(false, "Datei nicht gefunden für Stream: $file");
+                return self::logErrorAndReturn(false, "Datei nicht gefunden für Stream: $originalFile");
             }
         } else {
             $file = self::getRealPath($file);
