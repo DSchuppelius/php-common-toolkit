@@ -83,16 +83,30 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::getRealExistingFile($file);
         if ($file === false) return false;
 
+        static $cache = [];
+        static $finfo = null;
+
+        if (isset($cache[$file])) {
+            return $cache[$file];
+        }
+
         if (class_exists('finfo')) {
             self::logDebug("Nutze finfo für MIME-Typ: $file");
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $finfo ??= new finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->file($file);
-            if ($result !== false) return $result;
+            if ($result !== false) {
+                $cache[$file] = $result;
+                return $result;
+            }
         }
 
         if (Platform::isLinux()) {
             self::logWarning("Fallback via Shell für MIME-Typ: $file");
-            return self::detectViaShell('mimetype', $file);
+            $result = self::detectViaShell('mimetype', $file);
+            if ($result !== false) {
+                $cache[$file] = $result;
+            }
+            return $result;
         }
 
         return self::logErrorAndReturn(false, "MIME-Typ konnte nicht bestimmt werden: $file");
