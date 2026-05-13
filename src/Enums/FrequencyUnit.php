@@ -26,7 +26,7 @@ enum FrequencyUnit: string {
      * Gibt den Umrechnungsfaktor in Hertz zurück.
      */
     public function toHertz(): float {
-        return match($this) {
+        return match ($this) {
             self::HERTZ      => 1.0,
             self::KILOHERTZ  => 1_000.0,
             self::MEGAHERTZ  => 1_000_000.0,
@@ -42,7 +42,7 @@ enum FrequencyUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::HERTZ      => 'Hertz',
             self::KILOHERTZ  => 'Kilohertz',
             self::MEGAHERTZ  => 'Megahertz',

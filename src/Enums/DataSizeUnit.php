@@ -24,7 +24,7 @@ enum DataSizeUnit: string {
     case GIGABIT    = 'Gbit';
     case TERABIT    = 'Tbit';
 
-    // Byte-Einheiten (dezimal, SI)
+        // Byte-Einheiten (dezimal, SI)
     case BYTE       = 'B';
     case KILOBYTE   = 'kB';     // 1.000 B
     case MEGABYTE   = 'MB';     // 1.000.000 B
@@ -32,7 +32,7 @@ enum DataSizeUnit: string {
     case TERABYTE   = 'TB';
     case PETABYTE   = 'PB';
 
-    // Byte-Einheiten (binär, IEC)
+        // Byte-Einheiten (binär, IEC)
     case KIBIBYTE   = 'KiB';    // 1.024 B
     case MEBIBYTE   = 'MiB';    // 1.048.576 B
     case GIBIBYTE   = 'GiB';
@@ -43,7 +43,7 @@ enum DataSizeUnit: string {
      * Gibt den Umrechnungsfaktor in Bit zurück.
      */
     public function toBits(): float {
-        return match($this) {
+        return match ($this) {
             self::BIT       => 1.0,
             self::KILOBIT   => 1_000.0,
             self::MEGABIT   => 1_000_000.0,
@@ -67,7 +67,7 @@ enum DataSizeUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::BIT       => 'Bit',
             self::KILOBIT   => 'Kilobit',
             self::MEGABIT   => 'Megabit',

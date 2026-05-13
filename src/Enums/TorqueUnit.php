@@ -27,7 +27,7 @@ enum TorqueUnit: string {
      * Gibt den Umrechnungsfaktor in Newton·Meter zurück.
      */
     public function toNewtonMeters(): float {
-        return match($this) {
+        return match ($this) {
             self::MILLINEWTON_METER      => 0.001,
             self::NEWTON_METER           => 1.0,
             self::KILONEWTON_METER       => 1_000.0,
@@ -44,7 +44,7 @@ enum TorqueUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::MILLINEWTON_METER      => 'Millinewtonmeter',
             self::NEWTON_METER           => 'Newtonmeter',
             self::KILONEWTON_METER       => 'Kilonewtonmeter',

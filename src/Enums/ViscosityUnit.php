@@ -28,7 +28,7 @@ enum ViscosityUnit: string {
      * Gibt den Umrechnungsfaktor in Pascal·Sekunde zurück.
      */
     public function toPascalSeconds(): float {
-        return match($this) {
+        return match ($this) {
             self::PASCAL_SECOND                       => 1.0,
             self::MILLIPASCAL_SECOND                  => 0.001,
             self::CENTIPOISE                          => 0.001,
@@ -42,7 +42,7 @@ enum ViscosityUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::PASCAL_SECOND                       => 'Pascalsekunde',
             self::MILLIPASCAL_SECOND                  => 'Millipascalsekunde',
             self::CENTIPOISE                          => 'Centipoise',

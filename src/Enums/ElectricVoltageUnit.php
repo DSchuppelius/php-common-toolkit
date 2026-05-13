@@ -23,7 +23,7 @@ enum ElectricVoltageUnit: string {
      * Gibt den Umrechnungsfaktor in Volt zurück.
      */
     public function toVolts(): float {
-        return match($this) {
+        return match ($this) {
             self::MICROVOLT => 0.000001,
             self::MILLIVOLT => 0.001,
             self::VOLT      => 1.0,
@@ -36,7 +36,7 @@ enum ElectricVoltageUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::MICROVOLT => 'Mikrovolt',
             self::MILLIVOLT => 'Millivolt',
             self::VOLT      => 'Volt',

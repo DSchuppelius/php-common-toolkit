@@ -30,7 +30,7 @@ enum AreaUnit: string {
      * Gibt den Umrechnungsfaktor in Quadratmillimeter zurück.
      */
     public function toSquareMillimeters(): float {
-        return match($this) {
+        return match ($this) {
             self::SQUARE_MILLIMETER => 1.0,
             self::SQUARE_CENTIMETER => 100.0,
             self::SQUARE_DECIMETER  => 10_000.0,
@@ -50,7 +50,7 @@ enum AreaUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::SQUARE_MILLIMETER => 'Quadratmillimeter',
             self::SQUARE_CENTIMETER => 'Quadratzentimeter',
             self::SQUARE_DECIMETER  => 'Quadratdezimeter',

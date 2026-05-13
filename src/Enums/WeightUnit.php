@@ -30,7 +30,7 @@ enum WeightUnit: string {
      * Gibt den Umrechnungsfaktor in Gramm zurück.
      */
     public function toGrams(): float {
-        return match($this) {
+        return match ($this) {
             self::MICROGRAM   => 0.000001,
             self::MILLIGRAM   => 0.001,
             self::GRAM        => 1.0,
@@ -50,7 +50,7 @@ enum WeightUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::MICROGRAM   => 'Mikrogramm',
             self::MILLIGRAM   => 'Milligramm',
             self::GRAM        => 'Gramm',

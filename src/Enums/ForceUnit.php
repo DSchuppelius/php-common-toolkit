@@ -28,7 +28,7 @@ enum ForceUnit: string {
      * Gibt den Umrechnungsfaktor in Newton zurück.
      */
     public function toNewtons(): float {
-        return match($this) {
+        return match ($this) {
             self::NEWTON         => 1.0,
             self::KILONEWTON     => 1_000.0,
             self::MEGANEWTON     => 1_000_000.0,
@@ -46,7 +46,7 @@ enum ForceUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::NEWTON         => 'Newton',
             self::KILONEWTON     => 'Kilonewton',
             self::MEGANEWTON     => 'Meganewton',

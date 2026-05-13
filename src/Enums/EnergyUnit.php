@@ -31,7 +31,7 @@ enum EnergyUnit: string {
      * Gibt den Umrechnungsfaktor in Joule zurück.
      */
     public function toJoules(): float {
-        return match($this) {
+        return match ($this) {
             self::JOULE         => 1.0,
             self::KILOJOULE     => 1_000.0,
             self::MEGAJOULE     => 1_000_000.0,
@@ -52,7 +52,7 @@ enum EnergyUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::JOULE         => 'Joule',
             self::KILOJOULE     => 'Kilojoule',
             self::MEGAJOULE     => 'Megajoule',

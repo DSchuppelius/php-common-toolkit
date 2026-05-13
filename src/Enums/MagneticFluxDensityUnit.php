@@ -24,7 +24,7 @@ enum MagneticFluxDensityUnit: string {
      * Gibt den Umrechnungsfaktor in Tesla zurück.
      */
     public function toTesla(): float {
-        return match($this) {
+        return match ($this) {
             self::NANOTESLA  => 1e-9,
             self::MICROTESLA => 1e-6,
             self::MILLITESLA => 0.001,
@@ -38,7 +38,7 @@ enum MagneticFluxDensityUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::NANOTESLA  => 'Nanotesla',
             self::MICROTESLA => 'Mikrotesla',
             self::MILLITESLA => 'Millitesla',

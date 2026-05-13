@@ -30,7 +30,7 @@ enum PressureUnit: string {
      * Gibt den Umrechnungsfaktor in Pascal zurück.
      */
     public function toPascal(): float {
-        return match($this) {
+        return match ($this) {
             self::PASCAL        => 1.0,
             self::HECTOPASCAL   => 100.0,
             self::KILOPASCAL    => 1_000.0,
@@ -50,7 +50,7 @@ enum PressureUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::PASCAL        => 'Pascal',
             self::HECTOPASCAL   => 'Hektopascal',
             self::KILOPASCAL    => 'Kilopascal',

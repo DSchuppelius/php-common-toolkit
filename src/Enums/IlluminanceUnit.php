@@ -28,7 +28,7 @@ enum IlluminanceUnit: string {
      * Gibt den Umrechnungsfaktor in Lux zurück.
      */
     public function toLux(): float {
-        return match($this) {
+        return match ($this) {
             self::LUX         => 1.0,
             self::MILLILUX    => 0.001,
             self::KILOLUX     => 1_000.0,
@@ -42,7 +42,7 @@ enum IlluminanceUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::LUX         => 'Lux',
             self::MILLILUX    => 'Millilux',
             self::KILOLUX     => 'Kilolux',

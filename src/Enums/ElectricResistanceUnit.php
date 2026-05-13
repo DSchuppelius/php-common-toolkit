@@ -24,7 +24,7 @@ enum ElectricResistanceUnit: string {
      * Gibt den Umrechnungsfaktor in Ohm zurück.
      */
     public function toOhms(): float {
-        return match($this) {
+        return match ($this) {
             self::MICROOHM => 0.000001,
             self::MILLIOHM => 0.001,
             self::OHM      => 1.0,
@@ -38,7 +38,7 @@ enum ElectricResistanceUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::MICROOHM => 'Mikroohm',
             self::MILLIOHM => 'Milliohm',
             self::OHM      => 'Ohm',

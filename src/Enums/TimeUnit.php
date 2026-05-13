@@ -30,7 +30,7 @@ enum TimeUnit: string {
      * Gibt den Umrechnungsfaktor in Sekunden zurück.
      */
     public function toSeconds(): float {
-        return match($this) {
+        return match ($this) {
             self::NANOSECOND  => 1e-9,
             self::MICROSECOND => 1e-6,
             self::MILLISECOND => 1e-3,
@@ -50,7 +50,7 @@ enum TimeUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::NANOSECOND  => 'Nanosekunde',
             self::MICROSECOND => 'Mikrosekunde',
             self::MILLISECOND => 'Millisekunde',

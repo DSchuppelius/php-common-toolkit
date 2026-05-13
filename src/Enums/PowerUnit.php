@@ -28,7 +28,7 @@ enum PowerUnit: string {
      * Gibt den Umrechnungsfaktor in Watt zurück.
      */
     public function toWatts(): float {
-        return match($this) {
+        return match ($this) {
             self::WATT               => 1.0,
             self::KILOWATT           => 1_000.0,
             self::MEGAWATT           => 1_000_000.0,
@@ -46,7 +46,7 @@ enum PowerUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::WATT               => 'Watt',
             self::KILOWATT           => 'Kilowatt',
             self::MEGAWATT           => 'Megawatt',

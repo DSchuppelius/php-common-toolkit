@@ -23,7 +23,7 @@ enum ElectricCurrentUnit: string {
      * Gibt den Umrechnungsfaktor in Ampere zurück.
      */
     public function toAmperes(): float {
-        return match($this) {
+        return match ($this) {
             self::NANOAMPERE  => 0.000000001,
             self::MICROAMPERE => 0.000001,
             self::MILLIAMPERE => 0.001,
@@ -36,7 +36,7 @@ enum ElectricCurrentUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::NANOAMPERE  => 'Nanoampere',
             self::MICROAMPERE => 'Mikroampere',
             self::MILLIAMPERE => 'Milliampere',

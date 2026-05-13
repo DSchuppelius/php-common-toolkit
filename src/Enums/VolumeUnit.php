@@ -39,7 +39,7 @@ enum VolumeUnit: string {
      * Gibt den Umrechnungsfaktor in Milliliter zurück.
      */
     public function toMilliliters(): float {
-        return match($this) {
+        return match ($this) {
             self::MICROLITER        => 0.001,
             self::MILLILITER        => 1.0,
             self::CENTILITER        => 10.0,
@@ -68,7 +68,7 @@ enum VolumeUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::MICROLITER        => 'Mikroliter',
             self::MILLILITER        => 'Milliliter',
             self::CENTILITER        => 'Centiliter',

@@ -25,7 +25,7 @@ enum AccelerationUnit: string {
      * Gibt den Umrechnungsfaktor in Meter pro Sekunde² zurück.
      */
     public function toMetersPerSecondSquared(): float {
-        return match($this) {
+        return match ($this) {
             self::METER_PER_SECOND_SQUARED => 1.0,
             self::STANDARD_GRAVITY         => 9.80665,
             self::FOOT_PER_SECOND_SQUARED  => 0.3048,
@@ -40,7 +40,7 @@ enum AccelerationUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::METER_PER_SECOND_SQUARED => 'Meter pro Sekunde²',
             self::STANDARD_GRAVITY         => 'Erdbeschleunigung (g₀)',
             self::FOOT_PER_SECOND_SQUARED  => 'Fuß pro Sekunde²',

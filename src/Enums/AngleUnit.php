@@ -25,7 +25,7 @@ enum AngleUnit: string {
      * Gibt den Umrechnungsfaktor in Grad (Dezimalgrad) zurück.
      */
     public function toDegrees(): float {
-        return match($this) {
+        return match ($this) {
             self::DEGREE      => 1.0,
             self::RADIAN      => 180.0 / M_PI,
             self::GRADIAN     => 0.9,               // 360 / 400
@@ -40,7 +40,7 @@ enum AngleUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::DEGREE      => 'Grad',
             self::RADIAN      => 'Radiant',
             self::GRADIAN     => 'Gon (Neugrad)',

@@ -24,7 +24,7 @@ enum ElectricCapacitanceUnit: string {
      * Gibt den Umrechnungsfaktor in Farad zurück.
      */
     public function toFarads(): float {
-        return match($this) {
+        return match ($this) {
             self::PICOFARAD  => 1e-12,
             self::NANOFARAD  => 1e-9,
             self::MICROFARAD => 1e-6,
@@ -38,7 +38,7 @@ enum ElectricCapacitanceUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::PICOFARAD  => 'Picofarad',
             self::NANOFARAD  => 'Nanofarad',
             self::MICROFARAD => 'Mikrofarad',

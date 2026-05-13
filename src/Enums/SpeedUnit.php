@@ -25,7 +25,7 @@ enum SpeedUnit: string {
      * Gibt den Umrechnungsfaktor in Meter pro Sekunde zurück.
      */
     public function toMetersPerSecond(): float {
-        return match($this) {
+        return match ($this) {
             self::METER_PER_SECOND   => 1.0,
             self::KILOMETER_PER_HOUR => 1.0 / 3.6,
             self::MILE_PER_HOUR      => 0.44704,
@@ -40,7 +40,7 @@ enum SpeedUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::METER_PER_SECOND   => 'Meter pro Sekunde',
             self::KILOMETER_PER_HOUR => 'Kilometer pro Stunde',
             self::MILE_PER_HOUR      => 'Meile pro Stunde',

@@ -32,7 +32,7 @@ enum LengthUnit: string {
      * Gibt den Umrechnungsfaktor in Millimeter zurück.
      */
     public function toMillimeters(): float {
-        return match($this) {
+        return match ($this) {
             self::NANOMETER         => 0.000001,
             self::MICROMETER        => 0.001,
             self::MILLIMETER        => 1.0,
@@ -54,7 +54,7 @@ enum LengthUnit: string {
      * Gibt den menschenlesbaren deutschen Namen zurück.
      */
     public function label(): string {
-        return match($this) {
+        return match ($this) {
             self::NANOMETER         => 'Nanometer',
             self::MICROMETER        => 'Mikrometer',
             self::MILLIMETER        => 'Millimeter',
