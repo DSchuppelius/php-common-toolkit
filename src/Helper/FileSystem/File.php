@@ -34,6 +34,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     /** @var array<string, string|false> Cache für chardet-Ergebnisse (Pfad → Encoding) */
     private static array $chardetCache = [];
 
+    /** @var array<string, string|false> Cache für MIME-Typ-Ergebnisse (Pfad → MIME-Typ) */
+    private static array $mimeTypeCache = [];
+
     /**
      * Gibt den realen Dateipfad zurück oder false, wenn die Datei nicht gefunden wurde.
      *
@@ -81,11 +84,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $file = self::getRealExistingFile($file);
         if ($file === false) return false;
 
-        static $cache = [];
         static $finfo = null;
 
-        if (isset($cache[$file])) {
-            return $cache[$file];
+        if (isset(self::$mimeTypeCache[$file])) {
+            return self::$mimeTypeCache[$file];
         }
 
         if (class_exists('finfo')) {
@@ -93,7 +95,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $finfo ??= new \finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->file($file);
             if ($result !== false) {
-                $cache[$file] = $result;
+                self::$mimeTypeCache[$file] = $result;
                 return $result;
             }
         }
@@ -102,7 +104,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             self::logWarning("Fallback via Shell für MIME-Typ: $file");
             $result = self::detectViaShell('mimetype', $file);
             if ($result !== false) {
-                $cache[$file] = $result;
+                self::$mimeTypeCache[$file] = $result;
             }
             return $result;
         }
@@ -971,6 +973,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if (file_put_contents($file, $data) === false) {
             self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Schreiben in die Datei: $file");
         }
+        unset(self::$mimeTypeCache[$file]);
         self::logDebug("Daten erfolgreich in Datei geschrieben: $file");
     }
 
@@ -989,6 +992,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if (!unlink($file)) {
             self::logErrorAndThrow(Exception::class, "Fehler beim Löschen der Datei: $file");
         }
+        unset(self::$mimeTypeCache[$file], self::$chardetCache[$file]);
         self::logDebug("Datei gelöscht: $file");
     }
 
@@ -1118,6 +1122,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Kopieren von $sourceFile nach $destinationFile");
         }
 
+        unset(self::$mimeTypeCache[$destinationFile], self::$chardetCache[$destinationFile]);
         self::logInfo("Datei erfolgreich kopiert: $sourceFile -> $destinationFile");
     }
 
@@ -1193,6 +1198,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Umbenennen von $oldName nach $newName");
         }
 
+        unset(self::$mimeTypeCache[$oldName], self::$mimeTypeCache[$newName]);
+        unset(self::$chardetCache[$oldName], self::$chardetCache[$newName]);
         self::logDebug("Datei umbenannt von $oldName zu $newName");
     }
 
