@@ -1686,4 +1686,27 @@ class StringHelper {
         }
         return implode($separator, array_fill(0, $times, $text));
     }
+
+    /**
+     * Datenschutz-freundliche Initialen, z. B. "Max Schuppelius" => "M.S.".
+     * Wird in anonymisierten Print-Layouts genutzt.
+     *
+     * @param string|null $name Der vollständige Name (null wird als leerer String behandelt).
+     * @param int $maxParts Maximale Anzahl der Namensbestandteile, die berücksichtigt werden (Standard: 3). Bei mehr Bestandteilen werden nur die ersten maxParts verwendet.
+     * @return string Die generierten Initialen oder '—' wenn der Name leer oder null ist.
+     */
+    public static function printableInitials(?string $name, int $maxParts = 3): string {
+        if ($name === null || trim($name) === '') {
+            return '—';
+        }
+
+        $parts = preg_split('/\s+/u', trim($name)) ?: [];
+        $parts = array_slice($parts, 0, $maxParts);
+        $initials = array_map(
+            static fn(string $part): string => mb_strtoupper(mb_substr($part, 0, 1)) . '.',
+            $parts,
+        );
+
+        return implode('', $initials);
+    }
 }
