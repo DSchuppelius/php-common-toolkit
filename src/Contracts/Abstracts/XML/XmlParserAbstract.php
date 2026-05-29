@@ -72,7 +72,7 @@ abstract class XmlParserAbstract {
         $this->dom = new DOMDocument();
         libxml_use_internal_errors(true);
 
-        if (!$this->dom->loadXML($xmlContent)) {
+        if (!$this->dom->loadXML($xmlContent, LIBXML_NONET)) {
             $errors = libxml_get_errors();
             libxml_clear_errors();
             $errorMessage = "Ungültiges XML-Dokument: " . ($errors[0]->message ?? 'Unbekannter Fehler');

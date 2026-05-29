@@ -47,7 +47,7 @@ class XmlFile extends HelperAbstract {
         $xml = new DOMDocument();
 
         libxml_use_internal_errors(true);
-        if (!$xml->load($resolvedFile)) {
+        if (!$xml->load($resolvedFile, LIBXML_NONET)) {
             $errors = libxml_get_errors();
             $errorMessages = [];
             foreach ($errors as $error) {
@@ -141,7 +141,7 @@ class XmlFile extends HelperAbstract {
         $xml = new DOMDocument();
         libxml_use_internal_errors(true);
 
-        if (!$xml->load($resolvedFile)) {
+        if (!$xml->load($resolvedFile, LIBXML_NONET)) {
             $errors = libxml_get_errors();
             $errorMessages = [];
             foreach ($errors as $error) {

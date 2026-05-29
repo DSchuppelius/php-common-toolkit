@@ -49,7 +49,7 @@ class XmlHelper extends HelperAbstract {
         $useInternalErrors = libxml_use_internal_errors(true);
         libxml_clear_errors();
 
-        $result = $doc->loadXML($xml);
+        $result = $doc->loadXML($xml, LIBXML_NONET);
         $errors = libxml_get_errors();
 
         libxml_use_internal_errors($useInternalErrors);
@@ -109,7 +109,7 @@ class XmlHelper extends HelperAbstract {
         $useInternalErrors = libxml_use_internal_errors(true);
         libxml_clear_errors();
 
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             $errors = self::getLibXmlErrors();
             libxml_use_internal_errors($useInternalErrors);
             return ['valid' => false, 'errors' => $errors];
@@ -174,7 +174,7 @@ class XmlHelper extends HelperAbstract {
         $doc->preserveWhiteSpace = false;
         $doc->formatOutput = true;
 
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
 
@@ -194,7 +194,7 @@ class XmlHelper extends HelperAbstract {
      */
     public static function extractNamespaces(string $xml): array {
         $doc = new DOMDocument();
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             return self::logErrorAndReturn([], 'Fehler beim Laden des XML für Namespace-Extraktion');
         }
 
@@ -223,7 +223,7 @@ class XmlHelper extends HelperAbstract {
      */
     public static function xmlToArray(string $xml, bool $preserveAttributes = true): array {
         $doc = new DOMDocument();
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
 
@@ -285,7 +285,7 @@ class XmlHelper extends HelperAbstract {
      */
     public static function xpath(string $xml, string $xpath, array $namespaces = []): array {
         $doc = new DOMDocument();
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
 
@@ -320,7 +320,7 @@ class XmlHelper extends HelperAbstract {
      */
     public static function xpathNodes(string $xml, string $xpath, array $namespaces = []): array {
         $doc = new DOMDocument();
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
 
@@ -473,7 +473,7 @@ class XmlHelper extends HelperAbstract {
      */
     public static function validateSepaXml(string $xml, string $schemaDir): array {
         $doc = new DOMDocument();
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             return ['valid' => false, 'errors' => ['Ungültiger XML'], 'messageType' => null, 'schemaVersion' => null];
         }
 
@@ -670,7 +670,7 @@ class XmlHelper extends HelperAbstract {
      */
     public static function minify(string $xml): string {
         $doc = new DOMDocument();
-        if (!$doc->loadXML($xml)) {
+        if (!$doc->loadXML($xml, LIBXML_NONET)) {
             return self::logErrorAndReturn($xml, 'Fehler beim XML-Minify: Ungültiges XML');
         }
 

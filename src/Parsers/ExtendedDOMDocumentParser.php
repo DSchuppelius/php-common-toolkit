@@ -153,7 +153,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
         libxml_clear_errors();
 
         $doc = new DOMDocument();
-        $valid = $doc->loadXML($xml);
+        $valid = $doc->loadXML($xml, LIBXML_NONET);
         $errors = $valid ? [] : XmlHelper::getLibXmlErrors();
 
         return ['valid' => $valid, 'errors' => $errors];
