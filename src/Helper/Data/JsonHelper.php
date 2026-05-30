@@ -205,8 +205,8 @@ class JsonHelper extends HelperAbstract {
      */
     private static function validateValue(mixed $value, array $schema, string $path, array &$errors): void {
         // Type-Validierung
-        if (isset($schema['type'])) {
-            $expectedType = $schema['type'];
+        $expectedType = $schema['type'] ?? null;
+        if ($expectedType !== null) {
             $actualType = self::getJsonType($value);
 
             if ($actualType !== $expectedType) {

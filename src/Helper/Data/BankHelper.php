@@ -200,9 +200,6 @@ class BankHelper {
         }
 
         $result = bcmod($converted, '97');
-        if ($result === false) {
-            return false;
-        }
 
         return $result === '1';
     }

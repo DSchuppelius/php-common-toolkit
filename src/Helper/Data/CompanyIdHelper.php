@@ -53,7 +53,8 @@ class CompanyIdHelper {
         $hrNumber = self::normalizeHRNumber($hrNumber);
 
         // Pattern: HRA/HRB/GNR/PR/VR + Nummer (1-6 Ziffern) + optionaler Suffix
-        $pattern = '/^(HRA|HRB|GNR|PR|VR)\s*[0-9]{1,6}[A-Z]?$/i';
+        $prefixes = implode('|', self::HR_PREFIXES);
+        $pattern = '/^(' . $prefixes . ')\s*[0-9]{1,6}[A-Z]?$/i';
 
         return preg_match($pattern, $hrNumber) === 1;
     }
@@ -71,7 +72,8 @@ class CompanyIdHelper {
             return ['prefix' => null, 'number' => null, 'suffix' => null];
         }
 
-        preg_match('/^(HRA|HRB|GNR|PR|VR)\s*([0-9]{1,6})([A-Z])?$/i', $hrNumber, $matches);
+        $prefixes = implode('|', self::HR_PREFIXES);
+        preg_match('/^(' . $prefixes . ')\s*([0-9]{1,6})([A-Z])?$/i', $hrNumber, $matches);
 
         return [
             'prefix' => strtoupper($matches[1] ?? ''),

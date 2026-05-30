@@ -59,11 +59,7 @@ class CSVDocumentBuilder extends HelperAbstract {
      */
     public function addLines(array $lines): self {
         foreach ($lines as $line) {
-            if ($line instanceof LineInterface) {
-                $this->addLine($line);
-            } else {
-                $this->logErrorAndThrow(RuntimeException::class, 'Ungültiger Zeilentyp: ' . get_debug_type($line));
-            }
+            $this->addLine($line);
         }
         return $this;
     }

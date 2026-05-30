@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
 use CommonToolkit\Entities\XML\{Document, Element};
 use DOMDocument;
 use DOMElement;
@@ -214,7 +215,7 @@ class XmlDocumentParser extends HelperAbstract {
      * Konvertiert ein Element rekursiv zu einem Array.
      */
     private static function elementToArray(
-        Element $element,
+        XmlElementInterface $element,
         bool $includeAttributes,
         bool $includeNamespaces
     ): array {

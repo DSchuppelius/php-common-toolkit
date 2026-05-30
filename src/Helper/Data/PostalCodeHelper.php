@@ -71,7 +71,7 @@ class PostalCodeHelper {
     /**
      * Deutsche Bundesländer nach PLZ-Bereichen.
      *
-     * @var array<string, array<int, int>>
+     * @var array<string, array<int, array{int, int}>>
      */
     private const GERMAN_PLZ_REGIONS = [
         // Reihenfolge ist wichtig bei Überlappungen!

@@ -55,6 +55,7 @@ class NumberHelper {
             'GB' => 1024 ** 3,
             'TB' => 1024 ** 4,
             'PB' => 1024 ** 5,
+            default => 1,
         };
 
         return (int) round($value * $factor);
@@ -121,7 +122,7 @@ class NumberHelper {
     /**
      * Rundet eine Zahl auf die nächste ganze Zahl.
      * @param float $value Der Wert, der gerundet werden soll.
-     * @return int Der gerundete Wert.
+     * @return float Der gerundete Wert.
      */
     public static function roundToNearest(float $value, int $nearest): float {
         return round($value / $nearest) * $nearest;

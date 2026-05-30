@@ -45,45 +45,6 @@ class WebLinkHelper {
     ];
 
     /**
-     * Bekannte Top-Level-Domains (Auswahl der häufigsten).
-     *
-     * @var array<string>
-     */
-    private const COMMON_TLDS = [
-        'com',
-        'org',
-        'net',
-        'edu',
-        'gov',
-        'mil',
-        'int',
-        'de',
-        'at',
-        'ch',
-        'uk',
-        'fr',
-        'it',
-        'es',
-        'nl',
-        'be',
-        'pl',
-        'cz',
-        'sk',
-        'hu',
-        'eu',
-        'io',
-        'co',
-        'me',
-        'info',
-        'biz',
-        'name',
-        'mobi',
-        'app',
-        'dev',
-        'cloud',
-    ];
-
-    /**
      * Prüft, ob eine URL ein gültiges Format hat.
      *
      * @param string|null $url Die zu prüfende URL.

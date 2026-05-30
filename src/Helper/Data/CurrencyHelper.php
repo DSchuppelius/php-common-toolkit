@@ -121,7 +121,7 @@ class CurrencyHelper {
      * @return bool
      */
     public static function isCurrency(string $input, ?string &$format = null): bool {
-        if ($input === null || trim($input) === '') return false;
+        if (trim($input) === '') return false;
         $input = trim($input);
 
         if (preg_match("/\A(-)?([0-9]+)((,)[0-9]{3})*((\.)[0-9])?([0-9]*)\z/", $input)) {

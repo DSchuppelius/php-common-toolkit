@@ -1709,7 +1709,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         // posix_getpwuid nur auf Unix verfügbar
         if (function_exists('posix_getpwuid')) {
             $info = posix_getpwuid($uid);
-            if ($info !== false && isset($info['name'])) {
+            if ($info !== false) {
                 return $info['name'];
             }
         }
@@ -1740,7 +1740,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         // posix_getgrgid nur auf Unix verfügbar
         if (function_exists('posix_getgrgid')) {
             $info = posix_getgrgid($gid);
-            if ($info !== false && isset($info['name'])) {
+            if ($info !== false) {
                 return $info['name'];
             }
         }

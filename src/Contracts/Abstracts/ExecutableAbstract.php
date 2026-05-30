@@ -64,7 +64,7 @@ abstract class ExecutableAbstract {
      * @return array
      */
     protected function prepareArguments(array $overrideArgs = []): array {
-        $baseArgs = $this->args ?? [];
+        $baseArgs = $this->args;
         $resolvedArgs = [];
         $usedKeys = [];
 

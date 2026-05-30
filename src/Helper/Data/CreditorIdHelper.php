@@ -131,7 +131,7 @@ class CreditorIdHelper {
 
         // Rest in 4er-Gruppen
         $rest = substr($normalized, 7);
-        if ($rest !== false && $rest !== '') {
+        if ($rest !== '') {
             $chunks = str_split($rest, 4);
             $formatted .= $separator . implode($separator, $chunks);
         }

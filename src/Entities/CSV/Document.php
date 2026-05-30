@@ -27,6 +27,8 @@ use RuntimeException;
  * - CSVGenerator: Generierung von CSV-Strings
  * 
  * @package CommonToolkit\Entities\CSV
+ *
+ * @phpstan-consistent-constructor
  */
 class Document extends TextDocumentAbstract {
 
@@ -371,7 +373,7 @@ class Document extends TextDocumentAbstract {
      */
     public function getColumnByName(string $columnName): array {
         $fields = $this->getFieldsByName($columnName);
-        return array_map(fn($field) => $field ? $field->getValue() : '', $fields);
+        return array_map(fn($field) => $field->getValue(), $fields);
     }
 
     /**
@@ -406,7 +408,7 @@ class Document extends TextDocumentAbstract {
      */
     public function getColumnByIndex(int $index): array {
         $fields = $this->getFieldsByIndex($index);
-        return array_map(fn($field) => $field ? $field->getValue() : '', $fields);
+        return array_map(fn($field) => $field->getValue(), $fields);
     }
 
     /**
@@ -582,7 +584,7 @@ class Document extends TextDocumentAbstract {
      * Ermittelt den Maximalwert einer Spalte anhand des Index.
      * Verwendet BC Math für präzise Berechnung.
      *
-     * @param string $columnName Name der Spalte
+     * @param int $index Index der Spalte
      * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
      * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
      * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
@@ -710,7 +712,7 @@ class Document extends TextDocumentAbstract {
         $numbers = [];
 
         foreach ($fields as $rowIndex => $field) {
-            if ($field === null || $field->isBlank()) {
+            if ($field->isBlank()) {
                 if ($skipNonNumeric) {
                     continue;
                 }
@@ -784,7 +786,7 @@ class Document extends TextDocumentAbstract {
      */
     protected function setFieldValue(int $rowIndex, int $fieldIndex, mixed $value): void {
         // Ermittle den aktuellen Quoting-Status (Validierung erfolgt in setFieldValueWithQuoting)
-        $quoted = $this->rows[$rowIndex]?->getField($fieldIndex)?->isQuoted() ?? false;
+        $quoted = $this->rows[$rowIndex]->getField($fieldIndex)?->isQuoted() ?? false;
         $this->setFieldValueWithQuoting($rowIndex, $fieldIndex, $value, $quoted);
     }
 

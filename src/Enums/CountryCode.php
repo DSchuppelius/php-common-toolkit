@@ -615,7 +615,7 @@ enum CountryCode: string {
             self::WesternSahara => 'Westsahara',
             self::Yemen => 'Jemen',
             self::Zambia => 'Sambia',
-            self::Zimbabwe => 'Simbabwe',
+            self::Zimbabwe => 'Simbabwe', // @phpstan-ignore match.alwaysTrue
 
             default => $this->name,
         };

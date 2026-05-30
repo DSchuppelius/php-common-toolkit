@@ -40,9 +40,6 @@ class CryptoHelper extends HelperAbstract {
     /** @var int Standard-IV-Länge */
     private const IV_LENGTH = 12;
 
-    /** @var int Standard-Tag-Länge für GCM */
-    private const TAG_LENGTH = 16;
-
     /** @var array<string> Erlaubte Verschlüsselungsalgorithmen */
     private const ALLOWED_CIPHERS = ['aes-256-gcm', 'aes-256-cbc', 'aes-192-gcm', 'aes-128-gcm'];
 
@@ -72,8 +69,7 @@ class CryptoHelper extends HelperAbstract {
             $expectedKeyLength = match ($cipher) {
                 'aes-256-gcm', 'aes-256-cbc' => 32,
                 'aes-192-gcm' => 24,
-                'aes-128-gcm' => 16,
-                default => 32
+                default => 16 // aes-128-gcm
             };
 
             if (strlen($key) !== $expectedKeyLength) {

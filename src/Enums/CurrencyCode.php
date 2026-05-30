@@ -419,7 +419,7 @@ enum CurrencyCode: string {
             self::ZambianKwacha           => 'Sambischer Kwacha',
             self::ZaireOld                => 'Zaire - alt',
             self::ZimbabweDollarOld       => 'Simbabwe-Dollar - alt',
-            self::ZimbabweDollarSecondOld => 'Simbabwe-Dollar - alt',
+            self::ZimbabweDollarSecondOld => 'Simbabwe-Dollar - alt', // @phpstan-ignore match.alwaysTrue
             default                       => $this->value, // Fallback
         };
     }

@@ -202,6 +202,7 @@ class CsvFile extends HelperAbstract {
         $lines = self::readLines($file, $delimiter);
         $header = $lines->current();
 
+        // @phpstan-ignore identical.alwaysFalse (Generator kann bei leerer Datei null liefern)
         if ($header === null) {
             return self::logDebugAndReturn(false, "Header konnte nicht gelesen werden: $file");
         }

@@ -164,7 +164,7 @@ class EmailHelper {
 
         $parts = explode('@', $email);
 
-        return $parts[0] ?? null;
+        return $parts[0];
     }
 
     /**

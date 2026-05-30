@@ -172,11 +172,11 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
         $root = $document->documentElement;
 
         return [
-            'rootElement' => $root?->localName ?? '',
+            'rootElement' => $root->localName ?? '',
             'namespace' => $document->getNamespace(),
             'encoding' => $document->encoding,
             'version' => $document->xmlVersion,
-            'childCount' => $root?->childNodes->length ?? 0,
+            'childCount' => $root->childNodes->length,
         ];
     }
 

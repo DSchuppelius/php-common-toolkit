@@ -298,9 +298,7 @@ class Element implements XmlElementInterface {
         $attributes = [];
         if ($domElement->hasAttributes()) {
             foreach ($domElement->attributes as $attr) {
-                if ($attr instanceof \DOMAttr) {
-                    $attributes[] = Attribute::fromDomAttr($attr);
-                }
+                $attributes[] = Attribute::fromDomAttr($attr);
             }
         }
 
@@ -394,12 +392,13 @@ class Element implements XmlElementInterface {
         $result = [];
 
         foreach ($this->children as $child) {
+            if (!$child instanceof self) {
+                continue;
+            }
             if ($child->getName() === $name) {
                 $result[] = $child;
             }
-            if ($child instanceof self) {
-                $result = array_merge($result, $child->findDescendants($name));
-            }
+            $result = array_merge($result, $child->findDescendants($name));
         }
 
         return $result;

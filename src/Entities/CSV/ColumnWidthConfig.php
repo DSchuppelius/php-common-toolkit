@@ -159,8 +159,7 @@ class ColumnWidthConfig {
                 TruncationStrategy::ELLIPSIS => $maxWidth > 3
                     ? mb_substr($value, 0, $maxWidth - 3) . '...'
                     : mb_substr($value, 0, $maxWidth),
-                TruncationStrategy::TRUNCATE => mb_substr($value, 0, $maxWidth),
-                default => $value,
+                default => mb_substr($value, 0, $maxWidth),
             };
             $currentLength = mb_strlen($value);
         }

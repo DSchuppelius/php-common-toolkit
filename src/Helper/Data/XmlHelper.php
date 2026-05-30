@@ -529,7 +529,7 @@ class XmlHelper extends HelperAbstract {
             : null;
 
         // Fallback: Versuche Schema-Datei im Verzeichnis zu finden
-        if ($schemaFile === null && $schemaPrefix !== null) {
+        if ($schemaFile === null) {
             $schemaDir = rtrim($schemaDir, '/\\');
             $pattern = $schemaDir . DIRECTORY_SEPARATOR . "{$schemaPrefix}.001.*.xsd";
             $files = glob($pattern);

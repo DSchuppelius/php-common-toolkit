@@ -79,12 +79,18 @@ class TaxNumberHelper {
         }
 
         // Genau eine Ziffer muss doppelt vorkommen, eine darf fehlen
-        $digitCounts = array_count_values(str_split(substr($idNr, 0, 10)));
+        $digits = str_split(substr($idNr, 0, 10));
         $doubles = 0;
         $missing = 0;
 
         for ($i = 0; $i <= 9; $i++) {
-            $count = $digitCounts[(string)$i] ?? 0;
+            $count = 0;
+            foreach ($digits as $digit) {
+                if ((int) $digit === $i) {
+                    $count++;
+                }
+            }
+
             if ($count === 2) {
                 $doubles++;
             } elseif ($count === 3) {

@@ -443,7 +443,7 @@ class XLSXDocumentParser extends HelperAbstract {
 
             case 'inlineStr': // Inline String
                 $tNode = $xpath->query('.//s:t', $cellNode)->item(0);
-                $value = $tNode?->textContent ?? '';
+                $value = $tNode->textContent ?? '';
                 break;
 
             case 'b': // Boolean

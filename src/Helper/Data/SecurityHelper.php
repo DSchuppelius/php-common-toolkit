@@ -69,10 +69,6 @@ class SecurityHelper extends HelperAbstract {
 
             $hash = password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 65536, 'time_cost' => 4, 'threads' => 3]);
 
-            if ($hash === false) {
-                self::logErrorAndThrow(InvalidArgumentException::class, 'Password-Hashing fehlgeschlagen');
-            }
-
             return self::logDebugAndReturn($hash, "Sicherer Password-Hash erstellt");
         } catch (Exception $e) {
             self::logException($e);

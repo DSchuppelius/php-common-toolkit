@@ -156,7 +156,9 @@ class ExtendedDOMDocument extends DOMDocument {
      * Gibt das Root-Element als CommonToolkit Element zurück.
      */
     public function toXmlElement(): Element {
-        return $this->toXmlDocument()->getRootElement();
+        $element = $this->toXmlDocument()->getRootElement();
+        assert($element instanceof Element);
+        return $element;
     }
 
     /**

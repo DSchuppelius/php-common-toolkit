@@ -140,6 +140,7 @@ class TifFile extends ConfiguredHelperAbstract {
             TifFile::repair($tiffFile, true);
             self::convertToPdf($tiffFile, $pdfFile, false, false);
 
+            // @phpstan-ignore if.alwaysFalse (PDF wurde zwischenzeitlich neu erzeugt)
             if (PdfFile::isValid($pdfFile)) {
                 self::logInfo("TIFF-Datei erfolgreich ohne Kompression in PDF umgewandelt: $tiffFile");
             } else {

@@ -87,7 +87,7 @@ class XsdValidationResult {
      * Returns the document type value as string.
      */
     public function getTypeValue(): ?string {
-        return $this->type?->value ?? null;
+        return $this->type instanceof \BackedEnum ? (string) $this->type->value : null;
     }
 
     /**

@@ -33,7 +33,7 @@ class DateHelper {
      */
     private static function isCleanDateParse(DateTime|false $date): bool {
         $errors = DateTime::getLastErrors();
-        return $date !== false && ($errors === false || is_array($errors) && ($errors['warning_count'] === 0 && $errors['error_count'] === 0));
+        return $date !== false && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0));
     }
 
     /**
@@ -493,6 +493,7 @@ class DateHelper {
         return match ($targetFormat) {
             DateTimeFormat::ISO => $dt->format($targetFormat->getPattern()),
             DateTimeFormat::DE  => $dt->format($targetFormat->getPattern($withTime)),
+            DateTimeFormat::DE_SHORT => $dt->format($targetFormat->getPattern($withTime)),
             DateTimeFormat::US  => $dt->format($targetFormat->getPattern($withTime)),
             DateTimeFormat::MYSQL_DATETIME => $dt->format($targetFormat->getPattern()),
             DateTimeFormat::ISO_DATETIME,
@@ -526,7 +527,9 @@ class DateHelper {
 
             if ($format !== null) {
                 $date = DateTime::createFromFormat($format, $cleaned);
-                return $date?->format(strlen($cleaned) > 8 ? 'Y-m-d H:i:s' : 'Y-m-d');
+                return $date !== false
+                    ? $date->format(strlen($cleaned) > 8 ? 'Y-m-d H:i:s' : 'Y-m-d')
+                    : null;
             }
         }
 
@@ -739,18 +742,6 @@ class DateHelper {
         }
 
         return null;
-    }
-
-    /**
-     * Gibt länder-spezifische DateTime-Formate zurück.
-     * Diese Formate können mehrdeutig sein und sollten kontextbezogen interpretiert werden.
-     *
-     * @param CountryCode $country Das Land
-     * @return array<string> Array von DateTime-Formaten
-     * @deprecated Use $country->getDateTimeFormatGroup()->getFormats() directly
-     */
-    private static function getCountrySpecificFormats(CountryCode $country): array {
-        return $country->getDateTimeFormatGroup()->getFormats();
     }
 
     /**

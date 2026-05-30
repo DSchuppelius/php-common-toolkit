@@ -16,6 +16,9 @@ use CommonToolkit\Helper\Data\CSV\StringHelper;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 abstract class LineAbstract implements LineInterface {
     use ErrorLog;
 

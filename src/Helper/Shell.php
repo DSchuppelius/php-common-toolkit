@@ -12,11 +12,12 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper;
 
-use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Entities\Executables\ShellExecutable;
 use Exception;
 
-class Shell extends HelperAbstract {
+class Shell extends ConfiguredHelperAbstract {
+    protected const CONFIG_FILE = __DIR__ . '/../../config/common_executables.json';
 
 
     /**

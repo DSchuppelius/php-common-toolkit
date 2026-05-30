@@ -3,3 +3,9 @@ parameters:
     paths:
         - src
     tmpDir: var/phpstan
+    ignoreErrors:
+        # Öffentlicher Library-Trait für externe Sperr-Enums – wird im Toolkit selbst nicht verwendet.
+        -
+            message: '#Trait CommonToolkit\\Traits\\LockFlagTrait is used zero times and is not analysed\.#'
+            path: src/Traits/LockFlagTrait.php
+

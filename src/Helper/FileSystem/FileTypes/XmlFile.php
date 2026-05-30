@@ -59,7 +59,7 @@ class XmlFile extends HelperAbstract {
         }
 
         $metadata = [
-            'RootElement' => $xml->documentElement?->tagName ?? 'Unbekannt',
+            'RootElement' => $xml->documentElement->tagName ?? 'Unbekannt',
             'Encoding'    => $xml->encoding ?? 'Unbekannt',
             'Version'     => $xml->xmlVersion ?? 'Unbekannt'
         ];

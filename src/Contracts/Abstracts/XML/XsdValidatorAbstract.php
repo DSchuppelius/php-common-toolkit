@@ -88,7 +88,7 @@ abstract class XsdValidatorAbstract {
         // Determine XSD file
         $xsdFile = static::getXsdFile($type, $version);
         if ($xsdFile === null || !File::exists($xsdFile)) {
-            $typeValue = $type instanceof UnitEnum ? $type->value : (string) $type;
+            $typeValue = $type instanceof \BackedEnum ? (string) $type->value : $type->name;
             return new XsdValidationResult(
                 valid: false,
                 errors: ["No XSD file found for {$typeValue} version " . ($version ?? 'unknown')],

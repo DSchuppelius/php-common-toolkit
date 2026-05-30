@@ -72,7 +72,7 @@ class ZipFile extends HelperAbstract {
      * @param array $files Dateien als Array von Strings (Dateipfade) oder Arrays mit 'path' und optionalem 'archiveName'.
      * @param string $destination Zielpfad für das ZIP-Archiv.
      * @return bool Erfolg oder Misserfolg.
-     * @throws RuntimeException Falls das Archiv nicht erstellt werden kann.
+     * @throws Exception Falls das Archiv nicht erstellt werden kann.
      */
     public static function create(array $files, string $destination): bool {
         self::checkZipExtension();

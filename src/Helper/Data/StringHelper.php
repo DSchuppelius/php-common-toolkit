@@ -226,6 +226,7 @@ class StringHelper {
         }
 
         $len = strlen($data);
+        /** @var array<string, int> $scores */
         $scores = [
             'CP850' => 0,
             'CP437' => 0,
@@ -485,7 +486,7 @@ class StringHelper {
             }
 
             // ===== Allgemeine Latin-1/Windows-1252 Zeichen (0xC0-0xFF) =====
-            if ($byte >= 0xC0 && $byte <= 0xFF && !in_array($byte, [0xE1], true)) {
+            if ($byte >= 0xC0 && !in_array($byte, [0xE1], true)) {
                 // Diese sind in ISO-8859-1/Windows-1252 akzentuierte Buchstaben
                 // In CP850 sind einige davon Grafikzeichen
                 $scores['ISO-8859-1'] += 1;
@@ -978,7 +979,7 @@ class StringHelper {
         // Integer prüfen (aber nicht bei mehrstelligen Zahlen mit führenden Nullen)
         if (filter_var($trimmed, FILTER_VALIDATE_INT) !== false) {
             // Führende Nullen bei mehrstelligen Zahlen beibehalten
-            if (strlen($trimmed) > 1 && str_starts_with($trimmed, '0') && $trimmed !== '0') {
+            if (strlen($trimmed) > 1 && str_starts_with($trimmed, '0')) {
                 return $trimmed; // Als String beibehalten
             }
             return (int) $trimmed;

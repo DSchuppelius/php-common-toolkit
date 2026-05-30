@@ -184,12 +184,7 @@ abstract class TextDocumentAbstract {
 
         // Encoding-Konvertierung falls nötig
         if ($encoding !== self::DEFAULT_ENCODING) {
-            $converted = mb_convert_encoding($content, $encoding, self::DEFAULT_ENCODING);
-            if ($converted !== false) {
-                $content = $converted;
-            } else {
-                $this->logWarning("Konvertierung zu $encoding fehlgeschlagen, nutze Original");
-            }
+            $content = mb_convert_encoding($content, $encoding, self::DEFAULT_ENCODING);
         }
 
         // BOM hinzufügen falls gewünscht

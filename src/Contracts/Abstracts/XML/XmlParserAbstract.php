@@ -151,7 +151,9 @@ abstract class XmlParserAbstract {
      * Gibt das Root-Element als CommonToolkit Element zurück.
      */
     public function getRootElement(): XmlElement {
-        return $this->getXmlDocument()->getRootElement();
+        $element = $this->getXmlDocument()->getRootElement();
+        assert($element instanceof XmlElement);
+        return $element;
     }
 
     /**

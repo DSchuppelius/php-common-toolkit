@@ -85,7 +85,7 @@ class CSVDocumentParser extends HelperAbstract {
         }
 
         $lines = StringHelper::splitCsvByLogicalLine($csv, $delimiter, $enclosure);
-        if ($lines === [] || $lines === false) {
+        if ($lines === []) {
             static::logErrorAndThrow(RuntimeException::class, 'CSVDocumentParser::fromString() – keine gültigen Zeilen erkannt');
         }
 
@@ -96,9 +96,6 @@ class CSVDocumentParser extends HelperAbstract {
             if ($hasHeader) {
                 $headerLine = array_shift($lines);
                 $lineNumber++;
-                if ($headerLine === null) {
-                    static::logErrorAndThrow(RuntimeException::class, 'Header-Zeile fehlt');
-                }
                 $builder->setHeader(self::parseHeaderLine($headerLine, $delimiter, $enclosure, $lineNumber));
             }
 
