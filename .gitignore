@@ -412,8 +412,10 @@ phpunit.xml
 /public/bundles/
 /vendor/
 
-/data/blz-aktuell-txt-data.txt
-/data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv
+# Hinweis: Die Bundesbank-BLZ-/BIC-Datendateien werden bewusst MIT ausgeliefert
+# (Offline-Lauffähigkeit out-of-the-box). Daher hier NICHT ignorieren:
+#   data/blz-aktuell-txt-data.txt
+#   data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv
 
 # PHPStan
 /var/phpstan

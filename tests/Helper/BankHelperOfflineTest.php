@@ -21,6 +21,17 @@ use Tests\Contracts\BaseTestCase;
  * sodass bicFromIBAN()/bicFromBLZ() sauber null statt eines Fehlers liefern.
  */
 class BankHelperOfflineTest extends BaseTestCase {
+    protected function setUp(): void {
+        parent::setUp();
+        // Sauberer Ausgangszustand: Cache + Netzschalter-Override zurücksetzen.
+        BankHelper::clearCache();
+    }
+
+    protected function tearDown(): void {
+        BankHelper::clearCache();
+        parent::tearDown();
+    }
+
     private function callLoadDataFile(string $path, ?string $url, int $expiry, bool $networkEnabled): array {
         $method = new ReflectionMethod(BankHelper::class, 'loadDataFile');
         $method->setAccessible(true);
@@ -63,5 +74,86 @@ class BankHelperOfflineTest extends BaseTestCase {
         // Wichtig ist: es fliegt keine Exception (auch bei leerem Index -> null).
         $bic = BankHelper::bicFromIBAN('DE44500105175407324931');
         $this->assertTrue($bic === null || is_string($bic));
+    }
+
+    /**
+     * Kern-Regression: Mit den ausgelieferten Datendateien muss bicFromIBAN()/bicFromBLZ()
+     * OHNE Online-Lauf einen echten BIC liefern (genau dieser Fall scheiterte downstream).
+     */
+    public function testShippedDataYieldsRealBicOffline(): void {
+        BankHelper::setNetworkEnabled(false);
+
+        // Commerzbank Berlin (BLZ 10040000) -> COBADEBBXXX laut ausgelieferter Bundesbank-Datei.
+        $bic = BankHelper::bicFromBLZ('10040000');
+        $this->assertSame('COBADEBBXXX', $bic);
+
+        // Gleiche BLZ via IBAN (ING DiBa als zweiter Beleg über den IBAN-Pfad).
+        $bicIban = BankHelper::bicFromIBAN('DE44500105175407324931');
+        $this->assertSame('INGDDEFFXXX', $bicIban);
+    }
+
+    public function testIsNetworkEnabledReflectsOverride(): void {
+        // Default (kein Override): effektiver Wert ist true (Config-Default).
+        $this->assertTrue(BankHelper::isNetworkEnabled());
+
+        BankHelper::setNetworkEnabled(false);
+        $this->assertFalse(BankHelper::isNetworkEnabled());
+
+        BankHelper::setNetworkEnabled(true);
+        $this->assertTrue(BankHelper::isNetworkEnabled());
+
+        // null -> zurück auf Config-Default.
+        BankHelper::setNetworkEnabled(null);
+        $this->assertTrue(BankHelper::isNetworkEnabled());
+    }
+
+    public function testClearCacheResetsNetworkOverride(): void {
+        BankHelper::setNetworkEnabled(false);
+        $this->assertFalse(BankHelper::isNetworkEnabled());
+
+        BankHelper::clearCache();
+        $this->assertTrue(BankHelper::isNetworkEnabled());
+    }
+
+    /**
+     * Bei deaktiviertem Netz darf KEIN Download-Versuch erfolgen; trotzdem muss
+     * der BIC aus der lokalen Datei kommen. Wir geben absichtlich eine URL mit,
+     * deren Abruf einen Fehler verursachen WÜRDE, falls er ausgelöst würde.
+     */
+    public function testNetworkDisabledSkipsDownloadButReadsLocalFile(): void {
+        $tmp = sys_get_temp_dir() . '/local-bank-data-' . bin2hex(random_bytes(4)) . '.txt';
+        file_put_contents($tmp, "ABCDEFGH\nIJKLMNOP\n");
+
+        try {
+            // expiry 0 => Datei gilt als abgelaufen -> Download-Pfad würde betreten,
+            // ABER networkEnabled=false verhindert jeden Netzabruf. URL ist ungültig:
+            // würde sie abgerufen, käme false; da sie NICHT abgerufen wird, bleibt die
+            // lokale Datei unverändert und wird gelesen.
+            $result = $this->callLoadDataFile($tmp, 'http://invalid.invalid/nope', 0, false);
+            $this->assertSame(['ABCDEFGH', 'IJKLMNOP'], $result);
+        } finally {
+            @unlink($tmp);
+        }
+    }
+
+    /**
+     * Stale-Fallback: vorhandene Datei ist abgelaufen (expiry 0) UND der Download
+     * schlägt fehl (ungültiges Schema -> File::download() liefert false) -> die
+     * vorhandene (stale) Datei muss weiter geliefert werden, NICHT [].
+     */
+    public function testStaleFileIsUsedWhenExpiredAndDownloadFails(): void {
+        $tmp = sys_get_temp_dir() . '/stale-bank-data-' . bin2hex(random_bytes(4)) . '.txt';
+        file_put_contents($tmp, "STALELINE1\nSTALELINE2\n");
+        // Datei künstlich altern lassen (über jedes vernünftige expiry hinaus).
+        touch($tmp, strtotime('-1000 days'));
+
+        try {
+            // networkEnabled=true + ungültige URL -> Download wird versucht und scheitert,
+            // lässt die vorhandene Datei aber unangetastet -> stale Daten werden geliefert.
+            $result = @$this->callLoadDataFile($tmp, 'file:///definitely/not/http', 0, true);
+            $this->assertSame(['STALELINE1', 'STALELINE2'], $result);
+        } finally {
+            @unlink($tmp);
+        }
     }
 }

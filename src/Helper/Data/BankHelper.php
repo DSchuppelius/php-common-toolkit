@@ -36,6 +36,17 @@ class BankHelper {
     private static ?array $bicIndex = null;
 
     /**
+     * Override für den Netzschalter.
+     *
+     * - null  => Config-Default verwenden (config/helper.json -> network_enabled, sonst true)
+     * - true  => Netzabruf hart erzwungen
+     * - false => Netzabruf hart deaktiviert (nur ausgelieferte/lokale Datei)
+     *
+     * @var bool|null
+     */
+    private static ?bool $networkEnabledOverride = null;
+
+    /**
      * Überprüft die Bankleitzahl (BLZ) auf Gültigkeit.
      *
      * @param string|null $value Die Bankleitzahl.
@@ -884,6 +895,46 @@ class BankHelper {
     }
 
     /**
+     * Steuert programmatisch, ob Bundesbank-Daten online nachgeladen werden dürfen.
+     *
+     * - null  => Config-Default verwenden (config/helper.json -> network_enabled, sonst true)
+     * - true  => Netzabruf hart erzwingen (überschreibt Config)
+     * - false => Netzabruf hart deaktivieren; es wird ausschließlich die ausgelieferte/
+     *            lokale Datei genutzt (garantiert offline).
+     *
+     * Der Override hat Vorrang vor der Config. clearCache() setzt ihn zurück.
+     *
+     * @param bool|null $enabled
+     * @return void
+     */
+    public static function setNetworkEnabled(?bool $enabled): void {
+        self::$networkEnabledOverride = $enabled;
+    }
+
+    /**
+     * Liefert den effektiven Netzschalter-Wert.
+     *
+     * Reihenfolge: Override (falls gesetzt) > Config network_enabled > Default true.
+     *
+     * @return bool
+     */
+    public static function isNetworkEnabled(): bool {
+        if (self::$networkEnabledOverride !== null) {
+            return self::$networkEnabledOverride;
+        }
+
+        $configLoader = ConfigLoader::getInstance(self::$logger);
+        $configLoader->loadConfigFile(__DIR__ . '/../../../config/helper.json');
+
+        // Config kann den Schalter sektionsübergreifend oder pro Sektion definieren.
+        $value = $configLoader->get('Bundesbank', 'network_enabled', null)
+            ?? $configLoader->get('Zahlungsdienstleister', 'network_enabled', null)
+            ?? true;
+
+        return (bool) $value;
+    }
+
+    /**
      * Lädt die aktuelle BLZ-Liste von der Deutschen Bundesbank.
      *
      * @return array
@@ -895,9 +946,8 @@ class BankHelper {
         $path = $configLoader->get('Bundesbank', 'file', 'data/blz-aktuell-txt-data.txt');
         $url = $configLoader->get('Bundesbank', 'resourceurl', '');
         $expiry = $configLoader->get('Bundesbank', 'expiry_days', 365);
-        $networkEnabled = (bool) $configLoader->get('Bundesbank', 'network_enabled', true);
 
-        return self::loadDataFile($path, $url, $expiry, $networkEnabled);
+        return self::loadDataFile($path, $url, $expiry, self::isNetworkEnabled());
     }
 
     /**
@@ -912,9 +962,8 @@ class BankHelper {
         $path = $configLoader->get('Zahlungsdienstleister', 'file', 'data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv');
         $url = $configLoader->get('Zahlungsdienstleister', 'resourceurl', '');
         $expiry = $configLoader->get('Zahlungsdienstleister', 'expiry_days', 365);
-        $networkEnabled = (bool) $configLoader->get('Zahlungsdienstleister', 'network_enabled', true);
 
-        return self::loadDataFile($path, $url, $expiry, $networkEnabled);
+        return self::loadDataFile($path, $url, $expiry, self::isNetworkEnabled());
     }
 
     /**
@@ -937,9 +986,18 @@ class BankHelper {
         $needsDownload = !File::exists($path) || File::modifiedTime($path) < strtotime("-$expiry days");
 
         if ($needsDownload && !empty($url) && $networkEnabled) {
+            // Der Download ist atomar: bei Fehlschlag bleibt eine vorhandene (ggf. abgelaufene)
+            // Datei unangetastet. File::download() liefert dann false.
             $result = File::download($url, $path);
             if ($result === false) {
-                self::logWarning("Download von $url fehlgeschlagen, verwende lokale Datei falls vorhanden.");
+                if (File::exists($path) && File::size($path) > 0) {
+                    // Stale-Fallback: Aktualisierung fehlgeschlagen (z.B. offline) UND die
+                    // ausgelieferte/lokale Datei ist abgelaufen. Eine veraltete-aber-gültige
+                    // BLZ-/BIC-Liste ist deutlich besser als gar keine -> weiter verwenden.
+                    self::logWarning("Download von $url fehlgeschlagen, verwende vorhandene (ggf. abgelaufene) lokale Datei: $path.");
+                } else {
+                    self::logWarning("Download von $url fehlgeschlagen und keine verwendbare lokale Datei vorhanden: $path.");
+                }
             }
         }
 
@@ -970,12 +1028,15 @@ class BankHelper {
     }
 
     /**
-     * Leert alle gecachten Daten.
+     * Leert alle gecachten Daten und setzt den Netzschalter-Override zurück.
      *
-     * Nützlich für Tests oder wenn Bundesbank-Daten aktualisiert wurden.
+     * Nützlich für Tests oder wenn Bundesbank-Daten aktualisiert wurden. Der über
+     * setNetworkEnabled() gesetzte Override wird auf den Config-Default (null)
+     * zurückgesetzt, damit Tests sauber isolieren.
      */
     public static function clearCache(): void {
         self::$blzIndex = null;
         self::$bicIndex = null;
+        self::$networkEnabledOverride = null;
     }
 }

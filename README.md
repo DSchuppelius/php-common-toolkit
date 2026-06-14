@@ -135,6 +135,43 @@ $isValid = BankHelper::isValidBIC('COBADEFFXXX'); // true
 $bankName = BankHelper::getBankNameByBLZ('37040044'); // "Commerzbank"
 ```
 
+### Bankleitzahl-/BIC-Daten (BLZ/BIC data)
+
+Die Bundesbank-Datendateien werden **mit dem Paket ausgeliefert**, daher funktionieren
+`BankHelper::bicFromIBAN()`, `bicFromBLZ()`, `blzFromBIC()` und `checkBIC()` **out-of-the-box
+auch offline** – ohne vorherigen Online-Lauf:
+
+- `data/blz-aktuell-txt-data.txt` (Bankleitzahlen, ~2,3 MB)
+- `data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv` (BIC-Verzeichnis)
+
+Bei Ablauf (`expiry_days` in `config/helper.json`, Default 365 Tage) werden die Daten beim
+nächsten Zugriff **online von bundesbank.de aktualisiert**. Schlägt die Aktualisierung fehl
+(z.B. offline), wird die vorhandene – ggf. veraltete, aber gültige – ausgelieferte Datei
+weiterverwendet (Stale-Fallback) statt leerer Ergebnisse.
+
+Den Netzzugriff kannst du programmatisch steuern:
+
+```php
+use CommonToolkit\Helper\Data\BankHelper;
+
+// Online-Aktualisierung hart abschalten -> garantiert offline (nur ausgelieferte Datei)
+BankHelper::setNetworkEnabled(false);
+
+$bic = BankHelper::bicFromBLZ('10040000'); // "COBADEBBXXX" – kein Netzabruf
+
+// Effektiven Schalter abfragen (Override > config network_enabled > Default true)
+BankHelper::isNetworkEnabled(); // false
+
+// Zurück auf Config-Default; clearCache() setzt den Override ebenfalls zurück
+BankHelper::setNetworkEnabled(null);
+BankHelper::clearCache();
+```
+
+**Manuelles Aktualisieren:** Die beiden Dateien in `data/` können jederzeit durch die
+aktuellen Versionen von bundesbank.de ersetzt werden (URLs in `config/helper.json` unter
+`Bundesbank.resourceurl` bzw. `Zahlungsdienstleister.resourceurl`). Nach dem Ersetzen
+`BankHelper::clearCache()` aufrufen, falls der Prozess weiterläuft.
+
 ### Currency Formatting
 
 ```php
