@@ -895,8 +895,9 @@ class BankHelper {
         $path = $configLoader->get('Bundesbank', 'file', 'data/blz-aktuell-txt-data.txt');
         $url = $configLoader->get('Bundesbank', 'resourceurl', '');
         $expiry = $configLoader->get('Bundesbank', 'expiry_days', 365);
+        $networkEnabled = (bool) $configLoader->get('Bundesbank', 'network_enabled', true);
 
-        return self::loadDataFile($path, $url, $expiry);
+        return self::loadDataFile($path, $url, $expiry, $networkEnabled);
     }
 
     /**
@@ -911,8 +912,9 @@ class BankHelper {
         $path = $configLoader->get('Zahlungsdienstleister', 'file', 'data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv');
         $url = $configLoader->get('Zahlungsdienstleister', 'resourceurl', '');
         $expiry = $configLoader->get('Zahlungsdienstleister', 'expiry_days', 365);
+        $networkEnabled = (bool) $configLoader->get('Zahlungsdienstleister', 'network_enabled', true);
 
-        return self::loadDataFile($path, $url, $expiry);
+        return self::loadDataFile($path, $url, $expiry, $networkEnabled);
     }
 
     /**
@@ -921,9 +923,10 @@ class BankHelper {
      * @param string $path Der Pfad zur Datei.
      * @param string|null $url Die URL, von der die Datei geladen werden soll.
      * @param int $expiry Die Anzahl der Tage, nach denen die Datei als abgelaufen betrachtet wird.
+     * @param bool $networkEnabled Ob ein Netzabruf erlaubt ist (Default true = bisheriges Verhalten).
      * @return array Der Inhalt der Datei als Array von Zeilen.
      */
-    private static function loadDataFile(string $path, ?string $url = null, int $expiry = 365): array {
+    private static function loadDataFile(string $path, ?string $url = null, int $expiry = 365, bool $networkEnabled = true): array {
         if (!File::isAbsolutePath($path)) {
             $path = __DIR__ . '/../../../' . $path;
             if (!Folder::exists(dirname($path))) {
@@ -933,11 +936,19 @@ class BankHelper {
 
         $needsDownload = !File::exists($path) || File::modifiedTime($path) < strtotime("-$expiry days");
 
-        if ($needsDownload && !empty($url)) {
+        if ($needsDownload && !empty($url) && $networkEnabled) {
             $result = File::download($url, $path);
             if ($result === false) {
                 self::logWarning("Download von $url fehlgeschlagen, verwende lokale Datei falls vorhanden.");
             }
+        }
+
+        // Ausfallsicher: Wenn die Datei fehlt oder leer ist (z.B. offline und ohne mitgelieferte
+        // Datei), keine Exception werfen, sondern eine leere Liste liefern. So liefern
+        // bicFromIBAN()/bicFromBLZ() sauber null statt eines Fehlers.
+        if (!File::exists($path) || File::size($path) === 0) {
+            self::logWarning("Datendatei fehlt oder ist leer: $path. Es werden keine Bankdaten geladen.");
+            return [];
         }
 
         return File::readLinesAsArray($path, skipEmpty: true);

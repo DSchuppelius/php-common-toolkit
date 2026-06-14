@@ -557,13 +557,19 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             }
         }
 
-        $destHandle = self::openStream($destination, 'wb');
+        // Atomar: Zuerst in eine temporäre Datei im selben Verzeichnis schreiben und
+        // erst bei vollständigem Erfolg per rename() an das Ziel verschieben. Dadurch
+        // bleibt eine bereits vorhandene Zieldatei bei jedem Fehler unangetastet.
+        $tempDestination = $destination . '.download-' . bin2hex(random_bytes(6)) . '.tmp';
+
+        $destHandle = self::openStream($tempDestination, 'wb');
         if ($destHandle === false) {
             fclose($sourceHandle);
-            return self::logErrorAndReturn(false, "Fehler beim Öffnen des Ziel-Streams: $destination");
+            return self::logErrorAndReturn(false, "Fehler beim Öffnen des Ziel-Streams: $tempDestination");
         }
 
         $bytesDownloaded = 0;
+        $success = false;
         try {
             while (!feof($sourceHandle)) {
                 $chunk = fread($sourceHandle, $chunkSize);
@@ -572,7 +578,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 }
                 if ($chunk !== '') {
                     if (fwrite($destHandle, $chunk) === false) {
-                        return self::logErrorAndReturn(false, "Fehler beim Schreiben nach $destination");
+                        return self::logErrorAndReturn(false, "Fehler beim Schreiben nach $tempDestination");
                     }
                     $bytesDownloaded += strlen($chunk);
 
@@ -581,10 +587,24 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                     }
                 }
             }
+            $success = true;
             return self::logInfoAndReturn($bytesDownloaded, "Download abgeschlossen: $url -> $destination ($bytesDownloaded Bytes)");
         } finally {
             fclose($sourceHandle);
             fclose($destHandle);
+
+            if ($success) {
+                // Atomares Verschieben auf demselben Filesystem; ersetzt eine evtl. vorhandene Zieldatei.
+                if (!@rename($tempDestination, $destination)) {
+                    @unlink($tempDestination);
+                    // Zieldatei bleibt unverändert; Rückgabewert wird auf false korrigiert.
+                    $bytesDownloaded = self::logErrorAndReturn(false, "Fehler beim Verschieben der temporären Download-Datei nach $destination");
+                    return $bytesDownloaded;
+                }
+            } else {
+                // Bei jedem Fehler/Abbruch: Temp-Datei aufräumen, bestehende Zieldatei bleibt erhalten.
+                @unlink($tempDestination);
+            }
         }
     }
 
