@@ -106,15 +106,23 @@ class BankHelper {
      *
      * @param string|null $text Der zu durchsuchende Text (z.B. CSV-/PDF-Inhalt).
      * @param bool $strict Bei true zusätzlich Prüfsummen-/Längenvalidierung.
+     * @param bool $spaceTolerant Bei true werden auch durch einzelne Leerzeichen
+     *                            gruppierte IBANs erkannt (z.B. PDF "DE89 3704 0044 ...");
+     *                            die Leerzeichen werden vor der Validierung entfernt.
      * @return string[] Gefundene gültige IBANs (ohne Leerzeichen), dedupliziert.
      */
-    public static function extractIBANs(?string $text, bool $strict = false): array {
-        if ($text === null || $text === '' || preg_match_all('/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/', $text, $matches) === 0) {
+    public static function extractIBANs(?string $text, bool $strict = false, bool $spaceTolerant = false): array {
+        $pattern = $spaceTolerant
+            ? '/[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}/'
+            : '/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/';
+
+        if ($text === null || $text === '' || preg_match_all($pattern, $text, $matches) === 0) {
             return [];
         }
 
         $result = [];
-        foreach ($matches[0] as $candidate) {
+        foreach ($matches[0] as $match) {
+            $candidate = $spaceTolerant ? str_replace(' ', '', $match) : $match;
             if (self::validateIBAN($candidate, $strict) && !in_array($candidate, $result, true)) {
                 $result[] = $candidate;
             }
@@ -128,10 +136,11 @@ class BankHelper {
      *
      * @param string|null $text Der zu durchsuchende Text.
      * @param bool $strict Bei true zusätzlich Prüfsummen-/Längenvalidierung.
+     * @param bool $spaceTolerant Bei true auch durch Leerzeichen gruppierte IBANs.
      * @return string|null Die erste gültige IBAN oder null.
      */
-    public static function extractIBAN(?string $text, bool $strict = false): ?string {
-        return self::extractIBANs($text, $strict)[0] ?? null;
+    public static function extractIBAN(?string $text, bool $strict = false, bool $spaceTolerant = false): ?string {
+        return self::extractIBANs($text, $strict, $spaceTolerant)[0] ?? null;
     }
 
     /**

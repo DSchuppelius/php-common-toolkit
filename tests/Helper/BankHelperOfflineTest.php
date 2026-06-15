@@ -190,4 +190,11 @@ class BankHelperOfflineTest extends BaseTestCase {
         $this->assertNull(BankHelper::extractIBAN($badChecksum, true));                // strikt
         $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('DE89370400440532013000', true));
     }
+
+    public function testExtractIBANSpaceTolerantHandlesGroupedIban(): void {
+        // PDF-typische 4er-Gruppierung mit 2-stelligem Rest – darf NICHT abgeschnitten werden.
+        $text = 'Konto: DE89 3704 0044 0532 0130 00 (IBAN)';
+        $this->assertNull(BankHelper::extractIBAN($text));                          // zusammenhängend: nichts
+        $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN($text, false, true));
+    }
 }
