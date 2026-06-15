@@ -199,6 +199,20 @@ class CurrencyHelper {
     }
 
     /**
+     * Negiert einen Betragsstring durch Umschalten des führenden Minuszeichens.
+     *
+     * @param string $amount Der zu negierende Betrag.
+     * @return string Der Betrag mit umgekehrtem Vorzeichen.
+     */
+    public static function negateAmount(string $amount): string {
+        $amount = trim($amount);
+
+        return str_starts_with($amount, '-')
+            ? substr($amount, 1)
+            : '-' . $amount;
+    }
+
+    /**
      * Entfernt Währungssymbole und -codes aus einem Betrag.
      *
      * Unterstützt:

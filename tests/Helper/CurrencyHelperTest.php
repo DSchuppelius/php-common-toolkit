@@ -54,4 +54,11 @@ class CurrencyHelperTest extends BaseTestCase {
     public function testDeToUs(): void {
         $this->assertEquals("1234.56", CurrencyHelper::deToUs("1.234,56"));
     }
+
+    public function testNegateAmount(): void {
+        $this->assertSame('-96,53', CurrencyHelper::negateAmount('96,53'));
+        $this->assertSame('96,53', CurrencyHelper::negateAmount('-96,53'));
+        $this->assertSame('-1.234,56', CurrencyHelper::negateAmount(' 1.234,56 '));
+        $this->assertSame('1.234,56', CurrencyHelper::negateAmount(' -1.234,56 '));
+    }
 }
