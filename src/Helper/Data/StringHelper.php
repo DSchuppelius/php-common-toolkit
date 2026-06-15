@@ -650,6 +650,35 @@ class StringHelper {
     }
 
     /**
+     * Transliteriert einen String nach ASCII.
+     *
+     * Deutsche Umlaute werden zuerst ausgeschrieben (ä→ae, ö→oe, ü→ue, ß→ss,
+     * Ä→Ae, Ö→Oe, Ü→Ue), restliche diakritische Zeichen via iconv-Transliteration
+     * gefaltet; verbleibende Nicht-ASCII-Zeichen werden entfernt. Anschließend
+     * getrimmt. Im Gegensatz zu {@see removeNonAscii()} gehen Umlaute/Akzente
+     * nicht verloren, sondern werden sinnvoll ersetzt.
+     *
+     * @param string|null $value Der Eingabestring (null wird als leerer String behandelt).
+     * @return string Der ASCII-transliterierte, getrimmte String.
+     */
+    public static function toAscii(?string $value): string {
+        if (self::isNullOrEmpty($value)) return '';
+
+        $value = str_replace(
+            ['ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü'],
+            ['ae', 'oe', 'ue', 'ss', 'Ae', 'Oe', 'Ue'],
+            $value
+        );
+
+        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if ($ascii === false) {
+            $ascii = preg_replace('/[^\x20-\x7E]/', '', $value) ?? $value;
+        }
+
+        return trim($ascii);
+    }
+
+    /**
      * Kürzt einen Text auf eine maximale Länge und fügt optional ein Suffix hinzu.
      *
      * Für einfaches Kürzen ohne Suffix: truncate($text, $length, '')
