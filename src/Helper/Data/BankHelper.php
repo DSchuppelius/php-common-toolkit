@@ -97,6 +97,44 @@ class BankHelper {
     }
 
     /**
+     * Extrahiert alle (gültigen) IBANs aus einem Freitext.
+     *
+     * Sucht zusammenhängende IBAN-Token (Ländercode + 2 Prüfziffern + BBAN)
+     * und behält nur die per {@see validateIBAN()} gültigen – in Reihenfolge
+     * des Auftretens, ohne Duplikate. Anonymisierte IBANs (XXXX...) werden
+     * dabei automatisch verworfen.
+     *
+     * @param string|null $text Der zu durchsuchende Text (z.B. CSV-/PDF-Inhalt).
+     * @param bool $strict Bei true zusätzlich Prüfsummen-/Längenvalidierung.
+     * @return string[] Gefundene gültige IBANs (ohne Leerzeichen), dedupliziert.
+     */
+    public static function extractIBANs(?string $text, bool $strict = false): array {
+        if ($text === null || $text === '' || preg_match_all('/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/', $text, $matches) === 0) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($matches[0] as $candidate) {
+            if (self::validateIBAN($candidate, $strict) && !in_array($candidate, $result, true)) {
+                $result[] = $candidate;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Extrahiert die erste gültige IBAN aus einem Freitext.
+     *
+     * @param string|null $text Der zu durchsuchende Text.
+     * @param bool $strict Bei true zusätzlich Prüfsummen-/Längenvalidierung.
+     * @return string|null Die erste gültige IBAN oder null.
+     */
+    public static function extractIBAN(?string $text, bool $strict = false): ?string {
+        return self::extractIBANs($text, $strict)[0] ?? null;
+    }
+
+    /**
      * Prüft, ob der String wie eine IBAN formatiert ist (beginnt mit 2 Buchstaben + 2 Ziffern).
      * 
      * Diese Methode ist weniger strikt als isIBAN() und prüft nur das Anfangsformat,

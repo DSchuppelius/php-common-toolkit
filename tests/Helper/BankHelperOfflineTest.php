@@ -156,4 +156,38 @@ class BankHelperOfflineTest extends BaseTestCase {
             @unlink($tmp);
         }
     }
+
+    // =====================================================================
+    // extractIBAN / extractIBANs
+    // =====================================================================
+
+    public function testExtractIBANFindsFirstValidInText(): void {
+        $text = 'Buchung Konto DE89370400440532013000 Betrag 10,00';
+        $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN($text));
+    }
+
+    public function testExtractIBANReturnsNullWhenNonePresent(): void {
+        $this->assertNull(BankHelper::extractIBAN('keine iban, nur text 12345'));
+        $this->assertNull(BankHelper::extractIBAN(''));
+        $this->assertNull(BankHelper::extractIBAN(null));
+    }
+
+    public function testExtractIBANsDedupesAndKeepsOrder(): void {
+        $text = 'A DE89370400440532013000 B DE89370400440532013000 C DE12500105170648489890';
+        $this->assertSame(
+            ['DE89370400440532013000', 'DE12500105170648489890'],
+            BankHelper::extractIBANs($text)
+        );
+    }
+
+    public function testExtractIBANsIgnoresAnonymized(): void {
+        $this->assertSame([], BankHelper::extractIBANs('Konto DE12XXXXXXXXXXXXXXXXXX Ende'));
+    }
+
+    public function testExtractIBANStrictAppliesChecksum(): void {
+        $badChecksum = 'DE00370400440532013000'; // Format gültig, Prüfsumme falsch
+        $this->assertSame($badChecksum, BankHelper::extractIBAN($badChecksum));        // Format-Level
+        $this->assertNull(BankHelper::extractIBAN($badChecksum, true));                // strikt
+        $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('DE89370400440532013000', true));
+    }
 }
