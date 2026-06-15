@@ -42,6 +42,19 @@ class StringHelperTest extends BaseTestCase {
         $this->assertSame('abc', $ascii);
     }
 
+    public function testToAscii(): void {
+        // Deutsche Umlaute werden ausgeschrieben (nicht entfernt).
+        $this->assertSame('Gruesse Mueller Strasse', StringHelper::toAscii('Grüße Müller Straße'));
+        $this->assertSame('Aepfel Oel Ueber', StringHelper::toAscii('Äpfel Öl Über'));
+        // Diakritika werden gefaltet, Trim am Rand.
+        $this->assertSame('Cafe Resume', StringHelper::toAscii('  Café Résumé  '));
+        // Leer/null.
+        $this->assertSame('', StringHelper::toAscii(''));
+        $this->assertSame('', StringHelper::toAscii(null));
+        // Reiner ASCII-Text bleibt unverändert.
+        $this->assertSame('Hello World 123', StringHelper::toAscii('Hello World 123'));
+    }
+
     public function testTruncate(): void {
         $text = "Das ist ein sehr langer Text";
         $short = StringHelper::truncate($text, 10);
