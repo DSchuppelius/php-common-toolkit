@@ -353,6 +353,14 @@ final class StringHelper extends BaseStringHelper {
                     $quoteRun = 0;
                     continue;
                 }
+                // Einzelnes Quote DIREKT nach einem Delimiter im gequoteten Feld,
+                // das KEIN doppeltes Quote ("") einleitet → ungültig (z. B. '"A,"B"').
+                // Ein doppeltes Quote ("",  next === enclosure) ist hingegen erlaubt:
+                // RFC4180-escaptes Quote bzw. doppelt-gewrappte Felder ("",""…) sowie
+                // Exporte, die einfach- und doppelt-gequotete Felder mischen (PayPal).
+                if ($inQuotes && $prev === $delimiter && $next !== $enclosure) {
+                    self::logErrorAndThrow(RuntimeException::class, 'Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
+                }
             }
 
             if (!$inQuotes && $char === $enclosure && ($prev !== $delimiter && $prev !== '')) {
@@ -368,10 +376,6 @@ final class StringHelper extends BaseStringHelper {
                 $result[] = substr($current, 0, -1);
                 $current  = '';
                 continue;
-            }
-
-            if (str_contains($current, $delimiter . $enclosure)) {
-                self::logErrorAndThrow(RuntimeException::class, 'Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
             }
         }
 

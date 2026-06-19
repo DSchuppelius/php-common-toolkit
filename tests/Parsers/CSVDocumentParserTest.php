@@ -58,6 +58,27 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertStringContainsString(',', $rebuilt);
     }
 
+    /**
+     * Mehrzeiliger Export, der je Zeile einfach-gequotete Felder mit einem Feld
+     * mischt, das RFC4180-escapte Quotes (eingebettetes JSON) enthält – z. B.
+     * PayPal-Aktivitäten-CSV. Muss vollständig (Header + alle Zeilen) parsen.
+     */
+    public function testParseMixedSingleAndEscapedQuotedCSV(): void {
+        $csv = "\"Datum\",\"Betrag\",\"Meta\"\n"
+            . "\"09.01.2023\",\"60,00\",\"{\"\"order_id\"\":5227,\"\"order_key\"\":\"\"wc_a\"\"}\"\n"
+            . "\"10.01.2023\",\"-2,18\",\"{\"\"order_id\"\":5228,\"\"note\"\":\"\"x,y\"\"}\"\n";
+
+        $doc = CSVDocumentParser::fromString($csv, ',', '"');
+
+        $this->assertSame(2, $doc->countRows());
+        $row0 = $doc->getRow(0);
+        $this->assertNotNull($row0);
+        $this->assertSame(3, $row0->countFields());
+        $this->assertSame('60,00', $row0->getField(1)?->getValue());
+        $this->assertSame('{""order_id"":5227,""order_key"":""wc_a""}', $row0->getField(2)?->getValue());
+        $this->assertSame('-2,18', $doc->getRow(1)?->getField(1)?->getValue());
+    }
+
     public function testParseSemicolonSeparatedCSV(): void {
         $csv = file_get_contents($this->testFileSemicolon);
         $doc = CSVDocumentParser::fromString($csv, ';', '"');

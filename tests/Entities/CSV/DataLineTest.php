@@ -203,6 +203,44 @@ class DataLineTest extends BaseTestCase {
         $this->assertSame('"A ""quoted"" text","B"', $line->toString());
     }
 
+    /**
+     * Eine Zeile, die einfach-gequotete Felder ("60,00") mit einem Feld mischt,
+     * das RFC4180-escapte Quotes enthält (eingebettetes JSON: {""a"":1,""b"":2}).
+     * Solche Exporte (z. B. PayPal) dürfen NICHT mehr zum Abbruch führen; das
+     * escapte Quote folgt direkt auf einen Delimiter (",""), bleibt aber gültig.
+     */
+    public function testMixedSingleAndEscapedQuotedFields(): void {
+        $line = DataLine::fromString('"60,00","{""order_id"":5227,""order_key"":""wc_x""}","end"');
+        $fields = $line->getFields();
+
+        $this->assertCount(3, $fields);
+        $this->assertSame('60,00', $fields[0]->getValue());
+        $this->assertSame('{""order_id"":5227,""order_key"":""wc_x""}', $fields[1]->getValue());
+        $this->assertSame('end', $fields[2]->getValue());
+        $this->assertTrue($fields[1]->isQuoted());
+    }
+
+    /**
+     * Escaptes Quote-Paar direkt NACH einem Delimiter (",""…) ist gültig …
+     */
+    public function testEscapedQuotePairAfterDelimiterIsAccepted(): void {
+        $line = DataLine::fromString('"A","""B"""');
+        $fields = $line->getFields();
+
+        $this->assertCount(2, $fields);
+        $this->assertSame('A', $fields[0]->getValue());
+        $this->assertSame('"""B"""', $fields[1]->getRaw());
+    }
+
+    /**
+     * … ein EINZELNES Quote direkt nach einem Delimiter im gequoteten Feld (",'X)
+     * ist dagegen weiterhin ungültig (z. B. '"A,"B"').
+     */
+    public function testLoneQuoteAfterDelimiterInsideFieldIsRejected(): void {
+        $this->expectException(RuntimeException::class);
+        DataLine::fromString('"A,"B","C"');
+    }
+
     public function testRawFieldPreserved(): void {
         $line = DataLine::fromString('"A","B","C"');
         $field = $line->getField(1);
