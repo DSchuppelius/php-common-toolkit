@@ -1,0 +1,43 @@
+{
+    "shellExecutables": {
+        "ffmpeg": {
+            "path": "ffmpeg",
+            "required": false,
+            "description": "FFmpeg Audio/Video Converter",
+            "package": "ffmpeg",
+            "arguments": []
+        },
+        "ffmpeg-audio-info": {
+            "path": "ffmpeg",
+            "required": false,
+            "description": "FFmpeg Audio-Metadaten-Probe (Ausgabe auf stderr)",
+            "package": "ffmpeg",
+            "arguments": [
+                "-hide_banner",
+                "-i",
+                "[INPUT]"
+            ]
+        },
+        "whisper": {
+            "path": "whisper",
+            "required": false,
+            "description": "OpenAI Whisper Speech-to-Text",
+            "package": "openai-whisper",
+            "arguments": []
+        },
+        "piper-tts": {
+            "path": "piper",
+            "required": false,
+            "description": "Piper Neural Text-to-Speech",
+            "package": "piper-tts",
+            "arguments": []
+        },
+        "espeak-ng": {
+            "path": "espeak-ng",
+            "required": false,
+            "description": "eSpeak-NG Text-to-Speech (Fallback)",
+            "package": "espeak-ng",
+            "arguments": []
+        }
+    }
+}
