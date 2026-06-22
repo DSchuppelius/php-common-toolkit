@@ -53,7 +53,7 @@ final class StructureHelper {
      * }
      */
     public static function analyze(string $content, int $headerRows = 1): array {
-        $delimiter = self::detectDelimiter($content);
+        $delimiter = StringHelper::detectDelimiter($content);
         $lines = StringHelper::splitCsvByLogicalLine($content);
 
         // Leere Zeilen am Ende entfernen
@@ -227,28 +227,6 @@ final class StructureHelper {
             'reasons' => $reasons,
             'structures' => $structures,
         ];
-    }
-
-    /**
-     * Erkennt den Delimiter einer CSV-Datei anhand des Inhalts.
-     *
-     * Hinweis: CsvFile::detectDelimiter() ist dateibasiert,
-     * hier wird eine String-basierte Erkennung benötigt.
-     */
-    public static function detectDelimiter(string $content): string {
-        $firstLine = strtok($content, "\n") ?: '';
-        // Reset strtok state
-        strtok('', '');
-
-        $delimiters = [';' => 0, ',' => 0, "\t" => 0, '|' => 0];
-        foreach (array_keys($delimiters) as $d) {
-            $delimiters[$d] = substr_count($firstLine, $d);
-        }
-
-        arsort($delimiters);
-        $detected = array_key_first($delimiters);
-
-        return $delimiters[$detected] > 0 ? $detected : ';';
     }
 
     /**

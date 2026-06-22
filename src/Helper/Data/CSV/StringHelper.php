@@ -18,6 +18,56 @@ use RuntimeException;
 use Throwable;
 
 final class StringHelper extends BaseStringHelper {
+    /** Standard-Kandidaten für die Trennzeichen-Erkennung (Reihenfolge = Tie-Priorität). */
+    public const DEFAULT_DELIMITERS = [';', ',', "\t", '|'];
+
+    /**
+     * Erkennt das Spaltentrennzeichen eines CSV-Inhalts (string-basiert) anhand der
+     * häufigsten Vorkommen pro Zeile.
+     *
+     * Zentrale Implementierung für alle string-basierten Delimiter-Erkennungen
+     * (vgl. dateibasiert {@see \CommonToolkit\Helper\FileSystem\FileTypes\CsvFile::detectDelimiter()}).
+     *
+     * @param string   $content         CSV-Inhalt (eine oder mehrere Zeilen)
+     * @param string[] $candidates      Kandidaten-Trennzeichen; Array-Reihenfolge entscheidet bei Gleichstand
+     * @param int      $sampleLines     Anzahl der zu prüfenden Kopfzeilen (<=0 = alle)
+     * @param string   $default         Rückgabe, wenn kein Kandidat die Schwelle erreicht ('' = "kein Treffer")
+     * @param bool     $requirePerLine  Verlangt mindestens ein Vorkommen pro geprüfter Zeile (statt insgesamt ≥1)
+     * @return string                   Erkanntes Trennzeichen oder $default
+     */
+    public static function detectDelimiter(
+        string $content,
+        array $candidates = self::DEFAULT_DELIMITERS,
+        int $sampleLines = 1,
+        string $default = ';',
+        bool $requirePerLine = false
+    ): string {
+        if ($candidates === []) {
+            return $default;
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $content) ?: [];
+        if ($sampleLines > 0) {
+            $lines = array_slice($lines, 0, $sampleLines);
+        }
+
+        $counts = array_fill_keys($candidates, 0);
+        foreach ($lines as $line) {
+            foreach ($candidates as $delimiter) {
+                $counts[$delimiter] += substr_count($line, $delimiter);
+            }
+        }
+
+        arsort($counts);
+        // $candidates ist hier garantiert nicht leer (Early-Return oben) → kein null-Key.
+        $best = array_key_first($counts);
+
+        // Schwelle: ein Vorkommen pro Zeile (requirePerLine) bzw. mindestens eines insgesamt.
+        $threshold = $requirePerLine ? max(1, count($lines)) : 1;
+
+        return $counts[$best] >= $threshold ? (string) $best : $default;
+    }
+
     /**
      * Prüft, ob ein String von Enclosure-Zeichen umschlossen ist.
      *

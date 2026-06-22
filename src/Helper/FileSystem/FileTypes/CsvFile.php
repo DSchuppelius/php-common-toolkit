@@ -107,18 +107,20 @@ class CsvFile extends HelperAbstract {
     public static function detectDelimiter(string $file, int $maxLines = 10): string {
         $file = self::resolveFile($file);
 
-        $delimiterCounts = array_fill_keys(self::$commonDelimiters, 0);
-
+        $lines = [];
         foreach (File::readLines($file, true, $maxLines) as $line) {
-            foreach (self::$commonDelimiters as $delimiter) {
-                $delimiterCounts[$delimiter] += substr_count($line, $delimiter);
-            }
+            $lines[] = $line;
         }
 
-        arsort($delimiterCounts);
-        $detectedDelimiter = key($delimiterCounts);
+        // String-basierte Kernlogik teilen; '' = kein Treffer → dateispezifische Exception.
+        $detectedDelimiter = StringHelper::detectDelimiter(
+            implode("\n", $lines),
+            self::$commonDelimiters,
+            $maxLines,
+            ''
+        );
 
-        if ($delimiterCounts[$detectedDelimiter] === 0) {
+        if ($detectedDelimiter === '') {
             self::logErrorAndThrow(Exception::class, "Kein geeignetes Trennzeichen in der Datei $file gefunden.");
         }
 
