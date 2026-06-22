@@ -3,7 +3,7 @@
  * Created on   : Mon Jun 22 2026
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : AudioHelper.php
+ * Filename     : MediaHelper.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -17,10 +17,10 @@ use CommonToolkit\Helper\FileSystem\{File, Folder};
 use CommonToolkit\Helper\Shell;
 
 /**
- * Generischer Audio-Helper auf Basis von FFmpeg (Konvertierung, Metadaten),
- * OpenAI Whisper (Speech-to-Text) und Piper/eSpeak-NG (Text-to-Speech).
+ * Generischer Medien-Helper auf Basis von FFmpeg (Audio-/Video-Konvertierung,
+ * Metadaten), OpenAI Whisper (Speech-to-Text) und Piper/eSpeak-NG (Text-to-Speech).
  *
- * Die Executables werden über audio_executables.json aufgelöst (Pfad + Verfügbarkeit).
+ * Die Executables werden über media_executables.json aufgelöst (Pfad + Verfügbarkeit).
  * Die FFmpeg-/Whisper-Kommandozeilen sind von Natur aus dynamisch (Codec-Argumente
  * vor der Ausgabedatei, optionale Sprache) und werden deshalb hier escaped
  * zusammengesetzt – nicht als statische Argument-Templates.
@@ -28,10 +28,10 @@ use CommonToolkit\Helper\Shell;
  * Deployment-spezifische Pfade (Whisper-/Piper-Modellverzeichnisse) werden als
  * Parameter übergeben; dieser Helper kennt keine anwendungsspezifischen Pfade.
  */
-final class AudioHelper extends ConfiguredHelperAbstract {
-    protected const CONFIG_FILE = __DIR__ . '/../../../config/audio_executables.json';
+final class MediaHelper extends ConfiguredHelperAbstract {
+    protected const CONFIG_FILE = __DIR__ . '/../../../config/media_executables.json';
 
-    /** Invariante FFmpeg-Flags für Audio-Konvertierungen. */
+    /** Invariante FFmpeg-Flags für Konvertierungen. */
     private const FFMPEG_BASE_FLAGS = ['-hide_banner', '-loglevel', 'error'];
 
     public static function isFfmpegAvailable(): bool {
@@ -43,7 +43,7 @@ final class AudioHelper extends ConfiguredHelperAbstract {
     }
 
     /**
-     * Prüft, ob ein konfiguriertes Audio-Executable verfügbar ist
+     * Prüft, ob ein konfiguriertes Medien-Executable verfügbar ist
      * (z.B. 'ffmpeg', 'whisper', 'piper-tts', 'espeak-ng').
      */
     public static function isAvailable(string $name): bool {
@@ -51,20 +51,22 @@ final class AudioHelper extends ConfiguredHelperAbstract {
     }
 
     /**
-     * Konvertiert eine Audiodatei mit FFmpeg.
+     * Konvertiert eine Mediendatei mit FFmpeg.
      *
-     * Baut `ffmpeg -hide_banner -loglevel error -i <input> -vn <codecArgs…> <output>`.
-     * Die Codec-Argumente (z.B. ['-c:a','libmp3lame','-q:a','2','-ac','1']) werden
-     * einzeln escaped; der Aufrufer ist für deren inhaltliche Gültigkeit zuständig.
+     * Baut `ffmpeg -hide_banner -loglevel error -i <input> [-vn] <codecArgs…> <output>`.
+     * Die Codec-Argumente (z.B. ['-c:a','libmp3lame','-q:a','2'] bzw. ['-c:v','libx264',…])
+     * werden einzeln escaped; der Aufrufer ist für deren inhaltliche Gültigkeit zuständig.
      *
      * @param string[] $codecArgs Codec-/Filter-Argumente in der Reihenfolge für FFmpeg
      * @param array $output Referenz: Shell-Ausgabe (stdout+stderr)
+     * @param bool $stripVideo true entfernt den Videostream (-vn, Audio-Konvertierung);
+     *                         false behält ihn (Video-Konvertierung)
      * @return bool true bei Erfolg (Exit 0 und Ausgabedatei vorhanden)
      */
-    public static function convert(string $input, string $outputFile, array $codecArgs, array &$output = [], int &$returnCode = 0): bool {
+    public static function convert(string $input, string $outputFile, array $codecArgs, array &$output = [], int &$returnCode = 0, bool $stripVideo = true): bool {
         $path = self::getExecutablePath('ffmpeg');
         if ($path === null) {
-            return self::logErrorAndReturn(false, 'FFmpeg ist nicht verfügbar (audio_executables.json).');
+            return self::logErrorAndReturn(false, 'FFmpeg ist nicht verfügbar (media_executables.json).');
         }
 
         $parts = [escapeshellarg($path)];
@@ -73,7 +75,9 @@ final class AudioHelper extends ConfiguredHelperAbstract {
         }
         $parts[] = '-i';
         $parts[] = escapeshellarg($input);
-        $parts[] = '-vn';
+        if ($stripVideo) {
+            $parts[] = '-vn';
+        }
         foreach ($codecArgs as $arg) {
             $parts[] = escapeshellarg((string) $arg);
         }
@@ -89,16 +93,14 @@ final class AudioHelper extends ConfiguredHelperAbstract {
     }
 
     /**
-     * Liest Audio-Metadaten via FFmpeg aus.
-     *
-     * @return array{duration?: float, sample_rate?: int, channels?: int, codec?: string, bitrate?: int}|null
+     * Führt eine FFmpeg-Probe aus und liefert die (stderr-)Ausgabe als String.
      */
-    public static function getAudioInfo(string $file): ?array {
+    private static function probe(string $file): ?string {
         if (!File::exists($file) || !self::isFfmpegAvailable()) {
             return null;
         }
 
-        $command = self::getConfiguredCommand('ffmpeg-audio-info', ['[INPUT]' => $file]);
+        $command = self::getConfiguredCommand('ffmpeg-info', ['[INPUT]' => $file]);
         if ($command === null) {
             return null;
         }
@@ -107,7 +109,19 @@ final class AudioHelper extends ConfiguredHelperAbstract {
         $returnCode = 0;
         // FFmpeg gibt Metadaten auf stderr aus; Shell leitet stderr standardmäßig nach stdout um.
         Shell::executeShellCommand($command, $output, $returnCode);
-        $outputStr = implode("\n", $output);
+        return implode("\n", $output);
+    }
+
+    /**
+     * Liest Audio-Metadaten via FFmpeg aus.
+     *
+     * @return array{duration?: float, sample_rate?: int, channels?: int, codec?: string, bitrate?: int}|null
+     */
+    public static function getAudioInfo(string $file): ?array {
+        $outputStr = self::probe($file);
+        if ($outputStr === null) {
+            return null;
+        }
 
         $info = [];
 
@@ -137,6 +151,38 @@ final class AudioHelper extends ConfiguredHelperAbstract {
     }
 
     /**
+     * Liest Video-Metadaten via FFmpeg aus.
+     *
+     * @return array{duration?: float, width?: int, height?: int, codec?: string, fps?: float}|null
+     */
+    public static function getVideoInfo(string $file): ?array {
+        $outputStr = self::probe($file);
+        if ($outputStr === null) {
+            return null;
+        }
+
+        $info = [];
+
+        if (preg_match('/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/', $outputStr, $matches)) {
+            $info['duration'] = (float) $matches[1] * 3600 + (float) $matches[2] * 60 + (float) $matches[3];
+        }
+        // Auflösung: \d{2,5}-Grenzen überspringen den Codec-FourCC-Hex (z.B. "0x31637661")
+        // und treffen die echte Auflösung ("1920x1080").
+        if (preg_match('/Video:.*?\b(\d{2,5})x(\d{2,5})\b/', $outputStr, $matches)) {
+            $info['width'] = (int) $matches[1];
+            $info['height'] = (int) $matches[2];
+        }
+        if (preg_match('/Stream.*Video:\s*(\w+)/', $outputStr, $matches)) {
+            $info['codec'] = $matches[1];
+        }
+        if (preg_match('/(\d+(?:\.\d+)?)\s*fps/', $outputStr, $matches)) {
+            $info['fps'] = (float) $matches[1];
+        }
+
+        return !empty($info) ? $info : null;
+    }
+
+    /**
      * Transkribiert eine Audiodatei mit OpenAI Whisper.
      *
      * @param string $modelDir Verzeichnis mit den Whisper-Modellen (deployment-spezifisch)
@@ -155,7 +201,7 @@ final class AudioHelper extends ConfiguredHelperAbstract {
     ): ?string {
         $path = self::getExecutablePath('whisper');
         if ($path === null) {
-            return self::logErrorAndReturn(null, 'Whisper ist nicht verfügbar (audio_executables.json).');
+            return self::logErrorAndReturn(null, 'Whisper ist nicht verfügbar (media_executables.json).');
         }
 
         Folder::create($outputDir);
@@ -212,7 +258,7 @@ final class AudioHelper extends ConfiguredHelperAbstract {
     public static function synthesizePiper(string $text, string $outputWav, string $modelPath, array &$output = [], int &$returnCode = 0): bool {
         $path = self::getExecutablePath('piper-tts');
         if ($path === null) {
-            return self::logErrorAndReturn(false, 'Piper ist nicht verfügbar (audio_executables.json).');
+            return self::logErrorAndReturn(false, 'Piper ist nicht verfügbar (media_executables.json).');
         }
 
         // Piper liest den Text von stdin.
@@ -240,7 +286,7 @@ final class AudioHelper extends ConfiguredHelperAbstract {
     public static function synthesizeEspeak(string $textPath, string $outputWav, string $voice = 'de', string $speed = '150', array &$output = [], int &$returnCode = 0): bool {
         $path = self::getExecutablePath('espeak-ng');
         if ($path === null) {
-            return self::logErrorAndReturn(false, 'eSpeak-NG ist nicht verfügbar (audio_executables.json).');
+            return self::logErrorAndReturn(false, 'eSpeak-NG ist nicht verfügbar (media_executables.json).');
         }
 
         $command = sprintf(

@@ -1,0 +1,19 @@
+{
+    "shellExecutables": {
+        "libreoffice": {
+            "path": "libreoffice",
+            "required": false,
+            "description": "LibreOffice headless Dokument-Konverter (--convert-to)",
+            "package": "libreoffice",
+            "arguments": [
+                "--headless",
+                "-env:UserInstallation=file:///tmp/libreoffice-user",
+                "--convert-to",
+                "[FORMAT]",
+                "--outdir",
+                "[OUTPUT_DIR]",
+                "[INPUT]"
+            ]
+        }
+    }
+}

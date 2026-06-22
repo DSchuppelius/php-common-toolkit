@@ -7,10 +7,10 @@
             "package": "ffmpeg",
             "arguments": []
         },
-        "ffmpeg-audio-info": {
+        "ffmpeg-info": {
             "path": "ffmpeg",
             "required": false,
-            "description": "FFmpeg Audio-Metadaten-Probe (Ausgabe auf stderr)",
+            "description": "FFmpeg Medien-Metadaten-Probe (Ausgabe auf stderr)",
             "package": "ffmpeg",
             "arguments": [
                 "-hide_banner",
