@@ -491,7 +491,10 @@ class DateHelper {
         $base = $use1904System ? '1904-01-01' : '1899-12-30';
 
         try {
-            return (new DateTimeImmutable($base))->modify("+{$days} days +{$seconds} seconds");
+            // DateInterval statt modify(): dessen Konstruktor wirft auf allen PHP-Versionen
+            // bei ungültigem Format, während modify() vor PHP 8.3 stattdessen false liefert.
+            // So ist die Konvertierung versionsunabhängig korrekt und der Catch greift überall.
+            return (new DateTimeImmutable($base))->add(new DateInterval("P{$days}DT{$seconds}S"));
         } catch (Throwable $e) {
             return self::logErrorAndReturn(null, "Fehler bei Excel-Serial-Konvertierung ($serial): " . $e->getMessage());
         }

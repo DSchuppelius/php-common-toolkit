@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\CSV;
 
 use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
+use CommonToolkit\Helper\Data\StringHelper;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
@@ -162,7 +163,9 @@ class ColumnWidthConfig {
 
         // Padding anwenden falls aktiviert
         if ($this->enablePadding && $currentLength < $maxWidth) {
-            $value = mb_str_pad($value, $maxWidth, $this->paddingChar, $this->paddingType);
+            // StringHelper::pad ist multibyte-sicher und ab PHP 8.1 verfügbar;
+            // mb_str_pad() existiert erst ab PHP 8.3 (Paket unterstützt >=8.1).
+            $value = StringHelper::pad($value, $maxWidth, $this->paddingChar, $this->paddingType);
         }
 
         return $value;
