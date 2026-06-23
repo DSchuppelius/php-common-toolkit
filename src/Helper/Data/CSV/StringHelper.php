@@ -107,7 +107,9 @@ final class StringHelper extends BaseStringHelper {
      */
     public static function detectCSVEnclosureRepeat(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null, bool $strict = true): int {
         $s = self::stripStartEnd($line, $started, $closed);
-        if (empty($s)) return 0;
+        if (empty($s)) {
+            return 0;
+        }
 
         $repeats = [];
 
@@ -130,11 +132,11 @@ final class StringHelper extends BaseStringHelper {
      * @return array<string>             Array der generierten leeren Feldwerte
      */
     private static function genEmptyValuesFromCSVString(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null, bool $withDelimiter = true, ?int $strictRepeat = null, ?int $nonStrictRepeat = null): array {
-        $strictRepeat    ??= self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, $started, $closed, true);
+        $strictRepeat ??= self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, $started, $closed, true);
         $nonStrictRepeat ??= self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, $started, $closed, false);
 
         $repeats = array_unique(
-            array_filter([$strictRepeat, $nonStrictRepeat], fn($v) => $v > 0)
+            array_filter([$strictRepeat, $nonStrictRepeat], fn ($v) => $v > 0)
         );
 
         // Wenn keine Quotes gefunden → Standard leer
@@ -161,7 +163,7 @@ final class StringHelper extends BaseStringHelper {
         }
 
         $result = array_values(array_unique($values));
-        usort($result, fn($a, $b) => strlen($b) <=> strlen($a));
+        usort($result, fn ($a, $b) => strlen($b) <=> strlen($a));
 
         return $result;
     }
@@ -175,10 +177,14 @@ final class StringHelper extends BaseStringHelper {
      * @return string           Normalisierte CSV-Zeile
      */
     private static function normalizeRepeatedEnclosures(string $line, string $delimiter = ',', string $enclosure = '"', ?int $maxRepeat = null, ?int $minRepeat = null): string {
-        if ($line === '' || $enclosure === '') return $line;
+        if ($line === '' || $enclosure === '') {
+            return $line;
+        }
 
         $max = $maxRepeat ?? self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, null, null, false);
-        if ($max < 2) return $line;
+        if ($max < 2) {
+            return $line;
+        }
 
         $min = $minRepeat ?? self::detectCSVEnclosureRepeat($line, $delimiter, $enclosure, null, null, true);
 
@@ -186,11 +192,15 @@ final class StringHelper extends BaseStringHelper {
 
         // 1) Leere Felder an Feldgrenzen auf doppeltes $enclosure normalisieren
         foreach ($with as $v) {
-            if ($v === $delimiter . $delimiter) continue;
+            if ($v === $delimiter . $delimiter) {
+                continue;
+            }
             if (str_contains($line, $v)) {
                 while (true) {
                     $newLine = str_replace($v, $delimiter . $delimiter, $line);
-                    if ($newLine === $line) break;
+                    if ($newLine === $line) {
+                        break;
+                    }
                     $line = $newLine;
                 }
             }
@@ -202,8 +212,12 @@ final class StringHelper extends BaseStringHelper {
             $line = str_replace($delimiter . $qq, $delimiter . $enclosure, $line);
             $line = str_replace($qq . $delimiter, $enclosure . $delimiter, $line);
 
-            if (str_starts_with($line, $qq)) $line = substr_replace($line, $enclosure, 0, strlen($qq));
-            if (str_ends_with($line,   $qq)) $line = substr_replace($line, $enclosure, -strlen($qq));
+            if (str_starts_with($line, $qq)) {
+                $line = substr_replace($line, $enclosure, 0, strlen($qq));
+            }
+            if (str_ends_with($line, $qq)) {
+                $line = substr_replace($line, $enclosure, -strlen($qq));
+            }
         }
 
         return $line;
@@ -270,7 +284,9 @@ final class StringHelper extends BaseStringHelper {
     public static function canParseCompleteCSVDataLine(string $line, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null): bool {
         // Start/End entfernen, aber originalen Vergleich sichern
         $trimmed = self::stripStartEnd($line, $started, $closed);
-        if (empty($trimmed)) return false;
+        if (empty($trimmed)) {
+            return false;
+        }
 
         try {
             // Versuch, die Zeile über DataLine zu parsen
@@ -292,7 +308,7 @@ final class StringHelper extends BaseStringHelper {
             [$minRepeat, $maxRepeat] = $CSVDataLine->getEnclosureRepeatRange(true);
 
             // Falls normalisierte Variante (z. B. durch doppelte Quotes) übereinstimmt
-            $normalizedInput2  = self::normalizeRepeatedEnclosures($trimmed, $delimiter, $enclosure, $maxRepeat, $minRepeat);
+            $normalizedInput2 = self::normalizeRepeatedEnclosures($trimmed, $delimiter, $enclosure, $maxRepeat, $minRepeat);
             $normalizedRebuilt2 = self::normalizeRepeatedEnclosures($rebuilt, $delimiter, $enclosure);
 
             return $normalizedInput2 === $normalizedRebuilt2;
@@ -424,7 +440,7 @@ final class StringHelper extends BaseStringHelper {
 
             if ($char === $delimiter && !$inQuotes) {
                 $result[] = substr($current, 0, -1);
-                $current  = '';
+                $current = '';
                 continue;
             }
         }
@@ -454,8 +470,8 @@ final class StringHelper extends BaseStringHelper {
      * @throws RuntimeException                  Wenn die Struktur inkonsistent ist
      */
     public static function extractFields(array|string $lines, string $delimiter = ',', string $enclosure = '"', ?string $started = null, ?string $closed = null, string $multiLineReplacement = " "): array {
-        $raw = is_array($lines) ? implode("\n", $lines) : (string)$lines;
-        $s   = self::stripStartEnd($raw, $started, $closed);
+        $raw = is_array($lines) ? implode("\n", $lines) : (string) $lines;
+        $s = self::stripStartEnd($raw, $started, $closed);
 
         if (empty(trim($s))) {
             return [];
@@ -473,7 +489,7 @@ final class StringHelper extends BaseStringHelper {
         }
 
         // Felder direkt aus DataLine extrahieren (kein redundantes parseCSVLine)
-        $fields = array_map(fn($f) => $f->getValue(), $dataLine->getFields());
+        $fields = array_map(fn ($f) => $f->getValue(), $dataLine->getFields());
 
         // Multiline-Replacement in gequoteten Feldern anwenden
         if (self::hasMultilineFields($s, $delimiter, $enclosure)) {

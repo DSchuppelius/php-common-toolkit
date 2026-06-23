@@ -17,12 +17,11 @@ use CommonToolkit\Helper\Data\CreditorIdHelper;
 use Tests\Contracts\BaseTestCase;
 
 class CreditorIdHelperTest extends BaseTestCase {
-
     // ========================================
     // Test: Format-Prüfung
     // ========================================
 
-    public function testIsCreditorIdValid(): void {
+    public function test_is_creditor_id_valid(): void {
         // Deutsche Gläubiger-ID (Beispiel)
         $this->assertTrue(CreditorIdHelper::isCreditorId('DE98ZZZ09999999999'));
         $this->assertTrue(CreditorIdHelper::isCreditorId('DE02ABC01234567890'));
@@ -34,7 +33,7 @@ class CreditorIdHelperTest extends BaseTestCase {
         $this->assertTrue(CreditorIdHelper::isCreditorId('BE68ZZZ0123456789'));
     }
 
-    public function testIsCreditorIdInvalid(): void {
+    public function test_is_creditor_id_invalid(): void {
         $this->assertFalse(CreditorIdHelper::isCreditorId(null));
         $this->assertFalse(CreditorIdHelper::isCreditorId(''));
         $this->assertFalse(CreditorIdHelper::isCreditorId('DE98ZZZ')); // Zu kurz
@@ -46,13 +45,13 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Validierung mit Prüfziffer
     // ========================================
 
-    public function testValidateCreditorIdValid(): void {
+    public function test_validate_creditor_id_valid(): void {
         // Echte deutsche Gläubiger-IDs mit gültigen Prüfziffern
         // Deutsche Bundesbank Beispiel
         $this->assertTrue(CreditorIdHelper::validateCreditorId('DE98ZZZ09999999999'));
     }
 
-    public function testValidateCreditorIdInvalid(): void {
+    public function test_validate_creditor_id_invalid(): void {
         // Falsche Prüfziffern (MOD 97 ≠ 1)
         $this->assertFalse(CreditorIdHelper::validateCreditorId('DE00ZZZ09999999999')); // MOD 97 = 0
         $this->assertFalse(CreditorIdHelper::validateCreditorId('DE02ZZZ09999999999')); // MOD 97 = 2
@@ -67,7 +66,7 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Normalisierung
     // ========================================
 
-    public function testNormalize(): void {
+    public function test_normalize(): void {
         $this->assertEquals('DE98ZZZ09999999999', CreditorIdHelper::normalize('de98zzz09999999999'));
         $this->assertEquals('DE98ZZZ09999999999', CreditorIdHelper::normalize('DE 98 ZZZ 09999999999'));
         $this->assertEquals('DE98ZZZ09999999999', CreditorIdHelper::normalize('DE98 ZZZ 0999 9999 999'));
@@ -77,7 +76,7 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Formatierung
     // ========================================
 
-    public function testFormat(): void {
+    public function test_format(): void {
         // Standardformat mit Leerzeichen
         $this->assertEquals('DE98 ZZZ 0999 9999 999', CreditorIdHelper::format('DE98ZZZ09999999999'));
 
@@ -89,7 +88,7 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Extraktion
     // ========================================
 
-    public function testExtractCountryCode(): void {
+    public function test_extract_country_code(): void {
         $this->assertEquals('DE', CreditorIdHelper::extractCountryCode('DE98ZZZ09999999999'));
         $this->assertEquals('AT', CreditorIdHelper::extractCountryCode('AT61ZZZ01234567890'));
         $this->assertEquals('NL', CreditorIdHelper::extractCountryCode('NL91ABNA0417164300'));
@@ -98,7 +97,7 @@ class CreditorIdHelperTest extends BaseTestCase {
         $this->assertNull(CreditorIdHelper::extractCountryCode('12'));
     }
 
-    public function testExtractCheckDigits(): void {
+    public function test_extract_check_digits(): void {
         $this->assertEquals('98', CreditorIdHelper::extractCheckDigits('DE98ZZZ09999999999'));
         $this->assertEquals('61', CreditorIdHelper::extractCheckDigits('AT61ZZZ01234567890'));
 
@@ -106,14 +105,14 @@ class CreditorIdHelperTest extends BaseTestCase {
         $this->assertNull(CreditorIdHelper::extractCheckDigits('DEAB'));
     }
 
-    public function testExtractBusinessAreaCode(): void {
+    public function test_extract_business_area_code(): void {
         $this->assertEquals('ZZZ', CreditorIdHelper::extractBusinessAreaCode('DE98ZZZ09999999999'));
         $this->assertEquals('ABC', CreditorIdHelper::extractBusinessAreaCode('DE02ABC01234567890'));
 
         $this->assertNull(CreditorIdHelper::extractBusinessAreaCode('DE98Z'));
     }
 
-    public function testExtractNationalId(): void {
+    public function test_extract_national_id(): void {
         $this->assertEquals('09999999999', CreditorIdHelper::extractNationalId('DE98ZZZ09999999999'));
         $this->assertEquals('01234567890', CreditorIdHelper::extractNationalId('DE02ABC01234567890'));
 
@@ -124,7 +123,7 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Länder-Zuordnung
     // ========================================
 
-    public function testMatchesCountry(): void {
+    public function test_matches_country(): void {
         $this->assertTrue(CreditorIdHelper::matchesCountry('DE98ZZZ09999999999', CountryCode::Germany));
         $this->assertTrue(CreditorIdHelper::matchesCountry('AT61ZZZ01234567890', CountryCode::Austria));
 
@@ -136,11 +135,11 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Deutsche Gläubiger-ID
     // ========================================
 
-    public function testIsGermanCreditorIdValid(): void {
+    public function test_is_german_creditor_id_valid(): void {
         $this->assertTrue(CreditorIdHelper::isGermanCreditorId('DE98ZZZ09999999999'));
     }
 
-    public function testIsGermanCreditorIdInvalid(): void {
+    public function test_is_german_creditor_id_invalid(): void {
         // Falsche Länge
         $this->assertFalse(CreditorIdHelper::isGermanCreditorId('DE98ZZZ0999999999')); // 17 Zeichen
         $this->assertFalse(CreditorIdHelper::isGermanCreditorId('DE98ZZZ099999999999')); // 19 Zeichen
@@ -160,7 +159,7 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Prüfziffern-Berechnung
     // ========================================
 
-    public function testCalculateCheckDigits(): void {
+    public function test_calculate_check_digits(): void {
         // Berechnung für bekannte Beispiele
         $checkDigits = CreditorIdHelper::calculateCheckDigits('DE', '09999999999');
         $this->assertEquals('98', $checkDigits);
@@ -175,7 +174,7 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Generierung
     // ========================================
 
-    public function testGenerate(): void {
+    public function test_generate(): void {
         $creditorId = CreditorIdHelper::generate('DE', 'ZZZ', '09999999999');
         $this->assertEquals('DE98ZZZ09999999999', $creditorId);
 
@@ -187,7 +186,7 @@ class CreditorIdHelperTest extends BaseTestCase {
         $this->assertTrue(CreditorIdHelper::validateCreditorId($creditorId));
     }
 
-    public function testGenerateInvalid(): void {
+    public function test_generate_invalid(): void {
         // Ungültiger Ländercode
         $this->assertNull(CreditorIdHelper::generate('D', 'ZZZ', '09999999999'));
         $this->assertNull(CreditorIdHelper::generate('123', 'ZZZ', '09999999999'));
@@ -200,7 +199,7 @@ class CreditorIdHelperTest extends BaseTestCase {
     // Test: Erwartete Länge
     // ========================================
 
-    public function testGetExpectedLength(): void {
+    public function test_get_expected_length(): void {
         $this->assertEquals(18, CreditorIdHelper::getExpectedLength('DE'));
         $this->assertEquals(18, CreditorIdHelper::getExpectedLength('AT'));
         $this->assertEquals(19, CreditorIdHelper::getExpectedLength('NL'));

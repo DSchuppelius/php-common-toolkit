@@ -14,15 +14,11 @@ namespace CommonToolkit\Builders;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Contracts\Interfaces\CSV\LineInterface;
-use CommonToolkit\Entities\CSV\Document;
-use CommonToolkit\Entities\CSV\HeaderLine;
-use CommonToolkit\Entities\CSV\DataLine;
-use CommonToolkit\Entities\CSV\ColumnWidthConfig;
+use CommonToolkit\Entities\CSV\{ColumnWidthConfig, DataLine, Document, HeaderLine};
 use CommonToolkit\Enums\Common\CSV\TruncationStrategy;
 use RuntimeException;
 
 class CSVDocumentBuilder extends HelperAbstract {
-
     protected ?HeaderLine $header = null;
     /** @var DataLine[] */
     protected array $rows = [];
@@ -32,21 +28,20 @@ class CSVDocumentBuilder extends HelperAbstract {
     protected string $encoding = Document::DEFAULT_ENCODING;
 
     public function __construct(string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null, string $encoding = Document::DEFAULT_ENCODING) {
-        $this->delimiter           = $delimiter;
-        $this->enclosure           = $enclosure;
-        $this->columnWidthConfig   = $columnWidthConfig;
-        $this->encoding            = $encoding;
+        $this->delimiter = $delimiter;
+        $this->enclosure = $enclosure;
+        $this->columnWidthConfig = $columnWidthConfig;
+        $this->encoding = $encoding;
     }
 
     /**
      * Fügt eine Zeile hinzu.
-     * @param LineInterface $line
      * @return $this
      */
     public function addLine(LineInterface $line): self {
         match (true) {
             $line instanceof HeaderLine => $this->header = $line,
-            $line instanceof DataLine   => $this->rows[] = $line,
+            $line instanceof DataLine => $this->rows[] = $line,
             default => self::logErrorAndThrow(RuntimeException::class, 'Unsupported CSV line type: ' . $line::class),
         };
         return $this;
@@ -66,7 +61,6 @@ class CSVDocumentBuilder extends HelperAbstract {
 
     /**
      * Setzt den Header der CSV-Datei.
-     * @param HeaderLine $header
      * @return $this
      */
     public function setHeader(HeaderLine $header): self {
@@ -76,7 +70,6 @@ class CSVDocumentBuilder extends HelperAbstract {
 
     /**
      * Fügt eine Datenzeile hinzu.
-     * @param DataLine $row
      * @return $this
      */
     public function addRow(DataLine $row): self {
@@ -98,10 +91,6 @@ class CSVDocumentBuilder extends HelperAbstract {
 
     /**
      * Erstellt einen Builder aus einem bestehenden CSV-Dokument.
-     * @param Document $document
-     * @param string|null $delimiter
-     * @param string|null $enclosure
-     * @return self
      */
     public static function fromDocument(Document $document, ?string $delimiter = null, ?string $enclosure = null): self {
         $builder = new self(
@@ -112,7 +101,7 @@ class CSVDocumentBuilder extends HelperAbstract {
         );
 
         $builder->header = $document->getHeader() ? clone $document->getHeader() : null;
-        $builder->rows   = array_map(fn($row) => clone $row, $document->getRows());
+        $builder->rows = array_map(fn ($row) => clone $row, $document->getRows());
         return $builder;
     }
 
@@ -129,8 +118,6 @@ class CSVDocumentBuilder extends HelperAbstract {
 
     /**
      * Gibt die aktuelle Zeichenkodierung zurück.
-     *
-     * @return string
      */
     public function getEncoding(): string {
         return $this->encoding;
@@ -139,7 +126,6 @@ class CSVDocumentBuilder extends HelperAbstract {
     /**
      * Setzt die Spaltenbreiten-Konfiguration.
      *
-     * @param ColumnWidthConfig|null $config
      * @return $this
      */
     public function setColumnWidthConfig(?ColumnWidthConfig $config): self {
@@ -156,7 +142,7 @@ class CSVDocumentBuilder extends HelperAbstract {
      */
     public function setColumnWidth(string|int $column, int $width): self {
         if ($this->columnWidthConfig === null) {
-            $this->columnWidthConfig = new ColumnWidthConfig();
+            $this->columnWidthConfig = new ColumnWidthConfig;
         }
         $this->columnWidthConfig->setColumnWidth($column, $width);
         return $this;
@@ -170,7 +156,7 @@ class CSVDocumentBuilder extends HelperAbstract {
      */
     public function setDefaultColumnWidth(?int $width): self {
         if ($this->columnWidthConfig === null) {
-            $this->columnWidthConfig = new ColumnWidthConfig();
+            $this->columnWidthConfig = new ColumnWidthConfig;
         }
         $this->columnWidthConfig->setDefaultWidth($width);
         return $this;
@@ -184,7 +170,7 @@ class CSVDocumentBuilder extends HelperAbstract {
      */
     public function setTruncationStrategy(TruncationStrategy $strategy): self {
         if ($this->columnWidthConfig === null) {
-            $this->columnWidthConfig = new ColumnWidthConfig();
+            $this->columnWidthConfig = new ColumnWidthConfig;
         }
         $this->columnWidthConfig->setTruncationStrategy($strategy);
         return $this;
@@ -200,7 +186,7 @@ class CSVDocumentBuilder extends HelperAbstract {
      */
     public function setPadding(bool $enable, string $char = ' ', int $type = STR_PAD_RIGHT): self {
         if ($this->columnWidthConfig === null) {
-            $this->columnWidthConfig = new ColumnWidthConfig();
+            $this->columnWidthConfig = new ColumnWidthConfig;
         }
         $this->columnWidthConfig->setPadding($enable, $char, $type);
         return $this;
@@ -217,7 +203,7 @@ class CSVDocumentBuilder extends HelperAbstract {
             $this->logErrorAndThrow(RuntimeException::class, 'Kein Header vorhanden – Spalten können nicht umsortiert werden.');
         }
 
-        $headerValues = array_map(fn($f) => $f->getValue(), $this->header->getFields());
+        $headerValues = array_map(fn ($f) => $f->getValue(), $this->header->getFields());
 
         // Duplikate erkennen – array_flip() würde bei doppelten Header-Namen den ersten Index überschreiben
         if (count($headerValues) !== count(array_unique($headerValues))) {
@@ -234,7 +220,7 @@ class CSVDocumentBuilder extends HelperAbstract {
 
         // Header neu sortieren
         $reorderedHeaderFields = array_map(
-            fn($name) => $this->header->getFields()[$headerMap[$name]],
+            fn ($name) => $this->header->getFields()[$headerMap[$name]],
             $newOrder
         );
         $this->header = new HeaderLine($reorderedHeaderFields);
@@ -244,7 +230,7 @@ class CSVDocumentBuilder extends HelperAbstract {
         foreach ($this->rows as $row) {
             $fields = $row->getFields();
             $reorderedFields = array_map(
-                fn($name) => $fields[$headerMap[$name]],
+                fn ($name) => $fields[$headerMap[$name]],
                 $newOrder
             );
             $newRows[] = new DataLine($reorderedFields, $this->delimiter, $this->enclosure);
@@ -256,7 +242,6 @@ class CSVDocumentBuilder extends HelperAbstract {
 
     /**
      * Baut das CSV-Dokument.
-     * @return Document
      */
     public function build(): Document {
         return new Document(

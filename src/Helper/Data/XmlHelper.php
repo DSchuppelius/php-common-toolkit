@@ -15,10 +15,10 @@ namespace CommonToolkit\Helper\Data;
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\XML\XsdValidationResult;
 use CommonToolkit\Helper\FileSystem\File;
-use ERRORToolkit\Traits\ErrorLog;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
+use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -43,7 +43,7 @@ class XmlHelper extends HelperAbstract {
      * @return bool True wenn gültig, false andernfalls
      */
     public static function isValid(string $xml): bool {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
 
         // Temporär XML-Fehler unterdrücken
         $useInternalErrors = libxml_use_internal_errors(true);
@@ -103,7 +103,7 @@ class XmlHelper extends HelperAbstract {
             return self::logErrorAndReturn(['valid' => false, 'errors' => [$error]], $error);
         }
 
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
 
         // XML-Fehler sammeln
         $useInternalErrors = libxml_use_internal_errors(true);
@@ -170,7 +170,7 @@ class XmlHelper extends HelperAbstract {
      * @throws InvalidArgumentException Bei ungültigem XML
      */
     public static function prettyFormat(string $xml): string {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
         $doc->preserveWhiteSpace = false;
         $doc->formatOutput = true;
 
@@ -193,7 +193,7 @@ class XmlHelper extends HelperAbstract {
      * @return array<string, string> Array von Namespace-Prefix zu URI Mappings
      */
     public static function extractNamespaces(string $xml): array {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
         if (!$doc->loadXML($xml, LIBXML_NONET)) {
             return self::logErrorAndReturn([], 'Fehler beim Laden des XML für Namespace-Extraktion');
         }
@@ -222,7 +222,7 @@ class XmlHelper extends HelperAbstract {
      * @throws InvalidArgumentException Bei ungültigem XML
      */
     public static function xmlToArray(string $xml, bool $preserveAttributes = true): array {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
         if (!$doc->loadXML($xml, LIBXML_NONET)) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
@@ -284,7 +284,7 @@ class XmlHelper extends HelperAbstract {
      * @throws InvalidArgumentException Bei ungültigem XML oder XPath
      */
     public static function xpath(string $xml, string $xpath, array $namespaces = []): array {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
         if (!$doc->loadXML($xml, LIBXML_NONET)) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
@@ -319,7 +319,7 @@ class XmlHelper extends HelperAbstract {
      * @throws InvalidArgumentException Bei ungültigem XML oder XPath
      */
     public static function xpathNodes(string $xml, string $xpath, array $namespaces = []): array {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
         if (!$doc->loadXML($xml, LIBXML_NONET)) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger XML-String');
         }
@@ -387,7 +387,7 @@ class XmlHelper extends HelperAbstract {
 
     /**
      * Führt eine XPath-Abfrage mit automatischer Namespace-Erkennung aus.
-     * 
+     *
      * Erkennt den Default-Namespace aus dem XML und registriert ihn als 'ns'.
      *
      * @param string $xml Der XML-String
@@ -429,7 +429,7 @@ class XmlHelper extends HelperAbstract {
 
     /**
      * Extrahiert SEPA Message ID aus CAMT oder PAIN XML.
-     * 
+     *
      * Unterstützt alle gängigen ISO 20022 Formate:
      * - CAMT.052 (Intraday Report) - Versionen 001.02 bis 001.12
      * - CAMT.053 (Statement) - Versionen 001.02 bis 001.12
@@ -463,7 +463,7 @@ class XmlHelper extends HelperAbstract {
 
     /**
      * Validiert SEPA XML gegen die entsprechenden XSD-Schemas.
-     * 
+     *
      * Erkennt automatisch das Schema aus dem Namespace des Dokuments.
      * Unterstützt CAMT.052, CAMT.053, CAMT.054, PAIN.001, PAIN.002, PAIN.008.
      *
@@ -472,7 +472,7 @@ class XmlHelper extends HelperAbstract {
      * @return array{valid: bool, errors: string[], messageType: string|null, schemaVersion: string|null}
      */
     public static function validateSepaXml(string $xml, string $schemaDir): array {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
         if (!$doc->loadXML($xml, LIBXML_NONET)) {
             return ['valid' => false, 'errors' => ['Ungültiger XML'], 'messageType' => null, 'schemaVersion' => null];
         }
@@ -519,7 +519,7 @@ class XmlHelper extends HelperAbstract {
                 'valid' => false,
                 'errors' => ["Unbekannter SEPA Message-Type: {$messageType}"],
                 'messageType' => $messageType,
-                'schemaVersion' => null
+                'schemaVersion' => null,
             ];
         }
 
@@ -546,7 +546,7 @@ class XmlHelper extends HelperAbstract {
                 'valid' => false,
                 'errors' => ["Kein passendes XSD-Schema gefunden für: {$messageType}"],
                 'messageType' => $messageType,
-                'schemaVersion' => $schemaVersion
+                'schemaVersion' => $schemaVersion,
             ];
         }
 
@@ -601,7 +601,7 @@ class XmlHelper extends HelperAbstract {
 
     /**
      * Rekursive Helper-Funktion für Array zu XML Konvertierung.
-     * 
+     *
      * Unterstützt Attribute via '@'-Prefix und Textinhalt via '_value'.
      * Beispiel: ['element' => ['@id' => '123', '_value' => 'text']]
      *        => <element id="123">text</element>
@@ -669,7 +669,7 @@ class XmlHelper extends HelperAbstract {
      * @return string Komprimiertes XML
      */
     public static function minify(string $xml): string {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
         if (!$doc->loadXML($xml, LIBXML_NONET)) {
             return self::logErrorAndReturn($xml, 'Fehler beim XML-Minify: Ungültiges XML');
         }

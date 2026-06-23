@@ -23,20 +23,17 @@ use RuntimeException;
 
 /**
  * Parser für XML-Dokumente.
- * 
+ *
  * Bietet erweiterte Parsing-Funktionen:
  * - XPath-Abfragen
  * - Namespace-Handling
  * - Streaming für große Dateien
  * - Validierung
- * 
- * @package CommonToolkit\Parsers
  */
 class XmlDocumentParser extends HelperAbstract {
-
     /**
      * Parst einen XML-String zu einem Document.
-     * 
+     *
      * @throws InvalidArgumentException Bei ungültigem XML
      */
     public static function fromString(string $xml): Document {
@@ -45,7 +42,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Parst eine XML-Datei zu einem Document.
-     * 
+     *
      * @throws InvalidArgumentException Bei ungültigem XML
      */
     public static function fromFile(string $filePath): Document {
@@ -55,7 +52,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Parst und validiert gegen XSD.
-     * 
+     *
      * @param string $xml XML-Inhalt
      * @param string $xsdFile Pfad zur XSD-Datei
      * @return Document Das geparste Dokument
@@ -77,7 +74,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Führt eine XPath-Abfrage aus und gibt Elemente zurück.
-     * 
+     *
      * @param Document $document Das Dokument
      * @param string $xpath XPath-Ausdruck
      * @param array<string, string> $namespaces Namespace-Mapping (Prefix => URI)
@@ -109,7 +106,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Führt eine XPath-Abfrage aus und gibt das erste Element zurück.
-     * 
+     *
      * @param array<string, string> $namespaces Namespace-Mapping
      */
     public static function xpathFirst(Document $document, string $xpath, array $namespaces = []): ?Element {
@@ -119,7 +116,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Führt eine XPath-Abfrage aus und gibt Textwerte zurück.
-     * 
+     *
      * @param array<string, string> $namespaces Namespace-Mapping
      * @return string[]
      */
@@ -146,7 +143,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Gibt den ersten XPath-Textwert zurück.
-     * 
+     *
      * @param array<string, string> $namespaces Namespace-Mapping
      */
     public static function xpathValue(Document $document, string $xpath, array $namespaces = [], ?string $default = null): ?string {
@@ -156,7 +153,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Extrahiert Metadaten aus einem XML-Dokument.
-     * 
+     *
      * @return array{rootElement: string, namespace: ?string, encoding: string, version: string, childCount: int}
      */
     public static function getMetadata(Document $document): array {
@@ -173,7 +170,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Extrahiert alle verwendeten Namespaces.
-     * 
+     *
      * @return array<string, string> Mapping von Prefix zu URI
      */
     public static function extractNamespaces(Document $document): array {
@@ -199,7 +196,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Konvertiert ein Dokument zu einem assoziativen Array.
-     * 
+     *
      * @param bool $includeAttributes Attribute einbeziehen
      * @param bool $includeNamespaces Namespaces einbeziehen
      */
@@ -267,7 +264,7 @@ class XmlDocumentParser extends HelperAbstract {
                 $result[$name] = self::elementToArray($elements[0], $includeAttributes, $includeNamespaces);
             } else {
                 $result[$name] = array_map(
-                    fn($el) => self::elementToArray($el, $includeAttributes, $includeNamespaces),
+                    fn ($el) => self::elementToArray($el, $includeAttributes, $includeNamespaces),
                     $elements
                 );
             }
@@ -278,7 +275,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Zählt Elemente die einem XPath entsprechen.
-     * 
+     *
      * @param array<string, string> $namespaces Namespace-Mapping
      */
     public static function count(Document $document, string $xpath, array $namespaces = []): int {
@@ -287,7 +284,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Prüft ob ein XPath-Ausdruck Treffer hat.
-     * 
+     *
      * @param array<string, string> $namespaces Namespace-Mapping
      */
     public static function exists(Document $document, string $xpath, array $namespaces = []): bool {
@@ -296,9 +293,9 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Evaluiert einen XPath-Ausdruck und gibt das Ergebnis als String zurück.
-     * 
+     *
      * Nützlich für XPath-Funktionen wie string(), concat(), etc.
-     * 
+     *
      * @param array<string, string> $namespaces Namespace-Mapping
      */
     public static function evaluate(Document $document, string $xpath, array $namespaces = [], ?string $default = null): ?string {
@@ -320,7 +317,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Evaluiert einen XPath-Ausdruck relativ zu einem Element.
-     * 
+     *
      * @param array<string, string> $namespaces Namespace-Mapping
      */
     public static function evaluateOnElement(
@@ -354,7 +351,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Führt XPath relativ zu einem Element aus.
-     * 
+     *
      * @param array<string, string> $namespaces Namespace-Mapping
      * @return Element[]
      */
@@ -393,7 +390,7 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Findet ein DOM-Element das zu einem Element passt.
-     * 
+     *
      * Sucht basierend auf Name, Namespace und Position.
      */
     private static function findDomElement(DOMDocument $dom, Element $element): ?DOMElement {
@@ -453,9 +450,9 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Erkennt automatisch Namespaces und gibt ein Mapping zurück.
-     * 
+     *
      * Nützlich für ISO 20022 Dokumente wo Namespace-URIs variieren können.
-     * 
+     *
      * @return array{namespace: ?string, prefix: string, namespaces: array<string, string>}
      */
     public static function detectNamespaces(Document $document): array {

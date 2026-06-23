@@ -12,14 +12,13 @@ declare(strict_types=1);
 
 namespace Tests\CommonToolkit\Entities\CSV;
 
-use CommonToolkit\Entities\CSV\DataLine;
-use CommonToolkit\Entities\CSV\DataField;
+use CommonToolkit\Entities\CSV\{DataField, DataLine};
 use RuntimeException;
 use Tests\Contracts\BaseTestCase;
 use Throwable;
 
 class DataLineTest extends BaseTestCase {
-    public function testSimpleQuotedFields(): void {
+    public function test_simple_quoted_fields(): void {
         $line = DataLine::fromString('"A","B","C"');
 
         $this->assertCount(3, $line->getFields(), '3 Felder erwartet');
@@ -33,7 +32,7 @@ class DataLineTest extends BaseTestCase {
         $this->assertSame('"A","B","C"', $line->toString());
     }
 
-    public function testConstructorAcceptsRawStringsAndCreatesCSVDataFields(): void {
+    public function test_constructor_accepts_raw_strings_and_creates_csv_data_fields(): void {
         $line = new DataLine(['foo', 'bar', 'baz'], ',', '"');
 
         $fields = $line->getFields();
@@ -50,7 +49,7 @@ class DataLineTest extends BaseTestCase {
         $this->assertSame('foo,bar,baz', $line->toString(), 'CSV-Zeile sollte korrekt serialisiert werden');
     }
 
-    public function testConstructorAcceptsQuotedRawStringsAndCreatesCSVDataFields(): void {
+    public function test_constructor_accepts_quoted_raw_strings_and_creates_csv_data_fields(): void {
         $line = new DataLine(['"foo"', '"bar"', '"baz"'], ',', '"');
 
         $fields = $line->getFields();
@@ -67,7 +66,7 @@ class DataLineTest extends BaseTestCase {
         $this->assertSame('"foo","bar","baz"', $line->toString(), 'CSV-Zeile sollte korrekt serialisiert werden');
     }
 
-    public function testMixedQuotedAndUnquotedFields(): void {
+    public function test_mixed_quoted_and_unquoted_fields(): void {
         $line = DataLine::fromString('"A",B,"C"');
         $fields = $line->getFields();
 
@@ -78,7 +77,7 @@ class DataLineTest extends BaseTestCase {
         $this->assertSame('"A",B,"C"', $line->toString());
     }
 
-    public function testThrowsOrHandlesInvalidQuotes(): void {
+    public function test_throws_or_handles_invalid_quotes(): void {
         $tests = [
             '"A","B","C',
             'A","B","C"',
@@ -103,7 +102,7 @@ class DataLineTest extends BaseTestCase {
         }
     }
 
-    public function testEnclosureRepeatDetection(): void {
+    public function test_enclosure_repeat_detection(): void {
         $tests = [
             ['line' => ',',                               'expected_strict' => 0, 'expected_non_strict' => 0],
             ['line' => ',""',                             'expected_strict' => 0, 'expected_non_strict' => 1],
@@ -131,12 +130,12 @@ class DataLineTest extends BaseTestCase {
         ];
 
         foreach ($tests as $test) {
-            $line   = DataLine::fromString($test['line']);
+            $line = DataLine::fromString($test['line']);
             $fields = $line->getFields();
 
             // alle enclosureRepeats erfassen
-            $repeats = array_map(fn($f) => $f->getEnclosureRepeat(), $fields);
-            $positive = array_filter($repeats, fn($v) => $v > 0);
+            $repeats = array_map(fn ($f) => $f->getEnclosureRepeat(), $fields);
+            $positive = array_filter($repeats, fn ($v) => $v > 0);
             $strict = 0;
             if (!empty($positive) && count($positive) === count($repeats)) {
                 $strict = min($positive);
@@ -167,10 +166,10 @@ class DataLineTest extends BaseTestCase {
         }
     }
 
-    public function testLongStrings(): void {
+    public function test_long_strings(): void {
         $longValues = [
             '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000,00"",""2000,00"",""0,00"",""EUR""',
-            '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000"",""2000"",""0"",""EUR""'
+            '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000"",""2000"",""0"",""EUR""',
         ];
 
         foreach ($longValues as $longValue) {
@@ -185,7 +184,7 @@ class DataLineTest extends BaseTestCase {
         }
     }
 
-    public function testEmptyAndWhitespaceFields(): void {
+    public function test_empty_and_whitespace_fields(): void {
         $line = DataLine::fromString('"A",,"C"');
         $fields = $line->getFields();
 
@@ -195,7 +194,7 @@ class DataLineTest extends BaseTestCase {
         $this->assertSame('"A",,"C"', $line->toString());
     }
 
-    public function testEscapedQuotesInValue(): void {
+    public function test_escaped_quotes_in_value(): void {
         $line = DataLine::fromString('"A ""quoted"" text","B"');
         $fields = $line->getFields();
 
@@ -209,7 +208,7 @@ class DataLineTest extends BaseTestCase {
      * Solche Exporte (z. B. PayPal) dürfen NICHT mehr zum Abbruch führen; das
      * escapte Quote folgt direkt auf einen Delimiter (",""), bleibt aber gültig.
      */
-    public function testMixedSingleAndEscapedQuotedFields(): void {
+    public function test_mixed_single_and_escaped_quoted_fields(): void {
         $line = DataLine::fromString('"60,00","{""order_id"":5227,""order_key"":""wc_x""}","end"');
         $fields = $line->getFields();
 
@@ -223,7 +222,7 @@ class DataLineTest extends BaseTestCase {
     /**
      * Escaptes Quote-Paar direkt NACH einem Delimiter (",""…) ist gültig …
      */
-    public function testEscapedQuotePairAfterDelimiterIsAccepted(): void {
+    public function test_escaped_quote_pair_after_delimiter_is_accepted(): void {
         $line = DataLine::fromString('"A","""B"""');
         $fields = $line->getFields();
 
@@ -236,12 +235,12 @@ class DataLineTest extends BaseTestCase {
      * … ein EINZELNES Quote direkt nach einem Delimiter im gequoteten Feld (",'X)
      * ist dagegen weiterhin ungültig (z. B. '"A,"B"').
      */
-    public function testLoneQuoteAfterDelimiterInsideFieldIsRejected(): void {
+    public function test_lone_quote_after_delimiter_inside_field_is_rejected(): void {
         $this->expectException(RuntimeException::class);
         DataLine::fromString('"A,"B","C"');
     }
 
-    public function testRawFieldPreserved(): void {
+    public function test_raw_field_preserved(): void {
         $line = DataLine::fromString('"A","B","C"');
         $field = $line->getField(1);
 
@@ -249,14 +248,14 @@ class DataLineTest extends BaseTestCase {
         $this->assertSame('"B"', $field->getRaw());
     }
 
-    public function testRoundTripWithDelimiterSemicolon(): void {
+    public function test_round_trip_with_delimiter_semicolon(): void {
         $line = DataLine::fromString('"A";"B";"C"', ';');
         $rebuilt = $line->toString(';');
 
         $this->assertSame('"A";"B";"C"', $rebuilt);
     }
 
-    public function testUnquotedFields(): void {
+    public function test_unquoted_fields(): void {
         $line = DataLine::fromString('A,B,C');
         $fields = $line->getFields();
 
@@ -267,7 +266,7 @@ class DataLineTest extends BaseTestCase {
         $this->assertSame('A,B,C', $line->toString());
     }
 
-    public function testQuotedFieldWithDelimiterInside(): void {
+    public function test_quoted_field_with_delimiter_inside(): void {
         $line = DataLine::fromString('"A,B",C');
         $fields = $line->getFields();
 

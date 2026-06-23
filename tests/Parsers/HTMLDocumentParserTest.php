@@ -12,14 +12,12 @@ declare(strict_types=1);
 
 namespace Tests\Parsers;
 
-use CommonToolkit\Entities\HTML\Document;
-use CommonToolkit\Entities\HTML\Element;
+use CommonToolkit\Entities\HTML\{Document, Element};
 use CommonToolkit\Parsers\HTMLDocumentParser;
 use Tests\Contracts\BaseTestCase;
 
 class HTMLDocumentParserTest extends BaseTestCase {
-
-    private const SAMPLE_HTML = <<<HTML
+    private const SAMPLE_HTML = <<<'HTML'
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -36,25 +34,25 @@ class HTMLDocumentParserTest extends BaseTestCase {
 </html>
 HTML;
 
-    public function testParseStringReturnsDocument(): void {
+    public function test_parse_string_returns_document(): void {
         $doc = HTMLDocumentParser::parseString(self::SAMPLE_HTML);
 
         $this->assertInstanceOf(Document::class, $doc);
     }
 
-    public function testParseStringExtractsTitle(): void {
+    public function test_parse_string_extracts_title(): void {
         $doc = HTMLDocumentParser::parseString(self::SAMPLE_HTML);
 
         $this->assertEquals('Test Page', $doc->getTitle());
     }
 
-    public function testParseStringExtractsLang(): void {
+    public function test_parse_string_extracts_lang(): void {
         $doc = HTMLDocumentParser::parseString(self::SAMPLE_HTML);
 
         $this->assertEquals('de', $doc->getLang());
     }
 
-    public function testParseFragment(): void {
+    public function test_parse_fragment(): void {
         $html = '<p>First</p><div>Second</div><span>Third</span>';
         $elements = HTMLDocumentParser::parseFragment($html);
 
@@ -64,7 +62,7 @@ HTML;
         $this->assertEquals('span', $elements[2]->getTag());
     }
 
-    public function testParseElement(): void {
+    public function test_parse_element(): void {
         $html = '<div class="container"><p>Content</p></div>';
         $element = HTMLDocumentParser::parseElement($html);
 
@@ -74,41 +72,41 @@ HTML;
         $this->assertCount(1, $element->getChildren());
     }
 
-    public function testExtractTitle(): void {
+    public function test_extract_title(): void {
         $title = HTMLDocumentParser::extractTitle(self::SAMPLE_HTML);
 
         $this->assertEquals('Test Page', $title);
     }
 
-    public function testExtractTitleReturnsNullIfMissing(): void {
+    public function test_extract_title_returns_null_if_missing(): void {
         $html = '<html><body><p>No title</p></body></html>';
         $title = HTMLDocumentParser::extractTitle($html);
 
         $this->assertNull($title);
     }
 
-    public function testExtractMeta(): void {
+    public function test_extract_meta(): void {
         $meta = HTMLDocumentParser::extractMeta(self::SAMPLE_HTML);
 
         $this->assertArrayHasKey('description', $meta);
         $this->assertEquals('Test description', $meta['description']);
     }
 
-    public function testExtractLinks(): void {
+    public function test_extract_links(): void {
         $links = HTMLDocumentParser::extractLinks(self::SAMPLE_HTML);
 
         $this->assertCount(1, $links);
         $this->assertEquals('https://example.com', $links[0]);
     }
 
-    public function testExtractImages(): void {
+    public function test_extract_images(): void {
         $images = HTMLDocumentParser::extractImages(self::SAMPLE_HTML);
 
         $this->assertCount(1, $images);
         $this->assertEquals('image.png', $images[0]);
     }
 
-    public function testExtractText(): void {
+    public function test_extract_text(): void {
         $html = '<div><p>Hello</p><span>World</span></div>';
         $text = HTMLDocumentParser::extractText($html);
 
@@ -116,14 +114,14 @@ HTML;
         $this->assertStringContainsString('World', $text);
     }
 
-    public function testQuerySelectorByTag(): void {
+    public function test_query_selector_by_tag(): void {
         $elements = HTMLDocumentParser::querySelectorAll(self::SAMPLE_HTML, 'p');
 
         $this->assertCount(1, $elements);
         $this->assertEquals('p', $elements[0]->getTag());
     }
 
-    public function testQuerySelectorById(): void {
+    public function test_query_selector_by_id(): void {
         $html = '<div id="test-id">Content</div>';
         $element = HTMLDocumentParser::querySelector($html, '#test-id');
 
@@ -131,14 +129,14 @@ HTML;
         $this->assertEquals('div', $element->getTag());
     }
 
-    public function testQuerySelectorByClass(): void {
+    public function test_query_selector_by_class(): void {
         $html = '<p class="highlight">Text</p><p>Normal</p>';
         $elements = HTMLDocumentParser::querySelectorAll($html, '.highlight');
 
         $this->assertCount(1, $elements);
     }
 
-    public function testQuerySelectorByAttribute(): void {
+    public function test_query_selector_by_attribute(): void {
         $html = '<input type="text" name="email"><input type="password" name="pass">';
         $elements = HTMLDocumentParser::querySelectorAll($html, '[type="text"]');
 
@@ -146,19 +144,19 @@ HTML;
         $this->assertEquals('email', $elements[0]->getAttribute('name'));
     }
 
-    public function testQuerySelectorReturnsNullIfNotFound(): void {
+    public function test_query_selector_returns_null_if_not_found(): void {
         $html = '<div>Content</div>';
         $element = HTMLDocumentParser::querySelector($html, '#nonexistent');
 
         $this->assertNull($element);
     }
 
-    public function testIsValidWithValidHtml(): void {
+    public function test_is_valid_with_valid_html(): void {
         $this->assertTrue(HTMLDocumentParser::isValid('<p>Valid HTML</p>'));
         $this->assertTrue(HTMLDocumentParser::isValid(self::SAMPLE_HTML));
     }
 
-    public function testNestedElements(): void {
+    public function test_nested_elements(): void {
         $html = '<div><ul><li>Item 1</li><li>Item 2</li></ul></div>';
         $element = HTMLDocumentParser::parseElement($html);
 
@@ -170,7 +168,7 @@ HTML;
         $this->assertCount(2, $ul->getChildren());
     }
 
-    public function testParseAndRenderRoundtrip(): void {
+    public function test_parse_and_render_roundtrip(): void {
         $html = '<div class="test"><p>Content</p></div>';
         $element = HTMLDocumentParser::parseElement($html);
         $rendered = $element->render();
@@ -179,8 +177,8 @@ HTML;
         $this->assertStringContainsString('<p>Content</p>', $rendered);
     }
 
-    public function testMultipleMetaTags(): void {
-        $html = <<<HTML
+    public function test_multiple_meta_tags(): void {
+        $html = <<<'HTML'
 <html>
 <head>
     <meta name="author" content="John">
@@ -197,8 +195,8 @@ HTML;
         $this->assertEquals('index', $meta['robots']);
     }
 
-    public function testMultipleLinksAndImages(): void {
-        $html = <<<HTML
+    public function test_multiple_links_and_images(): void {
+        $html = <<<'HTML'
 <html><body>
     <a href="link1.html">Link 1</a>
     <a href="link2.html">Link 2</a>
@@ -215,7 +213,7 @@ HTML;
         $this->assertCount(3, $images);
     }
 
-    public function testBodyAttributes(): void {
+    public function test_body_attributes(): void {
         $doc = HTMLDocumentParser::parseString(self::SAMPLE_HTML);
         $bodyAttrs = $doc->getBodyAttributes();
 
@@ -223,14 +221,14 @@ HTML;
         $this->assertEquals('main-body', $bodyAttrs['class']);
     }
 
-    public function testEmptyFragment(): void {
+    public function test_empty_fragment(): void {
         $elements = HTMLDocumentParser::parseFragment('');
 
         $this->assertIsArray($elements);
         $this->assertEmpty($elements);
     }
 
-    public function testTextOnlyFragment(): void {
+    public function test_text_only_fragment(): void {
         // Nur Text ohne Tags wird nicht als Element geparst
         $elements = HTMLDocumentParser::parseFragment('Just plain text');
 

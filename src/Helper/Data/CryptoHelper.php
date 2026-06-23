@@ -30,7 +30,6 @@ use InvalidArgumentException;
  * - HMAC-basierte Authentifizierung
  */
 class CryptoHelper extends HelperAbstract {
-
     /** @var string Standard-Verschlüsselungsalgorithmus */
     private const DEFAULT_CIPHER = 'aes-256-gcm';
 
@@ -97,7 +96,7 @@ class CryptoHelper extends HelperAbstract {
                 'ciphertext' => base64_encode($ciphertext),
                 'iv' => base64_encode($iv),
                 'tag' => $tag ? base64_encode($tag) : '',
-                'algorithm' => $cipher
+                'algorithm' => $cipher,
             ];
 
             return self::logDebugAndReturn($result, "Daten erfolgreich verschlüsselt mit {$cipher}");
@@ -256,7 +255,7 @@ class CryptoHelper extends HelperAbstract {
             $result = [
                 'hash' => base64_encode($hash),
                 'salt' => base64_encode($salt),
-                'algorithm' => $algorithm
+                'algorithm' => $algorithm,
             ];
 
             return self::logDebugAndReturn($result, "Sicherer Hash erstellt mit {$algorithm}");
@@ -387,7 +386,7 @@ class CryptoHelper extends HelperAbstract {
 
             $result = [
                 'private_key' => $privateKey,
-                'public_key' => $publicKeyDetails['key']
+                'public_key' => $publicKeyDetails['key'],
             ];
 
             return self::logDebugAndReturn($result, "RSA-Schlüsselpaar generiert ({$keySize} Bits)");
@@ -608,7 +607,7 @@ class CryptoHelper extends HelperAbstract {
                 'available' => $available,
                 'version' => $version,
                 'ciphers' => array_intersect($ciphers, self::ALLOWED_CIPHERS),
-                'hashes' => array_intersect($hashes, self::ALLOWED_HASHES)
+                'hashes' => array_intersect($hashes, self::ALLOWED_HASHES),
             ];
 
             return self::logDebugAndReturn($result, "OpenSSL-Status abgerufen - Verfügbar: " . ($available ? 'Ja' : 'Nein'));
@@ -617,7 +616,7 @@ class CryptoHelper extends HelperAbstract {
                 'available' => false,
                 'version' => 'Error',
                 'ciphers' => [],
-                'hashes' => []
+                'hashes' => [],
             ], "Fehler bei OpenSSL-Status-Abfrage: " . $e->getMessage());
         }
     }

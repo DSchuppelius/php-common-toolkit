@@ -14,10 +14,8 @@ namespace CommonToolkit\Entities\HTML;
 
 /**
  * Repräsentiert ein HTML-Element.
- * 
+ *
  * Immutable Value Object für HTML-Elemente mit Attributen und Kind-Elementen.
- * 
- * @package CommonToolkit\Entities\HTML
  */
 class Element {
     /** @var string[] Self-closing Tags die kein </tag> benötigen */
@@ -35,7 +33,7 @@ class Element {
         'param',
         'source',
         'track',
-        'wbr'
+        'wbr',
     ];
 
     private string $tag;
@@ -74,7 +72,7 @@ class Element {
 
     /**
      * Erstellt ein Element mit Attributen.
-     * 
+     *
      * @param array<string, string|bool> $attributes
      */
     public static function withAttributes(string $tag, array $attributes, ?string $content = null): self {
@@ -83,7 +81,7 @@ class Element {
 
     /**
      * Erstellt ein Element mit Kind-Elementen.
-     * 
+     *
      * @param Element[] $children
      */
     public static function withChildren(string $tag, array $children): self {
@@ -151,7 +149,7 @@ class Element {
 
     /**
      * Gibt eine neue Instanz mit zusätzlichen Kind-Elementen zurück.
-     * 
+     *
      * @param Element[] $newChildren
      */
     public function appendChildren(array $newChildren): self {
@@ -204,7 +202,7 @@ class Element {
             if ($value === true) {
                 $html .= ' ' . htmlspecialchars($name, ENT_QUOTES | ENT_HTML5);
             } elseif ($value !== false) {
-                $html .= ' ' . htmlspecialchars($name, ENT_QUOTES | ENT_HTML5) . '="' . htmlspecialchars((string)$value, ENT_QUOTES | ENT_HTML5) . '"';
+                $html .= ' ' . htmlspecialchars($name, ENT_QUOTES | ENT_HTML5) . '="' . htmlspecialchars((string) $value, ENT_QUOTES | ENT_HTML5) . '"';
             }
         }
 
@@ -244,7 +242,7 @@ class Element {
             if ($value === true) {
                 $html .= ' ' . htmlspecialchars($name, ENT_QUOTES | ENT_HTML5);
             } elseif ($value !== false) {
-                $html .= ' ' . htmlspecialchars($name, ENT_QUOTES | ENT_HTML5) . '="' . htmlspecialchars((string)$value, ENT_QUOTES | ENT_HTML5) . '"';
+                $html .= ' ' . htmlspecialchars($name, ENT_QUOTES | ENT_HTML5) . '="' . htmlspecialchars((string) $value, ENT_QUOTES | ENT_HTML5) . '"';
             }
         }
 

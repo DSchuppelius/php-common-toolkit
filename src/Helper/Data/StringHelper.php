@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\Data;
 
 use CommonToolkit\Enums\{CaseType, CountryCode, SearchMode};
-use CommonToolkit\Helper\Data\{CSV, NumberHelper};
 use CommonToolkit\Helper\Shell\ShellChardet;
 use DateTimeImmutable;
 use ERRORToolkit\Traits\ErrorLog;
@@ -25,7 +24,7 @@ class StringHelper {
     public const REGEX_ALLOWED_EXTRAS = ' .,:;!?()"„“«»‚‘’“”€$£¥+=*%&@#<>|^~{}—–…·\-\[\]\/\'' . "\t\\\\";
 
     // BOM (Byte Order Mark) Konstanten
-    public const BOM_UTF8     = "\xEF\xBB\xBF";
+    public const BOM_UTF8 = "\xEF\xBB\xBF";
     public const BOM_UTF16_BE = "\xFE\xFF";
     public const BOM_UTF16_LE = "\xFF\xFE";
     public const BOM_UTF32_BE = "\x00\x00\xFE\xFF";
@@ -89,8 +88,12 @@ class StringHelper {
      * @return string Der konvertierte Text.
      */
     public static function convertEncoding(?string $text, string $from = 'UTF-8', string $to = '437', bool $translit = false): string {
-        if ($text === null || trim($text) === '') return '';
-        if ($from === '') return $text;
+        if ($text === null || trim($text) === '') {
+            return '';
+        }
+        if ($from === '') {
+            return $text;
+        }
 
         if (stripos($from, 'UTF-8') === 0) {
             $from = 'UTF-8';
@@ -169,7 +172,9 @@ class StringHelper {
      * @return string Der konvertierte Text in UTF-8
      */
     public static function convertToUtf8(string $text, string $fromEncoding): string {
-        if ($text === '') return '';
+        if ($text === '') {
+            return '';
+        }
 
         $fromEncoding = self::normalizeEncodingName($fromEncoding);
 
@@ -213,7 +218,9 @@ class StringHelper {
      * @return string|null Das erkannte Encoding oder null wenn nicht unterscheidbar
      */
     public static function detectLegacyEncoding(string $data, ?string $chardetHint = null): ?string {
-        if ($data === '') return null;
+        if ($data === '') {
+            return null;
+        }
 
         // Wenn der Text gültiges UTF-8 ist, brauchen wir keine Unterscheidung
         if (mb_check_encoding($data, 'UTF-8') && preg_match('//u', $data)) {
@@ -293,7 +300,7 @@ class StringHelper {
             0xDC,
             0xDD,
             0xDE,
-            0xDF
+            0xDF,
         ];
 
         // CP852 (Mitteleuropa): andere Umlaut-Positionen
@@ -334,7 +341,7 @@ class StringHelper {
             0x9B,
             0x9C,
             0x9E,
-            0x9F
+            0x9F,
         ];
 
         // Analyse der Bytes
@@ -342,7 +349,9 @@ class StringHelper {
             $byte = ord($data[$i]);
 
             // Nur erweiterten Bereich analysieren
-            if ($byte < 0x80) continue;
+            if ($byte < 0x80) {
+                continue;
+            }
 
             $before = $i > 0 ? ord($data[$i - 1]) : 0;
             $after = $i < $len - 1 ? ord($data[$i + 1]) : 0;
@@ -549,7 +558,9 @@ class StringHelper {
         $result = self::detectLegacyEncoding($data);
 
         // Nur relevante Ergebnisse zurückgeben
-        if ($result === null) return null;
+        if ($result === null) {
+            return null;
+        }
 
         return match ($result) {
             'CP850', 'CP437' => 'CP850',
@@ -569,14 +580,14 @@ class StringHelper {
         $encoding = strtoupper($encoding);
 
         return match ($encoding) {
-            'UTF-8'                         => self::BOM_UTF8,
-            'UTF-16BE', 'UTF-16-BE'         => self::BOM_UTF16_BE,
-            'UTF-16LE', 'UTF-16-LE'         => self::BOM_UTF16_LE,
-            'UTF-16'                        => self::BOM_UTF16_LE,    // Little-Endian als Default
-            'UTF-32BE', 'UTF-32-BE'         => self::BOM_UTF32_BE,
-            'UTF-32LE', 'UTF-32-LE'         => self::BOM_UTF32_LE,
-            'UTF-32'                        => self::BOM_UTF32_LE,    // Little-Endian als Default
-            default                         => null,
+            'UTF-8' => self::BOM_UTF8,
+            'UTF-16BE', 'UTF-16-BE' => self::BOM_UTF16_BE,
+            'UTF-16LE', 'UTF-16-LE' => self::BOM_UTF16_LE,
+            'UTF-16' => self::BOM_UTF16_LE,    // Little-Endian als Default
+            'UTF-32BE', 'UTF-32-BE' => self::BOM_UTF32_BE,
+            'UTF-32LE', 'UTF-32-LE' => self::BOM_UTF32_LE,
+            'UTF-32' => self::BOM_UTF32_LE,    // Little-Endian als Default
+            default => null,
         };
     }
 
@@ -634,7 +645,9 @@ class StringHelper {
      * @return string Der bereinigte String ohne nicht druckbare Zeichen.
      */
     public static function sanitizePrintable(?string $input): string {
-        if (self::isNullOrEmpty($input)) return '';
+        if (self::isNullOrEmpty($input)) {
+            return '';
+        }
         return preg_replace('/[[:^print:]]/', ' ', $input) ?? '';
     }
 
@@ -645,7 +658,9 @@ class StringHelper {
      * @return string Der bereinigte String ohne nicht-ASCII-Zeichen.
      */
     public static function removeNonAscii(?string $input): string {
-        if (self::isNullOrEmpty($input)) return '';
+        if (self::isNullOrEmpty($input)) {
+            return '';
+        }
         return preg_replace('/[\x80-\xFF]/', '', $input) ?? '';
     }
 
@@ -662,7 +677,9 @@ class StringHelper {
      * @return string Der ASCII-transliterierte, getrimmte String.
      */
     public static function toAscii(?string $value): string {
-        if (self::isNullOrEmpty($value)) return '';
+        if (self::isNullOrEmpty($value)) {
+            return '';
+        }
 
         $value = str_replace(
             ['ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü'],
@@ -689,8 +706,12 @@ class StringHelper {
      * @return string Der gekürzte Text mit Suffix, oder der Original-Text wenn kürzer.
      */
     public static function truncate(?string $text, int $maxLength, string $suffix = '...', bool $trim = false): string {
-        if (self::isNullOrEmpty($text)) return '';
-        if ($trim) $text = trim($text);
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
+        if ($trim) {
+            $text = trim($text);
+        }
 
         return mb_strlen($text) > $maxLength
             ? mb_substr($text, 0, $maxLength - mb_strlen($suffix)) . $suffix
@@ -739,7 +760,9 @@ class StringHelper {
      * @see normalizeInlineWhitespace() Für Kollabieren unter Erhalt von Zeilenumbrüchen.
      */
     public static function normalizeWhitespace(?string $input): string {
-        if (self::isNullOrEmpty($input)) return '';
+        if (self::isNullOrEmpty($input)) {
+            return '';
+        }
         return preg_replace('/\s+/', ' ', trim($input)) ?? '';
     }
 
@@ -750,7 +773,9 @@ class StringHelper {
      * @return string Der normalisierte String.
      */
     public static function normalizeInlineWhitespace(?string $input): string {
-        if (self::isNullOrEmpty($input)) return '';
+        if (self::isNullOrEmpty($input)) {
+            return '';
+        }
         return preg_replace('/[ \t]{2,}/u', ' ', $input) ?? '';
     }
 
@@ -761,7 +786,9 @@ class StringHelper {
      * @return string Der konvertierte String in Kleinbuchstaben.
      */
     public static function toLower(?string $input): string {
-        if (self::isNullOrEmpty($input)) return '';
+        if (self::isNullOrEmpty($input)) {
+            return '';
+        }
         return mb_strtolower($input, 'UTF-8');
     }
 
@@ -772,11 +799,11 @@ class StringHelper {
      * @return string Der konvertierte String in Großbuchstaben.
      */
     public static function toUpper(?string $input): string {
-        if (self::isNullOrEmpty($input)) return '';
+        if (self::isNullOrEmpty($input)) {
+            return '';
+        }
         return mb_strtoupper($input, 'UTF-8');
     }
-
-
 
     /**
      * Ermittelt die Zeichenkodierung eines Strings.
@@ -824,20 +851,24 @@ class StringHelper {
         }
 
         foreach ($keywords as $keyword) {
-            if ($keyword === '') continue;
+            if ($keyword === '') {
+                continue;
+            }
 
             $h = $caseSensitive ? $haystack : mb_strtolower($haystack);
             $k = $caseSensitive ? $keyword : mb_strtolower($keyword);
 
             $found = match ($mode) {
-                SearchMode::EXACT       => trim($h) === trim($k),
-                SearchMode::CONTAINS    => str_contains($h, $k),
+                SearchMode::EXACT => trim($h) === trim($k),
+                SearchMode::CONTAINS => str_contains($h, $k),
                 SearchMode::STARTS_WITH => str_starts_with($h, $k),
-                SearchMode::ENDS_WITH   => str_ends_with($h, $k),
-                SearchMode::REGEX       => @preg_match($k, $haystack) === 1,
+                SearchMode::ENDS_WITH => str_ends_with($h, $k),
+                SearchMode::REGEX => @preg_match($k, $haystack) === 1,
             };
 
-            if ($found) return true;
+            if ($found) {
+                return true;
+            }
         }
 
         return false;
@@ -901,9 +932,11 @@ class StringHelper {
         $upper = 'A-ZÄÖÜẞ';
 
         $lines = preg_split('/\r\n|\r|\n/u', $text);
-        if ($lines === false) return false;
+        if ($lines === false) {
+            return false;
+        }
 
-        $lines = array_filter($lines, fn($line) => trim($line) !== '');
+        $lines = array_filter($lines, fn ($line) => trim($line) !== '');
 
         foreach ($lines as $line) {
             $result = match ($case) {
@@ -914,7 +947,9 @@ class StringHelper {
                 CaseType::LOOSE_CAMEL => self::isLooseCamelCase($line),
             };
 
-            if (!$result) return false;
+            if (!$result) {
+                return false;
+            }
         }
 
         return true;
@@ -922,11 +957,6 @@ class StringHelper {
 
     /**
      * Löscht eine optionale Start- und/oder Endzeichenkette aus einer Zeile.
-     *
-     * @param string $line
-     * @param string|null $start
-     * @param string|null $end
-     * @return string
      */
     public static function stripStartEnd(string $line, ?string $start = null, ?string $end = null): string {
         $result = trim($line);
@@ -953,7 +983,9 @@ class StringHelper {
 
     private static function isTitleCase(string $text): bool {
         $words = preg_split('/\s+/', trim($text));
-        if (!$words) return false;
+        if (!$words) {
+            return false;
+        }
 
         foreach ($words as $word) {
             if (!preg_match("/^[A-ZÄÖÜ][a-zäöüß]*(?:[" . self::REGEX_ALLOWED_EXTRAS . "])?$/u", $word)) {
@@ -1179,7 +1211,9 @@ class StringHelper {
      * @return string Der konvertierte Text.
      */
     public static function camelToSnake(?string $text): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         $result = preg_replace('/([a-z])([A-Z])/', '$1_$2', $text);
         return strtolower($result);
     }
@@ -1192,7 +1226,9 @@ class StringHelper {
      * @return string Der konvertierte Text.
      */
     public static function snakeToCamel(?string $text, bool $pascalCase = false): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         $result = str_replace('_', '', ucwords($text, '_'));
         return $pascalCase ? $result : lcfirst($result);
     }
@@ -1205,7 +1241,9 @@ class StringHelper {
      * @return string Der konvertierte Text.
      */
     public static function kebabToCamel(?string $text, bool $pascalCase = false): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         $result = str_replace('-', '', ucwords($text, '-'));
         return $pascalCase ? $result : lcfirst($result);
     }
@@ -1217,7 +1255,9 @@ class StringHelper {
      * @return string Der konvertierte Text.
      */
     public static function camelToKebab(?string $text): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         $result = preg_replace('/([a-z])([A-Z])/', '$1-$2', $text);
         return strtolower($result);
     }
@@ -1232,7 +1272,9 @@ class StringHelper {
      * @return string Der maskierte Text.
      */
     public static function mask(?string $text, int $visibleStart = 0, int $visibleEnd = 4, string $maskChar = '*'): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         $length = mb_strlen($text);
 
         if ($length <= $visibleStart + $visibleEnd) {
@@ -1284,7 +1326,9 @@ class StringHelper {
      * @return string Die maskierte E-Mail.
      */
     public static function maskEmail(?string $email, string $maskChar = '*'): string {
-        if (self::isNullOrEmpty($email)) return '';
+        if (self::isNullOrEmpty($email)) {
+            return '';
+        }
         $parts = explode('@', $email);
         if (count($parts) !== 2) {
             return self::mask($email, 1, 1, $maskChar);
@@ -1388,7 +1432,9 @@ class StringHelper {
      * @return string Der konvertierte Text.
      */
     public static function titleCase(?string $text): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         return mb_convert_case($text, MB_CASE_TITLE, 'UTF-8');
     }
 
@@ -1404,7 +1450,9 @@ class StringHelper {
      * @see normalizeInlineWhitespace() Für Kollabieren unter Erhalt von Zeilenumbrüchen.
      */
     public static function collapseWhitespace(?string $text): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         return preg_replace('/\s+/', ' ', $text);
     }
 
@@ -1415,7 +1463,9 @@ class StringHelper {
      * @return string Der umgekehrte Text.
      */
     public static function reverse(?string $text): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         $chars = mb_str_split($text);
         return implode('', array_reverse($chars));
     }
@@ -1522,7 +1572,9 @@ class StringHelper {
      * @return string Der Text ohne Ziffern.
      */
     public static function removeDigits(?string $text): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         return preg_replace('/\d/', '', $text);
     }
 
@@ -1533,7 +1585,9 @@ class StringHelper {
      * @return string Nur die Ziffern.
      */
     public static function extractDigits(?string $text): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         return preg_replace('/[^\d]/', '', $text);
     }
 
@@ -1545,7 +1599,9 @@ class StringHelper {
      * @return string Der konvertierte Text.
      */
     public static function normalizeLineEndings(?string $text, string $lineEnding = PHP_EOL): string {
-        if (self::isNullOrEmpty($text)) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
         // Erst alle auf \n normalisieren, dann zum Ziel konvertieren
         $text = str_replace(["\r\n", "\r"], "\n", $text);
         return str_replace("\n", $lineEnding, $text);
@@ -1563,8 +1619,12 @@ class StringHelper {
      * @return string Der umgebrochene Text.
      */
     public static function wrap(?string $text, int $width = 75, string $break = "\n", bool $cut = false): string {
-        if (self::isNullOrEmpty($text)) return '';
-        if ($width <= 0) return $text;
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
+        if ($width <= 0) {
+            return $text;
+        }
 
         $lines = [];
         $words = preg_split('/(\s+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
@@ -1651,7 +1711,9 @@ class StringHelper {
         $h = $caseSensitive ? $haystack : mb_strtolower($haystack);
 
         foreach ($needles as $needle) {
-            if ($needle === '') continue;
+            if ($needle === '') {
+                continue;
+            }
             $n = $caseSensitive ? $needle : mb_strtolower($needle);
             if (str_contains($h, $n)) {
                 return true;
@@ -1677,7 +1739,9 @@ class StringHelper {
         $h = $caseSensitive ? $haystack : mb_strtolower($haystack);
 
         foreach ($needles as $needle) {
-            if ($needle === '') continue;
+            if ($needle === '') {
+                continue;
+            }
             $n = $caseSensitive ? $needle : mb_strtolower($needle);
             if (!str_contains($h, $n)) {
                 return false;
@@ -1695,7 +1759,9 @@ class StringHelper {
      * @return string Der bereinigte Text.
      */
     public static function stripHtml(?string $html, ?string $allowedTags = null): string {
-        if (self::isNullOrEmpty($html)) return '';
+        if (self::isNullOrEmpty($html)) {
+            return '';
+        }
         $text = strip_tags($html, $allowedTags);
         return self::normalizeWhitespace($text);
     }
@@ -1709,8 +1775,12 @@ class StringHelper {
      * @return string Der wiederholte Text.
      */
     public static function repeat(?string $text, int $times, string $separator = ''): string {
-        if (self::isNullOrEmpty($text)) return '';
-        if ($times <= 0) return '';
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
+        if ($times <= 0) {
+            return '';
+        }
         if ($separator === '') {
             return str_repeat($text, $times);
         }
@@ -1733,7 +1803,7 @@ class StringHelper {
         $parts = preg_split('/\s+/u', trim($name)) ?: [];
         $parts = array_slice($parts, 0, $maxParts);
         $initials = array_map(
-            static fn(string $part): string => mb_strtoupper(mb_substr($part, 0, 1)) . '.',
+            static fn (string $part): string => mb_strtoupper(mb_substr($part, 0, 1)) . '.',
             $parts,
         );
 

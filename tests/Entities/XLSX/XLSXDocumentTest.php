@@ -13,10 +13,7 @@ declare(strict_types=1);
 namespace Tests\Entities\XLSX;
 
 use CommonToolkit\Builders\XLSXDocumentBuilder;
-use CommonToolkit\Entities\XLSX\Cell;
-use CommonToolkit\Entities\XLSX\Document;
-use CommonToolkit\Entities\XLSX\Row;
-use CommonToolkit\Entities\XLSX\Sheet;
+use CommonToolkit\Entities\XLSX\{Cell, Document, Row, Sheet};
 use CommonToolkit\Generators\XLSX\XLSXGenerator;
 use CommonToolkit\Parsers\XLSXDocumentParser;
 use Tests\Contracts\BaseTestCase;
@@ -46,7 +43,7 @@ class XLSXDocumentTest extends BaseTestCase {
         }
     }
 
-    public function testCellBasics(): void {
+    public function test_cell_basics(): void {
         $cell = new Cell('Test', 's');
         $this->assertEquals('Test', $cell->getValue());
         $this->assertEquals('Test', $cell->getStringValue());
@@ -62,7 +59,7 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertTrue($emptyCell->isEmpty());
     }
 
-    public function testRowFromArray(): void {
+    public function test_row_from_array(): void {
         $row = Row::fromArray(['A', 'B', 'C'], 1);
 
         $this->assertCount(3, $row);
@@ -71,7 +68,7 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertFalse($row->isEmpty());
     }
 
-    public function testSheetBasics(): void {
+    public function test_sheet_basics(): void {
         $header = Row::fromArray(['Name', 'Age', 'City'], 1);
         $row1 = Row::fromArray(['Alice', 30, 'Berlin'], 2);
         $row2 = Row::fromArray(['Bob', 25, 'München'], 3);
@@ -86,7 +83,7 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertTrue($sheet->isConsistent());
     }
 
-    public function testSheetColumnAccess(): void {
+    public function test_sheet_column_access(): void {
         $header = Row::fromArray(['Name', 'Email'], 1);
         $row1 = Row::fromArray(['Alice', 'alice@example.com'], 2);
         $row2 = Row::fromArray(['Bob', 'bob@example.com'], 3);
@@ -104,7 +101,7 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertEquals(['Alice', 'Bob'], $names);
     }
 
-    public function testDocumentBasics(): void {
+    public function test_document_basics(): void {
         $sheet1 = new Sheet('Sheet1', null, [], 0);
         $sheet2 = new Sheet('Sheet2', null, [], 1);
 
@@ -118,8 +115,8 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertEquals('Test-Dokument', $doc->getTitle());
     }
 
-    public function testBuilderFluentApi(): void {
-        $builder = new XLSXDocumentBuilder();
+    public function test_builder_fluent_api(): void {
+        $builder = new XLSXDocumentBuilder;
 
         $doc = $builder
             ->sheet('Mitarbeiter')
@@ -138,8 +135,8 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertCount(2, $sheet);
     }
 
-    public function testBuilderMultipleSheets(): void {
-        $builder = new XLSXDocumentBuilder();
+    public function test_builder_multiple_sheets(): void {
+        $builder = new XLSXDocumentBuilder;
 
         $doc = $builder
             ->sheet('Kunden')
@@ -164,9 +161,9 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertCount(2, $produkte);
     }
 
-    public function testGeneratorAndParser(): void {
+    public function test_generator_and_parser(): void {
         // Dokument erstellen
-        $builder = new XLSXDocumentBuilder();
+        $builder = new XLSXDocumentBuilder;
         $doc = $builder
             ->sheet('Test')
             ->setHeader(['Spalte1', 'Spalte2', 'Spalte3'])
@@ -199,8 +196,8 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertEquals('Wert1', $row1->getCell(0)?->getValue());
     }
 
-    public function testRoundTripWithSpecialCharacters(): void {
-        $builder = new XLSXDocumentBuilder();
+    public function test_round_trip_with_special_characters(): void {
+        $builder = new XLSXDocumentBuilder;
         $doc = $builder
             ->sheet('Sonderzeichen')
             ->setHeader(['Name', 'Beschreibung'])
@@ -222,7 +219,7 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertEquals(['Größe & Gewicht', 'Test "quoted"', 'HTML & XML'], $descriptions);
     }
 
-    public function testEmptySheet(): void {
+    public function test_empty_sheet(): void {
         $sheet = new Sheet('Leer');
 
         $this->assertEquals('Leer', $sheet->getName());
@@ -231,7 +228,7 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertTrue($sheet->isConsistent());
     }
 
-    public function testSheetToArray(): void {
+    public function test_sheet_to_array(): void {
         $header = Row::fromArray(['A', 'B'], 1);
         $row = Row::fromArray([1, 2], 2);
 
@@ -244,7 +241,7 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertEquals([[1, 2]], $withoutHeader);
     }
 
-    public function testDocumentIteration(): void {
+    public function test_document_iteration(): void {
         $sheet1 = new Sheet('S1', null, [Row::fromArray([1])], 0);
         $sheet2 = new Sheet('S2', null, [Row::fromArray([2])], 1);
 
@@ -258,7 +255,7 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->assertEquals(['S1', 'S2'], $names);
     }
 
-    public function testSheetIteration(): void {
+    public function test_sheet_iteration(): void {
         $rows = [
             Row::fromArray(['A', 1], 1),
             Row::fromArray(['B', 2], 2),

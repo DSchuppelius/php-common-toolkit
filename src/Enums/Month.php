@@ -64,7 +64,7 @@ enum Month: int {
     public static function toArray(bool $leadingZero = false, string $locale = 'en'): array {
         $monthsArray = [];
         foreach (self::cases() as $month) {
-            $key = $leadingZero ? str_pad((string)$month->value, 2, '0', STR_PAD_LEFT) : $month->value;
+            $key = $leadingZero ? str_pad((string) $month->value, 2, '0', STR_PAD_LEFT) : $month->value;
             $monthsArray[$key] = $month->getName($locale);
         }
         return $monthsArray;
@@ -127,11 +127,11 @@ enum Month: int {
 
     /**
      * Parst einen Monatsnamen (DE/EN) in verschiedenen Formaten.
-     * 
+     *
      * Unterstützte Formate:
      * - Englisch: January, Jan, Feb, March, etc.
      * - Deutsch: Januar, Jan, Feb, Mär, März, etc.
-     * 
+     *
      * @param string $name Monatsname (Case-insensitive, mit/ohne Punkt).
      * @return self|null Der entsprechende Monat oder null wenn nicht erkannt.
      */

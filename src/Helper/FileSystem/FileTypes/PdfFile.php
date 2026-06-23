@@ -37,7 +37,7 @@ class PdfFile extends ConfiguredHelperAbstract {
         $commandName = $password !== null && $password !== '' ? 'pdfinfo-password' : 'pdfinfo';
         $args = [
             "[INPUT]" => $file,
-            "[PASSWORD]" => $password ?? ''
+            "[PASSWORD]" => $password ?? '',
         ];
 
         $command = self::getConfiguredCommand($commandName, $args);
@@ -77,7 +77,6 @@ class PdfFile extends ConfiguredHelperAbstract {
 
         return $metadata;
     }
-
 
     /**
      * Überprüft, ob die PDF-Datei verschlüsselt ist.
@@ -174,9 +173,9 @@ class PdfFile extends ConfiguredHelperAbstract {
         $command = self::getConfiguredCommand(
             "pdf-decrypt",
             [
-                "[INPUT]"  => $inputFile,
+                "[INPUT]" => $inputFile,
                 "[OUTPUT]" => $outputFile,
-                "[PASS]" => $password ?? ''
+                "[PASS]" => $password ?? '',
             ]
         );
 
@@ -209,12 +208,12 @@ class PdfFile extends ConfiguredHelperAbstract {
         $inputFile = self::resolveFile($inputFile);
 
         $params = [
-            "[INPUT]"  => $inputFile,
+            "[INPUT]" => $inputFile,
             "[OUTPUT]" => $outputFile,
             // Bei qpdf müssen leere Passwörter explizit als leerer escaped String übergeben werden
             "[UPASS]" => $userPass !== null && $userPass !== '' ? $userPass : "''",
             "[OPASS]" => ($ownerPass ?? $userPass) !== null && ($ownerPass ?? $userPass) !== '' ? ($ownerPass ?? $userPass) : "''",
-            "[PERM]"   => trim((string)($permissions ?? ''))
+            "[PERM]" => trim((string) ($permissions ?? '')),
         ];
 
         $command = self::getConfiguredCommand("pdf-encrypt", $params);

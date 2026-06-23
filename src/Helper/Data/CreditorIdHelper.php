@@ -22,8 +22,6 @@ use ERRORToolkit\Traits\ErrorLog;
  * den Gläubiger eindeutig. Format: Ländercode + 2 Prüfziffern + Geschäftsbereich + nationale ID.
  *
  * @see https://www.bundesbank.de/de/aufgaben/unbarer-zahlungsverkehr/serviceangebot/glaeubiger-identifikationsnummer
- *
- * @package CommonToolkit\Helper\Data
  */
 class CreditorIdHelper {
     use ErrorLog;
@@ -94,7 +92,7 @@ class CreditorIdHelper {
         $numericString = '';
         foreach (str_split(strtoupper($checkString)) as $char) {
             if (ctype_alpha($char)) {
-                $numericString .= (string)(ord($char) - ord('A') + 10);
+                $numericString .= (string) (ord($char) - ord('A') + 10);
             } else {
                 $numericString .= $char;
             }
@@ -296,7 +294,7 @@ class CreditorIdHelper {
         $numericString = '';
         foreach (str_split($checkString) as $char) {
             if (ctype_alpha($char)) {
-                $numericString .= (string)(ord($char) - ord('A') + 10);
+                $numericString .= (string) (ord($char) - ord('A') + 10);
             } else {
                 $numericString .= $char;
             }
@@ -304,9 +302,9 @@ class CreditorIdHelper {
 
         // Prüfziffer = 98 - (Zahl MOD 97)
         $remainder = bcmod($numericString, '97');
-        $checkDigit = 98 - (int)$remainder;
+        $checkDigit = 98 - (int) $remainder;
 
-        return str_pad((string)$checkDigit, 2, '0', STR_PAD_LEFT);
+        return str_pad((string) $checkDigit, 2, '0', STR_PAD_LEFT);
     }
 
     /**

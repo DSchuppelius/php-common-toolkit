@@ -13,24 +13,24 @@ declare(strict_types=1);
 namespace CommonToolkit\Enums;
 
 enum ElectricCapacitanceUnit: string {
-    case PICOFARAD  = 'pF';
-    case NANOFARAD  = 'nF';
+    case PICOFARAD = 'pF';
+    case NANOFARAD = 'nF';
     case MICROFARAD = 'µF';
     case MILLIFARAD = 'mF';
-    case FARAD      = 'F';
-    case KILOFARAD  = 'kF';
+    case FARAD = 'F';
+    case KILOFARAD = 'kF';
 
     /**
      * Gibt den Umrechnungsfaktor in Farad zurück.
      */
     public function toFarads(): float {
         return match ($this) {
-            self::PICOFARAD  => 1e-12,
-            self::NANOFARAD  => 1e-9,
+            self::PICOFARAD => 1e-12,
+            self::NANOFARAD => 1e-9,
             self::MICROFARAD => 1e-6,
             self::MILLIFARAD => 0.001,
-            self::FARAD      => 1.0,
-            self::KILOFARAD  => 1_000.0,
+            self::FARAD => 1.0,
+            self::KILOFARAD => 1_000.0,
         };
     }
 
@@ -39,12 +39,12 @@ enum ElectricCapacitanceUnit: string {
      */
     public function label(): string {
         return match ($this) {
-            self::PICOFARAD  => 'Picofarad',
-            self::NANOFARAD  => 'Nanofarad',
+            self::PICOFARAD => 'Picofarad',
+            self::NANOFARAD => 'Nanofarad',
             self::MICROFARAD => 'Mikrofarad',
             self::MILLIFARAD => 'Millifarad',
-            self::FARAD      => 'Farad',
-            self::KILOFARAD  => 'Kilofarad',
+            self::FARAD => 'Farad',
+            self::KILOFARAD => 'Kilofarad',
         };
     }
 }

@@ -16,7 +16,7 @@ class EmailHelperTest extends BaseTestCase {
     // Format-Tests
     // ========================================
 
-    public function testIsEmailWithValidFormats(): void {
+    public function test_is_email_with_valid_formats(): void {
         $this->assertTrue(EmailHelper::isEmail('user@example.com'));
         $this->assertTrue(EmailHelper::isEmail('user.name@example.com'));
         $this->assertTrue(EmailHelper::isEmail('user+tag@example.com'));
@@ -24,7 +24,7 @@ class EmailHelperTest extends BaseTestCase {
         $this->assertTrue(EmailHelper::isEmail('USER@EXAMPLE.COM'));
     }
 
-    public function testIsEmailWithInvalidFormats(): void {
+    public function test_is_email_with_invalid_formats(): void {
         $this->assertFalse(EmailHelper::isEmail(null));
         $this->assertFalse(EmailHelper::isEmail(''));
         $this->assertFalse(EmailHelper::isEmail('user'));
@@ -37,12 +37,12 @@ class EmailHelperTest extends BaseTestCase {
     // Validierungs-Tests
     // ========================================
 
-    public function testValidateEmailWithValidAddresses(): void {
+    public function test_validate_email_with_valid_addresses(): void {
         $this->assertTrue(EmailHelper::validateEmail('user@example.com'));
         $this->assertTrue(EmailHelper::validateEmail('test.user@example.org'));
     }
 
-    public function testValidateEmailWithInvalidAddresses(): void {
+    public function test_validate_email_with_invalid_addresses(): void {
         $this->assertFalse(EmailHelper::validateEmail('.user@example.com')); // Beginnt mit Punkt
         $this->assertFalse(EmailHelper::validateEmail('user.@example.com')); // Endet mit Punkt
         $this->assertFalse(EmailHelper::validateEmail('user..name@example.com')); // Doppelte Punkte
@@ -52,12 +52,12 @@ class EmailHelperTest extends BaseTestCase {
     // Normalisierungs-Tests
     // ========================================
 
-    public function testNormalize(): void {
+    public function test_normalize(): void {
         $this->assertEquals('user@example.com', EmailHelper::normalize('USER@EXAMPLE.COM'));
         $this->assertEquals('user@example.com', EmailHelper::normalize('  user@example.com  '));
     }
 
-    public function testNormalizeWithDotRemoval(): void {
+    public function test_normalize_with_dot_removal(): void {
         $this->assertEquals('username@gmail.com', EmailHelper::normalize('user.name@gmail.com', true));
     }
 
@@ -65,21 +65,21 @@ class EmailHelperTest extends BaseTestCase {
     // Extraktions-Tests
     // ========================================
 
-    public function testExtractLocalPart(): void {
+    public function test_extract_local_part(): void {
         $this->assertEquals('user', EmailHelper::extractLocalPart('user@example.com'));
         $this->assertEquals('user.name', EmailHelper::extractLocalPart('user.name@example.com'));
     }
 
-    public function testExtractLocalPartWithInvalid(): void {
+    public function test_extract_local_part_with_invalid(): void {
         $this->assertNull(EmailHelper::extractLocalPart('invalid'));
     }
 
-    public function testExtractDomain(): void {
+    public function test_extract_domain(): void {
         $this->assertEquals('example.com', EmailHelper::extractDomain('user@example.com'));
         $this->assertEquals('sub.example.com', EmailHelper::extractDomain('user@sub.example.com'));
     }
 
-    public function testExtractDomainWithInvalid(): void {
+    public function test_extract_domain_with_invalid(): void {
         $this->assertNull(EmailHelper::extractDomain('invalid'));
     }
 
@@ -87,7 +87,7 @@ class EmailHelperTest extends BaseTestCase {
     // Wegwerf-E-Mail Tests
     // ========================================
 
-    public function testIsDisposableEmail(): void {
+    public function test_is_disposable_email(): void {
         $this->assertTrue(EmailHelper::isDisposableEmail('test@mailinator.com'));
         $this->assertTrue(EmailHelper::isDisposableEmail('test@tempmail.com'));
         $this->assertFalse(EmailHelper::isDisposableEmail('test@gmail.com'));
@@ -98,7 +98,7 @@ class EmailHelperTest extends BaseTestCase {
     // Kostenlose Provider Tests
     // ========================================
 
-    public function testIsFreeEmailProvider(): void {
+    public function test_is_free_email_provider(): void {
         $this->assertTrue(EmailHelper::isFreeEmailProvider('test@gmail.com'));
         $this->assertTrue(EmailHelper::isFreeEmailProvider('test@web.de'));
         $this->assertTrue(EmailHelper::isFreeEmailProvider('test@gmx.de'));
@@ -110,12 +110,12 @@ class EmailHelperTest extends BaseTestCase {
     // Maskierungs-Tests
     // ========================================
 
-    public function testMask(): void {
+    public function test_mask(): void {
         $this->assertEquals('jo*****th@example.com', EmailHelper::mask('johnsmith@example.com', 2));
         $this->assertEquals('joh***ith@example.com', EmailHelper::mask('johnsmith@example.com', 3));
     }
 
-    public function testMaskWithShortLocalPart(): void {
+    public function test_mask_with_short_local_part(): void {
         // Bei kurzen lokalen Teilen wird nur der erste Buchstabe gezeigt
         $this->assertEquals('u***@example.com', EmailHelper::mask('user@example.com', 2));
         $this->assertEquals('a**@example.com', EmailHelper::mask('abc@example.com', 2));
@@ -125,21 +125,21 @@ class EmailHelperTest extends BaseTestCase {
     // Mailto-Link Tests
     // ========================================
 
-    public function testCreateMailtoLink(): void {
+    public function test_create_mailto_link(): void {
         $this->assertEquals('mailto:user%40example.com', EmailHelper::createMailtoLink('user@example.com'));
     }
 
-    public function testCreateMailtoLinkWithSubject(): void {
+    public function test_create_mailto_link_with_subject(): void {
         $link = EmailHelper::createMailtoLink('user@example.com', 'Hello World');
         $this->assertStringContainsString('subject=Hello%20World', $link);
     }
 
-    public function testCreateMailtoLinkWithBody(): void {
+    public function test_create_mailto_link_with_body(): void {
         $link = EmailHelper::createMailtoLink('user@example.com', null, 'Test message');
         $this->assertStringContainsString('body=Test%20message', $link);
     }
 
-    public function testCreateMailtoLinkWithInvalidEmail(): void {
+    public function test_create_mailto_link_with_invalid_email(): void {
         $this->assertEquals('', EmailHelper::createMailtoLink('invalid'));
     }
 
@@ -147,13 +147,13 @@ class EmailHelperTest extends BaseTestCase {
     // Vergleichs-Tests
     // ========================================
 
-    public function testEquals(): void {
+    public function test_equals(): void {
         $this->assertTrue(EmailHelper::equals('user@example.com', 'USER@EXAMPLE.COM'));
         $this->assertTrue(EmailHelper::equals('user@example.com', 'user@example.com'));
         $this->assertFalse(EmailHelper::equals('user1@example.com', 'user2@example.com'));
     }
 
-    public function testEqualsWithGmailNormalization(): void {
+    public function test_equals_with_gmail_normalization(): void {
         $this->assertTrue(EmailHelper::equals('user.name@gmail.com', 'username@gmail.com', true));
         $this->assertTrue(EmailHelper::equals('u.s.e.r@gmail.com', 'user@gmail.com', true));
     }
@@ -162,7 +162,7 @@ class EmailHelperTest extends BaseTestCase {
     // Gmail-Tests
     // ========================================
 
-    public function testIsGmailAddress(): void {
+    public function test_is_gmail_address(): void {
         $this->assertTrue(EmailHelper::isGmailAddress('user@gmail.com'));
         $this->assertTrue(EmailHelper::isGmailAddress('user@googlemail.com'));
         $this->assertFalse(EmailHelper::isGmailAddress('user@yahoo.com'));

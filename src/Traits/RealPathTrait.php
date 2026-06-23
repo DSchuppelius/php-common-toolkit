@@ -18,7 +18,7 @@ use InvalidArgumentException;
 /**
  * Trait für die Auflösung von realen Pfaden.
  * Wird von File und Folder verwendet.
- * 
+ *
  * Erfordert, dass die verwendende Klasse folgende Methoden implementiert:
  * - public static function exists(string $path): bool
  * - protected static function logDebug(string $message): void

@@ -14,46 +14,46 @@ namespace Tests\Entities\Executables;
 
 use CommonToolkit\Entities\Executables\JavaExecutable;
 use CommonToolkit\Helper\Java;
-use Tests\Contracts\BaseTestCase;
 use Exception;
+use Tests\Contracts\BaseTestCase;
 
 /**
  * Tests für die JavaExecutable Entity.
  */
 class JavaExecutableTest extends BaseTestCase {
-    public function testConstructorWithPath(): void {
-        $executable = new JavaExecutable([
-            'path' => '/path/to/app.jar'
-        ]);
-
-        $this->assertSame('/path/to/app.jar', (string)$executable);
-    }
-
-    public function testConstructorWithPathAndArguments(): void {
+    public function test_constructor_with_path(): void {
         $executable = new JavaExecutable([
             'path' => '/path/to/app.jar',
-            'arguments' => ['-Xmx512m', '--config=/etc/app.conf']
         ]);
 
-        $this->assertSame('/path/to/app.jar -Xmx512m --config=/etc/app.conf', (string)$executable);
+        $this->assertSame('/path/to/app.jar', (string) $executable);
     }
 
-    public function testToString(): void {
+    public function test_constructor_with_path_and_arguments(): void {
+        $executable = new JavaExecutable([
+            'path' => '/path/to/app.jar',
+            'arguments' => ['-Xmx512m', '--config=/etc/app.conf'],
+        ]);
+
+        $this->assertSame('/path/to/app.jar -Xmx512m --config=/etc/app.conf', (string) $executable);
+    }
+
+    public function test_to_string(): void {
         $executable = new JavaExecutable([
             'path' => '/path/to/tool.jar',
-            'arguments' => ['--input', 'file.txt']
+            'arguments' => ['--input', 'file.txt'],
         ]);
 
-        $this->assertSame('/path/to/tool.jar --input file.txt', (string)$executable);
+        $this->assertSame('/path/to/tool.jar --input file.txt', (string) $executable);
     }
 
-    public function testExecuteThrowsExceptionIfJavaNotAvailable(): void {
+    public function test_execute_throws_exception_if_java_not_available(): void {
         if (Java::exists()) {
             $this->markTestSkipped('Java ist auf diesem System verfügbar. Test übersprungen.');
         }
 
         $executable = new JavaExecutable([
-            'path' => '/path/to/nonexistent.jar'
+            'path' => '/path/to/nonexistent.jar',
         ]);
 
         $this->expectException(Exception::class);
@@ -62,25 +62,25 @@ class JavaExecutableTest extends BaseTestCase {
         $executable->execute();
     }
 
-    public function testConstructorWithLinuxAndWindowsPath(): void {
+    public function test_constructor_with_linux_and_windows_path(): void {
         $executable = new JavaExecutable([
             'linuxPath' => '/opt/java/app.jar',
-            'windowsPath' => 'C:\\Java\\app.jar'
+            'windowsPath' => 'C:\\Java\\app.jar',
         ]);
 
         // Auf Linux sollte linuxPath verwendet werden
-        $this->assertStringContainsString('app.jar', (string)$executable);
+        $this->assertStringContainsString('app.jar', (string) $executable);
     }
 
-    public function testPlaceholderReplacement(): void {
+    public function test_placeholder_replacement(): void {
         $executable = new JavaExecutable([
             'path' => '/path/to/app.jar',
-            'arguments' => ['--input=[INPUT]', '--output=[OUTPUT]']
+            'arguments' => ['--input=[INPUT]', '--output=[OUTPUT]'],
         ]);
 
         // Die Argumente werden bei execute() ersetzt
         // Hier prüfen wir nur die initiale Struktur
-        $this->assertStringContainsString('[INPUT]', (string)$executable);
-        $this->assertStringContainsString('[OUTPUT]', (string)$executable);
+        $this->assertStringContainsString('[INPUT]', (string) $executable);
+        $this->assertStringContainsString('[OUTPUT]', (string) $executable);
     }
 }

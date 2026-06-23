@@ -8,7 +8,6 @@
  * License Uri  : https://opensource.org/license/mit
  */
 
-
 declare(strict_types=1);
 
 namespace Tests\CommonToolkit\Entities\CSV;
@@ -22,7 +21,7 @@ use Tests\Contracts\BaseTestCase;
 
 class DocumentTest extends BaseTestCase {
     private function createTestDocument(): Document {
-        $builder = new CSVDocumentBuilder();
+        $builder = new CSVDocumentBuilder;
 
         // Header erstellen
         $header = HeaderLine::fromString('"Name","Email","Age"', ',', '"');
@@ -36,7 +35,7 @@ class DocumentTest extends BaseTestCase {
         return $builder->build();
     }
 
-    public function testDocumentConstruction(): void {
+    public function test_document_construction(): void {
         $doc = $this->createTestDocument();
 
         $this->assertTrue($doc->hasHeader());
@@ -45,7 +44,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertInstanceOf(DataLine::class, $doc->getRow(0));
     }
 
-    public function testGetColumnByName(): void {
+    public function test_get_column_by_name(): void {
         $doc = $this->createTestDocument();
 
         // Test existierende Spalten
@@ -59,7 +58,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals(['30', '25', '35'], $ages);
     }
 
-    public function testGetColumnByNameThrowsExceptionForNonExistentColumn(): void {
+    public function test_get_column_by_name_throws_exception_for_non_existent_column(): void {
         $doc = $this->createTestDocument();
 
         $this->expectException(RuntimeException::class);
@@ -67,7 +66,7 @@ class DocumentTest extends BaseTestCase {
         $doc->getColumnByName('NonExistent');
     }
 
-    public function testGetColumnByIndex(): void {
+    public function test_get_column_by_index(): void {
         $doc = $this->createTestDocument();
 
         // Test Index 0 (Name)
@@ -83,7 +82,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals(['30', '25', '35'], $column2);
     }
 
-    public function testGetColumnByIndexThrowsExceptionForInvalidIndex(): void {
+    public function test_get_column_by_index_throws_exception_for_invalid_index(): void {
         $doc = $this->createTestDocument();
 
         $this->expectException(RuntimeException::class);
@@ -91,7 +90,7 @@ class DocumentTest extends BaseTestCase {
         $doc->getColumnByIndex(-1);
     }
 
-    public function testGetColumnIndex(): void {
+    public function test_get_column_index(): void {
         $doc = $this->createTestDocument();
 
         // Test existierende Spalten
@@ -103,7 +102,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertNull($doc->getColumnIndex('NonExistent'));
     }
 
-    public function testHasColumn(): void {
+    public function test_has_column(): void {
         $doc = $this->createTestDocument();
 
         // Test existierende Spalten
@@ -116,16 +115,16 @@ class DocumentTest extends BaseTestCase {
         $this->assertFalse($doc->hasColumn(''));
     }
 
-    public function testGetColumnNames(): void {
+    public function test_get_column_names(): void {
         $doc = $this->createTestDocument();
 
         $columnNames = $doc->getColumnNames();
         $this->assertEquals(['Name', 'Email', 'Age'], $columnNames);
     }
 
-    public function testColumnFunctionsWithoutHeader(): void {
+    public function test_column_functions_without_header(): void {
         // Dokument ohne Header erstellen
-        $builder = new CSVDocumentBuilder();
+        $builder = new CSVDocumentBuilder;
         $builder->addRow(DataLine::fromString('"Alice","alice@example.com"', ',', '"'));
         $doc = $builder->build();
 
@@ -135,8 +134,8 @@ class DocumentTest extends BaseTestCase {
         $this->assertNull($doc->getColumnIndex('Name'));
     }
 
-    public function testColumnFunctionsWithQuotedHeaders(): void {
-        $builder = new CSVDocumentBuilder();
+    public function test_column_functions_with_quoted_headers(): void {
+        $builder = new CSVDocumentBuilder;
 
         $header = HeaderLine::fromString('"Full Name","E-Mail Address","Years Old"', ',', '"');
         $builder->setHeader($header);
@@ -154,8 +153,8 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals(2, $doc->getColumnIndex('Years Old'));
     }
 
-    public function testColumnFunctionsWithEmptyFields(): void {
-        $builder = new CSVDocumentBuilder();
+    public function test_column_functions_with_empty_fields(): void {
+        $builder = new CSVDocumentBuilder;
 
         $header = HeaderLine::fromString('"Name","Email","Phone"', ',', '"');
         $builder->setHeader($header);
@@ -181,7 +180,7 @@ class DocumentTest extends BaseTestCase {
     // getFirstRow / getLastRow Tests
     // =========================================================================
 
-    public function testGetFirstRow(): void {
+    public function test_get_first_row(): void {
         $doc = $this->createTestDocument();
 
         $firstRow = $doc->getFirstRow();
@@ -189,7 +188,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Alice', $firstRow->getField(0)?->getValue());
     }
 
-    public function testGetLastRow(): void {
+    public function test_get_last_row(): void {
         $doc = $this->createTestDocument();
 
         $lastRow = $doc->getLastRow();
@@ -197,8 +196,8 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Charlie', $lastRow->getField(0)?->getValue());
     }
 
-    public function testGetFirstRowEmptyDocument(): void {
-        $builder = new CSVDocumentBuilder();
+    public function test_get_first_row_empty_document(): void {
+        $builder = new CSVDocumentBuilder;
         $header = HeaderLine::fromString('"Name","Email"', ',', '"');
         $builder->setHeader($header);
         $doc = $builder->build();
@@ -206,8 +205,8 @@ class DocumentTest extends BaseTestCase {
         $this->assertNull($doc->getFirstRow());
     }
 
-    public function testGetLastRowEmptyDocument(): void {
-        $builder = new CSVDocumentBuilder();
+    public function test_get_last_row_empty_document(): void {
+        $builder = new CSVDocumentBuilder;
         $header = HeaderLine::fromString('"Name","Email"', ',', '"');
         $builder->setHeader($header);
         $doc = $builder->build();
@@ -215,8 +214,8 @@ class DocumentTest extends BaseTestCase {
         $this->assertNull($doc->getLastRow());
     }
 
-    public function testGetFirstAndLastRowSingleRow(): void {
-        $builder = new CSVDocumentBuilder();
+    public function test_get_first_and_last_row_single_row(): void {
+        $builder = new CSVDocumentBuilder;
         $builder->addRow(DataLine::fromString('"Only","Row"', ',', '"'));
         $doc = $builder->build();
 
@@ -243,7 +242,7 @@ class DocumentTest extends BaseTestCase {
         return $builder->build();
     }
 
-    public function testDiffColumnsByName(): void {
+    public function test_diff_columns_by_name(): void {
         $doc = $this->createSollHabenDocument();
 
         // Soll - Haben: 920,50 - 3050,00 = -2129,50
@@ -251,7 +250,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('-2129.50', $diff);
     }
 
-    public function testDiffColumnsByNameReversed(): void {
+    public function test_diff_columns_by_name_reversed(): void {
         $doc = $this->createSollHabenDocument();
 
         // Haben - Soll: 3050,00 - 920,50 = 2129,50
@@ -259,7 +258,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('2129.50', $diff);
     }
 
-    public function testDiffColumnsByIndex(): void {
+    public function test_diff_columns_by_index(): void {
         $doc = $this->createSollHabenDocument();
 
         // Index 1 (Soll) - Index 2 (Haben)
@@ -267,7 +266,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('-2129.50', $diff);
     }
 
-    public function testDiffColumnsByNameThrowsOnNonExistentColumn(): void {
+    public function test_diff_columns_by_name_throws_on_non_existent_column(): void {
         $doc = $this->createSollHabenDocument();
 
         $this->expectException(RuntimeException::class);
@@ -275,7 +274,7 @@ class DocumentTest extends BaseTestCase {
         $doc->diffColumnsByName('Gewinn', 'Haben');
     }
 
-    public function testDiffColumnsByNameEqualColumns(): void {
+    public function test_diff_columns_by_name_equal_columns(): void {
         $doc = $this->createSollHabenDocument();
 
         // Soll - Soll = 0
@@ -283,7 +282,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('0.00', $diff);
     }
 
-    public function testDiffColumnsByNameEmptyDocument(): void {
+    public function test_diff_columns_by_name_empty_document(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Soll;Haben', ';', '"');
         $builder->setHeader($header);
@@ -298,7 +297,7 @@ class DocumentTest extends BaseTestCase {
     // =========================================================================
 
     private function createNumericDocument(): Document {
-        $builder = new CSVDocumentBuilder();
+        $builder = new CSVDocumentBuilder;
         $header = HeaderLine::fromString('Artikel;Menge;Preis', ';', '"');
         $builder->setHeader($header);
         $builder->addRow(DataLine::fromString('Widget;3;10.50', ';', '"'));
@@ -307,21 +306,21 @@ class DocumentTest extends BaseTestCase {
         return $builder->build();
     }
 
-    public function testSumColumnByNameSimple(): void {
+    public function test_sum_column_by_name_simple(): void {
         $doc = $this->createNumericDocument();
 
         $sum = $doc->sumColumnByName('Preis', 2);
         $this->assertEquals('41.49', $sum);
     }
 
-    public function testSumColumnByNameInteger(): void {
+    public function test_sum_column_by_name_integer(): void {
         $doc = $this->createNumericDocument();
 
         $sum = $doc->sumColumnByName('Menge', 0);
         $this->assertEquals('12', $sum);
     }
 
-    public function testSumColumnByIndexSimple(): void {
+    public function test_sum_column_by_index_simple(): void {
         $doc = $this->createNumericDocument();
 
         // Index 2 = Preis
@@ -329,7 +328,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('41.49', $sum);
     }
 
-    public function testSumColumnByNameGermanFormat(): void {
+    public function test_sum_column_by_name_german_format(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Bezeichnung;Betrag', ';', '"');
         $builder->setHeader($header);
@@ -342,7 +341,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('1328.00', $sum);
     }
 
-    public function testSumColumnByNameMixedFormats(): void {
+    public function test_sum_column_by_name_mixed_formats(): void {
         // Simuliert ApoBank-Szenario: gemischte Formate in einer Spalte
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Buchung;Saldo', ';', '"');
@@ -356,7 +355,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('7165.80', $sum);
     }
 
-    public function testSumColumnByNameWithNegativeValues(): void {
+    public function test_sum_column_by_name_with_negative_values(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Posten;Betrag', ';', '"');
         $builder->setHeader($header);
@@ -369,7 +368,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('149.50', $sum);
     }
 
-    public function testSumColumnByNameSkipsNonNumeric(): void {
+    public function test_sum_column_by_name_skips_non_numeric(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Name;Wert', ';', '"');
         $builder->setHeader($header);
@@ -383,7 +382,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('300.00', $sum);
     }
 
-    public function testSumColumnByNameSkipsEmptyValues(): void {
+    public function test_sum_column_by_name_skips_empty_values(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Name;Wert', ';', '"');
         $builder->setHeader($header);
@@ -396,7 +395,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('400.00', $sum);
     }
 
-    public function testSumColumnByNameThrowsOnNonExistentColumn(): void {
+    public function test_sum_column_by_name_throws_on_non_existent_column(): void {
         $doc = $this->createNumericDocument();
 
         $this->expectException(RuntimeException::class);
@@ -404,7 +403,7 @@ class DocumentTest extends BaseTestCase {
         $doc->sumColumnByName('Gewinn');
     }
 
-    public function testSumColumnByNameHighPrecision(): void {
+    public function test_sum_column_by_name_high_precision(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('ID;Wert', ';', '"');
         $builder->setHeader($header);
@@ -417,7 +416,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('0.0060', $sum);
     }
 
-    public function testSumColumnByIndexWithoutHeader(): void {
+    public function test_sum_column_by_index_without_header(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $builder->addRow(DataLine::fromString('100;200;300', ';', '"'));
         $builder->addRow(DataLine::fromString('10;20;30', ';', '"'));
@@ -430,7 +429,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('330', $sum);
     }
 
-    public function testSumColumnEmptyDocument(): void {
+    public function test_sum_column_empty_document(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Name;Wert', ';', '"');
         $builder->setHeader($header);
@@ -445,11 +444,11 @@ class DocumentTest extends BaseTestCase {
     // filterRows Tests
     // =========================================================================
 
-    public function testFilterRowsByValue(): void {
+    public function test_filter_rows_by_value(): void {
         $doc = $this->createTestDocument();
 
         // Nur Zeilen mit "Bob"
-        $filtered = $doc->filterRows(fn(DataLine $row) => $row->getField(0)?->getValue() === 'Bob');
+        $filtered = $doc->filterRows(fn (DataLine $row) => $row->getField(0)?->getValue() === 'Bob');
 
         $this->assertEquals(1, $filtered->countRows());
         $this->assertEquals('Bob', $filtered->getFirstRow()?->getField(0)?->getValue());
@@ -457,37 +456,37 @@ class DocumentTest extends BaseTestCase {
         $this->assertTrue($filtered->hasHeader());
     }
 
-    public function testFilterRowsByNumericCondition(): void {
+    public function test_filter_rows_by_numeric_condition(): void {
         $doc = $this->createNumericDocument();
 
         // Nur Zeilen mit Preis > 10 (getTypedValue() liefert den korrekten float)
-        $filtered = $doc->filterRows(fn(DataLine $row) => ($row->getField(2)?->getTypedValue() ?? 0) > 10);
+        $filtered = $doc->filterRows(fn (DataLine $row) => ($row->getField(2)?->getTypedValue() ?? 0) > 10);
 
         $this->assertEquals(2, $filtered->countRows());
     }
 
-    public function testFilterRowsReturnsEmptyDocument(): void {
+    public function test_filter_rows_returns_empty_document(): void {
         $doc = $this->createTestDocument();
 
-        $filtered = $doc->filterRows(fn(DataLine $row) => false);
+        $filtered = $doc->filterRows(fn (DataLine $row) => false);
 
         $this->assertEquals(0, $filtered->countRows());
         $this->assertTrue($filtered->hasHeader());
     }
 
-    public function testFilterRowsReturnsAllRows(): void {
+    public function test_filter_rows_returns_all_rows(): void {
         $doc = $this->createTestDocument();
 
-        $filtered = $doc->filterRows(fn(DataLine $row) => true);
+        $filtered = $doc->filterRows(fn (DataLine $row) => true);
 
         $this->assertEquals(3, $filtered->countRows());
     }
 
-    public function testFilterRowsWithIndex(): void {
+    public function test_filter_rows_with_index(): void {
         $doc = $this->createTestDocument();
 
         // Nur gerade Indizes (0, 2)
-        $filtered = $doc->filterRows(fn(DataLine $row, int $index) => $index % 2 === 0);
+        $filtered = $doc->filterRows(fn (DataLine $row, int $index) => $index % 2 === 0);
 
         $this->assertEquals(2, $filtered->countRows());
         $this->assertEquals('Alice', $filtered->getRow(0)?->getField(0)?->getValue());
@@ -498,7 +497,7 @@ class DocumentTest extends BaseTestCase {
     // sliceRows Tests
     // =========================================================================
 
-    public function testSliceRowsFromStart(): void {
+    public function test_slice_rows_from_start(): void {
         $doc = $this->createTestDocument();
 
         $sliced = $doc->sliceRows(0, 2);
@@ -508,7 +507,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Bob', $sliced->getLastRow()?->getField(0)?->getValue());
     }
 
-    public function testSliceRowsFromMiddle(): void {
+    public function test_slice_rows_from_middle(): void {
         $doc = $this->createTestDocument();
 
         $sliced = $doc->sliceRows(1, 1);
@@ -517,7 +516,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Bob', $sliced->getFirstRow()?->getField(0)?->getValue());
     }
 
-    public function testSliceRowsFromEnd(): void {
+    public function test_slice_rows_from_end(): void {
         $doc = $this->createTestDocument();
 
         // Letzte 2 Zeilen
@@ -528,7 +527,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Charlie', $sliced->getLastRow()?->getField(0)?->getValue());
     }
 
-    public function testSliceRowsToEnd(): void {
+    public function test_slice_rows_to_end(): void {
         $doc = $this->createTestDocument();
 
         // Ab Zeile 1 bis Ende
@@ -537,7 +536,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals(2, $sliced->countRows());
     }
 
-    public function testSliceRowsPreservesHeader(): void {
+    public function test_slice_rows_preserves_header(): void {
         $doc = $this->createTestDocument();
 
         $sliced = $doc->sliceRows(0, 1);
@@ -550,7 +549,7 @@ class DocumentTest extends BaseTestCase {
     // sortByColumn Tests
     // =========================================================================
 
-    public function testSortByColumnAlphabeticalAsc(): void {
+    public function test_sort_by_column_alphabetical_asc(): void {
         $doc = $this->createTestDocument();
 
         $sorted = $doc->sortByColumn('Name', ascending: true);
@@ -560,7 +559,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Charlie', $sorted->getRow(2)?->getField(0)?->getValue());
     }
 
-    public function testSortByColumnAlphabeticalDesc(): void {
+    public function test_sort_by_column_alphabetical_desc(): void {
         $doc = $this->createTestDocument();
 
         $sorted = $doc->sortByColumn('Name', ascending: false);
@@ -570,7 +569,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Alice', $sorted->getRow(2)?->getField(0)?->getValue());
     }
 
-    public function testSortByColumnNumeric(): void {
+    public function test_sort_by_column_numeric(): void {
         $doc = $this->createNumericDocument();
 
         $sorted = $doc->sortByColumn('Preis', ascending: true, numeric: true);
@@ -581,7 +580,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Gadget', $sorted->getRow(2)?->getField(0)?->getValue());
     }
 
-    public function testSortByColumnNumericDesc(): void {
+    public function test_sort_by_column_numeric_desc(): void {
         $doc = $this->createNumericDocument();
 
         $sorted = $doc->sortByColumn('Preis', ascending: false, numeric: true);
@@ -590,7 +589,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('Gizmo', $sorted->getRow(2)?->getField(0)?->getValue());
     }
 
-    public function testSortByColumnPreservesHeader(): void {
+    public function test_sort_by_column_preserves_header(): void {
         $doc = $this->createTestDocument();
 
         $sorted = $doc->sortByColumn('Name');
@@ -599,7 +598,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals(['Name', 'Email', 'Age'], $sorted->getColumnNames());
     }
 
-    public function testSortByColumnThrowsOnNonExistent(): void {
+    public function test_sort_by_column_throws_on_non_existent(): void {
         $doc = $this->createTestDocument();
 
         $this->expectException(RuntimeException::class);
@@ -611,7 +610,7 @@ class DocumentTest extends BaseTestCase {
     // uniqueColumn Tests
     // =========================================================================
 
-    public function testUniqueColumnByName(): void {
+    public function test_unique_column_by_name(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Kategorie;Betrag', ';', '"');
         $builder->setHeader($header);
@@ -627,7 +626,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals(['Miete', 'Strom', 'Wasser'], $unique);
     }
 
-    public function testUniqueColumnByIndex(): void {
+    public function test_unique_column_by_index(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $builder->addRow(DataLine::fromString('A;1', ';', '"'));
         $builder->addRow(DataLine::fromString('B;2', ';', '"'));
@@ -639,7 +638,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals(['A', 'B'], $unique);
     }
 
-    public function testUniqueColumnThrowsOnNonExistent(): void {
+    public function test_unique_column_throws_on_non_existent(): void {
         $doc = $this->createTestDocument();
 
         $this->expectException(RuntimeException::class);
@@ -650,35 +649,35 @@ class DocumentTest extends BaseTestCase {
     // minColumn / maxColumn Tests
     // =========================================================================
 
-    public function testMinColumnByName(): void {
+    public function test_min_column_by_name(): void {
         $doc = $this->createNumericDocument();
 
         $min = $doc->minColumnByName('Preis', 2);
         $this->assertEquals('5.00', $min);
     }
 
-    public function testMaxColumnByName(): void {
+    public function test_max_column_by_name(): void {
         $doc = $this->createNumericDocument();
 
         $max = $doc->maxColumnByName('Preis', 2);
         $this->assertEquals('25.99', $max);
     }
 
-    public function testMinColumnByIndex(): void {
+    public function test_min_column_by_index(): void {
         $doc = $this->createNumericDocument();
 
         $min = $doc->minColumnByIndex(1, 0);  // Menge
         $this->assertEquals('2', $min);
     }
 
-    public function testMaxColumnByIndex(): void {
+    public function test_max_column_by_index(): void {
         $doc = $this->createNumericDocument();
 
         $max = $doc->maxColumnByIndex(1, 0);  // Menge
         $this->assertEquals('7', $max);
     }
 
-    public function testMinColumnWithNegativeValues(): void {
+    public function test_min_column_with_negative_values(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Posten;Betrag', ';', '"');
         $builder->setHeader($header);
@@ -694,7 +693,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('500.00', $max);
     }
 
-    public function testMinMaxColumnEmptyDocument(): void {
+    public function test_min_max_column_empty_document(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Name;Wert', ';', '"');
         $builder->setHeader($header);
@@ -708,7 +707,7 @@ class DocumentTest extends BaseTestCase {
     // avgColumn Tests
     // =========================================================================
 
-    public function testAvgColumnByName(): void {
+    public function test_avg_column_by_name(): void {
         $doc = $this->createNumericDocument();
 
         // (10.50 + 25.99 + 5.00) / 3 = 13.83
@@ -716,7 +715,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('13.83', $avg);
     }
 
-    public function testAvgColumnByIndex(): void {
+    public function test_avg_column_by_index(): void {
         $doc = $this->createNumericDocument();
 
         // Menge: (3 + 7 + 2) / 3 = 4
@@ -724,7 +723,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('4', $avg);
     }
 
-    public function testAvgColumnEmptyDocument(): void {
+    public function test_avg_column_empty_document(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Name;Wert', ';', '"');
         $builder->setHeader($header);
@@ -734,7 +733,7 @@ class DocumentTest extends BaseTestCase {
         $this->assertEquals('0.00', $avg);
     }
 
-    public function testAvgColumnWithGermanFormat(): void {
+    public function test_avg_column_with_german_format(): void {
         $builder = new CSVDocumentBuilder(';', '"');
         $header = HeaderLine::fromString('Posten;Betrag', ';', '"');
         $builder->setHeader($header);

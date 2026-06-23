@@ -20,7 +20,7 @@ use Traversable;
 /**
  * Repräsentiert ein XLSX-Dokument mit mehreren Arbeitsblättern.
  * Analog zu CommonToolkit\Entities\CSV\Document.
- * 
+ *
  * @implements IteratorAggregate<int, Sheet>
  */
 class Document implements Countable, IteratorAggregate {
@@ -48,12 +48,12 @@ class Document implements Countable, IteratorAggregate {
         ?\DateTimeInterface $created = null,
         ?\DateTimeInterface $modified = null
     ) {
-        $this->sheets      = array_values($sheets);
-        $this->creator     = $creator;
-        $this->title       = $title;
+        $this->sheets = array_values($sheets);
+        $this->creator = $creator;
+        $this->title = $title;
         $this->description = $description;
-        $this->created     = $created;
-        $this->modified    = $modified;
+        $this->created = $created;
+        $this->modified = $modified;
     }
 
     /**
@@ -104,7 +104,7 @@ class Document implements Countable, IteratorAggregate {
      * @return array<string>
      */
     public function getSheetNames(): array {
-        return array_map(fn(Sheet $sheet) => $sheet->getName(), $this->sheets);
+        return array_map(fn (Sheet $sheet) => $sheet->getName(), $this->sheets);
     }
 
     /**

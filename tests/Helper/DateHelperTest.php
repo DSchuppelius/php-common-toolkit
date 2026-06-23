@@ -10,26 +10,23 @@
 
 declare(strict_types=1);
 
-use CommonToolkit\Enums\DateTimeFormat;
-use CommonToolkit\Enums\Month;
-use CommonToolkit\Enums\Weekday;
-use CommonToolkit\Enums\CountryCode;
+use CommonToolkit\Enums\{CountryCode, DateTimeFormat, Month, Weekday};
 use CommonToolkit\Helper\Data\DateHelper;
 use Tests\Contracts\BaseTestCase;
 
 class DateHelperTest extends BaseTestCase {
-    public function testGetLastDay(): void {
+    public function test_get_last_day(): void {
         $this->assertEquals(31, DateHelper::getLastDay(2024, 1));
         $this->assertEquals(29, DateHelper::getLastDay(2024, 2)); // Schaltjahr
         $this->assertEquals(30, DateHelper::getLastDay(2024, 6));
     }
 
-    public function testIsLeapYear(): void {
+    public function test_is_leap_year(): void {
         $this->assertTrue(DateHelper::isLeapYear(2024));
         $this->assertFalse(DateHelper::isLeapYear(2023));
     }
 
-    public function testIsDate(): void {
+    public function test_is_date(): void {
         $format = null;
         $this->assertTrue(DateHelper::isDate("2024-01-01", $format));
         $this->assertEquals(DateTimeFormat::ISO, $format);
@@ -49,43 +46,43 @@ class DateHelperTest extends BaseTestCase {
         $this->assertNull($format);
     }
 
-    public function testIsValidDate() {
+    public function test_is_valid_date() {
         $this->assertTrue(DateHelper::isValidDate('2024-02-29')); // Schaltjahr
         $this->assertFalse(DateHelper::isValidDate('2024-02-31')); // Ungültiger Tag
     }
 
-    public function testFixDate(): void {
+    public function test_fix_date(): void {
         $this->assertEquals("01.01.2024", DateHelper::fixDate("1.1.2024"));
     }
 
-    public function testParseFlexible(): void {
+    public function test_parse_flexible(): void {
         $this->assertInstanceOf(DateTimeImmutable::class, DateHelper::parseFlexible("01.01.2024"));
         $this->assertNull(DateHelper::parseFlexible("invalid"));
     }
 
-    public function testAddSubtractDays(): void {
+    public function test_add_subtract_days(): void {
         $date = new DateTimeImmutable('2024-01-01');
         $this->assertEquals('2024-01-06', DateHelper::addDays($date, 5)->format('Y-m-d'));
         $this->assertEquals('2023-12-27', DateHelper::subtractDays($date, 5)->format('Y-m-d'));
     }
 
-    public function testIsWeekend(): void {
+    public function test_is_weekend(): void {
         $this->assertTrue(DateHelper::isWeekend(new DateTimeImmutable('2024-03-30'))); // Samstag
         $this->assertFalse(DateHelper::isWeekend(new DateTimeImmutable('2024-03-27'))); // Mittwoch
     }
 
-    public function testGetDayOfWeek(): void {
+    public function test_get_day_of_week(): void {
         $this->assertEquals("Monday", DateHelper::getDayOfWeek(new DateTimeImmutable('2024-04-01')));
     }
 
-    public function testDiffInDays(): void {
+    public function test_diff_in_days(): void {
         $start = new DateTimeImmutable('2024-04-01');
         $end = new DateTimeImmutable('2024-04-06');
         $this->assertEquals(5, DateHelper::diffInDays($start, $end));
     }
 
-    public function testIsFuturePastToday(): void {
-        $today = new DateTimeImmutable();
+    public function test_is_future_past_today(): void {
+        $today = new DateTimeImmutable;
         $past = $today->sub(new DateInterval('P1D'));
         $future = $today->add(new DateInterval('P1D'));
 
@@ -94,7 +91,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertTrue(DateHelper::isToday($today));
     }
 
-    public function testGermanToIso(): void {
+    public function test_german_to_iso(): void {
         $this->assertEquals("2024-01-01", DateHelper::formatDate("01.01.2024", DateTimeFormat::ISO));
         $this->assertEquals("2024-01-01", DateHelper::formatDate("01.01.2024 01:02", DateTimeFormat::ISO));
         $this->assertEquals("2024-01-01", DateHelper::formatDate("01.01.2024 01:02", DateTimeFormat::ISO, DateTimeFormat::DE, true));
@@ -103,7 +100,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertFalse(DateHelper::germanToIso("12/13/2024"));
     }
 
-    public function testIsoToGerman(): void {
+    public function test_iso_to_german(): void {
         $this->assertEquals("01.01.2024", DateHelper::formatDate("2024-01-01", DateTimeFormat::DE));
         $this->assertEquals("01.01.2024", DateHelper::formatDate("2024-01-01 01:02", DateTimeFormat::DE));
         $this->assertEquals("01.01.2024 01:02", DateHelper::formatDate("2024-01-01T01:02:03", DateTimeFormat::DE, DateTimeFormat::DE, true));
@@ -113,11 +110,11 @@ class DateHelperTest extends BaseTestCase {
         $this->assertFalse(DateHelper::isoToGerman("01.02.2024 01:02", true));
     }
 
-    public function testAddToDate(): void {
+    public function test_add_to_date(): void {
         $this->assertEquals("2024-02-01", DateHelper::addToDate("2024-01-01", 0, 1, 0));
     }
 
-    public function testDiffDetailed(): void {
+    public function test_diff_detailed(): void {
         $start = new DateTimeImmutable('2024-01-01');
         $end = new DateTimeImmutable('2025-03-01');
         $diff = DateHelper::diffDetailed($start, $end);
@@ -129,27 +126,27 @@ class DateHelperTest extends BaseTestCase {
         $this->assertEquals(60, $diff['weeks']);
     }
 
-    public function testIsBetween(): void {
+    public function test_is_between(): void {
         $start = new DateTimeImmutable('2024-01-01');
         $end = new DateTimeImmutable('2024-12-31');
         $this->assertTrue(DateHelper::isBetween(new DateTimeImmutable('2024-06-15'), $start, $end));
         $this->assertFalse(DateHelper::isBetween(new DateTimeImmutable('2023-12-31'), $start, $end));
     }
 
-    public function testGetMonthAndWeekdayEnums() {
+    public function test_get_month_and_weekday_enums() {
         $date = new DateTime('2024-04-16');
         $this->assertEquals(Month::APRIL, DateHelper::getMonth($date));
         $this->assertEquals(Weekday::TUESDAY, DateHelper::getWeekday($date));
     }
 
-    public function testGetLocalizedMonthName() {
+    public function test_get_localized_month_name() {
         $date = new DateTime('2024-04-16');
         $this->assertEquals('April', DateHelper::getLocalizedMonthName($date, 'de'));
     }
 
     // === Neue Tests für verschobene DateTime-Funktionen ===
 
-    public function testParseDateTime(): void {
+    public function test_parse_date_time(): void {
         // ISO Format
         $result = DateHelper::parseDateTime('2024-12-22');
         $this->assertInstanceOf(\DateTimeImmutable::class, $result);
@@ -173,19 +170,19 @@ class DateHelperTest extends BaseTestCase {
         $this->assertNull($result);
     }
 
-    public function testParseDateTimeWithCountryCode(): void {
+    public function test_parse_date_time_with_country_code(): void {
         // Deutschland: dd/mm/yyyy
         $result = DateHelper::parseDateTime('22/12/2024', CountryCode::Germany);
         $this->assertInstanceOf(\DateTimeImmutable::class, $result);
         $this->assertEquals('2024-12-22', $result->format('Y-m-d'));
 
-        // USA: mm/dd/yyyy  
+        // USA: mm/dd/yyyy
         $result = DateHelper::parseDateTime('12/22/2024', CountryCode::UnitedStatesOfAmerica);
         $this->assertInstanceOf(\DateTimeImmutable::class, $result);
         $this->assertEquals('2024-12-22', $result->format('Y-m-d'));
     }
 
-    public function testDetectDateTimeFormat(): void {
+    public function test_detect_date_time_format(): void {
         // Standard Formate
         $this->assertEquals('Y-m-d', DateHelper::detectDateTimeFormat('2024-12-22'));
         $this->assertEquals('Y-m-d H:i:s', DateHelper::detectDateTimeFormat('2024-12-22 15:30:45'));
@@ -199,7 +196,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertNull(DateHelper::detectDateTimeFormat('invalid-date'));
     }
 
-    public function testDetectDateTimeFormatWithCountryCode(): void {
+    public function test_detect_date_time_format_with_country_code(): void {
         // Deutschland: d/m/Y interpretiert als europäisch
         $format = DateHelper::detectDateTimeFormat('22/12/2024', CountryCode::Germany);
         $this->assertEquals('d/m/Y', $format);
@@ -209,7 +206,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertEquals('m/d/Y', $format);
     }
 
-    public function testIsDateTimeString(): void {
+    public function test_is_date_time_string(): void {
         // Gültige DateTime-Strings
         $this->assertTrue(DateHelper::isDateTime('2024-12-22'));
         $this->assertTrue(DateHelper::isDateTime('22.12.2024'));
@@ -225,7 +222,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertFalse(DateHelper::isDateTime(''));
     }
 
-    public function testIsDateTimeWithCountryCode(): void {
+    public function test_is_date_time_with_country_code(): void {
         // Deutschland
         $this->assertTrue(DateHelper::isDateTime('22/12/2024', null, CountryCode::Germany));
 
@@ -233,7 +230,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertTrue(DateHelper::isDateTime('12/22/2024', null, CountryCode::UnitedStatesOfAmerica));
     }
 
-    public function testExpandYear(): void {
+    public function test_expand_year(): void {
         $currentYear = (int) date('Y');
         $currentTwoDigit = $currentYear % 100;
         $pivot = ($currentTwoDigit + 50) % 100;
@@ -253,7 +250,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertEquals(-5, DateHelper::expandYear(-5));
     }
 
-    public function testExpandShortYearGermanFormat(): void {
+    public function test_expand_short_year_german_format(): void {
         // Deutsches Format mit zweistelligem Jahr
         $result = DateHelper::expandShortYear('1.1.26');
         $this->assertMatchesRegularExpression('/^\d{2}\.\d{2}\.\d{4}$/', $result);
@@ -267,18 +264,18 @@ class DateHelperTest extends BaseTestCase {
         $this->assertEquals('20.12.2024', $result);
     }
 
-    public function testExpandShortYearIsoFormat(): void {
+    public function test_expand_short_year_iso_format(): void {
         // ISO Format bleibt unverändert
         $this->assertEquals('2024-12-20', DateHelper::expandShortYear('2024-12-20'));
     }
 
-    public function testExpandShortYearSlashFormat(): void {
+    public function test_expand_short_year_slash_format(): void {
         // Slash-Format
         $this->assertEquals('01/01/2026', DateHelper::expandShortYear('01/01/26'));
         $this->assertEquals('15/03/2024', DateHelper::expandShortYear('15/03/2024'));
     }
 
-    public function testExpandShortYearCompactFormat(): void {
+    public function test_expand_short_year_compact_format(): void {
         // Kompaktes Format ohne Trennzeichen
         $this->assertEquals('20241220', DateHelper::expandShortYear('20241220'));
 
@@ -287,12 +284,12 @@ class DateHelperTest extends BaseTestCase {
         $this->assertEquals('26012015', $result);
     }
 
-    public function testExpandShortYearInvalidInput(): void {
+    public function test_expand_short_year_invalid_input(): void {
         $this->expectException(InvalidArgumentException::class);
         DateHelper::expandShortYear('invalid');
     }
 
-    public function testExpandShortYearNormalizesLeadingZeros(): void {
+    public function test_expand_short_year_normalizes_leading_zeros(): void {
         // Einstellige Tage/Monate werden auf zweistellig normalisiert
         $this->assertEquals('01.01.2026', DateHelper::expandShortYear('1.1.26'));
         $this->assertEquals('05.03.2024', DateHelper::expandShortYear('5.3.24'));

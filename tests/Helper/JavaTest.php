@@ -13,18 +13,18 @@ declare(strict_types=1);
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Entities\Executables\JavaExecutable;
 use CommonToolkit\Helper\Java;
-use Tests\Contracts\BaseTestCase;
 use ConfigToolkit\ConfigLoader;
+use Tests\Contracts\BaseTestCase;
 
 class JavaTest extends BaseTestCase {
-    public function testExecuteThrowsIfPathIsEmpty(): void {
+    public function test_execute_throws_if_path_is_empty(): void {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Für JAVA-Ausführung muss der Pfad zur JAR-Datei gesetzt sein.");
 
         Java::execute('');
     }
 
-    public function testExecuteThrowsIfJarDoesNotExist(): void {
+    public function test_execute_throws_if_jar_does_not_exist(): void {
         $fakePath = '/nonexistent/path/to/fake.jar';
 
         $this->expectException(Exception::class);
@@ -33,14 +33,14 @@ class JavaTest extends BaseTestCase {
         Java::execute($fakePath);
     }
 
-    public function testExecuteClassThrowsIfValuesAreMissing(): void {
+    public function test_execute_class_throws_if_values_are_missing(): void {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Für CLASS-Ausführung müssen classpath, mainClass und runClass gesetzt sein.");
 
         Java::executeClass('', '', '');
     }
 
-    public function testJavaExecutableThrowsIfJavaNotAvailable(): void {
+    public function test_java_executable_throws_if_java_not_available(): void {
         // Nur ausführen, wenn Java definitiv nicht installiert ist
         if (Java::exists()) {
             $this->markTestSkipped('Java ist installiert – dieser Test ist nur für den Offline-Fall.');
@@ -51,13 +51,13 @@ class JavaTest extends BaseTestCase {
 
         $executable = new JavaExecutable([
             'path' => '/path/to/some.jar',
-            'arguments' => ['arg1']
+            'arguments' => ['arg1'],
         ]);
 
         $executable->execute();
     }
 
-    public function testJavaExecutableCommandStringBuild(): void {
+    public function test_java_executable_command_string_build(): void {
         // Skippen, wenn Java nicht vorhanden oder Datei nicht existiert
         if (!Java::exists()) {
             $this->markTestSkipped("Java ist auf diesem System nicht installiert.");
@@ -68,7 +68,7 @@ class JavaTest extends BaseTestCase {
 
         $executable = new JavaExecutable([
             'path' => $dummyJar,
-            'arguments' => ['--help']
+            'arguments' => ['--help'],
         ]);
 
         $output = $executable->execute();
@@ -76,7 +76,7 @@ class JavaTest extends BaseTestCase {
         $this->assertStringContainsStringIgnoringCase('world', $output); // je nach Dummy-JAR
     }
 
-    public function testJavaExecutableReplacesPlaceholdersCorrectly(): void {
+    public function test_java_executable_replaces_placeholders_correctly(): void {
         if (!Java::exists()) {
             $this->markTestSkipped('Java ist auf diesem System nicht installiert.');
         }

@@ -21,7 +21,6 @@ use InvalidArgumentException;
  * Unterstützt IPv4 und IPv6 Adressen sowie CIDR-Notation.
  */
 class IPHelper extends HelperAbstract {
-
     /**
      * Prüft, ob der Wert eine gültige IPv4-Adresse ist.
      *
@@ -137,7 +136,7 @@ class IPHelper extends HelperAbstract {
         // IPv6: fe80::/10
         $expanded = self::expandIPv6($value);
         $firstWord = hexdec(substr($expanded, 0, 4));
-        return ($firstWord & 0xffc0) === 0xfe80;
+        return ($firstWord & 0xFFC0) === 0xFE80;
     }
 
     /**
@@ -280,7 +279,7 @@ class IPHelper extends HelperAbstract {
 
         // Restliche Bits vergleichen
         if ($remainingBits > 0 && $fullBytes < 16) {
-            $mask = 0xff << (8 - $remainingBits);
+            $mask = 0xFF << (8 - $remainingBits);
             if ((ord($ipBin[$fullBytes]) & $mask) !== (ord($rangeBin[$fullBytes]) & $mask)) {
                 return false;
             }
@@ -431,7 +430,7 @@ class IPHelper extends HelperAbstract {
         }
 
         if ($remainingBits > 0 && $fullBytes < 16) {
-            $mask = 0xff << (8 - $remainingBits);
+            $mask = 0xFF << (8 - $remainingBits);
             $result[$fullBytes] = chr(ord($packed[$fullBytes]) & $mask);
         }
 
@@ -461,7 +460,7 @@ class IPHelper extends HelperAbstract {
         $mask = $prefix === 0 ? 0 : (-1 << (32 - $prefix));
         $hostMask = ~$mask;
 
-        return long2ip(($long & $mask) | ($hostMask & 0xffffffff));
+        return long2ip(($long & $mask) | ($hostMask & 0xFFFFFFFF));
     }
 
     /**
@@ -504,15 +503,15 @@ class IPHelper extends HelperAbstract {
 
         $network = self::getNetworkAddressIPv4($ip, $prefix);
         $broadcast = self::getBroadcastAddress($ip, $prefix);
-        $count = bcpow('2', (string)(32 - $prefix));
+        $count = bcpow('2', (string) (32 - $prefix));
 
         return [
-            'start'     => $network,
-            'end'       => $broadcast,
-            'network'   => $network,
+            'start' => $network,
+            'end' => $broadcast,
+            'network' => $network,
             'broadcast' => $broadcast,
-            'prefix'    => $prefix,
-            'count'     => $count,
+            'prefix' => $prefix,
+            'count' => $count,
         ];
     }
 
@@ -550,14 +549,14 @@ class IPHelper extends HelperAbstract {
         }
 
         $end = inet_ntop($result);
-        $count = bcpow('2', (string)(128 - $prefix));
+        $count = bcpow('2', (string) (128 - $prefix));
 
         return [
-            'start'   => $network,
-            'end'     => $end,
+            'start' => $network,
+            'end' => $end,
             'network' => $network,
-            'prefix'  => $prefix,
-            'count'   => $count,
+            'prefix' => $prefix,
+            'count' => $count,
         ];
     }
 
@@ -581,7 +580,7 @@ class IPHelper extends HelperAbstract {
         }
 
         // Prüfen ob gültige Maske (nur führende 1en, dann 0en)
-        $inverted = ~$long & 0xffffffff;
+        $inverted = ~$long & 0xFFFFFFFF;
         if (($inverted & ($inverted + 1)) !== 0) {
             self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige Subnetzmaske (nicht kontiguierlich): $mask");
         }
@@ -608,7 +607,7 @@ class IPHelper extends HelperAbstract {
             return '0.0.0.0';
         }
 
-        $mask = (-1 << (32 - $prefix)) & 0xffffffff;
+        $mask = (-1 << (32 - $prefix)) & 0xFFFFFFFF;
         return long2ip($mask);
     }
 

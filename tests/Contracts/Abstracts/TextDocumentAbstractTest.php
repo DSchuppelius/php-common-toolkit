@@ -19,35 +19,34 @@ use Tests\Contracts\BaseTestCase;
  * Tests für TextDocumentAbstract via CSV\Document.
  */
 class TextDocumentAbstractTest extends BaseTestCase {
-
-    public function testDefaultEncoding(): void {
-        $doc = new Document();
+    public function test_default_encoding(): void {
+        $doc = new Document;
         $this->assertEquals('UTF-8', $doc->getEncoding());
     }
 
-    public function testSetEncoding(): void {
-        $doc = new Document();
+    public function test_set_encoding(): void {
+        $doc = new Document;
         $result = $doc->setEncoding('ISO-8859-1');
 
         $this->assertSame($doc, $result, 'setEncoding sollte Fluent Interface unterstützen');
         $this->assertEquals('ISO-8859-1', $doc->getEncoding());
     }
 
-    public function testDefaultBomIsFalse(): void {
-        $doc = new Document();
+    public function test_default_bom_is_false(): void {
+        $doc = new Document;
         $this->assertFalse($doc->hasBom());
     }
 
-    public function testWithBom(): void {
-        $doc = new Document();
+    public function test_with_bom(): void {
+        $doc = new Document;
         $result = $doc->withBom();
 
         $this->assertSame($doc, $result, 'withBom sollte Fluent Interface unterstützen');
         $this->assertTrue($doc->hasBom());
     }
 
-    public function testWithoutBom(): void {
-        $doc = new Document();
+    public function test_without_bom(): void {
+        $doc = new Document;
         $doc->withBom();
         $result = $doc->withoutBom();
 
@@ -55,8 +54,8 @@ class TextDocumentAbstractTest extends BaseTestCase {
         $this->assertFalse($doc->hasBom());
     }
 
-    public function testSetBom(): void {
-        $doc = new Document();
+    public function test_set_bom(): void {
+        $doc = new Document;
 
         $doc->setBom(true);
         $this->assertTrue($doc->hasBom());
@@ -65,21 +64,21 @@ class TextDocumentAbstractTest extends BaseTestCase {
         $this->assertFalse($doc->hasBom());
     }
 
-    public function testDefaultLineEnding(): void {
-        $doc = new Document();
+    public function test_default_line_ending(): void {
+        $doc = new Document;
         $this->assertEquals("\n", $doc->getLineEnding());
     }
 
-    public function testWithWindowsLineEnding(): void {
-        $doc = new Document();
+    public function test_with_windows_line_ending(): void {
+        $doc = new Document;
         $result = $doc->withWindowsLineEnding();
 
         $this->assertSame($doc, $result, 'withWindowsLineEnding sollte Fluent Interface unterstützen');
         $this->assertEquals("\r\n", $doc->getLineEnding());
     }
 
-    public function testWithUnixLineEnding(): void {
-        $doc = new Document();
+    public function test_with_unix_line_ending(): void {
+        $doc = new Document;
         $doc->withWindowsLineEnding();
         $result = $doc->withUnixLineEnding();
 
@@ -87,42 +86,42 @@ class TextDocumentAbstractTest extends BaseTestCase {
         $this->assertEquals("\n", $doc->getLineEnding());
     }
 
-    public function testSetLineEnding(): void {
-        $doc = new Document();
+    public function test_set_line_ending(): void {
+        $doc = new Document;
         $result = $doc->setLineEnding("\r");
 
         $this->assertSame($doc, $result, 'setLineEnding sollte Fluent Interface unterstützen');
         $this->assertEquals("\r", $doc->getLineEnding());
     }
 
-    public function testGetBomBytesWhenDisabled(): void {
-        $doc = new Document();
+    public function test_get_bom_bytes_when_disabled(): void {
+        $doc = new Document;
         $this->assertEquals('', $doc->getBomBytes());
     }
 
-    public function testGetBomBytesForUtf8(): void {
-        $doc = new Document();
+    public function test_get_bom_bytes_for_utf8(): void {
+        $doc = new Document;
         $doc->setEncoding('UTF-8')->withBom();
 
         $this->assertEquals("\xEF\xBB\xBF", $doc->getBomBytes());
     }
 
-    public function testGetBomBytesForUtf16LE(): void {
-        $doc = new Document();
+    public function test_get_bom_bytes_for_utf16_le(): void {
+        $doc = new Document;
         $doc->setEncoding('UTF-16LE')->withBom();
 
         $this->assertEquals("\xFF\xFE", $doc->getBomBytes());
     }
 
-    public function testGetBomBytesForUtf16BE(): void {
-        $doc = new Document();
+    public function test_get_bom_bytes_for_utf16_be(): void {
+        $doc = new Document;
         $doc->setEncoding('UTF-16BE')->withBom();
 
         $this->assertEquals("\xFE\xFF", $doc->getBomBytes());
     }
 
-    public function testSupportsBom(): void {
-        $doc = new Document();
+    public function test_supports_bom(): void {
+        $doc = new Document;
 
         $doc->setEncoding('UTF-8');
         $this->assertTrue($doc->supportsBom());
@@ -137,8 +136,8 @@ class TextDocumentAbstractTest extends BaseTestCase {
         $this->assertFalse($doc->supportsBom());
     }
 
-    public function testFluentChaining(): void {
-        $doc = new Document();
+    public function test_fluent_chaining(): void {
+        $doc = new Document;
 
         $result = $doc
             ->setEncoding('UTF-8')

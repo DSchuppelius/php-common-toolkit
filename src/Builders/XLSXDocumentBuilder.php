@@ -13,10 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Builders;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Entities\XLSX\Cell;
-use CommonToolkit\Entities\XLSX\Document;
-use CommonToolkit\Entities\XLSX\Row;
-use CommonToolkit\Entities\XLSX\Sheet;
+use CommonToolkit\Entities\XLSX\{Cell, Document, Row, Sheet};
 use RuntimeException;
 
 /**
@@ -45,7 +42,7 @@ class XLSXDocumentBuilder extends HelperAbstract {
      * Erstellt einen neuen Builder aus einem bestehenden Dokument.
      */
     public static function fromDocument(Document $document): self {
-        $builder = new self();
+        $builder = new self;
         $builder->sheets = $document->getSheets();
         $builder->creator = $document->getCreator();
         $builder->title = $document->getTitle();
@@ -81,7 +78,7 @@ class XLSXDocumentBuilder extends HelperAbstract {
      */
     public function setHeader(array $headers): self {
         $cells = array_map(
-            fn($h) => $h instanceof Cell ? $h : new Cell($h, 's'),
+            fn ($h) => $h instanceof Cell ? $h : new Cell($h, 's'),
             $headers
         );
         $this->currentHeader = new Row($cells, 1);
@@ -179,8 +176,6 @@ class XLSXDocumentBuilder extends HelperAbstract {
 
     /**
      * Baut das XLSX-Dokument.
-     *
-     * @return Document
      */
     public function build(): Document {
         // Aktuelles Sheet finalisieren
@@ -195,8 +190,8 @@ class XLSXDocumentBuilder extends HelperAbstract {
             $this->creator,
             $this->title,
             $this->description,
-            new \DateTimeImmutable(),
-            new \DateTimeImmutable()
+            new \DateTimeImmutable,
+            new \DateTimeImmutable
         );
     }
 

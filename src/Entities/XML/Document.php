@@ -12,8 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Entities\XML;
 
-use CommonToolkit\Contracts\Interfaces\XML\XmlDocumentInterface;
-use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
+use CommonToolkit\Contracts\Interfaces\XML\{XmlDocumentInterface, XmlElementInterface};
 use CommonToolkit\Generators\XML\XmlGenerator;
 use CommonToolkit\Helper\Data\XmlHelper;
 use CommonToolkit\Helper\FileSystem\File;
@@ -24,11 +23,9 @@ use InvalidArgumentException;
 
 /**
  * Repräsentiert ein XML-Dokument.
- * 
+ *
  * Immutable Container für XML-Dokumente mit XSD-Validierung,
  * Pretty-Print und Datei-Export.
- * 
- * @package CommonToolkit\Entities\XML
  */
 class Document implements XmlDocumentInterface {
     use ErrorLog;
@@ -116,7 +113,7 @@ class Document implements XmlDocumentInterface {
 
     /**
      * Generiert XML mit Schema-Location Attribut.
-     * 
+     *
      * @param string $schemaLocation z.B. "urn:iso:std:iso:20022:tech:xsd:pain.001.003.03 pain.001.003.03.xsd"
      */
     public function toStringWithSchemaLocation(string $schemaLocation): string {
@@ -125,7 +122,7 @@ class Document implements XmlDocumentInterface {
 
     /**
      * Generiert XML mit zusätzlichen Namespace-Deklarationen.
-     * 
+     *
      * @param array<string, string> $namespaces Mapping von Prefix zu URI
      */
     public function toStringWithNamespaces(array $namespaces): string {
@@ -142,7 +139,7 @@ class Document implements XmlDocumentInterface {
 
     /**
      * Validiert das Dokument gegen ein XSD-Schema und gibt typisiertes Ergebnis zurück.
-     * 
+     *
      * @param string $xsdFile Pfad zur XSD-Schema-Datei
      * @return XsdValidationResult Typisiertes Validierungsergebnis
      */
@@ -184,11 +181,11 @@ class Document implements XmlDocumentInterface {
 
     /**
      * Erstellt ein Dokument aus einem XML-String.
-     * 
+     *
      * @throws InvalidArgumentException Bei ungültigem XML
      */
     public static function fromString(string $xml): self {
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
 
         libxml_use_internal_errors(true);
         $result = $doc->loadXML($xml);
@@ -197,7 +194,7 @@ class Document implements XmlDocumentInterface {
 
         if (!$result || !empty($errors)) {
             $errorMessages = array_map(
-                fn($e) => trim($e->message),
+                fn ($e) => trim($e->message),
                 $errors
             );
             self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiges XML: ' . implode(', ', $errorMessages));
@@ -218,7 +215,7 @@ class Document implements XmlDocumentInterface {
 
     /**
      * Erstellt ein Dokument aus einer Datei.
-     * 
+     *
      * @throws InvalidArgumentException Bei ungültigem XML
      */
     public static function fromFile(string $filePath): self {

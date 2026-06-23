@@ -13,12 +13,12 @@ declare(strict_types=1);
 namespace CommonToolkit\Enums;
 
 enum ElectricResistanceUnit: string {
-    case MICROOHM    = 'µΩ';
-    case MILLIOHM    = 'mΩ';
-    case OHM         = 'Ω';
-    case KILOOHM     = 'kΩ';
-    case MEGAOHM     = 'MΩ';
-    case GIGAOHM     = 'GΩ';
+    case MICROOHM = 'µΩ';
+    case MILLIOHM = 'mΩ';
+    case OHM = 'Ω';
+    case KILOOHM = 'kΩ';
+    case MEGAOHM = 'MΩ';
+    case GIGAOHM = 'GΩ';
 
     /**
      * Gibt den Umrechnungsfaktor in Ohm zurück.
@@ -27,10 +27,10 @@ enum ElectricResistanceUnit: string {
         return match ($this) {
             self::MICROOHM => 0.000001,
             self::MILLIOHM => 0.001,
-            self::OHM      => 1.0,
-            self::KILOOHM  => 1_000.0,
-            self::MEGAOHM  => 1_000_000.0,
-            self::GIGAOHM  => 1_000_000_000.0,
+            self::OHM => 1.0,
+            self::KILOOHM => 1_000.0,
+            self::MEGAOHM => 1_000_000.0,
+            self::GIGAOHM => 1_000_000_000.0,
         };
     }
 
@@ -41,10 +41,10 @@ enum ElectricResistanceUnit: string {
         return match ($this) {
             self::MICROOHM => 'Mikroohm',
             self::MILLIOHM => 'Milliohm',
-            self::OHM      => 'Ohm',
-            self::KILOOHM  => 'Kiloohm',
-            self::MEGAOHM  => 'Megaohm',
-            self::GIGAOHM  => 'Gigaohm',
+            self::OHM => 'Ohm',
+            self::KILOOHM => 'Kiloohm',
+            self::MEGAOHM => 'Megaohm',
+            self::GIGAOHM => 'Gigaohm',
         };
     }
 }

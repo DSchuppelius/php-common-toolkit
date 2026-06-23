@@ -16,7 +16,7 @@ use InvalidArgumentException;
 
 enum CreditDebit: string {
     case CREDIT = 'Credit'; // Gutschrift / Haben
-    case DEBIT  = 'Debit';  // Lastschrift / Soll
+    case DEBIT = 'Debit';  // Lastschrift / Soll
 
     public function toMt940Code(): string {
         return $this === self::CREDIT ? 'C' : 'D';

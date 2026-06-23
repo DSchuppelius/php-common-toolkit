@@ -12,14 +12,12 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Contracts\Abstracts;
 
-use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use ConfigToolkit\CommandBuilder;
-use ConfigToolkit\ConfigLoader;
+use ConfigToolkit\{CommandBuilder, ConfigLoader};
 use Exception;
 
 /**
  * Abstrakte Basisklasse für Helper mit Executable-Konfiguration.
- * 
+ *
  * Nutzt den CommandBuilder aus dem ConfigToolkit für elegantes Command-Building.
  * Jede abgeleitete Klasse definiert ihre CONFIG_FILE Konstante.
  */

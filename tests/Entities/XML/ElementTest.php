@@ -12,13 +12,11 @@ declare(strict_types=1);
 
 namespace Tests\Entities\XML;
 
-use CommonToolkit\Entities\XML\Attribute;
-use CommonToolkit\Entities\XML\Element;
+use CommonToolkit\Entities\XML\{Attribute, Element};
 use PHPUnit\Framework\TestCase;
 
 class ElementTest extends TestCase {
-
-    public function testSimpleElement(): void {
+    public function test_simple_element(): void {
         $element = Element::simple('name', 'value');
 
         $this->assertSame('name', $element->getName());
@@ -29,7 +27,7 @@ class ElementTest extends TestCase {
         $this->assertEmpty($element->getChildren());
     }
 
-    public function testElementWithNamespace(): void {
+    public function test_element_with_namespace(): void {
         $element = Element::simple('name', 'value', 'http://example.com', 'ex');
 
         $this->assertSame('http://example.com', $element->getNamespaceUri());
@@ -37,7 +35,7 @@ class ElementTest extends TestCase {
         $this->assertSame('ex:name', $element->getQualifiedName());
     }
 
-    public function testElementWithAttributes(): void {
+    public function test_element_with_attributes(): void {
         $attr = new Attribute('id', '123');
         $element = new Element('item', null, null, null, [$attr]);
 
@@ -47,7 +45,7 @@ class ElementTest extends TestCase {
         $this->assertFalse($element->hasAttribute('unknown'));
     }
 
-    public function testElementWithChildren(): void {
+    public function test_element_with_children(): void {
         $child1 = Element::simple('child1', 'value1');
         $child2 = Element::simple('child2', 'value2');
         $child3 = Element::simple('child1', 'value3');
@@ -69,7 +67,7 @@ class ElementTest extends TestCase {
         $this->assertCount(2, $children);
     }
 
-    public function testGetChildValue(): void {
+    public function test_get_child_value(): void {
         $child = Element::simple('name', 'John');
         $parent = Element::withChildElements('person', [$child]);
 
@@ -78,7 +76,7 @@ class ElementTest extends TestCase {
         $this->assertSame('default', $parent->getChildValue('unknown', 'default'));
     }
 
-    public function testWithMethods(): void {
+    public function test_with_methods(): void {
         $element = Element::simple('name', 'value');
 
         // withValue
@@ -104,7 +102,7 @@ class ElementTest extends TestCase {
         $this->assertSame('http://example.com', $withNs->getNamespaceUri());
     }
 
-    public function testToString(): void {
+    public function test_to_string(): void {
         $element = Element::simple('greeting', 'Hello');
         $xml = $element->toString();
 
@@ -113,7 +111,7 @@ class ElementTest extends TestCase {
         $this->assertStringContainsString('</greeting>', $xml);
     }
 
-    public function testToStringWithNamespace(): void {
+    public function test_to_string_with_namespace(): void {
         $element = Element::simple('greeting', 'Hello', 'http://example.com', 'ex');
         $xml = $element->toString();
 
@@ -121,8 +119,8 @@ class ElementTest extends TestCase {
         $this->assertStringContainsString('xmlns:ex="http://example.com"', $xml);
     }
 
-    public function testFromDomElement(): void {
-        $doc = new \DOMDocument();
+    public function test_from_dom_element(): void {
+        $doc = new \DOMDocument;
         $doc->loadXML('<root attr="value"><child>text</child></root>');
 
         $element = Element::fromDomElement($doc->documentElement);
@@ -137,7 +135,7 @@ class ElementTest extends TestCase {
         $this->assertSame('text', $child->getValue());
     }
 
-    public function testCountMethods(): void {
+    public function test_count_methods(): void {
         $children = [
             Element::simple('item', 'a'),
             Element::simple('item', 'b'),

@@ -19,7 +19,7 @@ use RuntimeException;
 /**
  * Konfiguration für Spaltenbreiten in CSV-Dokumenten.
  * Ermöglicht das Festlegen von maximalen/festen Zeichenbreiten für Spalten.
- * 
+ *
  * Features:
  * - Spaltenweise Breiten (nach Name oder Index)
  * - Standard-Breite für alle nicht explizit konfigurierten Spalten
@@ -54,7 +54,7 @@ class ColumnWidthConfig {
 
     /**
      * Setzt die Breite für eine spezifische Spalte.
-     * 
+     *
      * @param string|int $column Spaltenname oder Index
      * @param int $width Maximale Breite in Zeichen
      * @return $this
@@ -71,7 +71,7 @@ class ColumnWidthConfig {
 
     /**
      * Setzt Breiten für mehrere Spalten gleichzeitig.
-     * 
+     *
      * @param array<string|int, int> $widths Spalten-Breiten-Mapping
      * @return $this
      */
@@ -84,7 +84,7 @@ class ColumnWidthConfig {
 
     /**
      * Gibt die konfigurierte Breite für eine Spalte zurück.
-     * 
+     *
      * @param string|int $column Spaltenname oder Index
      * @return int|null Breite oder null wenn nicht konfiguriert
      */
@@ -94,7 +94,7 @@ class ColumnWidthConfig {
 
     /**
      * Setzt die Standardbreite für alle nicht explizit konfigurierten Spalten.
-     * 
+     *
      * @param int|null $width Standardbreite oder null zum Deaktivieren
      * @return $this
      */
@@ -109,8 +109,6 @@ class ColumnWidthConfig {
 
     /**
      * Gibt die Standardbreite zurück.
-     * 
-     * @return int|null
      */
     public function getDefaultWidth(): ?int {
         return $this->defaultWidth;
@@ -118,7 +116,7 @@ class ColumnWidthConfig {
 
     /**
      * Setzt die Abschneidungsstrategie.
-     * 
+     *
      * @param TruncationStrategy $strategy Abschneidungsstrategie
      * @return $this
      */
@@ -129,8 +127,6 @@ class ColumnWidthConfig {
 
     /**
      * Gibt die Abschneidungsstrategie zurück.
-     * 
-     * @return TruncationStrategy
      */
     public function getTruncationStrategy(): TruncationStrategy {
         return $this->truncationStrategy;
@@ -138,7 +134,7 @@ class ColumnWidthConfig {
 
     /**
      * Kürzt einen Wert basierend auf der konfigurierten Spaltenbreite.
-     * 
+     *
      * @param string $value Zu kürzender Wert
      * @param string|int $column Spaltenname oder Index
      * @return string Gekürzter (und ggf. gepadter) Wert
@@ -174,7 +170,7 @@ class ColumnWidthConfig {
 
     /**
      * Aktiviert/Deaktiviert Padding für feste Spaltenbreiten.
-     * 
+     *
      * @param bool $enable Padding aktivieren
      * @param string $char Padding-Zeichen (Standard: Leerzeichen)
      * @param int $type Padding-Richtung (STR_PAD_RIGHT, STR_PAD_LEFT, STR_PAD_BOTH)
@@ -189,8 +185,6 @@ class ColumnWidthConfig {
 
     /**
      * Gibt zurück, ob Padding aktiviert ist.
-     * 
-     * @return bool
      */
     public function isPaddingEnabled(): bool {
         return $this->enablePadding;
@@ -198,9 +192,8 @@ class ColumnWidthConfig {
 
     /**
      * Prüft, ob für die gegebene Spalte eine Breite konfiguriert ist.
-     * 
+     *
      * @param string|int $column Spaltenname oder Index
-     * @return bool
      */
     public function hasWidthConfig(string|int $column): bool {
         return isset($this->columnWidths[$column]) || $this->defaultWidth !== null;
@@ -208,7 +201,7 @@ class ColumnWidthConfig {
 
     /**
      * Gibt alle konfigurierten Spaltenbreiten zurück.
-     * 
+     *
      * @return array<string|int, int>
      */
     public function getAllColumnWidths(): array {
@@ -217,8 +210,6 @@ class ColumnWidthConfig {
 
     /**
      * Prüft ob überhaupt eine Breitenkonfiguration vorhanden ist.
-     * 
-     * @return bool
      */
     public function hasAnyConfig(): bool {
         return !empty($this->columnWidths) || $this->defaultWidth !== null;
@@ -226,8 +217,6 @@ class ColumnWidthConfig {
 
     /**
      * Erstellt eine Kopie der Konfiguration.
-     * 
-     * @return self
      */
     public function clone(): self {
         $clone = new self($this->defaultWidth, $this->truncationStrategy);

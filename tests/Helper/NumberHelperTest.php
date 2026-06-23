@@ -10,24 +10,22 @@
 
 declare(strict_types=1);
 
-use CommonToolkit\Enums\TemperatureUnit;
-use CommonToolkit\Enums\CountryCode;
-use CommonToolkit\Enums\CurrencyCode;
-use PHPUnit\Framework\TestCase;
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, TemperatureUnit};
 use CommonToolkit\Helper\Data\NumberHelper;
+use PHPUnit\Framework\TestCase;
 
 final class NumberHelperTest extends TestCase {
-    public function testFormatBytes(): void {
+    public function test_format_bytes(): void {
         $this->assertEquals('1 KB', NumberHelper::formatBytes(1024, 0));
         $this->assertEquals('1.5 MB', NumberHelper::formatBytes(1572864, 1));
     }
 
-    public function testParseByteString(): void {
+    public function test_parse_byte_string(): void {
         $this->assertEquals(1048576, NumberHelper::parseByteString("1 MB"));
         $this->assertEquals(5368709120, NumberHelper::parseByteString("5 GB"));
     }
 
-    public function testConvertMetric(): void {
+    public function test_convert_metric(): void {
         $this->assertEquals(0.01, NumberHelper::convertMetric(1, 'cm', 'm'));
         $this->assertEquals(1000, NumberHelper::convertMetric(1, 'kg', 'g'));
 
@@ -36,28 +34,28 @@ final class NumberHelperTest extends TestCase {
         NumberHelper::convertMetric(1, 'kg', 'm');
     }
 
-    public function testConvertTemperature(): void {
+    public function test_convert_temperature(): void {
         $this->assertEquals(32.0, NumberHelper::convertTemperature(0, TemperatureUnit::CELSIUS, TemperatureUnit::FAHRENHEIT));
         $this->assertEquals(273.15, NumberHelper::convertTemperature(0, TemperatureUnit::CELSIUS, TemperatureUnit::KELVIN));
     }
 
-    public function testRoundToNearest(): void {
+    public function test_round_to_nearest(): void {
         $this->assertEquals(20.0, NumberHelper::roundToNearest(18.4, 10));
         $this->assertEquals(15.0, NumberHelper::roundToNearest(13.2, 5));
     }
 
-    public function testClamp(): void {
+    public function test_clamp(): void {
         $this->assertEquals(5.0, NumberHelper::clamp(5, 1, 10));
         $this->assertEquals(1.0, NumberHelper::clamp(-3, 1, 10));
         $this->assertEquals(10.0, NumberHelper::clamp(20, 1, 10));
     }
 
-    public function testPercentage(): void {
+    public function test_percentage(): void {
         $this->assertEquals(50.0, NumberHelper::percentage(1, 2));
         $this->assertEquals(0.0, NumberHelper::percentage(1, 0));
     }
 
-    public function testNormalizeDecimal(): void {
+    public function test_normalize_decimal(): void {
         // Deutsches Format mit Tausender und Dezimal
         $this->assertEquals(1234.56, NumberHelper::normalizeDecimal("1.234,56"));
         $this->assertEquals(7890.12, NumberHelper::normalizeDecimal("7 890,12"));
@@ -82,7 +80,7 @@ final class NumberHelperTest extends TestCase {
 
     // === Neue Tests für verschobene Number-Format-Funktionen ===
 
-    public function testDetectNumberFormat(): void {
+    public function test_detect_number_format(): void {
         // Einfache Ganzzahlen
         $this->assertEquals('000', NumberHelper::detectNumberFormat('123'));
         $this->assertEquals('00000', NumberHelper::detectNumberFormat('12345'));
@@ -109,7 +107,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertNull(NumberHelper::detectNumberFormat('12.34.56,78,90')); // Ungültiges Format
     }
 
-    public function testDetectNumberFormatWithCountryCode(): void {
+    public function test_detect_number_format_with_country_code(): void {
         // Einfache Ganzzahlen mit Länder-Standard
         $this->assertEquals('000', NumberHelper::detectNumberFormat('123', CountryCode::Germany));
         $this->assertEquals('000', NumberHelper::detectNumberFormat('123', CountryCode::UnitedStatesOfAmerica));
@@ -119,7 +117,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('000.00', NumberHelper::detectNumberFormat('100.18', CountryCode::Germany));
     }
 
-    public function testDetectNumberFormatNegativeNumbers(): void {
+    public function test_detect_number_format_negative_numbers(): void {
         // Negative Zahlen
         $this->assertEquals('000', NumberHelper::detectNumberFormat('-123'));
         $this->assertEquals('000,00', NumberHelper::detectNumberFormat('-100,18'));
@@ -128,7 +126,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('0,000.00', NumberHelper::detectNumberFormat('-1,234.56'));
     }
 
-    public function testFormatNumberByTemplate(): void {
+    public function test_format_number_by_template(): void {
         // Einfache Ganzzahlen
         $this->assertEquals('123', NumberHelper::formatNumberByTemplate(123, '000'));
         $this->assertEquals('00123', NumberHelper::formatNumberByTemplate(123, '00000'));
@@ -155,7 +153,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('123.456', NumberHelper::formatNumberByTemplate(123.456, 'unknown-format'));
     }
 
-    public function testFormatNumberByTemplateEdgeCases(): void {
+    public function test_format_number_by_template_edge_cases(): void {
         // Nullen
         $this->assertEquals('000', NumberHelper::formatNumberByTemplate(0, '000'));
         $this->assertEquals('0,00', NumberHelper::formatNumberByTemplate(0, '0,00'));
@@ -170,7 +168,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('123,46', NumberHelper::formatNumberByTemplate(123.456, '000,00'));
     }
 
-    public function testFormatNumberByTemplateWithComplexTemplates(): void {
+    public function test_format_number_by_template_with_complex_templates(): void {
         // Template mit vielen Nachkommastellen
         $this->assertEquals('100,456', NumberHelper::formatNumberByTemplate(100.456, '000,000'));
         $this->assertEquals('100.456', NumberHelper::formatNumberByTemplate(100.456, '000.000'));
@@ -183,7 +181,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('12,345', NumberHelper::formatNumberByTemplate(12345, '00,000')); // US-Stil
     }
 
-    public function testFormatWithSign(): void {
+    public function test_format_with_sign(): void {
         // Positive Zahlen
         $this->assertEquals('+10,00', NumberHelper::formatWithSign(10));
         $this->assertEquals('+1.234,56', NumberHelper::formatWithSign(1234.56));
@@ -206,7 +204,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('+1,234.56', NumberHelper::formatWithSign(1234.56, 2, '.', ','));
     }
 
-    public function testFormatCurrencyWithSign(): void {
+    public function test_format_currency_with_sign(): void {
         // Positive Beträge
         $this->assertEquals('+10,00 €', NumberHelper::formatCurrencyWithSign(10));
         $this->assertEquals('+1.234,56 €', NumberHelper::formatCurrencyWithSign(1234.56));

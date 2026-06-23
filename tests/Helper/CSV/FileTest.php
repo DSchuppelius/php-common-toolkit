@@ -11,11 +11,10 @@
 declare(strict_types=1);
 
 use CommonToolkit\Helper\FileSystem\FileTypes\CsvFile;
-use Tests\Contracts\BaseTestCase;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use Tests\Contracts\BaseTestCase;
 
-class FileTest extends BaseTestCase
-{
+class FileTest extends BaseTestCase {
     private $testFileComma = __DIR__ . '/../../../.samples/comma.csv';
     private $testFileSemicolon = __DIR__ . '/../../../.samples/semicolon.csv';
     private $testFileTab = __DIR__ . '/../../../.samples/tab.csv';
@@ -27,15 +26,13 @@ class FileTest extends BaseTestCase
     private $testFileDoubleQuoted = __DIR__ . '/../../../.samples/doublequoted.csv';
     private $testFileInconsistentQuoted = __DIR__ . '/../../../.samples/quoted-inkonsistent.csv';
 
-    public function testDetectDelimiter()
-    {
+    public function test_detect_delimiter() {
         $this->assertEquals(',', CsvFile::detectDelimiter($this->testFileComma));
         $this->assertEquals(';', CsvFile::detectDelimiter($this->testFileSemicolon));
         $this->assertEquals("\t", CsvFile::detectDelimiter($this->testFileTab));
     }
 
-    public function testGetMetaData()
-    {
+    public function test_get_meta_data() {
         $meta = CsvFile::getMetaData($this->testFileComma);
         $this->assertEquals(3, $meta['RowCount']); // 2 Datenzeilen
         $this->assertEquals(3, $meta['ColumnCount']); // 3 Spalten
@@ -45,14 +42,12 @@ class FileTest extends BaseTestCase
         $this->assertEquals(';', $meta['Delimiter']);
     }
 
-    public function testIsWellFormed()
-    {
+    public function test_is_well_formed() {
         $this->assertTrue(CsvFile::isWellFormed($this->testFileComma));
         $this->assertFalse(CsvFile::isWellFormed($this->testFileMalformed));
     }
 
-    public function testIsValid()
-    {
+    public function test_is_valid() {
         $expectedHeader = ['ID', 'Name', 'Alter'];
 
         // Header ist korrekt -> true
@@ -65,20 +60,17 @@ class FileTest extends BaseTestCase
         $this->assertFalse(CsvFile::isValid($this->testFileMalformed, $expectedHeader, null, true));
     }
 
-    public function testFileNotFound()
-    {
+    public function test_file_not_found() {
         $this->expectException(FileNotFoundException::class);
         CsvFile::detectDelimiter(__DIR__ . '/../../.samples/commas.csv');
     }
 
-    public function testEmptyFile()
-    {
+    public function test_empty_file() {
         $this->expectException(Exception::class);
         CsvFile::detectDelimiter($this->testFileEmpty);
     }
 
-    public function testMatchRowSuccess()
-    {
+    public function test_match_row_success() {
         $row = null;
         $result = CsvFile::matchRow($this->testFileComma, ['1', '*', '*'], ',', 'UTF-8', $row);
 
@@ -87,8 +79,7 @@ class FileTest extends BaseTestCase
         $this->assertEquals('1', $row[0]);
     }
 
-    public function testMatchRowNoMatch()
-    {
+    public function test_match_row_no_match() {
         $row = null;
         $result = CsvFile::matchRow($this->testFileComma, ['NichtVorhanden', '*', '*'], ',', 'UTF-8', $row);
 
@@ -96,8 +87,7 @@ class FileTest extends BaseTestCase
         $this->assertNull($row);
     }
 
-    public function testMatchRowWithEncoding()
-    {
+    public function test_match_row_with_encoding() {
         // Datei mit Umlauten oder ISO-8859-1 kodiertem Inhalt wäre hier ideal
         $row = null;
         $result = CsvFile::matchRow($this->testFileISO, ['*', 'Müller', '35'], ',', 'ISO-8859-1', $row);
@@ -106,8 +96,7 @@ class FileTest extends BaseTestCase
         $this->assertEquals('35', end($row));
     }
 
-    public function testMatchRowOnEmptyFile()
-    {
+    public function test_match_row_on_empty_file() {
         $row = null;
         $result = CsvFile::matchRow($this->testFileEmpty, ['*', '*', '*'], ',', 'UTF-8', $row);
 
@@ -115,8 +104,7 @@ class FileTest extends BaseTestCase
         $this->assertNull($row);
     }
 
-    public function testQuotedCsvFile()
-    {
+    public function test_quoted_csv_file() {
         $row = null;
         $result = CsvFile::matchRow($this->testFileQuoted, ['*', '*', '*', '46', '*', 'Bargeldauszahlung', '*', '*', '*', '-349,09', '*', '*', '2000,00', '*', '*', 'EUR'], null, 'UTF-8', $row);
 
@@ -126,15 +114,13 @@ class FileTest extends BaseTestCase
         $this->assertEquals('-349,09', $row[9]);
     }
 
-    public function testHasDoubleQuotedFields()
-    {
+    public function test_has_double_quoted_fields() {
         // $this->assertTrue(CsvFile::hasRepeatedEnclosureColumns($this->testFileDoubleQuoted));
         $this->assertFalse(CsvFile::hasRepeatedEnclosureColumns($this->testFileInconsistentQuoted));
         $this->assertFalse(CsvFile::hasRepeatedEnclosureColumns($this->testFileComma));
     }
 
-    public function testMatchRowWithWrongPatternLength()
-    {
+    public function test_match_row_with_wrong_pattern_length() {
         $row = null;
         // Test mit zu vielen Mustern
         $result = CsvFile::matchRow($this->testFileComma, ['*', '*', '*', '*'], ',', 'UTF-8', $row);
@@ -143,20 +129,17 @@ class FileTest extends BaseTestCase
         $this->assertNull($row);
     }
 
-    public function testCountDataRowsWithHeader()
-    {
+    public function test_count_data_rows_with_header() {
         $count = CsvFile::countDataRows($this->testFileComma, ',', true);
         $this->assertEquals(2, $count); // 3 Zeilen - 1 Header = 2 Datenzeilen
     }
 
-    public function testCountDataRowsWithoutHeader()
-    {
+    public function test_count_data_rows_without_header() {
         $count = CsvFile::countDataRows($this->testFileComma, ',', false);
         $this->assertEquals(3, $count); // alle Zeilen zählen
     }
 
-    public function testCountDataRowsEmptyFile()
-    {
+    public function test_count_data_rows_empty_file() {
         $count = CsvFile::countDataRows($this->testFileEmpty, ',', true);
         $this->assertEquals(0, $count); // keine Datenzeilen
     }

@@ -12,8 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Contracts\Abstracts\XML;
 
-use CommonToolkit\Entities\XML\Document as XmlDocument;
-use CommonToolkit\Entities\XML\Element as XmlElement;
+use CommonToolkit\Entities\XML\{Document as XmlDocument, Element as XmlElement};
 use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Parsers\XmlDocumentParser;
 use DateTimeImmutable;
@@ -27,10 +26,10 @@ use RuntimeException;
 
 /**
  * Abstrakte Basisklasse für XML-Parser.
- * 
+ *
  * Nutzt die XML-Entities aus CommonToolkit für strukturiertes Parsing.
  * Bietet zusätzlich direkten DOMDocument/XPath-Zugriff für komplexe Szenarien.
- * 
+ *
  * Funktionen:
  * - DOM/XPath-Initialisierung mit Namespace-Handling
  * - XPath-Hilfsmethoden (xpathString, xpathStringWithFallback)
@@ -54,7 +53,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Erstellt einen neuen Parser aus XML-Inhalt.
-     * 
+     *
      * @param string $xmlContent Der XML-Inhalt
      * @throws RuntimeException Bei ungültigem XML
      */
@@ -64,12 +63,12 @@ abstract class XmlParserAbstract {
 
     /**
      * Initialisiert DOM und XPath aus XML-Inhalt.
-     * 
+     *
      * @param string $xmlContent Der XML-Inhalt
      * @throws RuntimeException Bei ungültigem XML
      */
     protected function initializeDom(string $xmlContent): void {
-        $this->dom = new DOMDocument();
+        $this->dom = new DOMDocument;
         libxml_use_internal_errors(true);
 
         if (!$this->dom->loadXML($xmlContent, LIBXML_NONET)) {
@@ -93,7 +92,7 @@ abstract class XmlParserAbstract {
     /**
      * Erkennt den Namespace des XML-Dokuments.
      * Kann von Unterklassen überschrieben werden für format-spezifische Logik.
-     * 
+     *
      * @return string|null Der erkannte Namespace oder null
      */
     protected function detectNamespace(): ?string {
@@ -118,7 +117,7 @@ abstract class XmlParserAbstract {
     /**
      * Gibt den zu verwendenden Namespace-Prefix zurück.
      * Kann von Unterklassen überschrieben werden.
-     * 
+     *
      * @return string Der Namespace-Prefix (z.B. 'ns', 'p', 'camt')
      */
     protected function getNamespacePrefix(): string {
@@ -127,7 +126,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Registriert einen Namespace im XPath.
-     * 
+     *
      * @param string $prefix Der Namespace-Prefix
      * @param string $namespace Die Namespace-URI
      */
@@ -137,7 +136,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Gibt das CommonToolkit XML-Document zurück.
-     * 
+     *
      * Ermöglicht Zugriff auf die strukturierten XML-Entities.
      */
     public function getXmlDocument(): XmlDocument {
@@ -158,7 +157,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Führt XPath auf dem CommonToolkit Document aus.
-     * 
+     *
      * @param string $xpath XPath-Ausdruck
      * @return XmlElement[]
      */
@@ -195,7 +194,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Gibt das Namespace-Mapping für XPath-Queries zurück.
-     * 
+     *
      * @return array<string, string>
      */
     protected function getNamespaceMapping(): array {
@@ -214,7 +213,7 @@ abstract class XmlParserAbstract {
     /**
      * Evaluiert einen XPath-Ausdruck und gibt einen String oder null zurück.
      * Fügt automatisch string(...) hinzu, wenn nicht vorhanden.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return string|null Ergebnis oder null wenn leer
@@ -229,12 +228,12 @@ abstract class XmlParserAbstract {
             ? $this->xpath->evaluate($expression, $context)
             : $this->xpath->evaluate($expression);
 
-        return !empty($result) ? (string)$result : null;
+        return !empty($result) ? (string) $result : null;
     }
 
     /**
      * Evaluiert einen XPath-Ausdruck mit Fallback-Alternativen.
-     * 
+     *
      * @param array<string> $expressions Liste von XPath-Ausdrücken
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return string|null Erstes nicht-leeres Ergebnis oder null
@@ -251,7 +250,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Findet einen Node via XPath.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return DOMNode|null Der gefundene Node oder null
@@ -266,7 +265,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Findet einen erforderlichen Node via XPath.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param string $errorMessage Fehlermeldung wenn nicht gefunden
      * @param DOMNode|null $context Kontext-Node (optional)
@@ -283,7 +282,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Findet alle Nodes via XPath.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return DOMNodeList<DOMNode> Die gefundenen Nodes
@@ -300,7 +299,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Parst einen Betrag aus einem String.
-     * 
+     *
      * @param string|null $amountStr Betrags-String
      * @return float Betrag als Float
      */
@@ -313,7 +312,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Parst einen Betrag mit Währung aus einem Element mit Ccy-Attribut.
-     * 
+     *
      * @param string $amountPath XPath zum Betrags-Element
      * @param DOMNode $context Kontext-Node
      * @param CurrencyCode $default Standard-Währung
@@ -340,7 +339,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Parst einen Betrag mit Währung aus einem CommonToolkit Element.
-     * 
+     *
      * @param XmlElement $element Element mit Ccy-Attribut
      * @param CurrencyCode $default Standard-Währung
      * @return array{amount: float, currency: CurrencyCode}
@@ -358,10 +357,9 @@ abstract class XmlParserAbstract {
 
     /**
      * Parst einen DateTime-String zu DateTimeImmutable.
-     * 
+     *
      * @param string|null $dateTimeStr Der DateTime-String
      * @param DateTimeImmutable|null $default Standardwert wenn leer
-     * @return DateTimeImmutable|null
      */
     protected function parseDateTime(?string $dateTimeStr, ?DateTimeImmutable $default = null): ?DateTimeImmutable {
         if (empty($dateTimeStr)) {
@@ -372,7 +370,7 @@ abstract class XmlParserAbstract {
 
     /**
      * Konvertiert leere Strings zu null.
-     * 
+     *
      * @param string $value Der String
      * @return string|null Null wenn leer, sonst der String
      */

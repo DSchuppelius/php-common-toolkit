@@ -13,12 +13,12 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\Data;
 
 use CommonToolkit\Enums\{CountryCode, DateTimeFormat, Month};
+use CommonToolkit\Enums\Weekday;
 use DateInterval;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use ERRORToolkit\Traits\ErrorLog;
-use CommonToolkit\Enums\Weekday;
 use InvalidArgumentException;
 use Throwable;
 
@@ -105,12 +105,14 @@ class DateHelper {
      */
     public static function isDate(string $value, ?DateTimeFormat &$format = null, DateTimeFormat $preferredFormat = DateTimeFormat::DE): bool {
         $len = strlen($value);
-        if ($len < 6 || $len > 19) return false;
+        if ($len < 6 || $len > 19) {
+            return false;
+        }
 
         // ISO ohne oder mit Uhrzeit
         $cleaned = preg_replace('#[^0-9]#', '', $value);
         $formatMap = [
-            8  => ['Ymd', DateTimeFormat::ISO],
+            8 => ['Ymd', DateTimeFormat::ISO],
             12 => ['YmdHi', DateTimeFormat::ISO],
             14 => ['YmdHis', DateTimeFormat::ISO],
         ];
@@ -331,7 +333,7 @@ class DateHelper {
      * @return DateTimeImmutable Das aktuelle Datum und die Uhrzeit.
      */
     public static function getCurrentDateTime(): DateTimeImmutable {
-        return new DateTimeImmutable();
+        return new DateTimeImmutable;
     }
 
     /**
@@ -414,7 +416,7 @@ class DateHelper {
      * @return bool True, wenn das Datum in der Zukunft liegt, andernfalls false.
      */
     public static function isFuture(DateTimeInterface $date): bool {
-        return $date > new DateTimeImmutable();
+        return $date > new DateTimeImmutable;
     }
 
     /**
@@ -424,7 +426,7 @@ class DateHelper {
      * @return bool True, wenn das Datum in der Vergangenheit liegt, andernfalls false.
      */
     public static function isPast(DateTimeInterface $date): bool {
-        return $date < new DateTimeImmutable();
+        return $date < new DateTimeImmutable;
     }
 
     /**
@@ -434,7 +436,7 @@ class DateHelper {
      * @return bool True, wenn das Datum heute ist, andernfalls false.
      */
     public static function isToday(DateTimeInterface $date): bool {
-        return $date->format('Y-m-d') === (new DateTimeImmutable())->format('Y-m-d');
+        return $date->format('Y-m-d') === (new DateTimeImmutable)->format('Y-m-d');
     }
 
     /**
@@ -554,7 +556,9 @@ class DateHelper {
      */
     public static function formatDate(string $value, DateTimeFormat $targetFormat, DateTimeFormat $preferredInputFormat = DateTimeFormat::DE, bool $withTime = false): ?string {
         $dateIso = self::normalizeToIso($value, $preferredInputFormat);
-        if ($dateIso === null) return null;
+        if ($dateIso === null) {
+            return null;
+        }
 
         $hasTime = str_contains($dateIso, ':');
 
@@ -564,13 +568,15 @@ class DateHelper {
             : ($withTime ? $dateIso . ' 00:00:00' : $dateIso);
 
         $dt = DateTime::createFromFormat($hasTime || $withTime ? 'Y-m-d H:i:s' : 'Y-m-d', $dateTimeString);
-        if (!$dt) return null;
+        if (!$dt) {
+            return null;
+        }
 
         return match ($targetFormat) {
             DateTimeFormat::ISO => $dt->format($targetFormat->getPattern()),
-            DateTimeFormat::DE  => $dt->format($targetFormat->getPattern($withTime)),
+            DateTimeFormat::DE => $dt->format($targetFormat->getPattern($withTime)),
             DateTimeFormat::DE_SHORT => $dt->format($targetFormat->getPattern($withTime)),
-            DateTimeFormat::US  => $dt->format($targetFormat->getPattern($withTime)),
+            DateTimeFormat::US => $dt->format($targetFormat->getPattern($withTime)),
             DateTimeFormat::MYSQL_DATETIME => $dt->format($targetFormat->getPattern()),
             DateTimeFormat::ISO_DATETIME,
             DateTimeFormat::ISO8601 => $dt->format($targetFormat->getPattern()),
@@ -597,7 +603,7 @@ class DateHelper {
             $format = match (strlen($cleaned)) {
                 14 => 'YmdHis',
                 12 => 'YmdHi',
-                8  => 'Ymd',
+                8 => 'Ymd',
                 default => null
             };
 
@@ -657,11 +663,11 @@ class DateHelper {
     public static function diffDetailed(DateTimeInterface $start, DateTimeInterface $end): array {
         $diff = $start->diff($end);
         return [
-            'years'      => $diff->y,
-            'months'     => $diff->m,
-            'days'       => $diff->d,
+            'years' => $diff->y,
+            'months' => $diff->m,
+            'days' => $diff->d,
             'total_days' => $diff->days,
-            'weeks'      => intdiv($diff->days, 7),
+            'weeks' => intdiv($diff->days, 7),
         ];
     }
 
@@ -862,7 +868,7 @@ class DateHelper {
      * @return int Das Alter in Jahren.
      */
     public static function getAge(DateTimeInterface $birthDate, ?DateTimeInterface $referenceDate = null): int {
-        $referenceDate = $referenceDate ?? new DateTimeImmutable();
+        $referenceDate = $referenceDate ?? new DateTimeImmutable;
         $diff = $referenceDate->diff($birthDate);
         return $diff->y;
     }
@@ -1302,7 +1308,7 @@ class DateHelper {
      * @return string Menschenlesbare Differenz (z.B. "vor 2 Stunden").
      */
     public static function humanDiff(DateTimeInterface $date, ?DateTimeInterface $reference = null, string $locale = 'de'): string {
-        $reference = $reference ?? new DateTimeImmutable();
+        $reference = $reference ?? new DateTimeImmutable;
         $diff = $reference->diff($date);
 
         $isPast = $diff->invert === 1;

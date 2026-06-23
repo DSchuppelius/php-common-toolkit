@@ -48,7 +48,7 @@ class XLSXDocumentParser extends HelperAbstract {
     public static function fromFile(string $file, bool $hasHeader = true, ?int $sheetIndex = null): Document {
         $file = File::resolveFile($file);
 
-        $parser = new self();
+        $parser = new self;
         return $parser->parse($file, $hasHeader, $sheetIndex);
     }
 
@@ -56,7 +56,7 @@ class XLSXDocumentParser extends HelperAbstract {
      * Interne Parse-Methode.
      */
     protected function parse(string $file, bool $hasHeader, ?int $sheetIndex): Document {
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($file) !== true) {
             self::logErrorAndThrow(RuntimeException::class, "Kann XLSX-Datei nicht öffnen: $file");
@@ -112,7 +112,7 @@ class XLSXDocumentParser extends HelperAbstract {
             return; // Keine Shared Strings vorhanden
         }
 
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML($content);
 
         $xpath = new DOMXPath($dom);
@@ -165,7 +165,7 @@ class XLSXDocumentParser extends HelperAbstract {
             return;
         }
 
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML($content);
 
         $xpath = new DOMXPath($dom);
@@ -214,7 +214,7 @@ class XLSXDocumentParser extends HelperAbstract {
         // Core Properties
         $content = $zip->getFromName('docProps/core.xml');
         if ($content !== false) {
-            $dom = new DOMDocument();
+            $dom = new DOMDocument;
             $dom->loadXML($content);
 
             $xpath = new DOMXPath($dom);
@@ -261,7 +261,7 @@ class XLSXDocumentParser extends HelperAbstract {
             self::logErrorAndThrow(RuntimeException::class, 'Workbook.xml nicht gefunden');
         }
 
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML($content);
 
         $xpath = new DOMXPath($dom);
@@ -309,7 +309,7 @@ class XLSXDocumentParser extends HelperAbstract {
             return [];
         }
 
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML($content);
 
         $xpath = new DOMXPath($dom);
@@ -339,7 +339,7 @@ class XLSXDocumentParser extends HelperAbstract {
             return null;
         }
 
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadXML($content);
 
         $xpath = new DOMXPath($dom);

@@ -14,10 +14,8 @@ namespace CommonToolkit\Entities\HTML;
 
 /**
  * Repräsentiert ein vollständiges HTML-Dokument.
- * 
+ *
  * Immutable Value Object für HTML-Dokumente mit DOCTYPE, Head und Body.
- * 
- * @package CommonToolkit\Entities\HTML
  */
 class Document {
     public const DOCTYPE_HTML5 = '<!DOCTYPE html>';
@@ -201,7 +199,7 @@ class Document {
 
     /**
      * Gibt eine neue Instanz mit zusätzlichen Body-Elementen zurück.
-     * 
+     *
      * @param Element[] $elements
      */
     public function withBodyElements(array $elements): self {

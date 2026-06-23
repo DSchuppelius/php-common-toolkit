@@ -19,7 +19,7 @@ use Traversable;
 
 /**
  * Repräsentiert eine Zeile in einem XLSX-Arbeitsblatt.
- * 
+ *
  * @implements IteratorAggregate<int, Cell>
  */
 class Row implements Countable, IteratorAggregate {
@@ -32,7 +32,7 @@ class Row implements Countable, IteratorAggregate {
      * @param int    $rowIndex Der 1-basierte Zeilenindex
      */
     public function __construct(array $cells = [], int $rowIndex = 1) {
-        $this->cells    = array_values($cells);
+        $this->cells = array_values($cells);
         $this->rowIndex = $rowIndex;
     }
 
@@ -41,11 +41,10 @@ class Row implements Countable, IteratorAggregate {
      *
      * @param array<mixed> $values   Die Zellwerte
      * @param int          $rowIndex Der 1-basierte Zeilenindex
-     * @return self
      */
     public static function fromArray(array $values, int $rowIndex = 1): self {
         $cells = array_map(
-            fn($value) => $value instanceof Cell ? $value : new Cell($value),
+            fn ($value) => $value instanceof Cell ? $value : new Cell($value),
             $values
         );
         return new self($cells, $rowIndex);
@@ -87,7 +86,7 @@ class Row implements Countable, IteratorAggregate {
      * @return array<mixed>
      */
     public function toArray(): array {
-        return array_map(fn(Cell $cell) => $cell->getValue(), $this->cells);
+        return array_map(fn (Cell $cell) => $cell->getValue(), $this->cells);
     }
 
     /**
@@ -96,7 +95,7 @@ class Row implements Countable, IteratorAggregate {
      * @return array<string>
      */
     public function toStringArray(): array {
-        return array_map(fn(Cell $cell) => $cell->getStringValue(), $this->cells);
+        return array_map(fn (Cell $cell) => $cell->getStringValue(), $this->cells);
     }
 
     /**

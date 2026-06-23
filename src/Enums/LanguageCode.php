@@ -25,7 +25,7 @@ enum LanguageCode: string {
     // Afrikaans
     case AF_ZA = 'af-ZA'; // Afrikaans (South Africa)
 
-        // Arabic
+    // Arabic
     case AR_AE = 'ar-AE'; // Arabic (U.A.E.)
     case AR_BH = 'ar-BH'; // Arabic (Bahrain)
     case AR_DZ = 'ar-DZ'; // Arabic (Algeria)
@@ -43,44 +43,44 @@ enum LanguageCode: string {
     case AR_TN = 'ar-TN'; // Arabic (Tunisia)
     case AR_YE = 'ar-YE'; // Arabic (Yemen)
 
-        // Azeri
+    // Azeri
     case AZ_AZ = 'az-AZ'; // Azeri (Azerbaijan)
 
-        // Belarusian
+    // Belarusian
     case BE_BY = 'be-BY'; // Belarusian (Belarus)
 
-        // Bulgarian
+    // Bulgarian
     case BG_BG = 'bg-BG'; // Bulgarian (Bulgaria)
 
-        // Bosnian
+    // Bosnian
     case BS_BA = 'bs-BA'; // Bosnian (Bosnia and Herzegovina)
 
-        // Catalan
+    // Catalan
     case CA_ES = 'ca-ES'; // Catalan (Spain)
 
-        // Czech
+    // Czech
     case CS_CZ = 'cs-CZ'; // Czech (Czech Republic)
 
-        // Welsh
+    // Welsh
     case CY_GB = 'cy-GB'; // Welsh (United Kingdom)
 
-        // Danish
+    // Danish
     case DA_DK = 'da-DK'; // Danish (Denmark)
 
-        // German
+    // German
     case DE_AT = 'de-AT'; // German (Austria)
     case DE_CH = 'de-CH'; // German (Switzerland)
     case DE_DE = 'de-DE'; // German (Germany)
     case DE_LI = 'de-LI'; // German (Liechtenstein)
     case DE_LU = 'de-LU'; // German (Luxembourg)
 
-        // Divehi
+    // Divehi
     case DV_MV = 'dv-MV'; // Divehi (Maldives)
 
-        // Greek
+    // Greek
     case EL_GR = 'el-GR'; // Greek (Greece)
 
-        // English
+    // English
     case EN_AU = 'en-AU'; // English (Australia)
     case EN_BZ = 'en-BZ'; // English (Belize)
     case EN_CA = 'en-CA'; // English (Canada)
@@ -95,7 +95,7 @@ enum LanguageCode: string {
     case EN_ZA = 'en-ZA'; // English (South Africa)
     case EN_ZW = 'en-ZW'; // English (Zimbabwe)
 
-        // Spanish
+    // Spanish
     case ES_AR = 'es-AR'; // Spanish (Argentina)
     case ES_BO = 'es-BO'; // Spanish (Bolivia)
     case ES_CL = 'es-CL'; // Spanish (Chile)
@@ -116,22 +116,22 @@ enum LanguageCode: string {
     case ES_UY = 'es-UY'; // Spanish (Uruguay)
     case ES_VE = 'es-VE'; // Spanish (Venezuela)
 
-        // Estonian
+    // Estonian
     case ET_EE = 'et-EE'; // Estonian (Estonia)
 
-        // Basque
+    // Basque
     case EU_ES = 'eu-ES'; // Basque (Spain)
 
-        // Farsi
+    // Farsi
     case FA_IR = 'fa-IR'; // Farsi (Iran)
 
-        // Finnish
+    // Finnish
     case FI_FI = 'fi-FI'; // Finnish (Finland)
 
-        // Faroese
+    // Faroese
     case FO_FO = 'fo-FO'; // Faroese (Faroe Islands)
 
-        // French
+    // French
     case FR_BE = 'fr-BE'; // French (Belgium)
     case FR_CA = 'fr-CA'; // French (Canada)
     case FR_CH = 'fr-CH'; // French (Switzerland)
@@ -139,194 +139,194 @@ enum LanguageCode: string {
     case FR_LU = 'fr-LU'; // French (Luxembourg)
     case FR_MC = 'fr-MC'; // French (Principality of Monaco)
 
-        // Galician
+    // Galician
     case GL_ES = 'gl-ES'; // Galician (Spain)
 
-        // Gujarati
+    // Gujarati
     case GU_IN = 'gu-IN'; // Gujarati (India)
 
-        // Hebrew
+    // Hebrew
     case HE_IL = 'he-IL'; // Hebrew (Israel)
 
-        // Hindi
+    // Hindi
     case HI_IN = 'hi-IN'; // Hindi (India)
 
-        // Croatian
+    // Croatian
     case HR_BA = 'hr-BA'; // Croatian (Bosnia and Herzegovina)
     case HR_HR = 'hr-HR'; // Croatian (Croatia)
 
-        // Hungarian
+    // Hungarian
     case HU_HU = 'hu-HU'; // Hungarian (Hungary)
 
-        // Armenian
+    // Armenian
     case HY_AM = 'hy-AM'; // Armenian (Armenia)
 
-        // Indonesian
+    // Indonesian
     case ID_ID = 'id-ID'; // Indonesian (Indonesia)
 
-        // Icelandic
+    // Icelandic
     case IS_IS = 'is-IS'; // Icelandic (Iceland)
 
-        // Italian
+    // Italian
     case IT_CH = 'it-CH'; // Italian (Switzerland)
     case IT_IT = 'it-IT'; // Italian (Italy)
 
-        // Japanese
+    // Japanese
     case JA_JP = 'ja-JP'; // Japanese (Japan)
 
-        // Georgian
+    // Georgian
     case KA_GE = 'ka-GE'; // Georgian (Georgia)
 
-        // Kazakh
+    // Kazakh
     case KK_KZ = 'kk-KZ'; // Kazakh (Kazakhstan)
 
-        // Kannada
+    // Kannada
     case KN_IN = 'kn-IN'; // Kannada (India)
 
-        // Korean
+    // Korean
     case KO_KR = 'ko-KR'; // Korean (Korea)
 
-        // Konkani
+    // Konkani
     case KOK_IN = 'kok-IN'; // Konkani (India)
 
-        // Kyrgyz
+    // Kyrgyz
     case KY_KG = 'ky-KG'; // Kyrgyz (Kyrgyzstan)
 
-        // Lithuanian
+    // Lithuanian
     case LT_LT = 'lt-LT'; // Lithuanian (Lithuania)
 
-        // Latvian
+    // Latvian
     case LV_LV = 'lv-LV'; // Latvian (Latvia)
 
-        // Maori
+    // Maori
     case MI_NZ = 'mi-NZ'; // Maori (New Zealand)
 
-        // Macedonian
+    // Macedonian
     case MK_MK = 'mk-MK'; // FYRO Macedonian
 
-        // Mongolian
+    // Mongolian
     case MN_MN = 'mn-MN'; // Mongolian (Mongolia)
 
-        // Marathi
+    // Marathi
     case MR_IN = 'mr-IN'; // Marathi (India)
 
-        // Malay
+    // Malay
     case MS_BN = 'ms-BN'; // Malay (Brunei Darussalam)
     case MS_MY = 'ms-MY'; // Malay (Malaysia)
 
-        // Maltese
+    // Maltese
     case MT_MT = 'mt-MT'; // Maltese (Malta)
 
-        // Norwegian
+    // Norwegian
     case NB_NO = 'nb-NO'; // Norwegian Bokmål (Norway)
     case NN_NO = 'nn-NO'; // Norwegian Nynorsk (Norway)
 
-        // Dutch
+    // Dutch
     case NL_BE = 'nl-BE'; // Dutch (Belgium)
     case NL_NL = 'nl-NL'; // Dutch (Netherlands)
 
-        // Northern Sotho
+    // Northern Sotho
     case NS_ZA = 'ns-ZA'; // Northern Sotho (South Africa)
 
-        // Punjabi
+    // Punjabi
     case PA_IN = 'pa-IN'; // Punjabi (India)
 
-        // Polish
+    // Polish
     case PL_PL = 'pl-PL'; // Polish (Poland)
 
-        // Pashto
+    // Pashto
     case PS_AR = 'ps-AR'; // Pashto (Afghanistan)
 
-        // Portuguese
+    // Portuguese
     case PT_BR = 'pt-BR'; // Portuguese (Brazil)
     case PT_PT = 'pt-PT'; // Portuguese (Portugal)
 
-        // Quechua
+    // Quechua
     case QU_BO = 'qu-BO'; // Quechua (Bolivia)
     case QU_EC = 'qu-EC'; // Quechua (Ecuador)
     case QU_PE = 'qu-PE'; // Quechua (Peru)
 
-        // Romanian
+    // Romanian
     case RO_RO = 'ro-RO'; // Romanian (Romania)
 
-        // Russian
+    // Russian
     case RU_RU = 'ru-RU'; // Russian (Russia)
 
-        // Sanskrit
+    // Sanskrit
     case SA_IN = 'sa-IN'; // Sanskrit (India)
 
-        // Sami
+    // Sami
     case SE_FI = 'se-FI'; // Sami (Finland)
     case SE_NO = 'se-NO'; // Sami (Norway)
     case SE_SE = 'se-SE'; // Sami (Sweden)
 
-        // Slovak
+    // Slovak
     case SK_SK = 'sk-SK'; // Slovak (Slovakia)
 
-        // Slovenian
+    // Slovenian
     case SL_SI = 'sl-SI'; // Slovenian (Slovenia)
 
-        // Albanian
+    // Albanian
     case SQ_AL = 'sq-AL'; // Albanian (Albania)
 
-        // Serbian
+    // Serbian
     case SR_BA = 'sr-BA'; // Serbian (Bosnia and Herzegovina)
     case SR_SP = 'sr-SP'; // Serbian (Serbia and Montenegro)
 
-        // Swedish
+    // Swedish
     case SV_FI = 'sv-FI'; // Swedish (Finland)
     case SV_SE = 'sv-SE'; // Swedish (Sweden)
 
-        // Swahili
+    // Swahili
     case SW_KE = 'sw-KE'; // Swahili (Kenya)
 
-        // Syriac
+    // Syriac
     case SYR_SY = 'syr-SY'; // Syriac (Syria)
 
-        // Tamil
+    // Tamil
     case TA_IN = 'ta-IN'; // Tamil (India)
 
-        // Telugu
+    // Telugu
     case TE_IN = 'te-IN'; // Telugu (India)
 
-        // Thai
+    // Thai
     case TH_TH = 'th-TH'; // Thai (Thailand)
 
-        // Tagalog
+    // Tagalog
     case TL_PH = 'tl-PH'; // Tagalog (Philippines)
 
-        // Tswana
+    // Tswana
     case TN_ZA = 'tn-ZA'; // Tswana (South Africa)
 
-        // Turkish
+    // Turkish
     case TR_TR = 'tr-TR'; // Turkish (Turkey)
 
-        // Tatar
+    // Tatar
     case TT_RU = 'tt-RU'; // Tatar (Russia)
 
-        // Ukrainian
+    // Ukrainian
     case UK_UA = 'uk-UA'; // Ukrainian (Ukraine)
 
-        // Urdu
+    // Urdu
     case UR_PK = 'ur-PK'; // Urdu (Islamic Republic of Pakistan)
 
-        // Uzbek
+    // Uzbek
     case UZ_UZ = 'uz-UZ'; // Uzbek (Uzbekistan)
 
-        // Vietnamese
+    // Vietnamese
     case VI_VN = 'vi-VN'; // Vietnamese (Viet Nam)
 
-        // Xhosa
+    // Xhosa
     case XH_ZA = 'xh-ZA'; // Xhosa (South Africa)
 
-        // Chinese
+    // Chinese
     case ZH_CN = 'zh-CN'; // Chinese (Simplified)
     case ZH_HK = 'zh-HK'; // Chinese (Hong Kong)
     case ZH_MO = 'zh-MO'; // Chinese (Macau)
     case ZH_SG = 'zh-SG'; // Chinese (Singapore)
     case ZH_TW = 'zh-TW'; // Chinese (Traditional)
 
-        // Zulu
+    // Zulu
     case ZU_ZA = 'zu-ZA'; // Zulu (South Africa)
 
     /**

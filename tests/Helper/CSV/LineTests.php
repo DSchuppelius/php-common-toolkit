@@ -16,7 +16,7 @@ use CommonToolkit\Helper\Data\CSV\StringHelper;
 use Tests\Contracts\BaseTestCase;
 
 class LineTests extends BaseTestCase {
-    public function testDetectEnclosureRepeat(): void {
+    public function test_detect_enclosure_repeat(): void {
         $tests = [
 
             ['line' => '',                            'expected_strict' => 0, 'expected_non_strict' => 0],
@@ -67,7 +67,7 @@ class LineTests extends BaseTestCase {
         }
     }
 
-    public function testValidLinesShouldReturnTrue(): void {
+    public function test_valid_lines_should_return_true(): void {
         $tests = [
             ['line' => '"A","B","C"', 'delimiter' => ','],
             ['line' => '"A";"B";"C"', 'delimiter' => ';'],
@@ -86,7 +86,7 @@ class LineTests extends BaseTestCase {
         }
     }
 
-    public function testInvalidLinesShouldReturnFalse(): void {
+    public function test_invalid_lines_should_return_false(): void {
         $tests = [
             '"A","B","C',
             '"A",B"C"',
@@ -106,7 +106,7 @@ class LineTests extends BaseTestCase {
         }
     }
 
-    public function testInvalidLinesShouldReturnTrue(): void {
+    public function test_invalid_lines_should_return_true(): void {
         $tests = [
             ['line' => '"Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'closed' => ']'],
             ['line' => '["Feld1","Feld2","Feld3"]', 'delimiter' => ',', 'enclosure' => '"', 'started' => '[', 'closed' => ']'],
@@ -120,7 +120,7 @@ class LineTests extends BaseTestCase {
         }
     }
 
-    public function testHasRepeatedEnclosure(): void {
+    public function test_has_repeated_enclosure(): void {
         $tests = [
             ['line' => '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000,00"",""2000,00"",""0,00"",""EUR""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 2, 'strict' => true, 'expected' => true],
             ['line' => '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000"",""2000"",""0"",""EUR""', 'delimiter' => ',', 'enclosure' => '"', 'repeat' => 2, 'strict' => true, 'expected' => true],
@@ -178,8 +178,8 @@ class LineTests extends BaseTestCase {
         }
     }
 
-    public function testParseCSVMultiLine(): void {
-        $csv = <<<CSV
+    public function test_parse_csv_multi_line(): void {
+        $csv = <<<'CSV'
             06-08-2019,"650,01","Gutschrift
             PAYPAL EUROPE SARL ET CIE SCA
             22-24 BOULEVARD ROY
@@ -189,7 +189,7 @@ class LineTests extends BaseTestCase {
             HOTLINE BUNDESBANK: (0800) 1234-111
             YYW4BMJ2AT6YUREA PP.8902.PP PAYPAL",""
             CSV;
-        $csv1 = <<<CSV
+        $csv1 = <<<'CSV'
             06-08-2019,"650,01",Gutschrift
             PAYPAL EUROPE SARL ET CIE SCA
             22-24 BOULEVARD ROY
@@ -212,146 +212,146 @@ class LineTests extends BaseTestCase {
         $this->assertSame($result, $result1);
     }
 
-    public function testExtractRepeatedEnclosureFields(): void {
+    public function test_extract_repeated_enclosure_fields(): void {
         $tests = [
             [
-                'line'     => '"KDC2ASKF","21.12.2024 17:55:41","c832c84d-4940-484d-a7fb-4bc98cff6a88","","ich@irgendwo.com","Schlussbilanz","","","","","","","","2000","200000","0","EUR"',
+                'line' => '"KDC2ASKF","21.12.2024 17:55:41","c832c84d-4940-484d-a7fb-4bc98cff6a88","","ich@irgendwo.com","Schlussbilanz","","","","","","","","2000","200000","0","EUR"',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'strict'   => false,
-                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', 'c832c84d-4940-484d-a7fb-4bc98cff6a88', '', 'ich@irgendwo.com', 'Schlussbilanz', '', '', '', '', '', '', '', '2000', '200000', '0', 'EUR']
+                'strict' => false,
+                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', 'c832c84d-4940-484d-a7fb-4bc98cff6a88', '', 'ich@irgendwo.com', 'Schlussbilanz', '', '', '', '', '', '', '', '2000', '200000', '0', 'EUR'],
             ],
             [
-                'line'     => '"KDC2ASKF","21.12.2024 17:55:41","c832c84d-4940-484d-a7fb-4bc98cff6a88","","ich@irgendwo.com","Schlussbilanz","","","","","","","","2000,00","2000,00","0,00","EUR"',
+                'line' => '"KDC2ASKF","21.12.2024 17:55:41","c832c84d-4940-484d-a7fb-4bc98cff6a88","","ich@irgendwo.com","Schlussbilanz","","","","","","","","2000,00","2000,00","0,00","EUR"',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'strict'   => false,
-                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', 'c832c84d-4940-484d-a7fb-4bc98cff6a88', '', 'ich@irgendwo.com', 'Schlussbilanz', '', '', '', '', '', '', '', '2000,00', '2000,00', '0,00', 'EUR']
+                'strict' => false,
+                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', 'c832c84d-4940-484d-a7fb-4bc98cff6a88', '', 'ich@irgendwo.com', 'Schlussbilanz', '', '', '', '', '', '', '', '2000,00', '2000,00', '0,00', 'EUR'],
             ],
             [
-                'line'     => '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000,00"",""2000,00"",""0,00"",""EUR""',
+                'line' => '""KDC2ASKF"",""21.12.2024 17:55:41"",""c832c84d-4940-484d-a7fb-4bc98cff6a88"","""",""ich@irgendwo.com"",""Schlussbilanz"","""","""","""","""","""","""",""2000,00"",""2000,00"",""0,00"",""EUR""',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'strict'   => false,
-                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', 'c832c84d-4940-484d-a7fb-4bc98cff6a88', '', 'ich@irgendwo.com', 'Schlussbilanz', '', '', '', '', '', '', '2000,00', '2000,00', '0,00', 'EUR']
+                'strict' => false,
+                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', 'c832c84d-4940-484d-a7fb-4bc98cff6a88', '', 'ich@irgendwo.com', 'Schlussbilanz', '', '', '', '', '', '', '2000,00', '2000,00', '0,00', 'EUR'],
             ],
             [
-                'line'     => '"""KDC2ASKF""","""21.12.2024 17:55:41""","""c832c84d-4940-484d-a7fb-4bc98cff6a88""","""""","""ich@irgendwo.com""","""Schlussbilanz""","""""","""""","""""","""""","""""","""""","""2000,00""","""2000,00""","""0,00""","""EUR"""',
+                'line' => '"""KDC2ASKF""","""21.12.2024 17:55:41""","""c832c84d-4940-484d-a7fb-4bc98cff6a88""","""""","""ich@irgendwo.com""","""Schlussbilanz""","""""","""""","""""","""""","""""","""""","""2000,00""","""2000,00""","""0,00""","""EUR"""',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'strict'   => false,
-                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', 'c832c84d-4940-484d-a7fb-4bc98cff6a88', '', 'ich@irgendwo.com', 'Schlussbilanz', '', '', '', '', '', '', '2000,00', '2000,00', '0,00', 'EUR']
+                'strict' => false,
+                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', 'c832c84d-4940-484d-a7fb-4bc98cff6a88', '', 'ich@irgendwo.com', 'Schlussbilanz', '', '', '', '', '', '', '2000,00', '2000,00', '0,00', 'EUR'],
             ],
             [
-                'line'     => '"Feld1","Feld2",""',
+                'line' => '"Feld1","Feld2",""',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'expected' => ['Feld1', 'Feld2', '']
+                'expected' => ['Feld1', 'Feld2', ''],
             ],
             [
-                'line'     => '"Feld1","Feld2",',
+                'line' => '"Feld1","Feld2",',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'expected' => ['Feld1', 'Feld2', '']
+                'expected' => ['Feld1', 'Feld2', ''],
             ],
             [
-                'line'     => ',"Feld2",',
+                'line' => ',"Feld2",',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'expected' => ['', 'Feld2', '']
+                'expected' => ['', 'Feld2', ''],
             ],
             [
-                'line'     => '"Feld1",,""',
+                'line' => '"Feld1",,""',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'expected' => ['Feld1', '', '']
+                'expected' => ['Feld1', '', ''],
             ],
             [
-                'line'     => '"Feld1","Feld2","","rr"',
+                'line' => '"Feld1","Feld2","","rr"',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'expected' => ['Feld1', 'Feld2', '', 'rr']
+                'expected' => ['Feld1', 'Feld2', '', 'rr'],
             ],
             [
-                'line'     => '"Feld1","Feld2","Feld3"',
+                'line' => '"Feld1","Feld2","Feld3"',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'expected' => ['Feld1', 'Feld2', 'Feld3']
+                'expected' => ['Feld1', 'Feld2', 'Feld3'],
             ],
             [
-                'line'     => '""Feld1"",""Feld2"",""Feld3""',
+                'line' => '""Feld1"",""Feld2"",""Feld3""',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'expected' => ['Feld1', 'Feld2', 'Feld3']
+                'expected' => ['Feld1', 'Feld2', 'Feld3'],
             ],
             [
-                'line'     => '"""Feld1""","""Feld2""","""Feld3"""',
+                'line' => '"""Feld1""","""Feld2""","""Feld3"""',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'expected' => ['Feld1', 'Feld2', 'Feld3']
+                'expected' => ['Feld1', 'Feld2', 'Feld3'],
             ],
             [
-                'line'     => '"Feld1";"Feld2";"Feld3"',
+                'line' => '"Feld1";"Feld2";"Feld3"',
                 'delimiter' => ';',
                 'enclosure' => '"',
-                'expected' => ['Feld1', 'Feld2', 'Feld3']
+                'expected' => ['Feld1', 'Feld2', 'Feld3'],
             ],
             [
-                'line'     => 'Feld1;Feld2;Feld3',
+                'line' => 'Feld1;Feld2;Feld3',
                 'delimiter' => ';',
                 'enclosure' => '"',
-                'expected' => ['Feld1', 'Feld2', 'Feld3']
+                'expected' => ['Feld1', 'Feld2', 'Feld3'],
             ],
             [
-                'line'     => '""KDC2ASKF"",""21.12.2024 17:55:41"",""2000,00"";',
+                'line' => '""KDC2ASKF"",""21.12.2024 17:55:41"",""2000,00"";',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'closed'   => ';',
-                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', '2000,00']
+                'closed' => ';',
+                'expected' => ['KDC2ASKF', '21.12.2024 17:55:41', '2000,00'],
             ],
             [
-                'line'     => '"Feld1,""2000,00"",3000,00";',
+                'line' => '"Feld1,""2000,00"",3000,00";',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'strict'   => false,
-                'started'  => '"',
-                'closed'   => '";',
-                'expected' => ['Feld1', '2000,00', '3000', '00']
+                'strict' => false,
+                'started' => '"',
+                'closed' => '";',
+                'expected' => ['Feld1', '2000,00', '3000', '00'],
             ],
             [
-                'line'     => '"Feld1,"2000,00,3000,00"";',
+                'line' => '"Feld1,"2000,00,3000,00"";',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'strict'   => false,
-                'started'  => '"',
-                'closed'   => '";',
-                'expected' => ['Feld1', '2000,00,3000,00']
+                'strict' => false,
+                'started' => '"',
+                'closed' => '";',
+                'expected' => ['Feld1', '2000,00,3000,00'],
             ],
             [
-                'line'     => '["Feld1","Feld2","Feld3"]',
+                'line' => '["Feld1","Feld2","Feld3"]',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'started'  => '[',
-                'closed'   => ']',
-                'expected' => ['Feld1', 'Feld2', 'Feld3']
+                'started' => '[',
+                'closed' => ']',
+                'expected' => ['Feld1', 'Feld2', 'Feld3'],
             ],
             [
-                'line'     => '"Feld1,2000,00,"3000,00"";',
+                'line' => '"Feld1,2000,00,"3000,00"";',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'strict'   => false,
-                'started'  => '"',
-                'closed'   => '";',
-                'expected' => ['Feld1', '2000', '00', '3000,00']
+                'strict' => false,
+                'started' => '"',
+                'closed' => '";',
+                'expected' => ['Feld1', '2000', '00', '3000,00'],
             ],
             [
-                'line'     => '"Feld1,"2000,00","3000,00"";',
+                'line' => '"Feld1,"2000,00","3000,00"";',
                 'delimiter' => ',',
                 'enclosure' => '"',
-                'strict'   => false,
-                'started'  => '"',
-                'closed'   => '";',
-                'expected' => ['Feld1', '2000,00', '3000,00']
+                'strict' => false,
+                'started' => '"',
+                'closed' => '";',
+                'expected' => ['Feld1', '2000,00', '3000,00'],
             ],
         ];
 
@@ -381,7 +381,7 @@ class LineTests extends BaseTestCase {
 
     // ========== Tests für Excel-Exponentialformat-Erkennung ==========
 
-    public function testHasExcelExponentialNotation(): void {
+    public function test_has_excel_exponential_notation(): void {
         // Positive Fälle - Deutsche Notation
         $this->assertTrue(StringHelper::hasExcelExponentialNotation('3,21001E+13'));
         $this->assertTrue(StringHelper::hasExcelExponentialNotation('1,5E-10'));
@@ -404,7 +404,7 @@ class LineTests extends BaseTestCase {
         $this->assertFalse(StringHelper::hasExcelExponentialNotation(''));
     }
 
-    public function testCanParseCompleteCSVDataLineWithExcelExponentialFormat(): void {
+    public function test_can_parse_complete_csv_data_line_with_excel_exponential_format(): void {
         // Excel-manipulierte Zeile mit Exponentialnotation sollte als valide erkannt werden
         $excelLine = 'BYLADEM1001;DE51120300001019616752;;;;07.03.2024;-375,48;RIVERTY FUER AMAZON;;COBADEFFXXX;DE73478400650158014102;3,21001E+13;;;;;EUR;3,21001E+13';
 
@@ -414,7 +414,7 @@ class LineTests extends BaseTestCase {
         );
     }
 
-    public function testCanParseCompleteCSVDataLineWithMixedExcelFormat(): void {
+    public function test_can_parse_complete_csv_data_line_with_mixed_excel_format(): void {
         // Gemischte Zeile mit normalen Werten und Exponentialnotation
         $tests = [
             'Feld1;3,21E+10;Feld3',

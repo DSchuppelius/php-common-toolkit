@@ -14,21 +14,21 @@ use CommonToolkit\Helper\Data\CurrencyHelper;
 use Tests\Contracts\BaseTestCase;
 
 class CurrencyHelperTest extends BaseTestCase {
-    public function testFormat(): void {
+    public function test_format(): void {
         $formatted = CurrencyHelper::format(1234.56, 'EUR', 'de_DE');
         $this->assertStringContainsString('€', $formatted);
     }
 
-    public function testParse(): void {
+    public function test_parse(): void {
         $amount = CurrencyHelper::parse('1.234,56 €', 'EUR', 'de_DE');
         $this->assertEquals(1234.56, $amount);
     }
 
-    public function testRound(): void {
+    public function test_round(): void {
         $this->assertEquals(1234.57, CurrencyHelper::round(1234.567));
     }
 
-    public function testEquals(): void {
+    public function test_equals(): void {
         $this->assertTrue(CurrencyHelper::equals(100.00, 100.001));
         $this->assertTrue(CurrencyHelper::equals(100.00, 100.01));
         $this->assertTrue(CurrencyHelper::equals(100.00, 99.99));
@@ -36,7 +36,7 @@ class CurrencyHelperTest extends BaseTestCase {
         $this->assertFalse(CurrencyHelper::equals(100.00, 99.95));
     }
 
-    public function testIsCurrency(): void {
+    public function test_is_currency(): void {
         $format = '';
         $this->assertTrue(CurrencyHelper::isCurrency("1.234,56", $format));
         $this->assertEquals("DE", $format);
@@ -47,15 +47,15 @@ class CurrencyHelperTest extends BaseTestCase {
         $this->assertFalse(CurrencyHelper::isCurrency("abc123", $format));
     }
 
-    public function testUsToDe(): void {
+    public function test_us_to_de(): void {
         $this->assertEquals("1234,56", CurrencyHelper::usToDe("1,234.56"));
     }
 
-    public function testDeToUs(): void {
+    public function test_de_to_us(): void {
         $this->assertEquals("1234.56", CurrencyHelper::deToUs("1.234,56"));
     }
 
-    public function testNegateAmount(): void {
+    public function test_negate_amount(): void {
         $this->assertSame('-96,53', CurrencyHelper::negateAmount('96,53'));
         $this->assertSame('96,53', CurrencyHelper::negateAmount('-96,53'));
         $this->assertSame('-1.234,56', CurrencyHelper::negateAmount(' 1.234,56 '));

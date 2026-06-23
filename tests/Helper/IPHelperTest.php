@@ -17,10 +17,9 @@ use InvalidArgumentException;
 use Tests\Contracts\BaseTestCase;
 
 class IPHelperTest extends BaseTestCase {
-
     // ===== IPv4 Validierung =====
 
-    public function testIsIPv4WithValidAddresses(): void {
+    public function test_is_i_pv4_with_valid_addresses(): void {
         $this->assertTrue(IPHelper::isIPv4('192.168.1.1'));
         $this->assertTrue(IPHelper::isIPv4('10.0.0.1'));
         $this->assertTrue(IPHelper::isIPv4('172.16.0.1'));
@@ -29,7 +28,7 @@ class IPHelperTest extends BaseTestCase {
         $this->assertTrue(IPHelper::isIPv4('255.255.255.255'));
     }
 
-    public function testIsIPv4WithInvalidAddresses(): void {
+    public function test_is_i_pv4_with_invalid_addresses(): void {
         $this->assertFalse(IPHelper::isIPv4('256.0.0.1'));
         $this->assertFalse(IPHelper::isIPv4('192.168.1'));
         $this->assertFalse(IPHelper::isIPv4('192.168.1.1.1'));
@@ -41,7 +40,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== IPv6 Validierung =====
 
-    public function testIsIPv6WithValidAddresses(): void {
+    public function test_is_i_pv6_with_valid_addresses(): void {
         $this->assertTrue(IPHelper::isIPv6('::1'));
         $this->assertTrue(IPHelper::isIPv6('::'));
         $this->assertTrue(IPHelper::isIPv6('2001:db8::1'));
@@ -50,7 +49,7 @@ class IPHelperTest extends BaseTestCase {
         $this->assertTrue(IPHelper::isIPv6('::ffff:192.168.1.1')); // IPv4-mapped
     }
 
-    public function testIsIPv6WithInvalidAddresses(): void {
+    public function test_is_i_pv6_with_invalid_addresses(): void {
         $this->assertFalse(IPHelper::isIPv6('192.168.1.1'));
         $this->assertFalse(IPHelper::isIPv6(''));
         $this->assertFalse(IPHelper::isIPv6(null));
@@ -60,7 +59,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== isValidIP =====
 
-    public function testIsValidIP(): void {
+    public function test_is_valid_ip(): void {
         $this->assertTrue(IPHelper::isValidIP('192.168.1.1'));
         $this->assertTrue(IPHelper::isValidIP('::1'));
         $this->assertFalse(IPHelper::isValidIP('invalid'));
@@ -69,7 +68,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Private IP =====
 
-    public function testIsPrivateIP(): void {
+    public function test_is_private_ip(): void {
         // Private IPv4
         $this->assertTrue(IPHelper::isPrivateIP('10.0.0.1'));
         $this->assertTrue(IPHelper::isPrivateIP('10.255.255.255'));
@@ -92,7 +91,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Loopback =====
 
-    public function testIsLoopback(): void {
+    public function test_is_loopback(): void {
         // IPv4
         $this->assertTrue(IPHelper::isLoopback('127.0.0.1'));
         $this->assertTrue(IPHelper::isLoopback('127.255.255.255'));
@@ -106,7 +105,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Link-Local =====
 
-    public function testIsLinkLocal(): void {
+    public function test_is_link_local(): void {
         // IPv4
         $this->assertTrue(IPHelper::isLinkLocal('169.254.0.1'));
         $this->assertTrue(IPHelper::isLinkLocal('169.254.255.255'));
@@ -120,7 +119,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Multicast =====
 
-    public function testIsMulticast(): void {
+    public function test_is_multicast(): void {
         // IPv4
         $this->assertTrue(IPHelper::isMulticast('224.0.0.1'));
         $this->assertTrue(IPHelper::isMulticast('239.255.255.255'));
@@ -135,7 +134,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Public IP =====
 
-    public function testIsPublicIP(): void {
+    public function test_is_public_ip(): void {
         $this->assertTrue(IPHelper::isPublicIP('8.8.8.8'));
         $this->assertTrue(IPHelper::isPublicIP('1.1.1.1'));
         $this->assertTrue(IPHelper::isPublicIP('93.184.216.34'));
@@ -147,7 +146,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== isInRange =====
 
-    public function testIsInRangeIPv4(): void {
+    public function test_is_in_range_i_pv4(): void {
         $this->assertTrue(IPHelper::isInRange('192.168.1.1', '192.168.1.0/24'));
         $this->assertTrue(IPHelper::isInRange('192.168.1.255', '192.168.1.0/24'));
         $this->assertFalse(IPHelper::isInRange('192.168.2.1', '192.168.1.0/24'));
@@ -161,13 +160,13 @@ class IPHelperTest extends BaseTestCase {
         $this->assertFalse(IPHelper::isInRange('192.168.1.2', '192.168.1.1'));
     }
 
-    public function testIsInRangeIPv6(): void {
+    public function test_is_in_range_i_pv6(): void {
         $this->assertTrue(IPHelper::isInRange('2001:db8::1', '2001:db8::/32'));
         $this->assertTrue(IPHelper::isInRange('2001:db8:ffff:ffff:ffff:ffff:ffff:ffff', '2001:db8::/32'));
         $this->assertFalse(IPHelper::isInRange('2001:db9::1', '2001:db8::/32'));
     }
 
-    public function testIsInRangeMixedVersions(): void {
+    public function test_is_in_range_mixed_versions(): void {
         // IPv4 in IPv6-Range sollte false sein
         $this->assertFalse(IPHelper::isInRange('192.168.1.1', '2001:db8::/32'));
         $this->assertFalse(IPHelper::isInRange('::1', '192.168.1.0/24'));
@@ -175,43 +174,43 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== ipToLong / longToIp =====
 
-    public function testIpToLong(): void {
+    public function test_ip_to_long(): void {
         $this->assertEquals(3232235777, IPHelper::ipToLong('192.168.1.1'));
         $this->assertEquals(0, IPHelper::ipToLong('0.0.0.0'));
         $this->assertEquals(4294967295, IPHelper::ipToLong('255.255.255.255'));
         $this->assertEquals(2130706433, IPHelper::ipToLong('127.0.0.1'));
     }
 
-    public function testIpToLongInvalidThrows(): void {
+    public function test_ip_to_long_invalid_throws(): void {
         $this->expectException(InvalidArgumentException::class);
         IPHelper::ipToLong('::1');
     }
 
-    public function testLongToIp(): void {
+    public function test_long_to_ip(): void {
         $this->assertEquals('192.168.1.1', IPHelper::longToIp(3232235777));
         $this->assertEquals('0.0.0.0', IPHelper::longToIp(0));
         $this->assertEquals('255.255.255.255', IPHelper::longToIp(4294967295));
     }
 
-    public function testLongToIpInvalidThrows(): void {
+    public function test_long_to_ip_invalid_throws(): void {
         $this->expectException(InvalidArgumentException::class);
         IPHelper::longToIp(-1);
     }
 
     // ===== expandIPv6 / compressIPv6 =====
 
-    public function testExpandIPv6(): void {
+    public function test_expand_i_pv6(): void {
         $this->assertEquals('0000:0000:0000:0000:0000:0000:0000:0001', IPHelper::expandIPv6('::1'));
         $this->assertEquals('0000:0000:0000:0000:0000:0000:0000:0000', IPHelper::expandIPv6('::'));
         $this->assertEquals('2001:0db8:0000:0000:0000:0000:0000:0001', IPHelper::expandIPv6('2001:db8::1'));
     }
 
-    public function testExpandIPv6InvalidThrows(): void {
+    public function test_expand_i_pv6_invalid_throws(): void {
         $this->expectException(InvalidArgumentException::class);
         IPHelper::expandIPv6('192.168.1.1');
     }
 
-    public function testCompressIPv6(): void {
+    public function test_compress_i_pv6(): void {
         $this->assertEquals('::1', IPHelper::compressIPv6('0000:0000:0000:0000:0000:0000:0000:0001'));
         $this->assertEquals('::', IPHelper::compressIPv6('0000:0000:0000:0000:0000:0000:0000:0000'));
         $this->assertEquals('2001:db8::1', IPHelper::compressIPv6('2001:0db8:0000:0000:0000:0000:0000:0001'));
@@ -219,34 +218,34 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Network Address =====
 
-    public function testGetNetworkAddressIPv4(): void {
+    public function test_get_network_address_i_pv4(): void {
         $this->assertEquals('192.168.1.0', IPHelper::getNetworkAddress('192.168.1.100', 24));
         $this->assertEquals('10.0.0.0', IPHelper::getNetworkAddress('10.255.255.255', 8));
         $this->assertEquals('172.16.0.0', IPHelper::getNetworkAddress('172.16.5.10', 16));
         $this->assertEquals('192.168.1.128', IPHelper::getNetworkAddress('192.168.1.200', 25));
     }
 
-    public function testGetNetworkAddressIPv6(): void {
+    public function test_get_network_address_i_pv6(): void {
         $this->assertEquals('2001:db8::', IPHelper::getNetworkAddress('2001:db8::1', 32));
         $this->assertEquals('2001:db8:85a3::', IPHelper::getNetworkAddress('2001:db8:85a3::8a2e:370:7334', 48));
     }
 
     // ===== Broadcast Address =====
 
-    public function testGetBroadcastAddress(): void {
+    public function test_get_broadcast_address(): void {
         $this->assertEquals('192.168.1.255', IPHelper::getBroadcastAddress('192.168.1.100', 24));
         $this->assertEquals('10.255.255.255', IPHelper::getBroadcastAddress('10.0.0.1', 8));
         $this->assertEquals('172.16.255.255', IPHelper::getBroadcastAddress('172.16.5.10', 16));
     }
 
-    public function testGetBroadcastAddressIPv6Throws(): void {
+    public function test_get_broadcast_address_i_pv6_throws(): void {
         $this->expectException(InvalidArgumentException::class);
         IPHelper::getBroadcastAddress('2001:db8::1', 64);
     }
 
     // ===== CIDR Range =====
 
-    public function testGetCIDRRangeIPv4(): void {
+    public function test_get_cidr_range_i_pv4(): void {
         $range = IPHelper::getCIDRRange('192.168.1.0/24');
 
         $this->assertEquals('192.168.1.0', $range['start']);
@@ -257,7 +256,7 @@ class IPHelperTest extends BaseTestCase {
         $this->assertEquals('256', $range['count']);
     }
 
-    public function testGetCIDRRangeIPv6(): void {
+    public function test_get_cidr_range_i_pv6(): void {
         $range = IPHelper::getCIDRRange('2001:db8::/32');
 
         $this->assertEquals('2001:db8::', $range['start']);
@@ -267,7 +266,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Mask Conversion =====
 
-    public function testMaskToPrefix(): void {
+    public function test_mask_to_prefix(): void {
         $this->assertEquals(24, IPHelper::maskToPrefix('255.255.255.0'));
         $this->assertEquals(16, IPHelper::maskToPrefix('255.255.0.0'));
         $this->assertEquals(8, IPHelper::maskToPrefix('255.0.0.0'));
@@ -276,12 +275,12 @@ class IPHelperTest extends BaseTestCase {
         $this->assertEquals(25, IPHelper::maskToPrefix('255.255.255.128'));
     }
 
-    public function testMaskToPrefixInvalidThrows(): void {
+    public function test_mask_to_prefix_invalid_throws(): void {
         $this->expectException(InvalidArgumentException::class);
         IPHelper::maskToPrefix('255.255.255.1'); // Nicht kontiguierlich
     }
 
-    public function testPrefixToMask(): void {
+    public function test_prefix_to_mask(): void {
         $this->assertEquals('255.255.255.0', IPHelper::prefixToMask(24));
         $this->assertEquals('255.255.0.0', IPHelper::prefixToMask(16));
         $this->assertEquals('255.0.0.0', IPHelper::prefixToMask(8));
@@ -289,14 +288,14 @@ class IPHelperTest extends BaseTestCase {
         $this->assertEquals('0.0.0.0', IPHelper::prefixToMask(0));
     }
 
-    public function testPrefixToMaskInvalidThrows(): void {
+    public function test_prefix_to_mask_invalid_throws(): void {
         $this->expectException(InvalidArgumentException::class);
         IPHelper::prefixToMask(33);
     }
 
     // ===== IP Version =====
 
-    public function testGetIPVersion(): void {
+    public function test_get_ip_version(): void {
         $this->assertEquals('IPv4', IPHelper::getIPVersion('192.168.1.1'));
         $this->assertEquals('IPv6', IPHelper::getIPVersion('::1'));
         $this->assertNull(IPHelper::getIPVersion('invalid'));
@@ -305,7 +304,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Normalize =====
 
-    public function testNormalize(): void {
+    public function test_normalize(): void {
         // IPv4 mit führenden Nullen
         $this->assertEquals('192.168.1.1', IPHelper::normalize('192.168.001.001'));
 
@@ -316,7 +315,7 @@ class IPHelperTest extends BaseTestCase {
 
     // ===== Compare =====
 
-    public function testCompare(): void {
+    public function test_compare(): void {
         $this->assertEquals(0, IPHelper::compare('192.168.1.1', '192.168.1.1'));
         $this->assertEquals(-1, IPHelper::compare('192.168.1.1', '192.168.1.2'));
         $this->assertEquals(1, IPHelper::compare('192.168.1.2', '192.168.1.1'));
@@ -330,7 +329,7 @@ class IPHelperTest extends BaseTestCase {
         $this->assertEquals(-1, IPHelper::compare('192.168.1.1', '::1'));
     }
 
-    public function testCompareInvalidThrows(): void {
+    public function test_compare_invalid_throws(): void {
         $this->expectException(InvalidArgumentException::class);
         IPHelper::compare('invalid', '192.168.1.1');
     }

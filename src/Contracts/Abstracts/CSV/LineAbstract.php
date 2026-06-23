@@ -10,8 +10,7 @@
 
 namespace CommonToolkit\Contracts\Abstracts\CSV;
 
-use CommonToolkit\Contracts\Interfaces\CSV\FieldInterface;
-use CommonToolkit\Contracts\Interfaces\CSV\LineInterface;
+use CommonToolkit\Contracts\Interfaces\CSV\{FieldInterface, LineInterface};
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
@@ -33,7 +32,7 @@ abstract class LineAbstract implements LineInterface {
             if ($field instanceof FieldInterface) {
                 $this->fields[] = $field;
             } else {
-                $newField = static::createField((string)$field, $enclosure);
+                $newField = static::createField((string) $field, $enclosure);
                 $this->fields[] = $newField;
             }
         }
@@ -49,7 +48,6 @@ abstract class LineAbstract implements LineInterface {
      * @param string $line      Die rohe CSV-Zeichenkette.
      * @param string $delimiter Die Trennzeichen-Zeichenkette.
      * @param string $enclosure Die Einschlusszeichen-Zeichenkette.
-     * @return static
      *
      * @throws RuntimeException
      */
@@ -59,7 +57,7 @@ abstract class LineAbstract implements LineInterface {
         }
 
         $fields = array_map(
-            fn(string $raw) => static::createField($raw, $enclosure),
+            fn (string $raw) => static::createField($raw, $enclosure),
             StringHelper::parseLineToFields($line, $delimiter, $enclosure)
         );
 
@@ -82,7 +80,7 @@ abstract class LineAbstract implements LineInterface {
     }
 
     public function countQuotedFields(): int {
-        return count(array_filter($this->fields, fn(FieldInterface $f) => $f->isQuoted()));
+        return count(array_filter($this->fields, fn (FieldInterface $f) => $f->isQuoted()));
     }
 
     public function getDelimiter(): string {
@@ -100,8 +98,8 @@ abstract class LineAbstract implements LineInterface {
      * @return array [min, max]
      */
     public function getEnclosureRepeatRange(bool $includeUnquoted = false): array {
-        $repeats = array_map(fn($f) => $f->getEnclosureRepeat(), $this->fields);
-        $filtered = $includeUnquoted ? $repeats : array_filter($repeats, fn($v) => $v > 0);
+        $repeats = array_map(fn ($f) => $f->getEnclosureRepeat(), $this->fields);
+        $filtered = $includeUnquoted ? $repeats : array_filter($repeats, fn ($v) => $v > 0);
 
         return [min($filtered ?: [0]), max($filtered ?: [0])];
     }
@@ -111,7 +109,6 @@ abstract class LineAbstract implements LineInterface {
      *
      * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
      * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
-     * @return string
      */
     public function toString(?string $delimiter = null, ?string $enclosure = null): string {
         $delimiter = $delimiter ?? $this->delimiter;
@@ -127,8 +124,6 @@ abstract class LineAbstract implements LineInterface {
 
     /**
      * Wandelt die CSV-Zeile in eine rohe CSV-Zeichenkette um.
-     *
-     * @return string
      */
     public function __toString(): string {
         return $this->toString();
@@ -138,7 +133,6 @@ abstract class LineAbstract implements LineInterface {
      * Vergleicht diese CSV-Zeile mit einer anderen auf Gleichheit.
      *
      * @param LineInterface $other Die andere CSV-Zeile zum Vergleichen.
-     * @return bool
      */
     public function equals(LineInterface $other): bool {
         if ($this->delimiter !== $other->getDelimiter() || $this->enclosure !== $other->getEnclosure()) {

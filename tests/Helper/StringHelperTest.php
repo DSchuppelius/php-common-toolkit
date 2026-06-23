@@ -17,32 +17,32 @@ use CommonToolkit\Helper\Data\StringHelper;
 use Tests\Contracts\BaseTestCase;
 
 class StringHelperTest extends BaseTestCase {
-    public function testUtf8ToIso8859_1(): void {
+    public function test_utf8_to_iso8859_1(): void {
         $utf8 = "Grüße";
         $iso = StringHelper::utf8ToIso8859_1($utf8);
         $this->assertNotSame($utf8, $iso);
         $this->assertIsString($iso);
     }
 
-    public function testConvertEncoding(): void {
+    public function test_convert_encoding(): void {
         $original = '€ Zeichen';
         $converted = StringHelper::convertEncoding($original, 'UTF-8', 'ISO-8859-1');
         $this->assertNotSame($original, $converted);
     }
 
-    public function testSanitizePrintable(): void {
+    public function test_sanitize_printable(): void {
         $string = "abc" . chr(7) . "def";
         $cleaned = StringHelper::sanitizePrintable($string);
         $this->assertStringNotContainsString(chr(7), $cleaned);
     }
 
-    public function testRemoveNonAscii(): void {
+    public function test_remove_non_ascii(): void {
         $input = "ÄÖÜabc";
         $ascii = StringHelper::removeNonAscii($input);
         $this->assertSame('abc', $ascii);
     }
 
-    public function testToAscii(): void {
+    public function test_to_ascii(): void {
         // Deutsche Umlaute werden ausgeschrieben (nicht entfernt).
         $this->assertSame('Gruesse Mueller Strasse', StringHelper::toAscii('Grüße Müller Straße'));
         $this->assertSame('Aepfel Oel Ueber', StringHelper::toAscii('Äpfel Öl Über'));
@@ -55,39 +55,39 @@ class StringHelperTest extends BaseTestCase {
         $this->assertSame('Hello World 123', StringHelper::toAscii('Hello World 123'));
     }
 
-    public function testTruncate(): void {
+    public function test_truncate(): void {
         $text = "Das ist ein sehr langer Text";
         $short = StringHelper::truncate($text, 10);
         $this->assertSame('Das ist...', $short);
     }
 
-    public function testIsAscii(): void {
+    public function test_is_ascii(): void {
         $ascii = "abc";
         $utf8 = "ü";
         $this->assertTrue(StringHelper::isAscii($ascii));
         $this->assertFalse(StringHelper::isAscii($utf8));
     }
 
-    public function testHtmlEntitiesToText(): void {
+    public function test_html_entities_to_text(): void {
         $html = "K&auml;se &amp; Brot";
         $text = StringHelper::htmlEntitiesToText($html);
         $this->assertSame("Käse & Brot", $text);
     }
 
-    public function testNormalizeWhitespace(): void {
+    public function test_normalize_whitespace(): void {
         $input = "Text   mit \n  Tabs\tund\nZeilen";
         $normalized = StringHelper::normalizeWhitespace($input);
         $this->assertSame("Text mit Tabs und Zeilen", $normalized);
     }
 
-    public function testToLowerAndUpper(): void {
+    public function test_to_lower_and_upper(): void {
         $upper = StringHelper::toUpper("Straße");
         $lower = StringHelper::toLower("Straße");
         $this->assertSame("STRASSE", $upper);
         $this->assertSame("straße", $lower);
     }
 
-    public function testStripBom(): void {
+    public function test_strip_bom(): void {
         // UTF-8 BOM
         $bomUtf8 = StringHelper::BOM_UTF8 . "Hallo";
         $this->assertSame("Hallo", StringHelper::stripBom($bomUtf8));
@@ -105,7 +105,7 @@ class StringHelperTest extends BaseTestCase {
         $this->assertSame("Hallo", StringHelper::stripBom($noBom));
     }
 
-    public function testDetectEncoding(): void {
+    public function test_detect_encoding(): void {
         $text = "Grüße aus München"; // UTF-8
         $encoding = StringHelper::detectEncoding($text);
 
@@ -113,7 +113,7 @@ class StringHelperTest extends BaseTestCase {
         $this->assertMatchesRegularExpression('/utf-?8|iso-8859/i', $encoding, "Kodierung sollte plausibel sein (UTF-8 oder ISO)");
     }
 
-    public function testIsCaseWithExtras(): void {
+    public function test_is_case_with_extras(): void {
         $tests = [
             ['text' => "hallo welt\n\t\\mit käse.\n", 'case' => CaseType::LOWER, 'expected' => true],
             ['text' => "HALLO WELT MIT KÄSE.", 'case' => CaseType::UPPER, 'expected' => true],
@@ -144,7 +144,7 @@ class StringHelperTest extends BaseTestCase {
     /**
      * Test detectLegacyEncoding für CP850 (DOS deutsche Umlaute)
      */
-    public function testDetectLegacyEncodingCP850(): void {
+    public function test_detect_legacy_encoding_c_p850(): void {
         // CP850: ü=0x81, ä=0x84, ö=0x94, Ä=0x8E, Ö=0x99, Ü=0x9A, ß=0xE1
         $cp850Text = "M\x81ller;K\x84the;J\x94rn"; // Müller;Käthe;Jörn
 
@@ -155,7 +155,7 @@ class StringHelperTest extends BaseTestCase {
     /**
      * Test detectLegacyEncoding für Windows-1252 (typografische Zeichen)
      */
-    public function testDetectLegacyEncodingWindows1252(): void {
+    public function test_detect_legacy_encoding_windows1252(): void {
         // Windows-1252: €=0x80 (vor Zahl), "=0x93, "=0x94
         $win1252Text = "\x80100"; // €100
 
@@ -171,7 +171,7 @@ class StringHelperTest extends BaseTestCase {
     /**
      * Test detectLegacyEncoding für MacRoman
      */
-    public function testDetectLegacyEncodingMacRoman(): void {
+    public function test_detect_legacy_encoding_mac_roman(): void {
         // MacRoman: Ä=0x80, ö=0x9A, ü=0x9F, ä=0x8A
         $macRomanText = "Test\x80pfel"; // TestÄpfel (Ä im Buchstabenkontext)
 
@@ -182,7 +182,7 @@ class StringHelperTest extends BaseTestCase {
     /**
      * Test detectLegacyEncoding für ISO-8859-15 (Euro an 0xA4)
      */
-    public function testDetectLegacyEncodingISO885915(): void {
+    public function test_detect_legacy_encoding_is_o885915(): void {
         // ISO-8859-15: €=0xA4 (im Zahlenkontext)
         $latin9Text = "Preis: 50\xA4"; // 50€
 
@@ -193,7 +193,7 @@ class StringHelperTest extends BaseTestCase {
     /**
      * Test detectLegacyEncoding für UTF-8
      */
-    public function testDetectLegacyEncodingUTF8(): void {
+    public function test_detect_legacy_encoding_ut_f8(): void {
         $utf8Text = "Größe und Äpfel";
 
         $result = StringHelper::detectLegacyEncoding($utf8Text);
@@ -203,7 +203,7 @@ class StringHelperTest extends BaseTestCase {
     /**
      * Test detectLegacyEncoding für reines ASCII
      */
-    public function testDetectLegacyEncodingASCII(): void {
+    public function test_detect_legacy_encoding_ascii(): void {
         $asciiText = "Hello World";
 
         $result = StringHelper::detectLegacyEncoding($asciiText);
@@ -213,7 +213,7 @@ class StringHelperTest extends BaseTestCase {
     /**
      * Test detectLegacyEncoding für leeren String
      */
-    public function testDetectLegacyEncodingEmpty(): void {
+    public function test_detect_legacy_encoding_empty(): void {
         $result = StringHelper::detectLegacyEncoding('');
         $this->assertNull($result, 'Sollte null für leeren String zurückgeben');
     }
@@ -221,7 +221,7 @@ class StringHelperTest extends BaseTestCase {
     /**
      * Test detectDosVsWindowsEncoding (deprecated Wrapper)
      */
-    public function testDetectDosVsWindowsEncodingLegacy(): void {
+    public function test_detect_dos_vs_windows_encoding_legacy(): void {
         // CP850 sollte als CP850 zurückgegeben werden
         $cp850Text = "M\x81ller"; // Müller
         $result = StringHelper::detectDosVsWindowsEncoding($cp850Text);

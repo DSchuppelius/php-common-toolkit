@@ -19,7 +19,9 @@ class ShellChardet {
      * @throws RuntimeException Wenn der Prozess nicht gestartet werden kann.
      */
     public static function start(): void {
-        if (self::$process !== null) return;
+        if (self::$process !== null) {
+            return;
+        }
 
         $descriptorspec = [
             0 => ['pipe', 'r'], // stdin
@@ -130,9 +132,6 @@ class ShellChardet {
 
     /**
      * Normalisiert die Kodierung basierend auf dem Ergebnis von chardet.
-     *
-     * @param string $result
-     * @return string
      */
     private static function normalizeEncoding(string $result): string {
         if (preg_match('/:\s*([a-zA-Z0-9\-\_]+)\s+with\s+confidence/i', $result, $matches)) {

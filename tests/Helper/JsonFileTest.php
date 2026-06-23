@@ -4,7 +4,6 @@ namespace Tests\Helper;
 
 use CommonToolkit\Helper\FileSystem\FileTypes\JsonFile;
 use Tests\Contracts\BaseTestCase;
-use ERRORToolkit\Factories\ConsoleLoggerFactory;
 
 class JsonFileTest extends BaseTestCase {
     private string $tempDir;
@@ -26,8 +25,8 @@ class JsonFileTest extends BaseTestCase {
             'age' => 30,
             'address' => [
                 'street' => 'Main St',
-                'city' => 'Springfield'
-            ]
+                'city' => 'Springfield',
+            ],
         ];
         file_put_contents($this->testJsonFile, json_encode($testData, JSON_PRETTY_PRINT));
 
@@ -42,9 +41,9 @@ class JsonFileTest extends BaseTestCase {
             'properties' => [
                 'name' => ['type' => 'string'],
                 'email' => ['type' => 'string'],
-                'age' => ['type' => 'integer']
+                'age' => ['type' => 'integer'],
             ],
-            'required' => ['name', 'email']
+            'required' => ['name', 'email'],
         ];
         file_put_contents($this->schemaFile, json_encode($schema));
     }
@@ -64,12 +63,12 @@ class JsonFileTest extends BaseTestCase {
         parent::tearDown();
     }
 
-    public function testIsValid(): void {
+    public function test_is_valid(): void {
         $this->assertTrue(JsonFile::isValid($this->testJsonFile));
         $this->assertFalse(JsonFile::isValid($this->invalidJsonFile));
     }
 
-    public function testDecode(): void {
+    public function test_decode(): void {
         $result = JsonFile::decode($this->testJsonFile);
 
         $this->assertIsArray($result);
@@ -78,7 +77,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertEquals(30, $result['age']);
     }
 
-    public function testDecodeAsObject(): void {
+    public function test_decode_as_object(): void {
         $result = JsonFile::decode($this->testJsonFile, false);
 
         $this->assertIsObject($result);
@@ -87,7 +86,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertEquals(30, $result->age);
     }
 
-    public function testEncode(): void {
+    public function test_encode(): void {
         $newFile = $this->tempDir . DIRECTORY_SEPARATOR . 'new.json';
         $data = ['test' => 'data', 'number' => 123];
 
@@ -101,7 +100,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertEquals($data, $decoded);
     }
 
-    public function testEncodeFormatted(): void {
+    public function test_encode_formatted(): void {
         $newFile = $this->tempDir . DIRECTORY_SEPARATOR . 'formatted.json';
         $data = ['test' => 'data', 'nested' => ['key' => 'value']];
 
@@ -115,7 +114,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertStringContainsString("\n", $content);   // Should contain newlines
     }
 
-    public function testPrettyPrint(): void {
+    public function test_pretty_print(): void {
         $uglyFile = $this->tempDir . DIRECTORY_SEPARATOR . 'ugly.json';
         file_put_contents($uglyFile, '{"compact":"json","without":"formatting"}');
 
@@ -128,7 +127,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertStringContainsString("\n", $content);
     }
 
-    public function testMinify(): void {
+    public function test_minify(): void {
         $result = JsonFile::minify($this->testJsonFile);
 
         $this->assertTrue($result);
@@ -138,7 +137,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertStringNotContainsString("\n", $content);
     }
 
-    public function testValidateSchema(): void {
+    public function test_validate_schema(): void {
         $result = JsonFile::validateSchema($this->testJsonFile, $this->schemaFile);
         $this->assertIsArray($result);
         $this->assertArrayHasKey('valid', $result);
@@ -150,7 +149,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertIsArray($result['errors']);
     }
 
-    public function testExtractPath(): void {
+    public function test_extract_path(): void {
         $result = JsonFile::extractPath($this->testJsonFile, 'name');
         $this->assertEquals('John Doe', $result);
 
@@ -161,11 +160,11 @@ class JsonFileTest extends BaseTestCase {
         $this->assertNull($result);
     }
 
-    public function testMerge(): void {
+    public function test_merge(): void {
         $file2 = $this->tempDir . DIRECTORY_SEPARATOR . 'merge.json';
         $mergeData = [
             'name' => 'Jane Doe', // Should overwrite
-            'phone' => '+1234567890' // Should add
+            'phone' => '+1234567890', // Should add
         ];
         file_put_contents($file2, json_encode($mergeData));
 
@@ -178,13 +177,13 @@ class JsonFileTest extends BaseTestCase {
         $this->assertEquals(30, $content['age']); // Preserved
     }
 
-    public function testMaskSensitiveData(): void {
+    public function test_mask_sensitive_data(): void {
         $sensitiveFile = $this->tempDir . DIRECTORY_SEPARATOR . 'sensitive.json';
         $sensitiveData = [
             'username' => 'john_doe',
             'password' => 'secret123',
             'email' => 'john@example.com',
-            'credit_card' => '1234567890123456'
+            'credit_card' => '1234567890123456',
         ];
         file_put_contents($sensitiveFile, json_encode($sensitiveData));
 
@@ -198,7 +197,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertEquals('***', $content['credit_card']); // Masked
     }
 
-    public function testGetMetadata(): void {
+    public function test_get_metadata(): void {
         $metadata = JsonFile::getMetaData($this->testJsonFile);
 
         $this->assertIsArray($metadata);
@@ -213,7 +212,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertGreaterThan(0, $metadata['elementCount']);
     }
 
-    public function testBackup(): void {
+    public function test_backup(): void {
         $result = JsonFile::backup($this->testJsonFile);
         $this->assertIsString($result);
 
@@ -229,7 +228,7 @@ class JsonFileTest extends BaseTestCase {
         unlink($backupFile);
     }
 
-    public function testRestore(): void {
+    public function test_restore(): void {
         // Create backup first
         $backupFile = JsonFile::backup($this->testJsonFile);
 
@@ -250,7 +249,7 @@ class JsonFileTest extends BaseTestCase {
         }
     }
 
-    public function testNonExistentFile(): void {
+    public function test_non_existent_file(): void {
         $nonExistent = $this->tempDir . DIRECTORY_SEPARATOR . 'non-existent.json';
 
         $this->expectException(\ERRORToolkit\Exceptions\FileSystem\FileNotFoundException::class);

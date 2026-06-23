@@ -18,8 +18,6 @@ use ERRORToolkit\Traits\ErrorLog;
 /**
  * Abstrakte Basisklasse für textbasierte Dokumente.
  * Verwaltet Encoding, BOM (Byte Order Mark) und Zeilenumbrüche.
- *
- * @package CommonToolkit\Contracts\Abstracts
  */
 abstract class TextDocumentAbstract {
     use ErrorLog;
@@ -69,8 +67,6 @@ abstract class TextDocumentAbstract {
 
     /**
      * Gibt zurück, ob ein BOM beim Export geschrieben werden soll.
-     *
-     * @return bool
      */
     public function hasBom(): bool {
         return $this->withBom;

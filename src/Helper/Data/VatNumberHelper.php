@@ -20,8 +20,6 @@ use ERRORToolkit\Traits\ErrorLog;
  *
  * Unterstützt Validierung für alle EU-Mitgliedsstaaten sowie einige Drittländer.
  * Implementiert sowohl Format- als auch Prüfsummenvalidierung, wo verfügbar.
- *
- * @package CommonToolkit\Helper\Data
  */
 class VatNumberHelper {
     use ErrorLog;
@@ -34,41 +32,41 @@ class VatNumberHelper {
      */
     private const VAT_PATTERNS = [
         // EU-Mitgliedsstaaten
-        'AT' =>  ['lengths' => [9],                          'pattern' => '/^ATU[0-9]{8}$/'],                                    // Österreich
-        'BE' =>  ['lengths' => [10],                         'pattern' => '/^BE[01][0-9]{9}$/'],                                 // Belgien
-        'BG' =>  ['lengths' => [9, 10],                      'pattern' => '/^BG[0-9]{9,10}$/'],                                  // Bulgarien
-        'CY' =>  ['lengths' => [9],                          'pattern' => '/^CY[0-9]{8}[A-Z]$/'],                                // Zypern
-        'CZ' =>  ['lengths' => [8, 9, 10],                   'pattern' => '/^CZ[0-9]{8,10}$/'],                                  // Tschechien
-        'DE' =>  ['lengths' => [9],                          'pattern' => '/^DE[0-9]{9}$/'],                                     // Deutschland
-        'DK' =>  ['lengths' => [8],                          'pattern' => '/^DK[0-9]{8}$/'],                                     // Dänemark
-        'EE' =>  ['lengths' => [9],                          'pattern' => '/^EE[0-9]{9}$/'],                                     // Estland
-        'EL' =>  ['lengths' => [9],                          'pattern' => '/^EL[0-9]{9}$/'],                                     // Griechenland
-        'ES' =>  ['lengths' => [9],                          'pattern' => '/^ES[A-Z0-9][0-9]{7}[A-Z0-9]$/'],                     // Spanien
-        'FI' =>  ['lengths' => [8],                          'pattern' => '/^FI[0-9]{8}$/'],                                     // Finnland
-        'FR' =>  ['lengths' => [11],                         'pattern' => '/^FR[A-Z0-9]{2}[0-9]{9}$/'],                          // Frankreich
-        'HR' =>  ['lengths' => [11],                         'pattern' => '/^HR[0-9]{11}$/'],                                    // Kroatien
-        'HU' =>  ['lengths' => [8],                          'pattern' => '/^HU[0-9]{8}$/'],                                     // Ungarn
-        'IE' =>  ['lengths' => [8, 9],                       'pattern' => '/^IE([0-9]{7}[A-Z]{1,2}|[0-9][A-Z][0-9]{5}[A-Z])$/'], // Irland
-        'IT' =>  ['lengths' => [11],                         'pattern' => '/^IT[0-9]{11}$/'],                                    // Italien
-        'LT' =>  ['lengths' => [9, 12],                      'pattern' => '/^LT([0-9]{9}|[0-9]{12})$/'],                         // Litauen
-        'LU' =>  ['lengths' => [8],                          'pattern' => '/^LU[0-9]{8}$/'],                                     // Luxemburg
-        'LV' =>  ['lengths' => [11],                         'pattern' => '/^LV[0-9]{11}$/'],                                    // Lettland
-        'MT' =>  ['lengths' => [8],                          'pattern' => '/^MT[0-9]{8}$/'],                                     // Malta
-        'NL' =>  ['lengths' => [12],                         'pattern' => '/^NL[0-9]{9}B[0-9]{2}$/'],                            // Niederlande
-        'PL' =>  ['lengths' => [10],                         'pattern' => '/^PL[0-9]{10}$/'],                                    // Polen
-        'PT' =>  ['lengths' => [9],                          'pattern' => '/^PT[0-9]{9}$/'],                                     // Portugal
-        'RO' =>  ['lengths' => [2, 3, 4, 5, 6, 7, 8, 9, 10], 'pattern' => '/^RO[0-9]{2,10}$/'],                                  // Rumänien
-        'SE' =>  ['lengths' => [12],                         'pattern' => '/^SE[0-9]{12}$/'],                                    // Schweden
-        'SI' =>  ['lengths' => [8],                          'pattern' => '/^SI[0-9]{8}$/'],                                     // Slowenien
-        'SK' =>  ['lengths' => [10],                         'pattern' => '/^SK[0-9]{10}$/'],                                    // Slowakei
+        'AT' => ['lengths' => [9],                          'pattern' => '/^ATU[0-9]{8}$/'],                                    // Österreich
+        'BE' => ['lengths' => [10],                         'pattern' => '/^BE[01][0-9]{9}$/'],                                 // Belgien
+        'BG' => ['lengths' => [9, 10],                      'pattern' => '/^BG[0-9]{9,10}$/'],                                  // Bulgarien
+        'CY' => ['lengths' => [9],                          'pattern' => '/^CY[0-9]{8}[A-Z]$/'],                                // Zypern
+        'CZ' => ['lengths' => [8, 9, 10],                   'pattern' => '/^CZ[0-9]{8,10}$/'],                                  // Tschechien
+        'DE' => ['lengths' => [9],                          'pattern' => '/^DE[0-9]{9}$/'],                                     // Deutschland
+        'DK' => ['lengths' => [8],                          'pattern' => '/^DK[0-9]{8}$/'],                                     // Dänemark
+        'EE' => ['lengths' => [9],                          'pattern' => '/^EE[0-9]{9}$/'],                                     // Estland
+        'EL' => ['lengths' => [9],                          'pattern' => '/^EL[0-9]{9}$/'],                                     // Griechenland
+        'ES' => ['lengths' => [9],                          'pattern' => '/^ES[A-Z0-9][0-9]{7}[A-Z0-9]$/'],                     // Spanien
+        'FI' => ['lengths' => [8],                          'pattern' => '/^FI[0-9]{8}$/'],                                     // Finnland
+        'FR' => ['lengths' => [11],                         'pattern' => '/^FR[A-Z0-9]{2}[0-9]{9}$/'],                          // Frankreich
+        'HR' => ['lengths' => [11],                         'pattern' => '/^HR[0-9]{11}$/'],                                    // Kroatien
+        'HU' => ['lengths' => [8],                          'pattern' => '/^HU[0-9]{8}$/'],                                     // Ungarn
+        'IE' => ['lengths' => [8, 9],                       'pattern' => '/^IE([0-9]{7}[A-Z]{1,2}|[0-9][A-Z][0-9]{5}[A-Z])$/'], // Irland
+        'IT' => ['lengths' => [11],                         'pattern' => '/^IT[0-9]{11}$/'],                                    // Italien
+        'LT' => ['lengths' => [9, 12],                      'pattern' => '/^LT([0-9]{9}|[0-9]{12})$/'],                         // Litauen
+        'LU' => ['lengths' => [8],                          'pattern' => '/^LU[0-9]{8}$/'],                                     // Luxemburg
+        'LV' => ['lengths' => [11],                         'pattern' => '/^LV[0-9]{11}$/'],                                    // Lettland
+        'MT' => ['lengths' => [8],                          'pattern' => '/^MT[0-9]{8}$/'],                                     // Malta
+        'NL' => ['lengths' => [12],                         'pattern' => '/^NL[0-9]{9}B[0-9]{2}$/'],                            // Niederlande
+        'PL' => ['lengths' => [10],                         'pattern' => '/^PL[0-9]{10}$/'],                                    // Polen
+        'PT' => ['lengths' => [9],                          'pattern' => '/^PT[0-9]{9}$/'],                                     // Portugal
+        'RO' => ['lengths' => [2, 3, 4, 5, 6, 7, 8, 9, 10], 'pattern' => '/^RO[0-9]{2,10}$/'],                                  // Rumänien
+        'SE' => ['lengths' => [12],                         'pattern' => '/^SE[0-9]{12}$/'],                                    // Schweden
+        'SI' => ['lengths' => [8],                          'pattern' => '/^SI[0-9]{8}$/'],                                     // Slowenien
+        'SK' => ['lengths' => [10],                         'pattern' => '/^SK[0-9]{10}$/'],                                    // Slowakei
 
         // Nordirland (spezielle Regelung nach Brexit)
-        'XI' =>  ['lengths' => [9, 12],                      'pattern' => '/^XI([0-9]{9}|[0-9]{12}|GD[0-9]{3}|HA[0-9]{3})$/'],   // Nordirland
+        'XI' => ['lengths' => [9, 12],                      'pattern' => '/^XI([0-9]{9}|[0-9]{12}|GD[0-9]{3}|HA[0-9]{3})$/'],   // Nordirland
 
         // Drittländer mit häufiger Verwendung
         'CHE' => ['lengths' => [9],                          'pattern' => '/^CHE[0-9]{9}(MWST|TVA|IVA)$/'],                      // Schweiz
-        'GB' =>  ['lengths' => [9, 12],                      'pattern' => '/^GB([0-9]{9}|[0-9]{12}|GD[0-9]{3}|HA[0-9]{3})$/'],   // UK (historisch)
-        'NO' =>  ['lengths' => [9],                          'pattern' => '/^NO[0-9]{9}MVA$/'],                                  // Norwegen
+        'GB' => ['lengths' => [9, 12],                      'pattern' => '/^GB([0-9]{9}|[0-9]{12}|GD[0-9]{3}|HA[0-9]{3})$/'],   // UK (historisch)
+        'NO' => ['lengths' => [9],                          'pattern' => '/^NO[0-9]{9}MVA$/'],                                  // Norwegen
     ];
 
     /**
@@ -217,36 +215,36 @@ class VatNumberHelper {
      */
     public static function getVatPrefix(CountryCode $country): ?string {
         return match ($country) {
-            CountryCode::Austria                                       => 'AT',
-            CountryCode::Belgium                                       => 'BE',
-            CountryCode::Bulgaria                                      => 'BG',
-            CountryCode::Croatia                                       => 'HR',
-            CountryCode::Cyprus                                        => 'CY',
-            CountryCode::Czechia                                       => 'CZ',
-            CountryCode::Denmark                                       => 'DK',
-            CountryCode::Estonia                                       => 'EE',
-            CountryCode::Finland                                       => 'FI',
-            CountryCode::France                                        => 'FR',
-            CountryCode::Germany                                       => 'DE',
-            CountryCode::Greece                                        => 'EL', // Griechenland verwendet EL statt GR
-            CountryCode::Hungary                                       => 'HU',
-            CountryCode::Ireland                                       => 'IE',
-            CountryCode::Italy                                         => 'IT',
-            CountryCode::Latvia                                        => 'LV',
-            CountryCode::Lithuania                                     => 'LT',
-            CountryCode::Luxembourg                                    => 'LU',
-            CountryCode::Malta                                         => 'MT',
-            CountryCode::Netherlands                                   => 'NL',
-            CountryCode::Poland                                        => 'PL',
-            CountryCode::Portugal                                      => 'PT',
-            CountryCode::Romania                                       => 'RO',
-            CountryCode::Slovakia                                      => 'SK',
-            CountryCode::Slovenia                                      => 'SI',
-            CountryCode::Spain                                         => 'ES',
-            CountryCode::Sweden                                        => 'SE',
-            CountryCode::Switzerland                                   => 'CHE',
+            CountryCode::Austria => 'AT',
+            CountryCode::Belgium => 'BE',
+            CountryCode::Bulgaria => 'BG',
+            CountryCode::Croatia => 'HR',
+            CountryCode::Cyprus => 'CY',
+            CountryCode::Czechia => 'CZ',
+            CountryCode::Denmark => 'DK',
+            CountryCode::Estonia => 'EE',
+            CountryCode::Finland => 'FI',
+            CountryCode::France => 'FR',
+            CountryCode::Germany => 'DE',
+            CountryCode::Greece => 'EL', // Griechenland verwendet EL statt GR
+            CountryCode::Hungary => 'HU',
+            CountryCode::Ireland => 'IE',
+            CountryCode::Italy => 'IT',
+            CountryCode::Latvia => 'LV',
+            CountryCode::Lithuania => 'LT',
+            CountryCode::Luxembourg => 'LU',
+            CountryCode::Malta => 'MT',
+            CountryCode::Netherlands => 'NL',
+            CountryCode::Poland => 'PL',
+            CountryCode::Portugal => 'PT',
+            CountryCode::Romania => 'RO',
+            CountryCode::Slovakia => 'SK',
+            CountryCode::Slovenia => 'SI',
+            CountryCode::Spain => 'ES',
+            CountryCode::Sweden => 'SE',
+            CountryCode::Switzerland => 'CHE',
             CountryCode::UnitedKingdomOfGreatBritainAndNorthernIreland => 'GB',
-            CountryCode::Norway                                        => 'NO',
+            CountryCode::Norway => 'NO',
             default => null,
         };
     }
@@ -286,7 +284,7 @@ class VatNumberHelper {
         $product = 10;
 
         for ($i = 0; $i < 8; $i++) {
-            $sum = ((int)$number[$i] + $product) % 10;
+            $sum = ((int) $number[$i] + $product) % 10;
             if ($sum === 0) {
                 $sum = 10;
             }
@@ -298,7 +296,7 @@ class VatNumberHelper {
             $checkDigit = 0;
         }
 
-        return (int)$number[8] === $checkDigit;
+        return (int) $number[8] === $checkDigit;
     }
 
     /**
@@ -318,13 +316,13 @@ class VatNumberHelper {
         $sum = 0;
 
         for ($i = 0; $i < 7; $i++) {
-            $digit = (int)$number[$i] * $weights[$i];
+            $digit = (int) $number[$i] * $weights[$i];
             $sum += ($digit > 9) ? $digit - 9 : $digit;
         }
 
         $checkDigit = (10 - (($sum + 4) % 10)) % 10;
 
-        return (int)$number[7] === $checkDigit;
+        return (int) $number[7] === $checkDigit;
     }
 
     /**
@@ -340,8 +338,8 @@ class VatNumberHelper {
             return false;
         }
 
-        $base = (int)substr($number, 0, 8);
-        $checkDigits = (int)substr($number, 8, 2);
+        $base = (int) substr($number, 0, 8);
+        $checkDigits = (int) substr($number, 8, 2);
 
         return $checkDigits === (97 - ($base % 97));
     }
@@ -369,7 +367,7 @@ class VatNumberHelper {
         $sum = 0;
 
         for ($i = 0; $i < 8; $i++) {
-            $sum += (int)$number[$i] * $weights[$i];
+            $sum += (int) $number[$i] * $weights[$i];
         }
 
         $checkDigit = $sum % 11;
@@ -377,7 +375,7 @@ class VatNumberHelper {
             return false;
         }
 
-        return (int)$number[8] === $checkDigit;
+        return (int) $number[8] === $checkDigit;
     }
 
     /**
@@ -401,7 +399,7 @@ class VatNumberHelper {
         $sumEven = 0;
 
         for ($i = 0; $i < 10; $i++) {
-            $digit = (int)$number[$i];
+            $digit = (int) $number[$i];
             if ($i % 2 === 0) {
                 $sumOdd += $digit;
             } else {
@@ -412,7 +410,7 @@ class VatNumberHelper {
 
         $checkDigit = (10 - (($sumOdd + $sumEven) % 10)) % 10;
 
-        return (int)$number[10] === $checkDigit;
+        return (int) $number[10] === $checkDigit;
     }
 
     /**
@@ -433,8 +431,8 @@ class VatNumberHelper {
 
         // Wenn der Key nur Zahlen enthält
         if (ctype_digit($key)) {
-            $computed = ((int)$siren * 100 + 12) % 97;
-            return (int)$key === $computed;
+            $computed = ((int) $siren * 100 + 12) % 97;
+            return (int) $key === $computed;
         }
 
         // Erweiterte Prüfung für alphanumerische Keys
@@ -464,10 +462,10 @@ class VatNumberHelper {
             $sumEven = 0;
 
             for ($i = 0; $i < 7; $i++) {
-                $digit = (int)$digits[$i];
+                $digit = (int) $digits[$i];
                 if ($i % 2 === 0) {
                     $doubled = $digit * 2;
-                    $sumOdd += (int)($doubled / 10) + ($doubled % 10);
+                    $sumOdd += (int) ($doubled / 10) + ($doubled % 10);
                 } else {
                     $sumEven += $digit;
                 }
@@ -479,9 +477,9 @@ class VatNumberHelper {
             if (preg_match('/[PQRSW]/', $firstChar)) {
                 return $lastChar === $controlLetter;
             } elseif (preg_match('/[ABEH]/', $firstChar)) {
-                return $lastChar === (string)$control;
+                return $lastChar === (string) $control;
             } else {
-                return $lastChar === (string)$control || $lastChar === $controlLetter;
+                return $lastChar === (string) $control || $lastChar === $controlLetter;
             }
         }
 
@@ -506,7 +504,7 @@ class VatNumberHelper {
         $sum = 0;
 
         for ($i = 0; $i < 9; $i++) {
-            $sum += (int)$number[$i] * $weights[$i];
+            $sum += (int) $number[$i] * $weights[$i];
         }
 
         $checkDigit = $sum % 11;
@@ -514,7 +512,7 @@ class VatNumberHelper {
             return false; // Ungültige Prüfziffer
         }
 
-        return (int)$number[9] === $checkDigit;
+        return (int) $number[9] === $checkDigit;
     }
 
     /**
@@ -534,7 +532,7 @@ class VatNumberHelper {
         $sum = 0;
 
         for ($i = 0; $i < 8; $i++) {
-            $sum += (int)$number[$i] * $weights[$i];
+            $sum += (int) $number[$i] * $weights[$i];
         }
 
         $checkDigit = 11 - ($sum % 11);
@@ -542,7 +540,7 @@ class VatNumberHelper {
             $checkDigit = 0;
         }
 
-        return (int)$number[8] === $checkDigit;
+        return (int) $number[8] === $checkDigit;
     }
 
     /**
@@ -562,7 +560,7 @@ class VatNumberHelper {
         $sum = 0;
 
         for ($i = 0; $i < 7; $i++) {
-            $sum += (int)$number[$i] * $weights[$i];
+            $sum += (int) $number[$i] * $weights[$i];
         }
 
         $checkDigit = 11 - ($sum % 11);
@@ -572,7 +570,7 @@ class VatNumberHelper {
             return false;
         }
 
-        return (int)$number[7] === $checkDigit;
+        return (int) $number[7] === $checkDigit;
     }
 
     /**
@@ -592,7 +590,7 @@ class VatNumberHelper {
         $sum = 0;
 
         for ($i = 0; $i < 8; $i++) {
-            $sum += (int)$number[$i] * $weights[$i];
+            $sum += (int) $number[$i] * $weights[$i];
         }
 
         return $sum % 11 === 0;
@@ -611,8 +609,8 @@ class VatNumberHelper {
             return false;
         }
 
-        $base = (int)substr($number, 0, 6);
-        $checkDigits = (int)substr($number, 6, 2);
+        $base = (int) substr($number, 0, 6);
+        $checkDigits = (int) substr($number, 6, 2);
 
         return $checkDigits === ($base % 89);
     }
@@ -634,12 +632,12 @@ class VatNumberHelper {
         $sum = 0;
 
         for ($i = 0; $i < 7; $i++) {
-            $sum += (int)$number[$i] * $weights[$i];
+            $sum += (int) $number[$i] * $weights[$i];
         }
 
         $checkDigit = (10 - ($sum % 10)) % 10;
 
-        return (int)$number[7] === $checkDigit;
+        return (int) $number[7] === $checkDigit;
     }
 
     /**
@@ -659,7 +657,7 @@ class VatNumberHelper {
         $sum = 0;
 
         for ($i = 0; $i < 7; $i++) {
-            $sum += (int)$number[$i] * $weights[$i];
+            $sum += (int) $number[$i] * $weights[$i];
         }
 
         $checkDigit = 11 - ($sum % 11);
@@ -669,6 +667,6 @@ class VatNumberHelper {
             return false;
         }
 
-        return (int)$number[7] === $checkDigit;
+        return (int) $number[7] === $checkDigit;
     }
 }

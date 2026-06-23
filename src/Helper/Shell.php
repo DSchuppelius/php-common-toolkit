@@ -19,7 +19,6 @@ use Exception;
 class Shell extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../config/common_executables.json';
 
-
     /**
      * Führt einen Shell-Befehl aus und gibt den Exit-Code zurück.
      *
@@ -103,11 +102,6 @@ class Shell extends ConfiguredHelperAbstract {
 
     /**
      * Gibt den plattformspezifischen Befehl zurück.
-     *
-     * @param string $unixCommand
-     * @param string $windowsCommand
-     * @param boolean $usePowerShell
-     * @return string
      */
     public static function getPlatformSpecificCommand(string $unixCommand, string $windowsCommand, bool $usePowerShell = false): string {
         $cmd = Platform::isWindows() ? $windowsCommand : $unixCommand;
@@ -116,8 +110,6 @@ class Shell extends ConfiguredHelperAbstract {
 
     /**
      * Gibt die konfigurierten Shell-Executables zurück.
-     *
-     * @return array
      */
     public static function getConfiguredExecutables(): array {
         return self::getExecutableInstances('shellExecutables', ShellExecutable::class);
@@ -125,10 +117,6 @@ class Shell extends ConfiguredHelperAbstract {
 
     /**
      * Baut den plattformspezifischen Befehl auf.
-     *
-     * @param string $command
-     * @param boolean $usePowerShell
-     * @return string
      */
     private static function buildPlatformCommand(string $command, bool $usePowerShell = false): string {
         if ($usePowerShell) {
@@ -142,9 +130,6 @@ class Shell extends ConfiguredHelperAbstract {
     /**
      * Prüft ob im Befehl bereits eine stderr-Umleitung vorhanden ist.
      * Erkennt Unix (2>&1, 2>/dev/null) und Windows (2>NUL) Varianten.
-     *
-     * @param string $command
-     * @return bool
      */
     private static function hasStderrRedirect(string $command): bool {
         return str_contains($command, '2>&1')

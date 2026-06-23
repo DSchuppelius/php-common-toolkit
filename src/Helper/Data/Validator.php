@@ -19,15 +19,10 @@ namespace CommonToolkit\Helper\Data;
  * - Bankdaten (IBAN, BIC, BLZ, Kontonummer)
  * - Währungsbeträge
  * - Datumsformate
- *
- * @package CommonToolkit\Helper\Data
  */
 class Validator {
     /**
      * Prüft, ob der Wert ein gültiges Datum ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isDate(string $value): bool {
         return DateHelper::isValidDate($value);
@@ -35,9 +30,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert ein gültiger Betrag ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isAmount(string $value): bool {
         $format = '';
@@ -46,9 +38,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine IBAN ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isIBAN(string $value): bool {
         return self::isMaskedIBAN($value) || self::isRealIBAN($value);
@@ -56,9 +45,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine maskierte IBAN ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isMaskedIBAN(string $value): bool {
         // z. B. DE4430020900XXXXXX123
@@ -67,9 +53,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine echte IBAN ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isRealIBAN(string $value): bool {
         // z. B. DE44300209001234567890
@@ -78,9 +61,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine gültige BIC ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isBIC(string $value): bool {
         return BankHelper::isBIC($value);
@@ -88,9 +68,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert ein Bankleitzahl ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isBankCode(string $value): bool {
         return BankHelper::isBLZ($value);
@@ -98,9 +75,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine Kontonummer ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isAccountNumber(string $value): bool {
         return BankHelper::isKTO($value);
@@ -108,9 +82,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine gültige USt-ID (VAT-ID) ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isVatId(string $value): bool {
         return VatNumberHelper::isVatId($value);
@@ -118,9 +89,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert eine gültige USt-ID mit korrekter Prüfsumme ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isValidVatId(string $value): bool {
         return VatNumberHelper::validateVatId($value, true);
@@ -128,9 +96,6 @@ class Validator {
 
     /**
      * Prüft, ob der Wert ein Text ist.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isText(string $value): bool {
         return !self::isAccountNumber($value) && !self::isBankCode($value) && !self::isIBAN($value) && !self::isBIC($value) && !self::isAmount($value) && !self::isDate($value) && !self::isVatId($value);
@@ -140,9 +105,6 @@ class Validator {
      * Prüft, ob der Wert eine alphanumerische ID ist (nur Großbuchstaben und Ziffern).
      *
      * Wird verwendet für eindeutige Transaktions-IDs, z.B. in agree21 GDPdU-Exporten.
-     *
-     * @param string $value
-     * @return boolean
      */
     public static function isAlphaNumericUppercase(string $value): bool {
         $value = trim($value);
@@ -163,16 +125,16 @@ class Validator {
     public static function validateBySymbol(string $symbol, string $value): bool {
         return match ($symbol) {
             'd', 'D' => self::isDate($value),
-            'b'      => self::isAmount($value),
-            'B'      => self::isBankCode($value),
-            'k'      => self::isAccountNumber($value),
-            'i'      => self::isRealIBAN($value),
-            'I'      => self::isMaskedIBAN($value),
-            'c'      => self::isBIC($value),
-            't'      => self::isText($value),
-            'u'      => self::isAlphaNumericUppercase($value),
-            '_'      => true,
-            default  => false,
+            'b' => self::isAmount($value),
+            'B' => self::isBankCode($value),
+            'k' => self::isAccountNumber($value),
+            'i' => self::isRealIBAN($value),
+            'I' => self::isMaskedIBAN($value),
+            'c' => self::isBIC($value),
+            't' => self::isText($value),
+            'u' => self::isAlphaNumericUppercase($value),
+            '_' => true,
+            default => false,
         };
     }
 }

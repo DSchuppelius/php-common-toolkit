@@ -16,10 +16,8 @@ use CommonToolkit\Contracts\Interfaces\XML\XmlAttributeInterface;
 
 /**
  * Repräsentiert ein XML-Attribut.
- * 
+ *
  * Immutable Value Object für XML-Attribute mit optionaler Namespace-Unterstützung.
- * 
- * @package CommonToolkit\Entities\XML
  */
 class Attribute implements XmlAttributeInterface {
     private string $name;

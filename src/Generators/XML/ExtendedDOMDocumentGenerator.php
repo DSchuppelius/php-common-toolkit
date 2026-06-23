@@ -14,15 +14,13 @@ namespace CommonToolkit\Generators\XML;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\XML\ExtendedDOMDocument;
-use CommonToolkit\Helper\FileSystem\File;
 use DOMElement;
-use DOMNode;
 use Exception;
 use RuntimeException;
 
 /**
  * Generator für ExtendedDOMDocument.
- * 
+ *
  * Bietet erweiterte Generierungsfunktionen:
  * - Pretty-Print Formatierung
  * - XSD-Schema-Location hinzufügen
@@ -30,18 +28,15 @@ use RuntimeException;
  * - Kanonisches XML (C14N)
  * - Batch-Generierung
  * - Fragment-Generierung
- * 
- * @package CommonToolkit\Generators\XML
  */
 class ExtendedDOMDocumentGenerator extends HelperAbstract {
-
     // =========================================================================
     // STRING-GENERIERUNG
     // =========================================================================
 
     /**
      * Generiert XML-String aus einem ExtendedDOMDocument.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Dokument
      * @param bool $formatOutput Pretty-Print aktivieren
      * @return string Der XML-String
@@ -71,7 +66,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
     /**
      * Generiert kanonisches XML (C14N).
      * Nützlich für digitale Signaturen.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Dokument
      * @param bool $exclusive Exklusiv-Modus (für Signatur-Kompatibilität)
      * @param bool $withComments Kommentare einschließen
@@ -124,7 +119,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
     /**
      * Generiert XML mit xsi:schemaLocation Attribut.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Dokument
      * @param string $schemaLocation Schema-Location (z.B. "urn:iso:std:iso:20022:tech:xsd:pain.001.003.03 pain.001.003.03.xsd")
      */
@@ -183,7 +178,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
     /**
      * Speichert ein Dokument in eine Datei.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Dokument
      * @param string $filePath Pfad zur Zieldatei
      * @param bool $formatOutput Pretty-Print aktivieren
@@ -206,7 +201,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
     /**
      * Speichert mehrere Dokumente in Dateien.
-     * 
+     *
      * @param array<string, ExtendedDOMDocument> $documents Mapping von Dateipfad zu Dokument
      * @param bool $formatOutput Pretty-Print aktivieren
      * @return array{success: string[], failed: string[]} Ergebnis
@@ -342,7 +337,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
     /**
      * Merged mehrere Dokumente in ein neues Dokument.
-     * 
+     *
      * @param string $rootName Name des neuen Root-Elements
      * @param ExtendedDOMDocument[] $documents Zu mergende Dokumente
      * @param string|null $namespaceUri Optional: Namespace für das neue Root-Element
@@ -374,7 +369,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
 
     /**
      * Extrahiert alle Elemente mit einem bestimmten Namen als separate Dokumente.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Quell-Dokument
      * @param string $elementName Der Element-Name zum Extrahieren
      * @return ExtendedDOMDocument[]

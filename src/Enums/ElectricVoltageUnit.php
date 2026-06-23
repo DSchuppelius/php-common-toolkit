@@ -13,11 +13,11 @@ declare(strict_types=1);
 namespace CommonToolkit\Enums;
 
 enum ElectricVoltageUnit: string {
-    case MICROVOLT  = 'µV';
-    case MILLIVOLT  = 'mV';
-    case VOLT       = 'V';
-    case KILOVOLT   = 'kV';
-    case MEGAVOLT   = 'MV';
+    case MICROVOLT = 'µV';
+    case MILLIVOLT = 'mV';
+    case VOLT = 'V';
+    case KILOVOLT = 'kV';
+    case MEGAVOLT = 'MV';
 
     /**
      * Gibt den Umrechnungsfaktor in Volt zurück.
@@ -26,9 +26,9 @@ enum ElectricVoltageUnit: string {
         return match ($this) {
             self::MICROVOLT => 0.000001,
             self::MILLIVOLT => 0.001,
-            self::VOLT      => 1.0,
-            self::KILOVOLT  => 1_000.0,
-            self::MEGAVOLT  => 1_000_000.0,
+            self::VOLT => 1.0,
+            self::KILOVOLT => 1_000.0,
+            self::MEGAVOLT => 1_000_000.0,
         };
     }
 
@@ -39,9 +39,9 @@ enum ElectricVoltageUnit: string {
         return match ($this) {
             self::MICROVOLT => 'Mikrovolt',
             self::MILLIVOLT => 'Millivolt',
-            self::VOLT      => 'Volt',
-            self::KILOVOLT  => 'Kilovolt',
-            self::MEGAVOLT  => 'Megavolt',
+            self::VOLT => 'Volt',
+            self::KILOVOLT => 'Kilovolt',
+            self::MEGAVOLT => 'Megavolt',
         };
     }
 }

@@ -10,7 +10,7 @@
 
 namespace Tests\Helper;
 
-use CommonToolkit\Helper\FileSystem\{File, Folder};
+use CommonToolkit\Helper\FileSystem\Folder;
 use ERRORToolkit\Exceptions\FileSystem\FolderNotFoundException;
 use Tests\Contracts\BaseTestCase;
 
@@ -46,7 +46,7 @@ class FolderTest extends BaseTestCase {
         rmdir($dir);
     }
 
-    public function testSize(): void {
+    public function test_size(): void {
         // Erstelle Testdateien
         file_put_contents($this->testDir . '/file1.txt', str_repeat('a', 100));
         file_put_contents($this->testDir . '/file2.txt', str_repeat('b', 200));
@@ -62,14 +62,14 @@ class FolderTest extends BaseTestCase {
         $this->assertEquals(300, $sizeNonRecursive);
     }
 
-    public function testIsEmpty(): void {
+    public function test_is_empty(): void {
         $this->assertTrue(Folder::isEmpty($this->testDir));
 
         file_put_contents($this->testDir . '/file.txt', 'content');
         $this->assertFalse(Folder::isEmpty($this->testDir));
     }
 
-    public function testClean(): void {
+    public function test_clean(): void {
         file_put_contents($this->testDir . '/file1.txt', 'content');
         mkdir($this->testDir . '/subdir');
         file_put_contents($this->testDir . '/subdir/file2.txt', 'content');
@@ -80,7 +80,7 @@ class FolderTest extends BaseTestCase {
         $this->assertTrue(Folder::exists($this->testDir));
     }
 
-    public function testFileCount(): void {
+    public function test_file_count(): void {
         file_put_contents($this->testDir . '/file1.txt', 'content');
         file_put_contents($this->testDir . '/file2.php', 'content');
         mkdir($this->testDir . '/subdir');
@@ -97,7 +97,7 @@ class FolderTest extends BaseTestCase {
         $this->assertEquals(1, Folder::fileCount($this->testDir, true, ['php']));
     }
 
-    public function testFolderCount(): void {
+    public function test_folder_count(): void {
         mkdir($this->testDir . '/sub1');
         mkdir($this->testDir . '/sub2');
         mkdir($this->testDir . '/sub1/subsub');
@@ -106,7 +106,7 @@ class FolderTest extends BaseTestCase {
         $this->assertEquals(3, Folder::folderCount($this->testDir, true));
     }
 
-    public function testFindByPattern(): void {
+    public function test_find_by_pattern(): void {
         file_put_contents($this->testDir . '/file1.txt', 'content');
         file_put_contents($this->testDir . '/file2.php', 'content');
         file_put_contents($this->testDir . '/file3.txt', 'content');
@@ -118,7 +118,7 @@ class FolderTest extends BaseTestCase {
         $this->assertCount(1, $phpFiles);
     }
 
-    public function testGetNewestAndOldest(): void {
+    public function test_get_newest_and_oldest(): void {
         file_put_contents($this->testDir . '/old.txt', 'old');
         sleep(1);
         file_put_contents($this->testDir . '/new.txt', 'new');
@@ -130,7 +130,7 @@ class FolderTest extends BaseTestCase {
         $this->assertStringContainsString('old.txt', $oldest);
     }
 
-    public function testGetLargest(): void {
+    public function test_get_largest(): void {
         file_put_contents($this->testDir . '/small.txt', str_repeat('a', 10));
         file_put_contents($this->testDir . '/large.txt', str_repeat('b', 1000));
 
@@ -138,25 +138,25 @@ class FolderTest extends BaseTestCase {
         $this->assertStringContainsString('large.txt', $largest);
     }
 
-    public function testSizeThrowsExceptionForNonExistingFolder(): void {
+    public function test_size_throws_exception_for_non_existing_folder(): void {
         $this->expectException(FolderNotFoundException::class);
         Folder::size('/path/to/nonexistent/folder');
     }
 
-    public function testIsEmptyThrowsExceptionForNonExistingFolder(): void {
+    public function test_is_empty_throws_exception_for_non_existing_folder(): void {
         $this->expectException(FolderNotFoundException::class);
         Folder::isEmpty('/path/to/nonexistent/folder');
     }
 
-    public function testGetNewestReturnsNullForEmptyFolder(): void {
+    public function test_get_newest_returns_null_for_empty_folder(): void {
         $this->assertNull(Folder::getNewest($this->testDir));
     }
 
-    public function testGetOldestReturnsNullForEmptyFolder(): void {
+    public function test_get_oldest_returns_null_for_empty_folder(): void {
         $this->assertNull(Folder::getOldest($this->testDir));
     }
 
-    public function testIsBlockedByOpenBasedirWithNoRestriction(): void {
+    public function test_is_blocked_by_open_basedir_with_no_restriction(): void {
         // Wenn open_basedir nicht gesetzt ist, sollte nichts blockiert sein
         $currentOpenBasedir = ini_get('open_basedir');
 
@@ -169,7 +169,7 @@ class FolderTest extends BaseTestCase {
         }
     }
 
-    public function testIsBlockedByOpenBasedirWithAllowedPath(): void {
+    public function test_is_blocked_by_open_basedir_with_allowed_path(): void {
         // Test mit temporärem Verzeichnis, das normalerweise erlaubt ist
         $tempDir = sys_get_temp_dir();
 
@@ -177,7 +177,7 @@ class FolderTest extends BaseTestCase {
         $this->assertFalse(Folder::isBlockedByOpenBasedir($tempDir));
     }
 
-    public function testExistsReturnsFalseForBlockedPath(): void {
+    public function test_exists_returns_false_for_blocked_path(): void {
         // Dieser Test prüft indirekt die open_basedir-Integration in exists()
         $currentOpenBasedir = ini_get('open_basedir');
 

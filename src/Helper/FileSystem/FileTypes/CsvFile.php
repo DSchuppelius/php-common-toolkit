@@ -49,7 +49,7 @@ class CsvFile extends HelperAbstract {
      */
     private static function readLines(string $file, string $delimiter): Generator {
         foreach (self::readLinesAsDataLine($file, $delimiter) as $dataLine) {
-            $row = array_map(fn($f) => $f->getValue(), $dataLine->getFields());
+            $row = array_map(fn ($f) => $f->getValue(), $dataLine->getFields());
             if (!empty(array_filter($row))) {
                 yield $row;
             }
@@ -148,9 +148,9 @@ class CsvFile extends HelperAbstract {
         }
 
         return [
-            'RowCount'    => $rowCount,
+            'RowCount' => $rowCount,
             'ColumnCount' => $columnCount,
-            'Delimiter'   => $delimiter
+            'Delimiter' => $delimiter,
         ];
     }
 
@@ -250,7 +250,9 @@ class CsvFile extends HelperAbstract {
                 return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen bei Zeile: " . implode($delimiter, $row));
             }
 
-            if (!$checkAllRows) break;
+            if (!$checkAllRows) {
+                break;
+            }
         }
 
         return self::logDebugAndReturn(true, "CSV-Datei entspricht dem Strukturmuster: $structurePattern");
@@ -305,10 +307,14 @@ class CsvFile extends HelperAbstract {
         }
 
         foreach ($row as $index => $cell) {
-            if (!isset($patterns[$index])) break;
+            if (!isset($patterns[$index])) {
+                break;
+            }
             $pattern = $patterns[$index];
 
-            if ($pattern === '*') continue;
+            if ($pattern === '*') {
+                continue;
+            }
 
             // Encoding berücksichtigen
             $cellUtf8 = mb_convert_encoding($cell ?? '', 'UTF-8', $encoding);
@@ -362,7 +368,6 @@ class CsvFile extends HelperAbstract {
      * @param string|null $delimiter  Trennzeichen (optional, Standard: auto-detect).
      * @param int $maxLines       Anzahl der zu prüfenden Zeilen (Standard: 5).
      * @param int $enclosureRepeat Wie oft das Enclosure wiederholt wird (Standard: 2 für doppelt).
-     * @return bool
      */
     public static function hasRepeatedEnclosureColumns(string $file, ?string $delimiter = null, int $maxLines = 5, int $enclosureRepeat = 2): bool {
         [$file, $delimiter] = self::resolveAndDetect($file, $delimiter);

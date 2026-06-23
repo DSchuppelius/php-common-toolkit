@@ -19,11 +19,11 @@ use Throwable;
 class ShellChardetTest extends BaseTestCase {
     private string $sampleText = "Grüße aus Potsdam mit Umlauten äöüß";
 
-    public function testShellChardetDetectTemporary(): void {
+    public function test_shell_chardet_detect_temporary(): void {
         $this->runChardetDetection(false);
     }
 
-    public function testShellChardetDetectPersistent(): void {
+    public function test_shell_chardet_detect_persistent(): void {
         // Start persistent Prozess vorher
         ShellChardet::start();
         try {

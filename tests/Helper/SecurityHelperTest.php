@@ -15,7 +15,7 @@ class SecurityHelperTest extends BaseTestCase {
         $this->testHash = SecurityHelper::hashPassword($this->testPassword);
     }
 
-    public function testHashPassword(): void {
+    public function test_hash_password(): void {
         $hash = SecurityHelper::hashPassword($this->testPassword);
 
         $this->assertNotEmpty($hash);
@@ -23,21 +23,21 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertGreaterThan(50, strlen($hash)); // Argon2ID hashes sind lang
     }
 
-    public function testHashPasswordWithShortPassword(): void {
+    public function test_hash_password_with_short_password(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Password muss mindestens 8 Zeichen lang sein');
 
         SecurityHelper::hashPassword('short');
     }
 
-    public function testVerifyPassword(): void {
+    public function test_verify_password(): void {
         $this->assertTrue(SecurityHelper::verifyPassword($this->testPassword, $this->testHash));
         $this->assertFalse(SecurityHelper::verifyPassword('wrong_password', $this->testHash));
         $this->assertFalse(SecurityHelper::verifyPassword('', $this->testHash));
         $this->assertFalse(SecurityHelper::verifyPassword($this->testPassword, ''));
     }
 
-    public function testNeedsRehash(): void {
+    public function test_needs_rehash(): void {
         $oldHash = password_hash($this->testPassword, PASSWORD_DEFAULT);
         $newHash = SecurityHelper::hashPassword($this->testPassword);
 
@@ -47,7 +47,7 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertFalse(SecurityHelper::needsRehash($newHash));
     }
 
-    public function testGenerateSecureToken(): void {
+    public function test_generate_secure_token(): void {
         $token = SecurityHelper::generateSecureToken();
 
         $this->assertNotEmpty($token);
@@ -63,7 +63,7 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertEquals(64, strlen($binaryToken)); // Hex encoded 32 bytes
     }
 
-    public function testGenerateSecureTokenInvalidLength(): void {
+    public function test_generate_secure_token_invalid_length(): void {
         $this->expectException(\InvalidArgumentException::class);
         SecurityHelper::generateSecureToken(15); // Too short
 
@@ -71,7 +71,7 @@ class SecurityHelperTest extends BaseTestCase {
         SecurityHelper::generateSecureToken(300); // Too long
     }
 
-    public function testGenerateAndValidateCsrfToken(): void {
+    public function test_generate_and_validate_csrf_token(): void {
         $token = SecurityHelper::generateCsrfToken($this->testSessionId, 'login');
 
         $this->assertNotEmpty($token);
@@ -89,7 +89,7 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertFalse(SecurityHelper::validateCsrfToken('invalid_token', $this->testSessionId, 'login'));
     }
 
-    public function testSanitizeInput(): void {
+    public function test_sanitize_input(): void {
         $maliciousInput = '<script>alert("XSS")</script>Hello World';
         $sanitized = SecurityHelper::sanitizeInput($maliciousInput);
 
@@ -105,7 +105,7 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertStringNotContainsString('<script>', $sanitizedHtml);
     }
 
-    public function testSanitizeBankingData(): void {
+    public function test_sanitize_banking_data(): void {
         // Test IBAN
         $iban = 'de89 3704 0044 0532 0130 00';
         $sanitizedIban = SecurityHelper::sanitizeBankingData($iban, 'iban');
@@ -127,13 +127,13 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertEquals('Müller Co.', $sanitizedName);
     }
 
-    public function testSanitizeBankingDataInvalidIban(): void {
+    public function test_sanitize_banking_data_invalid_iban(): void {
         $this->expectException(\InvalidArgumentException::class);
         $longIban = str_repeat('A', 35); // Too long
         SecurityHelper::sanitizeBankingData($longIban, 'iban');
     }
 
-    public function testSetSecurityHeaders(): void {
+    public function test_set_security_headers(): void {
         $headers = SecurityHelper::setSecurityHeaders();
 
         $this->assertIsArray($headers);
@@ -149,7 +149,7 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertEquals('CustomValue', $customHeaders['Custom-Header']);
     }
 
-    public function testCheckRateLimit(): void {
+    public function test_check_rate_limit(): void {
         $identifier = 'test_user_123';
 
         // First few attempts should succeed
@@ -164,7 +164,7 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertTrue(SecurityHelper::checkRateLimit('different_user', 3, 60));
     }
 
-    public function testGenerateSecureSessionId(): void {
+    public function test_generate_secure_session_id(): void {
         $sessionId1 = SecurityHelper::generateSecureSessionId('Mozilla/5.0', '127.0.0.1');
         $sessionId2 = SecurityHelper::generateSecureSessionId('Chrome/91.0', '192.168.1.1');
 
@@ -174,7 +174,7 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertEquals(64, strlen($sessionId1)); // SHA256 hex = 64 chars
     }
 
-    public function testMaskSensitiveData(): void {
+    public function test_mask_sensitive_data(): void {
         // Test IBAN masking
         $iban = 'DE89370400440532013000';
         $maskedIban = SecurityHelper::maskSensitiveData($iban, 'iban');
@@ -212,12 +212,12 @@ class SecurityHelperTest extends BaseTestCase {
         $this->assertStringContainsString('*', $maskedGeneric);
     }
 
-    public function testMaskSensitiveDataEmptyInput(): void {
+    public function test_mask_sensitive_data_empty_input(): void {
         $result = SecurityHelper::maskSensitiveData('', 'iban');
         $this->assertEquals('', $result);
     }
 
-    public function testMaskSensitiveDataShortInput(): void {
+    public function test_mask_sensitive_data_short_input(): void {
         $short = 'ABC';
         $masked = SecurityHelper::maskSensitiveData($short, 'iban');
         $this->assertEquals('***', $masked); // Fallback für kurze Strings

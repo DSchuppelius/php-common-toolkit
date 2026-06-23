@@ -20,11 +20,9 @@ use UnitEnum;
 
 /**
  * Abstract XSD validator base class.
- * 
+ *
  * Provides common XSD schema validation functionality for all
  * format-specific validators (CAMT, Pain, etc.).
- * 
- * @package CommonToolkit\FinancialFormats\Contracts\Abstracts
  */
 abstract class XsdValidatorAbstract {
     /**
@@ -34,7 +32,7 @@ abstract class XsdValidatorAbstract {
 
     /**
      * Returns the mapping of type and version to XSD files.
-     * 
+     *
      * @return array<string, array<string, string>> Type => Version => Filename
      */
     abstract protected static function getXsdFiles(): array;
@@ -56,7 +54,7 @@ abstract class XsdValidatorAbstract {
 
     /**
      * Validates XML content against an XSD schema.
-     * 
+     *
      * @param string $xmlContent The XML content to validate
      * @param UnitEnum|null $type Optional: Document type (auto-detected if null)
      * @param string|null $version Optional: Document version (auto-detected if null)
@@ -125,7 +123,7 @@ abstract class XsdValidatorAbstract {
 
     /**
      * Validates a file against an XSD schema.
-     * 
+     *
      * @param string $filePath Path to the XML file
      * @param UnitEnum|null $type Optional: Document type
      * @param string|null $version Optional: Document version
@@ -185,7 +183,7 @@ abstract class XsdValidatorAbstract {
 
     /**
      * Returns all available XSD files.
-     * 
+     *
      * @return array<string, array<string, string>> Type => Version => Filename
      */
     public static function getAvailableSchemas(): array {

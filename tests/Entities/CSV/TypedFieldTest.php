@@ -9,8 +9,7 @@ use DateTimeImmutable;
 use Tests\Contracts\BaseTestCase;
 
 final class TypedFieldTest extends BaseTestCase {
-
-    public function testIntegerDetectionAndConversion(): void {
+    public function test_integer_detection_and_conversion(): void {
         $field = new DataField('42');
 
         $this->assertFalse($field->isQuoted());
@@ -21,7 +20,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertFalse($field->isDateTime());
     }
 
-    public function testFloatDetectionAndConversion(): void {
+    public function test_float_detection_and_conversion(): void {
         $field = new DataField('3.14');
 
         $this->assertFalse($field->isQuoted());
@@ -31,14 +30,14 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertFalse($field->isBool());
     }
 
-    public function testFloatWithGermanDecimalSeparator(): void {
+    public function test_float_with_german_decimal_separator(): void {
         $field = new DataField('3,14');
 
         $this->assertTrue($field->isFloat());
         $this->assertEquals(3.14, $field->getTypedValue());
     }
 
-    public function testBooleanDetectionAndConversion(): void {
+    public function test_boolean_detection_and_conversion(): void {
         $trueValues = ['true', 'TRUE', 'yes', 'YES', 'on', 'ON'];
         $falseValues = ['false', 'FALSE', 'no', 'NO', 'off', 'OFF'];
 
@@ -66,7 +65,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertSame(0, $zeroField->getTypedValue());
     }
 
-    public function testDateTimeDetectionAndConversion(): void {
+    public function test_date_time_detection_and_conversion(): void {
         // ISO und deutsche Formate mit Standard (Germany)
         $germanTestCases = [
             '2025-12-22 15:30:00' => 'Y-m-d H:i:s',
@@ -91,7 +90,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertInstanceOf(DateTimeImmutable::class, $usField->getTypedValue());
     }
 
-    public function testUnixTimestampDetection(): void {
+    public function test_unix_timestamp_detection(): void {
         $timestamp = '1735225800'; // 2024-12-26 15:30:00 UTC (10-stelliger Timestamp)
         $field = new DataField($timestamp);
 
@@ -111,7 +110,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertInstanceOf(DateTimeImmutable::class, $dateField->getTypedValue());
     }
 
-    public function testQuotedFieldsReturnNull(): void {
+    public function test_quoted_fields_return_null(): void {
         $field = new DataField('"42"');
 
         $this->assertTrue($field->isQuoted());
@@ -124,7 +123,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertFalse($field->isDateTime());
     }
 
-    public function testEmptyFieldsReturnNull(): void {
+    public function test_empty_fields_return_null(): void {
         $field = new DataField('');
 
         $this->assertFalse($field->isQuoted());
@@ -137,7 +136,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertFalse($field->isDateTime());
     }
 
-    public function testCustomDateTimeFormat(): void {
+    public function test_custom_date_time_format(): void {
         $field = new DataField('26-12-2025');
 
         // strtotime erkennt dieses Format, also wird es als DateTime erkannt
@@ -149,7 +148,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertEquals('2025-12-26', $dateTime->format('Y-m-d'));
     }
 
-    public function testMixedTypeField(): void {
+    public function test_mixed_type_field(): void {
         // "1" wird als Integer erkannt (höchste Priorität)
         $field = new DataField('1');
 
@@ -166,7 +165,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertTrue($boolField->getTypedValue());
     }
 
-    public function testInvalidValues(): void {
+    public function test_invalid_values(): void {
         $field = new DataField('not-a-number');
 
         $this->assertFalse($field->isInt());
@@ -175,7 +174,7 @@ final class TypedFieldTest extends BaseTestCase {
         $this->assertFalse($field->isDateTime());
     }
 
-    public function testTypedValueDirectAccess(): void {
+    public function test_typed_value_direct_access(): void {
         // Integer
         $field = new DataField('42');
         $this->assertSame(42, $field->getTypedValue());

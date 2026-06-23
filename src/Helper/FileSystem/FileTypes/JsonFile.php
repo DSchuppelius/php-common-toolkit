@@ -15,9 +15,9 @@ namespace CommonToolkit\Helper\FileSystem\FileTypes;
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Helper\Data\JsonHelper;
 use CommonToolkit\Helper\FileSystem\File;
+use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Exception;
 use InvalidArgumentException;
-use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 
 /**
  * Helper-Klasse für JSON-Datei-Verarbeitung.
@@ -31,7 +31,6 @@ use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
  * - Sichere JSON-Datei-Operationen
  */
 class JsonFile extends HelperAbstract {
-
     /**
      * Prüft, ob eine JSON-Datei syntaktisch korrekt ist.
      *
@@ -180,7 +179,7 @@ class JsonFile extends HelperAbstract {
         } catch (Exception $e) {
             return [
                 'valid' => false,
-                'errors' => ['Fehler bei Schema-Validierung: ' . $e->getMessage()]
+                'errors' => ['Fehler bei Schema-Validierung: ' . $e->getMessage()],
             ];
         }
     }
@@ -269,7 +268,7 @@ class JsonFile extends HelperAbstract {
                 'fileSize' => $fileSize,
                 'isValid' => $isValid,
                 'elementCount' => $elementCount,
-                'depth' => $depth
+                'depth' => $depth,
             ];
         } catch (Exception $e) {
             self::logException($e);
@@ -277,7 +276,7 @@ class JsonFile extends HelperAbstract {
                 'fileSize' => filesize($resolvedFile) ?: 0,
                 'isValid' => false,
                 'elementCount' => 0,
-                'depth' => 0
+                'depth' => 0,
             ];
         }
     }
@@ -298,7 +297,7 @@ class JsonFile extends HelperAbstract {
             }
             return $count;
         } elseif (is_object($data)) {
-            $count = count((array)$data);
+            $count = count((array) $data);
             foreach ($data as $value) {
                 if (is_array($value) || is_object($value)) {
                     $count += self::countElements($value);
@@ -323,7 +322,7 @@ class JsonFile extends HelperAbstract {
         }
 
         $maxDepth = $currentDepth;
-        $items = is_array($data) ? $data : (array)$data;
+        $items = is_array($data) ? $data : (array) $data;
 
         foreach ($items as $value) {
             if (is_array($value) || is_object($value)) {

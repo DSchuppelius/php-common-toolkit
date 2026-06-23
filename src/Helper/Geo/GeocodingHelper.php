@@ -177,7 +177,6 @@ final class GeocodingHelper {
      * Nutzt Cache effizient und respektiert Rate-Limits.
      *
      * @param array<int, array{lat: float, lng: float}> $coordinates
-     * @param bool $shortFormat
      * @return array<int, string|null> Ortsnamen (gleiche Indizes wie Input)
      */
     public static function batchReverseGeocode(array $coordinates, bool $shortFormat = true): array {

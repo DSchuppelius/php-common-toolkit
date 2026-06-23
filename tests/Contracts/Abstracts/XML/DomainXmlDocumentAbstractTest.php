@@ -13,8 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Tests\Contracts\Abstracts\XML;
 
 use CommonToolkit\Contracts\Abstracts\XML\DomainXmlDocumentAbstract;
-use CommonToolkit\Contracts\Interfaces\XML\XmlDocumentInterface;
-use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
+use CommonToolkit\Contracts\Interfaces\XML\{XmlDocumentInterface, XmlElementInterface};
 use CommonToolkit\Entities\XML\Document as XmlDocument;
 use DOMDocument;
 use DOMNode;
@@ -47,52 +46,52 @@ class DomainXmlDocumentAbstractTest extends TestCase {
     private TestDomainDocument $document;
 
     protected function setUp(): void {
-        $this->document = new TestDomainDocument();
+        $this->document = new TestDomainDocument;
     }
 
-    public function testImplementsXmlDocumentInterface(): void {
+    public function test_implements_xml_document_interface(): void {
         $this->assertInstanceOf(XmlDocumentInterface::class, $this->document);
     }
 
-    public function testGetVersion(): void {
+    public function test_get_version(): void {
         $this->assertSame('1.0', $this->document->getVersion());
     }
 
-    public function testGetEncoding(): void {
+    public function test_get_encoding(): void {
         $this->assertSame('UTF-8', $this->document->getEncoding());
     }
 
-    public function testToString(): void {
+    public function test_to_string(): void {
         $xml = $this->document->toString();
         $this->assertStringContainsString('<root>', $xml);
         $this->assertStringContainsString('<child>Test</child>', $xml);
     }
 
-    public function testToXmlDocument(): void {
+    public function test_to_xml_document(): void {
         $xmlDoc = $this->document->toXmlDocument();
         $this->assertInstanceOf(XmlDocument::class, $xmlDoc);
     }
 
-    public function testGetRootElement(): void {
+    public function test_get_root_element(): void {
         $root = $this->document->getRootElement();
         $this->assertInstanceOf(XmlElementInterface::class, $root);
         $this->assertSame('root', $root->getName());
     }
 
-    public function testToDomDocument(): void {
+    public function test_to_dom_document(): void {
         $dom = $this->document->toDomDocument();
         $this->assertInstanceOf(DOMDocument::class, $dom);
         $this->assertSame('root', $dom->documentElement->nodeName);
     }
 
-    public function testToDomNode(): void {
-        $targetDoc = new DOMDocument();
+    public function test_to_dom_node(): void {
+        $targetDoc = new DOMDocument;
         $node = $this->document->toDomNode($targetDoc);
         $this->assertInstanceOf(DOMNode::class, $node);
         $this->assertSame('root', $node->nodeName);
     }
 
-    public function testCaching(): void {
+    public function test_caching(): void {
         // Erste Anfrage erstellt Cache
         $doc1 = $this->document->toXmlDocument();
         // Zweite Anfrage sollte gecachte Version zurückgeben
@@ -101,7 +100,7 @@ class DomainXmlDocumentAbstractTest extends TestCase {
         $this->assertSame($doc1, $doc2);
     }
 
-    public function testInvalidateCacheOnContentChange(): void {
+    public function test_invalidate_cache_on_content_change(): void {
         $doc1 = $this->document->toXmlDocument();
 
         // Inhalt ändern - invalidiert Cache
@@ -116,9 +115,9 @@ class DomainXmlDocumentAbstractTest extends TestCase {
         $this->assertStringContainsString('Changed', $this->document->toString());
     }
 
-    public function testValidateAgainstXsd(): void {
+    public function test_validate_against_xsd(): void {
         // Erstelle ein einfaches XSD mit Namespace-Unterstützung
-        $xsd = <<<XSD
+        $xsd = <<<'XSD'
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:element name="root">
@@ -144,7 +143,7 @@ XSD;
         }
     }
 
-    public function testToFile(): void {
+    public function test_to_file(): void {
         $tempFile = sys_get_temp_dir() . '/test_domain_xml.xml';
 
         try {
@@ -160,8 +159,8 @@ XSD;
         }
     }
 
-    public function testComplexXmlStructure(): void {
-        $complexXml = <<<XML
+    public function test_complex_xml_structure(): void {
+        $complexXml = <<<'XML'
 <document xmlns="urn:test:namespace">
     <header>
         <title>Test Document</title>

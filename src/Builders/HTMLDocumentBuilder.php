@@ -12,17 +12,16 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Builders;
 
-use CommonToolkit\Entities\HTML\Document;
-use CommonToolkit\Entities\HTML\Element;
+use CommonToolkit\Entities\HTML\{Document, Element};
 use CommonToolkit\Helper\FileSystem\File;
 
 /**
  * Fluent Builder für HTML-Dokumente.
- * 
+ *
  * Ermöglicht den strukturierten Aufbau von HTML-Dokumenten
  * mit einer intuitiven API. Ideal für die Generierung von
  * HTML-Dokumenten, die später z.B. als PDF gerendert werden können.
- * 
+ *
  * Beispiel:
  * ```php
  * $html = HTMLDocumentBuilder::create('Mein Dokument')
@@ -36,8 +35,6 @@ use CommonToolkit\Helper\FileSystem\File;
  *     ->endTable()
  *     ->build();
  * ```
- * 
- * @package CommonToolkit\Builders
  */
 class HTMLDocumentBuilder {
     private Document $document;
@@ -104,7 +101,7 @@ class HTMLDocumentBuilder {
             Element::withAttributes('link', [
                 'rel' => 'stylesheet',
                 'href' => $href,
-                'media' => $media
+                'media' => $media,
             ])
         );
         return $this;
@@ -133,8 +130,12 @@ class HTMLDocumentBuilder {
      */
     public function addHeadScript(string $src, bool $defer = false, bool $async = false): self {
         $attrs = ['src' => $src];
-        if ($defer) $attrs['defer'] = true;
-        if ($async) $attrs['async'] = true;
+        if ($defer) {
+            $attrs['defer'] = true;
+        }
+        if ($async) {
+            $attrs['async'] = true;
+        }
 
         $this->document = $this->document->withHeadScript(
             Element::withAttributes('script', $attrs)
@@ -157,8 +158,12 @@ class HTMLDocumentBuilder {
      */
     public function addScript(string $src, bool $defer = false, bool $async = false): self {
         $attrs = ['src' => $src];
-        if ($defer) $attrs['defer'] = true;
-        if ($async) $attrs['async'] = true;
+        if ($defer) {
+            $attrs['defer'] = true;
+        }
+        if ($async) {
+            $attrs['async'] = true;
+        }
 
         $this->document = $this->document->withBodyScript(
             Element::withAttributes('script', $attrs)
@@ -486,22 +491,22 @@ class HTMLDocumentBuilder {
 
     /**
      * Erstellt eine komplette ungeordnete Liste.
-     * 
+     *
      * @param string[] $items
      */
     public function ul(array $items, array $attributes = []): self {
-        $children = array_map(fn($item) => Element::create('li', $item), $items);
+        $children = array_map(fn ($item) => Element::create('li', $item), $items);
         $this->addElement(Element::withChildren('ul', $children)->withAttribute('class', $attributes['class'] ?? ''));
         return $this;
     }
 
     /**
      * Erstellt eine komplette geordnete Liste.
-     * 
+     *
      * @param string[] $items
      */
     public function ol(array $items, array $attributes = []): self {
-        $children = array_map(fn($item) => Element::create('li', $item), $items);
+        $children = array_map(fn ($item) => Element::create('li', $item), $items);
         $this->addElement(Element::withChildren('ol', $children)->withAttribute('class', $attributes['class'] ?? ''));
         return $this;
     }
@@ -594,7 +599,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Erstellt eine komplette Tabelle aus einem 2D-Array.
-     * 
+     *
      * @param string[] $headers Kopfzeilen
      * @param string[][] $rows Datenzeilen
      */
@@ -617,7 +622,7 @@ class HTMLDocumentBuilder {
         foreach ($rows as $row) {
             $this->startTr();
             foreach ($row as $cell) {
-                $this->td((string)$cell);
+                $this->td((string) $cell);
             }
             $this->endTr();
         }

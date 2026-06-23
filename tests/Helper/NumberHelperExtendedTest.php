@@ -15,13 +15,13 @@ use CommonToolkit\Helper\Data\NumberHelper;
 use Tests\Contracts\BaseTestCase;
 
 class NumberHelperExtendedTest extends BaseTestCase {
-    public function testFormatCurrency(): void {
+    public function test_format_currency(): void {
         $this->assertEquals('1.234,56 €', NumberHelper::formatCurrency(1234.56));
         $this->assertEquals('-100,00 €', NumberHelper::formatCurrency(-100));
         $this->assertEquals('$ 1,234.56', NumberHelper::formatCurrency(1234.56, CurrencyCode::USDollar, 2, '.', ',', true));
     }
 
-    public function testOrdinalize(): void {
+    public function test_ordinalize(): void {
         // Deutsch
         $this->assertEquals('1.', NumberHelper::ordinalize(1, 'de'));
         $this->assertEquals('2.', NumberHelper::ordinalize(2, 'de'));
@@ -39,7 +39,7 @@ class NumberHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('22nd', NumberHelper::ordinalize(22, 'en'));
     }
 
-    public function testToWords(): void {
+    public function test_to_words(): void {
         $this->assertEquals('null', NumberHelper::toWords(0));
         $this->assertEquals('eins', NumberHelper::toWords(1));
         $this->assertEquals('zwölf', NumberHelper::toWords(12));
@@ -51,7 +51,7 @@ class NumberHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('Zehn', NumberHelper::toWords(10, true));
     }
 
-    public function testIsEvenAndOdd(): void {
+    public function test_is_even_and_odd(): void {
         $this->assertTrue(NumberHelper::isEven(2));
         $this->assertTrue(NumberHelper::isEven(0));
         $this->assertFalse(NumberHelper::isEven(1));
@@ -61,7 +61,7 @@ class NumberHelperExtendedTest extends BaseTestCase {
         $this->assertFalse(NumberHelper::isOdd(2));
     }
 
-    public function testIsPositiveNegativeZero(): void {
+    public function test_is_positive_negative_zero(): void {
         $this->assertTrue(NumberHelper::isPositive(5));
         $this->assertFalse(NumberHelper::isPositive(-5));
         $this->assertFalse(NumberHelper::isPositive(0));
@@ -75,43 +75,43 @@ class NumberHelperExtendedTest extends BaseTestCase {
         $this->assertFalse(NumberHelper::isZero(1));
     }
 
-    public function testAverage(): void {
+    public function test_average(): void {
         $this->assertEquals(5.0, NumberHelper::average([1, 5, 9]));
         $this->assertEquals(0.0, NumberHelper::average([]));
         $this->assertEquals(10.0, NumberHelper::average([10]));
     }
 
-    public function testMedian(): void {
+    public function test_median(): void {
         $this->assertEquals(5.0, NumberHelper::median([1, 5, 9]));
         $this->assertEquals(3.0, NumberHelper::median([1, 2, 4, 5]));
         $this->assertEquals(0.0, NumberHelper::median([]));
     }
 
-    public function testSign(): void {
+    public function test_sign(): void {
         $this->assertEquals(1, NumberHelper::sign(10));
         $this->assertEquals(-1, NumberHelper::sign(-10));
         $this->assertEquals(0, NumberHelper::sign(0));
     }
 
-    public function testFormatWithSiPrefix(): void {
+    public function test_format_with_si_prefix(): void {
         $this->assertEquals('1k', NumberHelper::formatWithSiPrefix(1000, 0));
         $this->assertEquals('1.5M', NumberHelper::formatWithSiPrefix(1500000, 1));
         $this->assertEquals('1Ki', NumberHelper::formatWithSiPrefix(1024, 0, true));
     }
 
-    public function testFactorial(): void {
+    public function test_factorial(): void {
         $this->assertEquals(1.0, NumberHelper::factorial(0));
         $this->assertEquals(1.0, NumberHelper::factorial(1));
         $this->assertEquals(120.0, NumberHelper::factorial(5));
         $this->assertEquals(3628800.0, NumberHelper::factorial(10));
     }
 
-    public function testFactorialThrowsExceptionForNegative(): void {
+    public function test_factorial_throws_exception_for_negative(): void {
         $this->expectException(\InvalidArgumentException::class);
         NumberHelper::factorial(-1);
     }
 
-    public function testIsPrime(): void {
+    public function test_is_prime(): void {
         $this->assertFalse(NumberHelper::isPrime(0));
         $this->assertFalse(NumberHelper::isPrime(1));
         $this->assertTrue(NumberHelper::isPrime(2));
@@ -122,13 +122,13 @@ class NumberHelperExtendedTest extends BaseTestCase {
         $this->assertFalse(NumberHelper::isPrime(100));
     }
 
-    public function testGcd(): void {
+    public function test_gcd(): void {
         $this->assertEquals(6, NumberHelper::gcd(12, 18));
         $this->assertEquals(1, NumberHelper::gcd(17, 23));
         $this->assertEquals(5, NumberHelper::gcd(15, 25));
     }
 
-    public function testLcm(): void {
+    public function test_lcm(): void {
         $this->assertEquals(36, NumberHelper::lcm(12, 18));
         $this->assertEquals(391, NumberHelper::lcm(17, 23));
         $this->assertEquals(75, NumberHelper::lcm(15, 25));

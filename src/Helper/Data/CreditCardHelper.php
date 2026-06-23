@@ -31,31 +31,31 @@ class CreditCardHelper extends HelperAbstract {
     private const CARD_PATTERNS = [
         'Visa' => [
             'pattern' => '/^4[0-9]/',
-            'length' => [13, 16, 19]
+            'length' => [13, 16, 19],
         ],
         'Mastercard' => [
             'pattern' => '/^5[1-5]|^2[2-7]/',
-            'length' => [16]
+            'length' => [16],
         ],
         'American Express' => [
             'pattern' => '/^3[47]/',
-            'length' => [15]
+            'length' => [15],
         ],
         'Diners Club' => [
             'pattern' => '/^3[0689]/',
-            'length' => [14]
+            'length' => [14],
         ],
         'Discover' => [
             'pattern' => '/^6(?:011|5)/',
-            'length' => [16]
+            'length' => [16],
         ],
         'JCB' => [
             'pattern' => '/^35/',
-            'length' => [16]
+            'length' => [16],
         ],
         'Maestro' => [
             'pattern' => '/^(?:5[0678]|6304|6390|67)/',
-            'length' => [12, 13, 14, 15, 16, 17, 18, 19]
+            'length' => [12, 13, 14, 15, 16, 17, 18, 19],
         ],
     ];
 
@@ -92,7 +92,7 @@ class CreditCardHelper extends HelperAbstract {
         $parity = $length % 2;
 
         for ($i = $length - 1; $i >= 0; $i--) {
-            $digit = (int)$number[$i];
+            $digit = (int) $number[$i];
 
             if (($i % 2) !== $parity) {
                 $digit *= 2;
@@ -167,8 +167,8 @@ class CreditCardHelper extends HelperAbstract {
 
         // 2-stelliges Jahr zu 4-stellig konvertieren
         if ($year < 100) {
-            $currentYear = (int)date('Y');
-            $currentCentury = (int)($currentYear / 100) * 100;
+            $currentYear = (int) date('Y');
+            $currentCentury = (int) ($currentYear / 100) * 100;
             $year += $currentCentury;
 
             // Wenn das Jahr in der Vergangenheit liegt, zum nächsten Jahrhundert
@@ -177,8 +177,8 @@ class CreditCardHelper extends HelperAbstract {
             }
         }
 
-        $currentMonth = (int)date('n');
-        $currentYear = (int)date('Y');
+        $currentMonth = (int) date('n');
+        $currentYear = (int) date('Y');
 
         // Karte ist abgelaufen wenn Monat und Jahr in der Vergangenheit liegen
         return !($year < $currentYear || ($year === $currentYear && $month < $currentMonth));
@@ -195,8 +195,8 @@ class CreditCardHelper extends HelperAbstract {
             return self::logErrorAndReturn(null, "Ungültiges Ablaufdatum-Format: {$expiryDate}");
         }
 
-        $month = (int)$matches[1];
-        $year = (int)$matches[2];
+        $month = (int) $matches[1];
+        $year = (int) $matches[2];
 
         $valid = self::isValidExpiry($month, $year);
 

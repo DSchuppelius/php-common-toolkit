@@ -32,22 +32,22 @@ final class PdfFileTest extends BaseTestCase {
         }
     }
 
-    public function testGetMetaData(): void {
+    public function test_get_meta_data(): void {
         $meta = PdfFile::getMetaData($this->testFile);
         $this->assertIsArray($meta);
         $this->assertArrayHasKey('Pages', $meta);
         $this->assertArrayHasKey('Producer', $meta);
     }
 
-    public function testIsValid(): void {
+    public function test_is_valid(): void {
         $this->assertTrue(PdfFile::isValid($this->testFile));
     }
 
-    public function testIsEncrypted(): void {
+    public function test_is_encrypted(): void {
         $this->assertFalse(PdfFile::isEncrypted($this->testFile));
     }
 
-    public function testEncryptAndDecryptWithoutPassword(): void {
+    public function test_encrypt_and_decrypt_without_password(): void {
         $outputEnc = $this->outputDir . '/encrypted.pdf';
         $outputDec = $this->outputDir . '/decrypted.pdf';
 
@@ -85,7 +85,7 @@ final class PdfFileTest extends BaseTestCase {
         $this->assertFalse(PdfFile::isEncrypted($outputDec));
     }
 
-    public function testEncryptAndDecryptWithPassword(): void {
+    public function test_encrypt_and_decrypt_with_password(): void {
         $outputEnc = $this->outputDir . '/enc_pw.pdf';
         $outputDec = $this->outputDir . '/dec_pw.pdf';
 
@@ -110,7 +110,7 @@ final class PdfFileTest extends BaseTestCase {
         $this->assertFileExists($outputDec);
     }
 
-    public function testFileNotFoundThrows(): void {
+    public function test_file_not_found_throws(): void {
         $this->expectException(FileNotFoundException::class);
         PdfFile::getMetaData(__DIR__ . '/../../.samples/notfound.pdf');
     }

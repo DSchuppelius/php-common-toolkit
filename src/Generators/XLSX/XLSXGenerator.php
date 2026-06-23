@@ -13,10 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Generators\XLSX;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Entities\XLSX\Cell;
-use CommonToolkit\Entities\XLSX\Document;
-use CommonToolkit\Entities\XLSX\Row;
-use CommonToolkit\Entities\XLSX\Sheet;
+use CommonToolkit\Entities\XLSX\{Cell, Document, Row, Sheet};
 use DateTimeInterface;
 use RuntimeException;
 use ZipArchive;
@@ -40,7 +37,7 @@ class XLSXGenerator extends HelperAbstract {
      * @throws RuntimeException Bei Fehlern
      */
     public static function toFile(Document $document, string $outputPath): bool {
-        $generator = new self();
+        $generator = new self;
         return $generator->generate($document, $outputPath);
     }
 
@@ -54,7 +51,7 @@ class XLSXGenerator extends HelperAbstract {
         // Shared Strings sammeln
         $this->collectSharedStrings($document);
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($outputPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             self::logErrorAndThrow(RuntimeException::class, "Kann XLSX-Datei nicht erstellen: $outputPath");
@@ -218,7 +215,7 @@ class XLSXGenerator extends HelperAbstract {
      * Generiert docProps/core.xml
      */
     protected function generateCoreProps(Document $document): string {
-        $now = (new \DateTimeImmutable())->format('Y-m-d\TH:i:s\Z');
+        $now = (new \DateTimeImmutable)->format('Y-m-d\TH:i:s\Z');
 
         $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
         $xml .= '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" ';

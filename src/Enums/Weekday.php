@@ -8,7 +8,6 @@
  * License Uri  : https://opensource.org/license/mit
  */
 
-
 declare(strict_types=1);
 
 namespace CommonToolkit\Enums;
@@ -17,13 +16,13 @@ use DateTimeInterface;
 use InvalidArgumentException;
 
 enum Weekday: int {
-    case SUNDAY    = 0;
-    case MONDAY    = 1;
-    case TUESDAY   = 2;
+    case SUNDAY = 0;
+    case MONDAY = 1;
+    case TUESDAY = 2;
     case WEDNESDAY = 3;
-    case THURSDAY  = 4;
-    case FRIDAY    = 5;
-    case SATURDAY  = 6;
+    case THURSDAY = 4;
+    case FRIDAY = 5;
+    case SATURDAY = 6;
 
     public function getName(string $locale = 'en'): string {
         return match ($locale) {
@@ -77,7 +76,7 @@ enum Weekday: int {
     public static function toArray(bool $leadingZero = false, string $locale = 'en'): array {
         $weekdaysArray = [];
         foreach (self::cases() as $weekday) {
-            $key = $leadingZero ? str_pad((string)$weekday->value, 2, '0', STR_PAD_LEFT) : $weekday->value;
+            $key = $leadingZero ? str_pad((string) $weekday->value, 2, '0', STR_PAD_LEFT) : $weekday->value;
             $weekdaysArray[$key] = $weekday->getName($locale);
         }
         return $weekdaysArray;
@@ -94,13 +93,13 @@ enum Weekday: int {
      */
     public function getIsoWeekday(): int {
         return match ($this) {
-            self::MONDAY    => 1,
-            self::TUESDAY   => 2,
+            self::MONDAY => 1,
+            self::TUESDAY => 2,
             self::WEDNESDAY => 3,
-            self::THURSDAY  => 4,
-            self::FRIDAY    => 5,
-            self::SATURDAY  => 6,
-            self::SUNDAY    => 7,
+            self::THURSDAY => 4,
+            self::FRIDAY => 5,
+            self::SATURDAY => 6,
+            self::SUNDAY => 7,
         };
     }
 
@@ -128,13 +127,13 @@ enum Weekday: int {
      */
     public function toBitmask(): int {
         return match ($this) {
-            self::MONDAY    => 1,   // 2^0
-            self::TUESDAY   => 2,   // 2^1
+            self::MONDAY => 1,   // 2^0
+            self::TUESDAY => 2,   // 2^1
             self::WEDNESDAY => 4,   // 2^2
-            self::THURSDAY  => 8,   // 2^3
-            self::FRIDAY    => 16,  // 2^4
-            self::SATURDAY  => 32,  // 2^5
-            self::SUNDAY    => 64,  // 2^6
+            self::THURSDAY => 8,   // 2^3
+            self::FRIDAY => 16,  // 2^4
+            self::SATURDAY => 32,  // 2^5
+            self::SUNDAY => 64,  // 2^6
         };
     }
 
@@ -147,8 +146,6 @@ enum Weekday: int {
 
     /**
      * Erstellt Bitmaske aus mehreren Wochentagen.
-     *
-     * @param Weekday ...$days
      */
     public static function createMask(self ...$days): int {
         $mask = 0;
@@ -171,7 +168,7 @@ enum Weekday: int {
             }
         }
         // Sortiere nach ISO-Wochentag (Mo-So)
-        usort($days, fn(self $a, self $b) => $a->getIsoWeekday() <=> $b->getIsoWeekday());
+        usort($days, fn (self $a, self $b) => $a->getIsoWeekday() <=> $b->getIsoWeekday());
         return $days;
     }
 
@@ -219,7 +216,7 @@ enum Weekday: int {
         if (empty($days)) {
             return $locale === 'de' ? 'Keine Tage' : 'No days';
         }
-        return implode(', ', array_map(fn(self $d) => $d->getShortName($locale), $days));
+        return implode(', ', array_map(fn (self $d) => $d->getShortName($locale), $days));
     }
 
     /**

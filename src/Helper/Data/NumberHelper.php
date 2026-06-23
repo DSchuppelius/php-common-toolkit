@@ -49,7 +49,7 @@ class NumberHelper {
         $value = (float) str_replace(',', '.', $matches[1]);
         $unit = strtoupper($matches[2]);
         $factor = match ($unit) {
-            'B'  => 1,
+            'B' => 1,
             'KB' => 1024,
             'MB' => 1024 ** 2,
             'GB' => 1024 ** 3,
@@ -69,7 +69,9 @@ class NumberHelper {
      * @return float Der konvertierte Temperaturwert.
      */
     public static function convertTemperature(float $value, TemperatureUnit $from, TemperatureUnit $to): float {
-        if ($from === $to) return $value;
+        if ($from === $to) {
+            return $value;
+        }
 
         return match ("{$from->value}-{$to->value}") {
             'C-F' => $value * 9 / 5 + 32,
@@ -93,7 +95,7 @@ class NumberHelper {
     public static function convertMetric(float $value, string $fromUnit, string $toUnit, int $baseFactor = 10): float {
         $prefixes = MetricPrefix::prefixMap();
         $sortedPrefixes = array_keys($prefixes);
-        usort($sortedPrefixes, fn($a, $b) => strlen($b) <=> strlen($a)); // längste zuerst
+        usort($sortedPrefixes, fn ($a, $b) => strlen($b) <=> strlen($a)); // längste zuerst
 
         $getPrefix = function (string $unit) use ($sortedPrefixes): array {
             foreach ($sortedPrefixes as $prefix) {
@@ -131,11 +133,6 @@ class NumberHelper {
     /**
      * Fixiert eine Zahl auf einen bestimmten Bereich und gibt den den entsprechenden Wert zurück.
      * Bei Über- oder Unterlauf wird der Wert auf den entsprechenden Grenzwert gesetzt.
-     *
-     * @param float $value
-     * @param float $min
-     * @param float $max
-     * @return float
      */
     public static function clamp(float $value, float $min, float $max): float {
         return min(max($value, $min), $max);
@@ -143,16 +140,16 @@ class NumberHelper {
 
     /**
      * Konvertiert einen Betrag zu deutschem Format mit optionalen Tausendertrennern.
-     * 
+     *
      * Akzeptiert US-Format (1,234.56), deutsches Format (1.234,56) und gemischte Formate.
      * Normalisiert den Eingabestring und gibt das deutsche Format zurück.
      * Ohne Tausendertrenner (Standard) ideal für Datenfelder, CSV, APIs.
-     * 
+     *
      * @param string|float|int $amount Betrag in beliebigem Format.
      * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
      * @param bool $withThousandsSeparator Tausendertrenner anzeigen (Standard: false).
      * @return string Betrag im deutschen Format (z.B. "1234,56" oder "1.234,56").
-     * 
+     *
      * @see formatCurrency() Für Anzeige-Formatierung mit Währungssymbol und Tausendertrennern.
      */
     public static function toGermanFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false, ?CountryCode $country = null): string {
@@ -195,10 +192,10 @@ class NumberHelper {
 
     /**
      * Konvertiert einen Betrag zu US-Format mit optionalen Tausendertrennern.
-     * 
+     *
      * Akzeptiert deutsches Format (1.234,56), US-Format (1,234.56) und gemischte Formate.
      * Ohne Tausendertrenner (Standard) ideal für Datenfelder, CSV, APIs.
-     * 
+     *
      * @param string|float|int $amount Betrag in beliebigem Format.
      * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
      * @param bool $withThousandsSeparator Tausendertrenner anzeigen (Standard: false).
@@ -221,26 +218,28 @@ class NumberHelper {
 
     /**
      * Normalisiert eine Dezimalzahl mit automatischer Format-Erkennung.
-     * 
+     *
      * Unterstützt:
      * - Deutsches Format: 1.234,56 → 1234.56
      * - US-Format: 1,234.56 → 1234.56
      * - Einfache Formate: 1,5 oder 1.5
-     * 
+     *
      * Bei Mehrdeutigkeit (nur ein Trenner mit genau 3 Nachkommastellen) wird
      * Dezimal bevorzugt. Für eindeutige Tausender-Erkennung beide Trenner verwenden
      * (z.B. "1.234,00" oder "1,234.00").
-     * 
+     *
      * Mit CountryCode::Germany wird das deutsche Tausendertrennzeichen-Pattern
      * eindeutig erkannt: 2.000 → 2000, 1.234.567 → 1234567, 2.000,50 → 2000.50.
-     * 
+     *
      * @param string $value Der zu normalisierende Wert.
      * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
      * @return float Der normalisierte Wert.
      */
     public static function normalizeDecimal(string $value, ?CountryCode $country = null): float {
         $value = trim(str_replace(' ', '', $value));
-        if ($value === '') return 0.0;
+        if ($value === '') {
+            return 0.0;
+        }
 
         // Deutsche/europäische Tausendertrennzeichen eindeutig erkennen:
         // Pattern: 1-3 Ziffern, dann Gruppen von exakt 3 Ziffern nach Punkt, optional Dezimalkomma
@@ -395,7 +394,7 @@ class NumberHelper {
 
     /**
      * Formatiert eine Zahl gemäß einem dynamischen Format-Template.
-     * 
+     *
      * @param float|int $number Die zu formatierende Zahl
      * @param string $formatTemplate Template angepasst an die Input-Struktur
      * @return string Die formatierte Zahl
@@ -416,7 +415,7 @@ class NumberHelper {
             return number_format($number, 0, '', ',');
         }
 
-        // Deutsche: 0.000 oder 00.000 (Punkt genau 3 Zeichen vor Ende, max 2 Nullen davor)  
+        // Deutsche: 0.000 oder 00.000 (Punkt genau 3 Zeichen vor Ende, max 2 Nullen davor)
         if (preg_match('/^0{1,2}\.000$/', $formatTemplate)) {
             return number_format($number, 0, '', '.');
         }
@@ -464,8 +463,11 @@ class NumberHelper {
     public static function formatWithSign(float|int $number, int $decimals = 2, string $decimalSeparator = ',', string $thousandsSeparator = '.', string $zeroSign = ''): string {
         $formatted = number_format(abs($number), $decimals, $decimalSeparator, $thousandsSeparator);
 
-        if ($number > 0) return '+' . $formatted;
-        elseif ($number < 0) return '-' . $formatted;
+        if ($number > 0) {
+            return '+' . $formatted;
+        } elseif ($number < 0) {
+            return '-' . $formatted;
+        }
 
         // Null
         return $zeroSign . $formatted;
@@ -603,12 +605,14 @@ class NumberHelper {
             'sechzehn',
             'siebzehn',
             'achtzehn',
-            'neunzehn'
+            'neunzehn',
         ];
         $tens = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
 
         $convertBelow1000 = function (int $n) use ($ones, $tens): string {
-            if ($n === 0) return '';
+            if ($n === 0) {
+                return '';
+            }
 
             $result = '';
 

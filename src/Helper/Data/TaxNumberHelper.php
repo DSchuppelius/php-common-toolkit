@@ -21,8 +21,6 @@ use ERRORToolkit\Traits\ErrorLog;
  * - Deutsche Steuer-Identifikationsnummer (IdNr) - 11 Ziffern
  * - Deutsche Steuernummer (StNr) - 10-13 Ziffern je nach Bundesland
  * - Bundeseinheitliche Steuernummer (ELSTER-Format) - 13 Ziffern
- *
- * @package CommonToolkit\Helper\Data
  */
 class TaxNumberHelper {
     use ErrorLog;
@@ -360,7 +358,7 @@ class TaxNumberHelper {
         $product = 10;
 
         for ($i = 0; $i < 10; $i++) {
-            $sum = ((int)$idNr[$i] + $product) % 10;
+            $sum = ((int) $idNr[$i] + $product) % 10;
             if ($sum === 0) {
                 $sum = 10;
             }
@@ -372,6 +370,6 @@ class TaxNumberHelper {
             $checkDigit = 0;
         }
 
-        return (int)$idNr[10] === $checkDigit;
+        return (int) $idNr[10] === $checkDigit;
     }
 }

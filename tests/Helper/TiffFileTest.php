@@ -69,19 +69,19 @@ class TiffFileTest extends BaseTestCase {
         }
     }
 
-    public function testMimeType(): void {
+    public function test_mime_type(): void {
         $mimeType = File::mimeType($this->testFile);
         $this->assertEquals('image/jpeg', $mimeType);
     }
 
-    public function testConvertToTiff(): void {
+    public function test_convert_to_tiff(): void {
         $tiffFile = TifFile::repair($this->testFile);
         $this->assertFileExists($tiffFile);
         $this->assertEquals('image/tiff', File::mimeType($tiffFile));
         // Wiederherstellung erfolgt in tearDown()
     }
 
-    public function testConvertToPDF(): void {
+    public function test_convert_to_pdf(): void {
         if (!File::exists($this->testFile)) {
             $this->markTestSkipped('Test file not found');
         }
@@ -95,7 +95,7 @@ class TiffFileTest extends BaseTestCase {
         // Cleanup erfolgt in tearDown()
     }
 
-    public function testMerge(): void {
+    public function test_merge(): void {
         $mergeFile1 = $this->samplesDir . '/MergeFile_1.tif';
         $mergeFile2 = $this->samplesDir . '/MergeFile_2.tif';
         $bakFile1 = $this->samplesDir . '/MergeFile_1.tif.bak';

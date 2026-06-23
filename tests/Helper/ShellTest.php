@@ -11,11 +11,11 @@
 namespace Tests\Helper;
 
 use CommonToolkit\Helper\Shell;
-use Tests\Contracts\BaseTestCase;
 use Exception;
+use Tests\Contracts\BaseTestCase;
 
 class ShellTest extends BaseTestCase {
-    public function testExecuteShellCommandSuccess() {
+    public function test_execute_shell_command_success() {
         $unixCommand = 'echo "Hello World"';
         $windowsCommand = 'echo Hello World';
 
@@ -28,7 +28,7 @@ class ShellTest extends BaseTestCase {
         $this->assertNotEmpty($output, "The output should not be empty.");
     }
 
-    public function testExecuteShellCommandFailure() {
+    public function test_execute_shell_command_failure() {
         $command = "invalidcommand 2>&1";
 
         $output = [];

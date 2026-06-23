@@ -19,7 +19,7 @@ use Traversable;
 
 /**
  * Repräsentiert ein Arbeitsblatt in einem XLSX-Dokument.
- * 
+ *
  * @implements IteratorAggregate<int, Row>
  */
 class Sheet implements Countable, IteratorAggregate {
@@ -36,9 +36,9 @@ class Sheet implements Countable, IteratorAggregate {
      * @param int      $sheetIndex Der 0-basierte Sheet-Index
      */
     public function __construct(string $name = 'Sheet1', ?Row $header = null, array $rows = [], int $sheetIndex = 0) {
-        $this->name       = $name;
-        $this->header     = $header;
-        $this->rows       = array_values($rows);
+        $this->name = $name;
+        $this->header = $header;
+        $this->rows = array_values($rows);
         $this->sheetIndex = $sheetIndex;
     }
 

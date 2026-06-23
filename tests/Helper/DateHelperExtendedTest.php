@@ -15,7 +15,7 @@ use DateTimeImmutable;
 use Tests\Contracts\BaseTestCase;
 
 class DateHelperExtendedTest extends BaseTestCase {
-    public function testGetAge(): void {
+    public function test_get_age(): void {
         $birthDate = new DateTimeImmutable('2000-01-01');
         $referenceDate = new DateTimeImmutable('2025-06-15');
 
@@ -23,7 +23,7 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals(25, $age);
     }
 
-    public function testGetQuarter(): void {
+    public function test_get_quarter(): void {
         $this->assertEquals(1, DateHelper::getQuarter(new DateTimeImmutable('2025-01-15')));
         $this->assertEquals(1, DateHelper::getQuarter(new DateTimeImmutable('2025-03-31')));
         $this->assertEquals(2, DateHelper::getQuarter(new DateTimeImmutable('2025-04-01')));
@@ -31,7 +31,7 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals(4, DateHelper::getQuarter(new DateTimeImmutable('2025-12-31')));
     }
 
-    public function testStartOfMonth(): void {
+    public function test_start_of_month(): void {
         $date = new DateTimeImmutable('2025-03-15 14:30:00');
         $start = DateHelper::startOfMonth($date);
 
@@ -39,7 +39,7 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('00:00:00', $start->format('H:i:s'));
     }
 
-    public function testEndOfMonth(): void {
+    public function test_end_of_month(): void {
         $date = new DateTimeImmutable('2025-03-15');
         $end = DateHelper::endOfMonth($date);
 
@@ -47,7 +47,7 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('23:59:59', $end->format('H:i:s'));
     }
 
-    public function testStartOfWeek(): void {
+    public function test_start_of_week(): void {
         // Mittwoch, 15.01.2025
         $date = new DateTimeImmutable('2025-01-15');
         $start = DateHelper::startOfWeek($date);
@@ -56,7 +56,7 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('1', $start->format('N')); // Tag 1 = Montag
     }
 
-    public function testEndOfWeek(): void {
+    public function test_end_of_week(): void {
         // Mittwoch, 15.01.2025
         $date = new DateTimeImmutable('2025-01-15');
         $end = DateHelper::endOfWeek($date);
@@ -65,35 +65,35 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('7', $end->format('N')); // Tag 7 = Sonntag
     }
 
-    public function testStartOfYear(): void {
+    public function test_start_of_year(): void {
         $date = new DateTimeImmutable('2025-06-15');
         $start = DateHelper::startOfYear($date);
 
         $this->assertEquals('2025-01-01', $start->format('Y-m-d'));
     }
 
-    public function testEndOfYear(): void {
+    public function test_end_of_year(): void {
         $date = new DateTimeImmutable('2025-06-15');
         $end = DateHelper::endOfYear($date);
 
         $this->assertEquals('2025-12-31', $end->format('Y-m-d'));
     }
 
-    public function testStartOfQuarter(): void {
+    public function test_start_of_quarter(): void {
         $this->assertEquals('2025-01-01', DateHelper::startOfQuarter(new DateTimeImmutable('2025-02-15'))->format('Y-m-d'));
         $this->assertEquals('2025-04-01', DateHelper::startOfQuarter(new DateTimeImmutable('2025-05-15'))->format('Y-m-d'));
         $this->assertEquals('2025-07-01', DateHelper::startOfQuarter(new DateTimeImmutable('2025-08-15'))->format('Y-m-d'));
         $this->assertEquals('2025-10-01', DateHelper::startOfQuarter(new DateTimeImmutable('2025-11-15'))->format('Y-m-d'));
     }
 
-    public function testEndOfQuarter(): void {
+    public function test_end_of_quarter(): void {
         $this->assertEquals('2025-03-31', DateHelper::endOfQuarter(new DateTimeImmutable('2025-02-15'))->format('Y-m-d'));
         $this->assertEquals('2025-06-30', DateHelper::endOfQuarter(new DateTimeImmutable('2025-05-15'))->format('Y-m-d'));
         $this->assertEquals('2025-09-30', DateHelper::endOfQuarter(new DateTimeImmutable('2025-08-15'))->format('Y-m-d'));
         $this->assertEquals('2025-12-31', DateHelper::endOfQuarter(new DateTimeImmutable('2025-11-15'))->format('Y-m-d'));
     }
 
-    public function testGetWorkingDays(): void {
+    public function test_get_working_days(): void {
         // Eine normale Woche: Mo-Fr = 5 Arbeitstage
         $start = new DateTimeImmutable('2025-01-06'); // Montag
         $end = new DateTimeImmutable('2025-01-10'); // Freitag
@@ -109,14 +109,14 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals(4, DateHelper::getWorkingDays($start, $end, $holidays));
     }
 
-    public function testGetEasterDate(): void {
+    public function test_get_easter_date(): void {
         // Bekannte Osterdaten
         $this->assertEquals('2024-03-31', DateHelper::getEasterDate(2024)->format('Y-m-d'));
         $this->assertEquals('2025-04-20', DateHelper::getEasterDate(2025)->format('Y-m-d'));
         $this->assertEquals('2026-04-05', DateHelper::getEasterDate(2026)->format('Y-m-d'));
     }
 
-    public function testGetGermanHolidays(): void {
+    public function test_get_german_holidays(): void {
         $holidays = DateHelper::getGermanHolidays(2025);
 
         $this->assertArrayHasKey('Neujahr', $holidays);
@@ -129,43 +129,43 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('2025-10-03', $holidays['Tag der Deutschen Einheit']->format('Y-m-d'));
     }
 
-    public function testIsGermanHoliday(): void {
+    public function test_is_german_holiday(): void {
         $this->assertTrue(DateHelper::isGermanHoliday(new DateTimeImmutable('2025-01-01')));
         $this->assertTrue(DateHelper::isGermanHoliday(new DateTimeImmutable('2025-12-25')));
         $this->assertFalse(DateHelper::isGermanHoliday(new DateTimeImmutable('2025-01-02')));
     }
 
-    public function testGetWeekNumber(): void {
+    public function test_get_week_number(): void {
         $this->assertEquals(1, DateHelper::getWeekNumber(new DateTimeImmutable('2025-01-01')));
         $this->assertEquals(1, DateHelper::getWeekNumber(new DateTimeImmutable('2024-12-30'))); // Gehört zu KW 1 von 2025!
         $this->assertEquals(52, DateHelper::getWeekNumber(new DateTimeImmutable('2024-12-28'))); // KW 52 von 2024
     }
 
-    public function testGetDayOfYear(): void {
+    public function test_get_day_of_year(): void {
         $this->assertEquals(1, DateHelper::getDayOfYear(new DateTimeImmutable('2025-01-01')));
         $this->assertEquals(365, DateHelper::getDayOfYear(new DateTimeImmutable('2025-12-31')));
         $this->assertEquals(366, DateHelper::getDayOfYear(new DateTimeImmutable('2024-12-31'))); // Schaltjahr
     }
 
-    public function testGetDaysInYear(): void {
+    public function test_get_days_in_year(): void {
         $this->assertEquals(365, DateHelper::getDaysInYear(2025));
         $this->assertEquals(366, DateHelper::getDaysInYear(2024));
     }
 
-    public function testAddWorkingDays(): void {
+    public function test_add_working_days(): void {
         $start = new DateTimeImmutable('2025-01-06'); // Montag
         $result = DateHelper::addWorkingDays($start, 5);
 
         $this->assertEquals('2025-01-13', $result->format('Y-m-d')); // Montag nächste Woche
     }
 
-    public function testIsWorkingDay(): void {
+    public function test_is_working_day(): void {
         $this->assertTrue(DateHelper::isWorkingDay(new DateTimeImmutable('2025-01-06'))); // Montag
         $this->assertFalse(DateHelper::isWorkingDay(new DateTimeImmutable('2025-01-04'))); // Samstag
         $this->assertFalse(DateHelper::isWorkingDay(new DateTimeImmutable('2025-01-05'))); // Sonntag
     }
 
-    public function testGetNextWorkingDay(): void {
+    public function test_get_next_working_day(): void {
         // Von Freitag zum Montag
         $friday = new DateTimeImmutable('2025-01-10');
         $next = DateHelper::getNextWorkingDay($friday);
@@ -177,14 +177,14 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('2025-01-07', $next->format('Y-m-d'));
     }
 
-    public function testGetPreviousWorkingDay(): void {
+    public function test_get_previous_working_day(): void {
         // Von Montag zum Freitag
         $monday = new DateTimeImmutable('2025-01-13');
         $prev = DateHelper::getPreviousWorkingDay($monday);
         $this->assertEquals('2025-01-10', $prev->format('Y-m-d'));
     }
 
-    public function testDiffIn(): void {
+    public function test_diff_in(): void {
         $start = new DateTimeImmutable('2025-01-01');
         $end = new DateTimeImmutable('2025-01-08');
 
@@ -197,7 +197,7 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals(12, DateHelper::diffIn($start2, $end2, 'months'));
     }
 
-    public function testHumanDiff(): void {
+    public function test_human_diff(): void {
         $now = new DateTimeImmutable('2025-01-08 12:00:00');
         $twoHoursAgo = new DateTimeImmutable('2025-01-08 10:00:00');
         $inTwoDays = new DateTimeImmutable('2025-01-10 12:00:00');

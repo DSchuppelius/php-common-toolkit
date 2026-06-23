@@ -19,8 +19,6 @@ use ERRORToolkit\Traits\ErrorLog;
  * Helper-Klasse für die Validierung von Postleitzahlen.
  *
  * Unterstützt Validierung für verschiedene Länder mit länderspezifischen Formaten.
- *
- * @package CommonToolkit\Helper\Data
  */
 class PostalCodeHelper {
     use ErrorLog;
@@ -191,7 +189,7 @@ class PostalCodeHelper {
             return null;
         }
 
-        $plz = (int)$postalCode;
+        $plz = (int) $postalCode;
 
         foreach (self::GERMAN_PLZ_REGIONS as $state => $ranges) {
             foreach ($ranges as $range) {

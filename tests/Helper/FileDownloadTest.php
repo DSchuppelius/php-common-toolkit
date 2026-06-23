@@ -41,10 +41,10 @@ class FileDownloadTest extends BaseTestCase {
 
     private function listDir(): array {
         $entries = scandir($this->tmpDir) ?: [];
-        return array_values(array_filter($entries, fn($e) => $e !== '.' && $e !== '..'));
+        return array_values(array_filter($entries, fn ($e) => $e !== '.' && $e !== '..'));
     }
 
-    public function testSuccessfulDownloadWritesDestination(): void {
+    public function test_successful_download_writes_destination(): void {
         InMemoryHttpStreamWrapper::$payload = "Zeile A\nZeile B\n";
         InMemoryHttpStreamWrapper::$failAfter = null;
 
@@ -65,7 +65,7 @@ class FileDownloadTest extends BaseTestCase {
         $this->assertSame(['result.txt'], $this->listDir(), 'Es darf nur die Zieldatei verbleiben, keine .tmp-Datei');
     }
 
-    public function testSuccessfulDownloadReplacesExistingDestination(): void {
+    public function test_successful_download_replaces_existing_destination(): void {
         $destination = $this->tmpDir . '/result.txt';
         file_put_contents($destination, 'ALTER INHALT');
 
@@ -89,7 +89,7 @@ class FileDownloadTest extends BaseTestCase {
      * KERN-REGRESSIONSTEST: Eine bereits vorhandene, gültige Zieldatei muss bei einem
      * abbrechenden Download UNVERÄNDERT bleiben und es dürfen keine .tmp-Reste übrig sein.
      */
-    public function testAbortedDownloadLeavesExistingDestinationUntouched(): void {
+    public function test_aborted_download_leaves_existing_destination_untouched(): void {
         $destination = $this->tmpDir . '/result.txt';
         $original = "GUELTIGER BESTAND\nzeile2\n";
         file_put_contents($destination, $original);
@@ -112,7 +112,7 @@ class FileDownloadTest extends BaseTestCase {
         $this->assertSame(['result.txt'], $this->listDir(), 'Keine .tmp-Reste im Verzeichnis');
     }
 
-    public function testUnreachableSourceLeavesExistingDestinationUntouched(): void {
+    public function test_unreachable_source_leaves_existing_destination_untouched(): void {
         $destination = $this->tmpDir . '/result.txt';
         $original = "GUELTIGER BESTAND";
         file_put_contents($destination, $original);
@@ -135,7 +135,7 @@ class FileDownloadTest extends BaseTestCase {
         $this->assertSame(['result.txt'], $this->listDir(), 'Keine .tmp-Reste im Verzeichnis');
     }
 
-    public function testInvalidUrlSchemeReturnsFalse(): void {
+    public function test_invalid_url_scheme_returns_false(): void {
         $destination = $this->tmpDir . '/result.txt';
         $this->assertFalse(File::download('file:///etc/hosts', $destination));
         $this->assertFileDoesNotExist($destination);
@@ -185,6 +185,5 @@ class InMemoryHttpStreamWrapper {
         return [];
     }
 
-    public function stream_close(): void {
-    }
+    public function stream_close(): void {}
 }

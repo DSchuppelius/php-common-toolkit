@@ -17,14 +17,14 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // E.164 Format Tests
     // ========================================
 
-    public function testIsE164WithValidFormat(): void {
+    public function test_is_e164_with_valid_format(): void {
         $this->assertTrue(PhoneNumberHelper::isE164('+4930123456'));
         $this->assertTrue(PhoneNumberHelper::isE164('+493012345678'));
         $this->assertTrue(PhoneNumberHelper::isE164('+15551234567'));
         $this->assertTrue(PhoneNumberHelper::isE164('+41441234567'));
     }
 
-    public function testIsE164WithInvalidFormat(): void {
+    public function test_is_e164_with_invalid_format(): void {
         $this->assertFalse(PhoneNumberHelper::isE164(null));
         $this->assertFalse(PhoneNumberHelper::isE164(''));
         $this->assertFalse(PhoneNumberHelper::isE164('4930123456')); // Fehlendes +
@@ -38,7 +38,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // Allgemeine Telefonnummer Tests
     // ========================================
 
-    public function testIsPhoneNumberWithValidFormats(): void {
+    public function test_is_phone_number_with_valid_formats(): void {
         $this->assertTrue(PhoneNumberHelper::isPhoneNumber('030123456'));
         $this->assertTrue(PhoneNumberHelper::isPhoneNumber('030 123 456'));
         $this->assertTrue(PhoneNumberHelper::isPhoneNumber('030-123-456'));
@@ -46,7 +46,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
         $this->assertTrue(PhoneNumberHelper::isPhoneNumber('0049 30 123456'));
     }
 
-    public function testIsPhoneNumberWithInvalidFormats(): void {
+    public function test_is_phone_number_with_invalid_formats(): void {
         $this->assertFalse(PhoneNumberHelper::isPhoneNumber(null));
         $this->assertFalse(PhoneNumberHelper::isPhoneNumber(''));
         $this->assertFalse(PhoneNumberHelper::isPhoneNumber('12')); // Zu kurz
@@ -56,7 +56,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // Deutsche Telefonnummern Tests
     // ========================================
 
-    public function testIsGermanPhoneNumberWithValidFormats(): void {
+    public function test_is_german_phone_number_with_valid_formats(): void {
         $this->assertTrue(PhoneNumberHelper::isGermanPhoneNumber('030 12345678'));
         $this->assertTrue(PhoneNumberHelper::isGermanPhoneNumber('030-12345678'));
         $this->assertTrue(PhoneNumberHelper::isGermanPhoneNumber('03012345678'));
@@ -64,7 +64,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
         $this->assertTrue(PhoneNumberHelper::isGermanPhoneNumber('0049 30 12345678'));
     }
 
-    public function testIsGermanPhoneNumberWithInvalidFormats(): void {
+    public function test_is_german_phone_number_with_invalid_formats(): void {
         $this->assertFalse(PhoneNumberHelper::isGermanPhoneNumber(null));
         $this->assertFalse(PhoneNumberHelper::isGermanPhoneNumber(''));
         $this->assertFalse(PhoneNumberHelper::isGermanPhoneNumber('123')); // Zu kurz
@@ -75,14 +75,14 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // Deutsche Mobilfunknummern Tests
     // ========================================
 
-    public function testIsGermanMobileNumberWithValidFormats(): void {
+    public function test_is_german_mobile_number_with_valid_formats(): void {
         $this->assertTrue(PhoneNumberHelper::isGermanMobileNumber('0151 12345678'));
         $this->assertTrue(PhoneNumberHelper::isGermanMobileNumber('0171 1234567'));
         $this->assertTrue(PhoneNumberHelper::isGermanMobileNumber('0176 12345678'));
         $this->assertTrue(PhoneNumberHelper::isGermanMobileNumber('+49 151 12345678'));
     }
 
-    public function testIsGermanMobileNumberWithLandline(): void {
+    public function test_is_german_mobile_number_with_landline(): void {
         $this->assertFalse(PhoneNumberHelper::isGermanMobileNumber('030 12345678')); // Berlin Festnetz
         $this->assertFalse(PhoneNumberHelper::isGermanMobileNumber('089 12345678')); // München Festnetz
     }
@@ -91,7 +91,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // Normalisierungs-Tests
     // ========================================
 
-    public function testNormalize(): void {
+    public function test_normalize(): void {
         $this->assertEquals('4930123456', PhoneNumberHelper::normalize('+49 30 123456'));
         $this->assertEquals('030123456', PhoneNumberHelper::normalize('030-123-456'));
         $this->assertEquals('030123456', PhoneNumberHelper::normalize('030 123 456'));
@@ -102,26 +102,26 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // E.164 Konvertierungs-Tests
     // ========================================
 
-    public function testToE164WithGermanNumber(): void {
+    public function test_to_e164_with_german_number(): void {
         $this->assertEquals('+493012345678', PhoneNumberHelper::toE164('030 12345678', 'DE'));
         $this->assertEquals('+493012345678', PhoneNumberHelper::toE164('03012345678', 'DE'));
     }
 
-    public function testToE164WithInternationalFormat(): void {
+    public function test_to_e164_with_international_format(): void {
         $this->assertEquals('+493012345678', PhoneNumberHelper::toE164('+49 30 12345678', 'DE'));
         $this->assertEquals('+493012345678', PhoneNumberHelper::toE164('0049 30 12345678', 'DE'));
     }
 
-    public function testToE164WithOtherCountry(): void {
+    public function test_to_e164_with_other_country(): void {
         $this->assertEquals('+43112345678', PhoneNumberHelper::toE164('01 12345678', 'AT'));
         $this->assertEquals('+41441234567', PhoneNumberHelper::toE164('044 1234567', 'CH'));
     }
 
-    public function testToE164AlreadyE164(): void {
+    public function test_to_e164_already_e164(): void {
         $this->assertEquals('+493012345678', PhoneNumberHelper::toE164('+493012345678'));
     }
 
-    public function testToE164WithInvalidCountry(): void {
+    public function test_to_e164_with_invalid_country(): void {
         $this->assertNull(PhoneNumberHelper::toE164('030 12345678', 'XX'));
     }
 
@@ -129,17 +129,17 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // Formatierungs-Tests
     // ========================================
 
-    public function testFormatInternational(): void {
+    public function test_format_international(): void {
         $formatted = PhoneNumberHelper::formatInternational('+493012345678');
         $this->assertStringStartsWith('+49 ', $formatted);
     }
 
-    public function testFormatNational(): void {
+    public function test_format_national(): void {
         $formatted = PhoneNumberHelper::formatNational('+493012345678', 'DE');
         $this->assertStringStartsWith('0', $formatted);
     }
 
-    public function testFormatE164(): void {
+    public function test_format_e164(): void {
         $formatted = PhoneNumberHelper::format('030 12345678', 'e164', 'DE');
         $this->assertEquals('+493012345678', $formatted);
     }
@@ -148,18 +148,18 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // Ländervorwahl-Extraktion Tests
     // ========================================
 
-    public function testExtractCountryCode(): void {
+    public function test_extract_country_code(): void {
         $this->assertEquals('49', PhoneNumberHelper::extractCountryCode('+493012345678'));
         $this->assertEquals('43', PhoneNumberHelper::extractCountryCode('+43112345678'));
         $this->assertEquals('1', PhoneNumberHelper::extractCountryCode('+15551234567'));
     }
 
-    public function testExtractCountryCodeWithInvalid(): void {
+    public function test_extract_country_code_with_invalid(): void {
         $this->assertNull(PhoneNumberHelper::extractCountryCode('493012345678'));
         $this->assertNull(PhoneNumberHelper::extractCountryCode(''));
     }
 
-    public function testExtractCountry(): void {
+    public function test_extract_country(): void {
         $this->assertEquals('DE', PhoneNumberHelper::extractCountry('+493012345678'));
         $this->assertEquals('AT', PhoneNumberHelper::extractCountry('+43112345678'));
         $this->assertEquals('US', PhoneNumberHelper::extractCountry('+15551234567'));
@@ -169,7 +169,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // Sonstige Tests
     // ========================================
 
-    public function testGetSupportedCountries(): void {
+    public function test_get_supported_countries(): void {
         $countries = PhoneNumberHelper::getSupportedCountries();
 
         $this->assertIsArray($countries);
@@ -184,7 +184,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
     // CountryCode-Enum Tests
     // ========================================
 
-    public function testGetCountryCallingCode(): void {
+    public function test_get_country_calling_code(): void {
         $this->assertEquals('49', PhoneNumberHelper::getCountryCallingCode(CountryCode::Germany));
         $this->assertEquals('43', PhoneNumberHelper::getCountryCallingCode(CountryCode::Austria));
         $this->assertEquals('41', PhoneNumberHelper::getCountryCallingCode(CountryCode::Switzerland));
@@ -194,7 +194,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
         $this->assertNull(PhoneNumberHelper::getCountryCallingCode(CountryCode::Japan));
     }
 
-    public function testMatchesCountry(): void {
+    public function test_matches_country(): void {
         $this->assertTrue(PhoneNumberHelper::matchesCountry('+493012345678', CountryCode::Germany));
         $this->assertTrue(PhoneNumberHelper::matchesCountry('030 12345678', CountryCode::Germany));
         $this->assertTrue(PhoneNumberHelper::matchesCountry('+43112345678', CountryCode::Austria));
@@ -203,7 +203,7 @@ class PhoneNumberHelperTest extends BaseTestCase {
         $this->assertFalse(PhoneNumberHelper::matchesCountry('+43112345678', CountryCode::Germany));
     }
 
-    public function testExtractCountryEnum(): void {
+    public function test_extract_country_enum(): void {
         $this->assertEquals(CountryCode::Germany, PhoneNumberHelper::extractCountryEnum('+493012345678'));
         $this->assertEquals(CountryCode::Austria, PhoneNumberHelper::extractCountryEnum('+43112345678'));
         $this->assertEquals(CountryCode::Switzerland, PhoneNumberHelper::extractCountryEnum('+41441234567'));
@@ -212,13 +212,13 @@ class PhoneNumberHelperTest extends BaseTestCase {
         $this->assertNull(PhoneNumberHelper::extractCountryEnum('493012345678'));
     }
 
-    public function testToE164WithCountryCode(): void {
+    public function test_to_e164_with_country_code(): void {
         $this->assertEquals('+493012345678', PhoneNumberHelper::toE164WithCountryCode('030 12345678', CountryCode::Germany));
         $this->assertEquals('+43112345678', PhoneNumberHelper::toE164WithCountryCode('01 12345678', CountryCode::Austria));
         $this->assertEquals('+41441234567', PhoneNumberHelper::toE164WithCountryCode('044 1234567', CountryCode::Switzerland));
     }
 
-    public function testFormatWithCountryCode(): void {
+    public function test_format_with_country_code(): void {
         $formatted = PhoneNumberHelper::formatWithCountryCode('030 12345678', 'e164', CountryCode::Germany);
         $this->assertEquals('+493012345678', $formatted);
 

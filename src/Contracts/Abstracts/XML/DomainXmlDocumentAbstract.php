@@ -12,28 +12,25 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Contracts\Abstracts\XML;
 
-use CommonToolkit\Contracts\Interfaces\XML\XmlDocumentInterface;
-use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
+use CommonToolkit\Contracts\Interfaces\XML\{XmlDocumentInterface, XmlElementInterface};
 use CommonToolkit\Entities\XML\Document as XmlDocument;
 use DOMDocument;
 use DOMNode;
 
 /**
  * Abstrakte Basisklasse für domänenspezifische XML-Dokumente.
- * 
+ *
  * Diese Klasse bietet eine Grundlage für Domänen-Dokumente wie:
  * - Banking: CAMT, Pain, MT-Formate
  * - Buchhaltung: DATEV, XRechnung
  * - Andere XML-basierte Standards
- * 
+ *
  * Nutzt die generische Document Entity aus CommonToolkit als interne
  * Repräsentation und delegiert alle XmlDocumentInterface-Methoden dorthin.
- * 
- * Implementierende Klassen müssen nur die abstrakte Methode getDefaultXml() 
+ *
+ * Implementierende Klassen müssen nur die abstrakte Methode getDefaultXml()
  * bereitstellen, alle anderen Methoden werden automatisch über das
  * gecachte XmlDocument bereitgestellt.
- * 
- * @package CommonToolkit\Contracts\Abstracts\XML
  */
 abstract class DomainXmlDocumentAbstract implements XmlDocumentInterface {
     /**
@@ -43,11 +40,11 @@ abstract class DomainXmlDocumentAbstract implements XmlDocumentInterface {
 
     /**
      * Generiert die XML-Ausgabe für dieses Dokument mit Standardparametern.
-     * 
+     *
      * Diese Methode wird für alle XmlDocumentInterface-Methoden verwendet.
      * Domänenspezifische Klassen können zusätzliche toXml() Methoden mit
      * Parametern anbieten (z.B. toXml(CamtVersion $version)).
-     * 
+     *
      * @return string Das generierte XML
      */
     abstract protected function getDefaultXml(): string;
@@ -58,7 +55,7 @@ abstract class DomainXmlDocumentAbstract implements XmlDocumentInterface {
 
     /**
      * Gibt das interne XmlDocument zurück (generische Entity).
-     * 
+     *
      * Lazy-Loading mit automatischem Caching.
      */
     public function toXmlDocument(): XmlDocument {
@@ -73,56 +70,56 @@ abstract class DomainXmlDocumentAbstract implements XmlDocumentInterface {
     // =========================================================================
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function getVersion(): string {
         return $this->toXmlDocument()->getVersion();
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function getEncoding(): string {
         return $this->toXmlDocument()->getEncoding();
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function getRootElement(): XmlElementInterface {
         return $this->toXmlDocument()->getRootElement();
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function toDomDocument(): DOMDocument {
         return $this->toXmlDocument()->toDomDocument();
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function toDomNode(DOMDocument $doc): DOMNode {
         return $this->toXmlDocument()->toDomNode($doc);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function toString(): string {
         return $this->toXmlDocument()->toString();
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function toFile(string $filePath): void {
         $this->toXmlDocument()->toFile($filePath);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function validateAgainstXsd(string $xsdFile): array {
         return $this->toXmlDocument()->validateAgainstXsd($xsdFile);
@@ -134,7 +131,7 @@ abstract class DomainXmlDocumentAbstract implements XmlDocumentInterface {
 
     /**
      * Invalidiert den XML-Cache.
-     * 
+     *
      * Muss aufgerufen werden, wenn sich die Daten des Dokuments ändern.
      */
     protected function invalidateCache(): void {

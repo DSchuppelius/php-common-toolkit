@@ -8,7 +8,6 @@
  * License Uri  : https://opensource.org/license/mit
  */
 
-
 namespace CommonToolkit\Entities\CSV;
 
 use Closure;
@@ -22,16 +21,14 @@ use RuntimeException;
 /**
  * CSV-Dokument mit Header und Datenzeilen.
  * Erbt von TextDocumentAbstract für Encoding-, BOM- und Zeilenumbruch-Handling.
- * 
+ *
  * Verwendet:
  * - CSVGenerator: Generierung von CSV-Strings
- * 
- * @package CommonToolkit\Entities\CSV
+ *
  *
  * @phpstan-consistent-constructor
  */
 class Document extends TextDocumentAbstract {
-
     protected ?HeaderLine $header;
     /** @var DataLine[] */
     protected array $rows;
@@ -47,12 +44,12 @@ class Document extends TextDocumentAbstract {
     protected bool $exportWithHeader = true;
 
     public function __construct(?HeaderLine $header = null, array $rows = [], string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null, string $encoding = self::DEFAULT_ENCODING) {
-        $this->delimiter           = $delimiter;
-        $this->enclosure           = $enclosure;
-        $this->columnWidthConfig   = $columnWidthConfig;
-        $this->encoding            = $encoding;
-        $this->header              = $header;
-        $this->rows                = $rows;
+        $this->delimiter = $delimiter;
+        $this->enclosure = $enclosure;
+        $this->columnWidthConfig = $columnWidthConfig;
+        $this->encoding = $encoding;
+        $this->header = $header;
+        $this->rows = $rows;
     }
 
     /**
@@ -67,14 +64,11 @@ class Document extends TextDocumentAbstract {
 
     /**
      * Prüft ob ein Header vorhanden ist.
-     *
-     * @return bool
      */
     public function hasHeader(): bool {
         return $this->header !== null;
     }
 
-    /** @return HeaderLine|null */
     public function getHeader(): ?HeaderLine {
         return $this->header;
     }
@@ -84,7 +78,6 @@ class Document extends TextDocumentAbstract {
         return array_values($this->rows);
     }
 
-    /** @return DataLine|null */
     public function getRow(int $index): ?DataLine {
         return $this->rows[$index] ?? null;
     }
@@ -111,7 +104,6 @@ class Document extends TextDocumentAbstract {
         return $this->rows[array_key_last($this->rows)];
     }
 
-    /** @return int */
     public function countRows(): int {
         return count($this->rows);
     }
@@ -202,15 +194,12 @@ class Document extends TextDocumentAbstract {
         return new static($this->header, $sorted, $this->delimiter, $this->enclosure, $this->columnWidthConfig, $this->encoding);
     }
 
-    /** @return string */
     public function getDelimiter(): string {
         return $this->delimiter;
     }
 
     /**
      * Gibt zurück, ob der Header beim Export ausgegeben wird.
-     *
-     * @return bool
      */
     public function getExportWithHeader(): bool {
         return $this->exportWithHeader;
@@ -218,9 +207,6 @@ class Document extends TextDocumentAbstract {
 
     /**
      * Setzt, ob der Header beim Export ausgegeben werden soll.
-     *
-     * @param bool $exportWithHeader
-     * @return void
      */
     public function setExportWithHeader(bool $exportWithHeader): void {
         $this->exportWithHeader = $exportWithHeader;
@@ -230,13 +216,11 @@ class Document extends TextDocumentAbstract {
      * Setzt das Trennzeichen für den CSV-Export.
      *
      * @param string $delimiter Das Trennzeichen (z.B. ',' oder ';').
-     * @return void
      */
     public function setDelimiter(string $delimiter): void {
         $this->delimiter = $delimiter;
     }
 
-    /** @return string */
     public function getEnclosure(): string {
         return $this->enclosure;
     }
@@ -245,7 +229,6 @@ class Document extends TextDocumentAbstract {
      * Setzt das Einschlusszeichen für den CSV-Export.
      *
      * @param string $enclosure Das Einschlusszeichen (z.B. '"').
-     * @return void
      */
     public function setEnclosure(string $enclosure): void {
         $this->enclosure = $enclosure;
@@ -253,9 +236,6 @@ class Document extends TextDocumentAbstract {
 
     /**
      * Setzt die Spaltenbreiten-Konfiguration.
-     *
-     * @param ColumnWidthConfig|null $config
-     * @return void
      */
     public function setColumnWidthConfig(?ColumnWidthConfig $config): void {
         $this->columnWidthConfig = $config;
@@ -263,8 +243,6 @@ class Document extends TextDocumentAbstract {
 
     /**
      * Gibt die Spaltenbreiten-Konfiguration zurück.
-     *
-     * @return ColumnWidthConfig|null
      */
     public function getColumnWidthConfig(): ?ColumnWidthConfig {
         return $this->columnWidthConfig;
@@ -272,11 +250,11 @@ class Document extends TextDocumentAbstract {
 
     /**
      * Überprüft, ob alle Zeilen die gleiche Anzahl an Feldern haben wie der Header (falls vorhanden) oder die erste Zeile.
-     *
-     * @return bool
      */
     public function isConsistent(): bool {
-        if ($this->rows === []) return true;
+        if ($this->rows === []) {
+            return true;
+        }
         $expected = $this->header?->countFields() ?? $this->rows[0]->countFields();
 
         foreach ($this->rows as $i => $row) {
@@ -295,10 +273,9 @@ class Document extends TextDocumentAbstract {
      * @param string|null $enclosure Das Einschlusszeichen. Wenn null, wird das Standard-Einschlusszeichen verwendet.
      * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
      * @param string|null $targetEncoding Das Ziel-Encoding. Wenn null, wird das Dokument-Encoding verwendet.
-     * @return string
      */
     public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null): string {
-        return (new CSVGenerator())->generate($this, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $this->exportWithHeader);
+        return (new CSVGenerator)->generate($this, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $this->exportWithHeader);
     }
 
     /**
@@ -310,25 +287,24 @@ class Document extends TextDocumentAbstract {
      * @param int|null    $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
      * @param string|null $targetEncoding  Das Ziel-Encoding. Wenn null, wird das Dokument-Encoding verwendet.
      * @param bool        $withBom         Ob ein BOM (Byte Order Mark) am Anfang der Datei geschrieben werden soll (Standard: true für bessere Encoding-Erkennung).
-     * @return void
      *
      * @throws RuntimeException
      */
     public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null, bool $withBom = true): void {
-        (new CSVGenerator())->toFile($this, $file, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $withBom, $this->exportWithHeader);
+        (new CSVGenerator)->toFile($this, $file, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $withBom, $this->exportWithHeader);
     }
 
     /**
      * Wandelt das CSV-Dokument in ein assoziatives Array um.
-     *
-     * @return array
      */
     public function toAssoc(): array {
-        if (!$this->header) return [];
-        $keys = array_map(fn($f) => $f->getValue(), $this->header->getFields());
+        if (!$this->header) {
+            return [];
+        }
+        $keys = array_map(fn ($f) => $f->getValue(), $this->header->getFields());
         $assoc = [];
         foreach ($this->rows as $row) {
-            $values = array_map(fn($f) => $f->getValue(), $row->getFields());
+            $values = array_map(fn ($f) => $f->getValue(), $row->getFields());
             $assoc[] = array_combine($keys, $values);
         }
         return $assoc;
@@ -373,7 +349,7 @@ class Document extends TextDocumentAbstract {
      */
     public function getColumnByName(string $columnName): array {
         $fields = $this->getFieldsByName($columnName);
-        return array_map(fn($field) => $field->getValue(), $fields);
+        return array_map(fn ($field) => $field->getValue(), $fields);
     }
 
     /**
@@ -408,7 +384,7 @@ class Document extends TextDocumentAbstract {
      */
     public function getColumnByIndex(int $index): array {
         $fields = $this->getFieldsByIndex($index);
-        return array_map(fn($field) => $field->getValue(), $fields);
+        return array_map(fn ($field) => $field->getValue(), $fields);
     }
 
     /**
@@ -661,18 +637,29 @@ class Document extends TextDocumentAbstract {
      * Vergleicht dieses CSV-Dokument mit einem anderen auf Gleichheit.
      *
      * @param Document $other Das andere CSV-Dokument zum Vergleichen.
-     * @return bool
      */
     public function equals(Document $other): bool {
-        if ($this->delimiter !== $other->delimiter) return false;
-        if ($this->enclosure !== $other->enclosure) return false;
-        if (($this->header === null) !== ($other->header === null)) return false;
-        if ($this->header !== null) {
-            if (!$this->header->equals($other->header)) return false;
+        if ($this->delimiter !== $other->delimiter) {
+            return false;
         }
-        if ($this->countRows() !== $other->countRows()) return false;
+        if ($this->enclosure !== $other->enclosure) {
+            return false;
+        }
+        if (($this->header === null) !== ($other->header === null)) {
+            return false;
+        }
+        if ($this->header !== null) {
+            if (!$this->header->equals($other->header)) {
+                return false;
+            }
+        }
+        if ($this->countRows() !== $other->countRows()) {
+            return false;
+        }
         foreach ($this->rows as $i => $row) {
-            if (!$row->equals($other->rows[$i])) return false;
+            if (!$row->equals($other->rows[$i])) {
+                return false;
+            }
         }
         return true;
     }
@@ -817,7 +804,7 @@ class Document extends TextDocumentAbstract {
         $stringValue = match (true) {
             is_bool($value) => $value ? '1' : '0',
             is_null($value) => '',
-            default => (string)$value,
+            default => (string) $value,
         };
 
         $fields[$fieldIndex] = $fields[$fieldIndex]->withValue($stringValue)->withQuoted($quoted);

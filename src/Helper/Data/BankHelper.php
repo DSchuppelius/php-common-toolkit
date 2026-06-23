@@ -41,8 +41,6 @@ class BankHelper {
      * - null  => Config-Default verwenden (config/helper.json -> network_enabled, sonst true)
      * - true  => Netzabruf hart erzwungen
      * - false => Netzabruf hart deaktiviert (nur ausgelieferte/lokale Datei)
-     *
-     * @var bool|null
      */
     private static ?bool $networkEnabledOverride = null;
 
@@ -73,7 +71,9 @@ class BankHelper {
      * @return bool True, wenn die IBAN gültig ist, andernfalls false.
      */
     public static function isIBAN(?string $value): bool {
-        if ($value === null || preg_match("/X{5,}/", $value)) return false;
+        if ($value === null || preg_match("/X{5,}/", $value)) {
+            return false;
+        }
         $value = str_replace(' ', '', $value);
         return preg_match("/^[A-Z]{2}[A-Z0-9]{14,33}\$/", $value) === 1;
     }
@@ -145,7 +145,7 @@ class BankHelper {
 
     /**
      * Prüft, ob der String wie eine IBAN formatiert ist (beginnt mit 2 Buchstaben + 2 Ziffern).
-     * 
+     *
      * Diese Methode ist weniger strikt als isIBAN() und prüft nur das Anfangsformat,
      * nicht die vollständige IBAN-Struktur oder Prüfsumme. Geeignet für XML-Generierung,
      * wo auch Platzhalter-IBANs als <IBAN>-Element formatiert werden sollen.
@@ -162,7 +162,7 @@ class BankHelper {
 
     /**
      * Prüft, ob der String wie eine IBAN formatiert ist und ob diese gültig ist.
-     * 
+     *
      * Loggt eine Warnung, wenn das Format einer IBAN entspricht, aber die IBAN nicht gültig ist.
      * Gibt true zurück, wenn der String als IBAN formatiert werden soll (auch wenn ungültig).
      *
@@ -205,7 +205,7 @@ class BankHelper {
 
     /**
      * Prüft, ob der String wie eine BIC formatiert ist (4+2 Buchstaben + 2-5 alphanumerische Zeichen).
-     * 
+     *
      * Diese Methode ist weniger strikt als isBIC() und prüft nur das grundlegende Format
      * (8 oder 11 Zeichen, case-insensitive), nicht die strengen SWIFT-Regeln für Position 7/8.
      * Geeignet für Formaterkennung, wo auch unvollständige BICs akzeptiert werden sollen.
@@ -329,7 +329,7 @@ class BankHelper {
         }
 
         $checksum = 98 - (int) bcmod($converted, '97');
-        return $countryCode . str_pad((string)$checksum, 2, '0', STR_PAD_LEFT) . $accountNumber;
+        return $countryCode . str_pad((string) $checksum, 2, '0', STR_PAD_LEFT) . $accountNumber;
     }
 
     /**
@@ -467,7 +467,7 @@ class BankHelper {
 
         return [
             'BLZ' => substr($iban, 4, 8),
-            'KTO' => substr($iban, 12, 10)
+            'KTO' => substr($iban, 12, 10),
         ];
     }
 
@@ -950,9 +950,6 @@ class BankHelper {
      *            lokale Datei genutzt (garantiert offline).
      *
      * Der Override hat Vorrang vor der Config. clearCache() setzt ihn zurück.
-     *
-     * @param bool|null $enabled
-     * @return void
      */
     public static function setNetworkEnabled(?bool $enabled): void {
         self::$networkEnabledOverride = $enabled;
@@ -962,8 +959,6 @@ class BankHelper {
      * Liefert den effektiven Netzschalter-Wert.
      *
      * Reihenfolge: Override (falls gesetzt) > Config network_enabled > Default true.
-     *
-     * @return bool
      */
     public static function isNetworkEnabled(): bool {
         if (self::$networkEnabledOverride !== null) {
@@ -983,8 +978,6 @@ class BankHelper {
 
     /**
      * Lädt die aktuelle BLZ-Liste von der Deutschen Bundesbank.
-     *
-     * @return array
      */
     private static function loadBundesbankBLZData(): array {
         $configLoader = ConfigLoader::getInstance(self::$logger);
@@ -999,8 +992,6 @@ class BankHelper {
 
     /**
      * Lädt die aktuelle BIC-Liste von der Deutschen Bundesbank.
-     *
-     * @return array
      */
     private static function loadBundesbankBICData(): array {
         $configLoader = ConfigLoader::getInstance(self::$logger);

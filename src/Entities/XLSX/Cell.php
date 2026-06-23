@@ -26,8 +26,8 @@ class Cell {
      * @param string|null $format Das Zahlenformat (z.B. für Datum/Währung)
      */
     public function __construct(mixed $value, ?string $type = null, ?string $format = null) {
-        $this->value  = $value;
-        $this->type   = $type;
+        $this->value = $value;
+        $this->type = $type;
         $this->format = $format;
     }
 

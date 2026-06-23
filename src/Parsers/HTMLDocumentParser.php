@@ -20,23 +20,21 @@ use DOMXPath;
 
 /**
  * Parser für HTML-Dokumente.
- * 
+ *
  * Konvertiert HTML-Strings oder -Dateien in Document/Element-Objekte.
  * Unterstützt sowohl vollständige HTML-Dokumente als auch HTML-Fragmente.
- * 
+ *
  * Beispiel:
  * ```php
  * // HTML-String parsen
  * $doc = HTMLDocumentParser::parseString('<html><body><h1>Test</h1></body></html>');
- * 
+ *
  * // Datei parsen
  * $doc = HTMLDocumentParser::parseFile('/path/to/file.html');
- * 
+ *
  * // Fragment parsen (nur Elemente)
  * $elements = HTMLDocumentParser::parseFragment('<p>Text</p><div>Content</div>');
  * ```
- * 
- * @package CommonToolkit\Parsers
  */
 class HTMLDocumentParser {
     /**
@@ -57,7 +55,7 @@ class HTMLDocumentParser {
 
     /**
      * Parst ein HTML-Fragment zu einem Array von Element-Objekten.
-     * 
+     *
      * @return Element[]
      */
     public static function parseFragment(string $html): array {
@@ -102,7 +100,7 @@ class HTMLDocumentParser {
 
     /**
      * Extrahiert alle Meta-Tags aus einem HTML-String.
-     * 
+     *
      * @return array<string, string> Assoziatives Array [name => content]
      */
     public static function extractMeta(string $html): array {
@@ -123,7 +121,7 @@ class HTMLDocumentParser {
 
     /**
      * Extrahiert alle Links (href) aus einem HTML-String.
-     * 
+     *
      * @return string[]
      */
     public static function extractLinks(string $html): array {
@@ -143,7 +141,7 @@ class HTMLDocumentParser {
 
     /**
      * Extrahiert alle Bilder (src) aus einem HTML-String.
-     * 
+     *
      * @return string[]
      */
     public static function extractImages(string $html): array {
@@ -171,13 +169,13 @@ class HTMLDocumentParser {
 
     /**
      * Findet Elemente per CSS-Selektor (einfache Unterstützung).
-     * 
+     *
      * Unterstützte Selektoren:
      * - Tag-Name: 'div', 'p', 'h1'
      * - Klasse: '.class-name'
      * - ID: '#element-id'
      * - Attribut: '[name="value"]'
-     * 
+     *
      * @return Element[]
      */
     public static function querySelectorAll(string $html, string $selector): array {
@@ -214,7 +212,7 @@ class HTMLDocumentParser {
      */
     public static function isValid(string $html): bool {
         libxml_use_internal_errors(true);
-        $dom = new DOMDocument();
+        $dom = new DOMDocument;
         $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOERROR);
         $errors = libxml_get_errors();
         libxml_clear_errors();

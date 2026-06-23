@@ -23,8 +23,6 @@ use ERRORToolkit\Traits\ErrorLog;
  * - D-U-N-S Nummer - 9 Ziffern
  * - GLN/EAN (Global Location Number) - 13 Ziffern
  * - Wirtschafts-Identifikationsnummer (W-IdNr) - 11 Zeichen
- *
- * @package CommonToolkit\Helper\Data
  */
 class CompanyIdHelper {
     use ErrorLog;
@@ -392,7 +390,7 @@ class CompanyIdHelper {
         // MOD 97 Berechnung
         $remainder = 0;
         foreach (str_split($converted) as $digit) {
-            $remainder = ($remainder * 10 + (int)$digit) % 97;
+            $remainder = ($remainder * 10 + (int) $digit) % 97;
         }
 
         return $remainder === 1;
@@ -413,7 +411,7 @@ class CompanyIdHelper {
 
         $sum = 0;
         for ($i = 0; $i < $length - 1; $i++) {
-            $digit = (int)$ean[$i];
+            $digit = (int) $ean[$i];
             // GS1 Standard: Position 0,2,4... = Gewicht 1; Position 1,3,5... = Gewicht 3
             $weight = ($i % 2 === 0) ? 1 : 3;
             $sum += $digit * $weight;
@@ -421,6 +419,6 @@ class CompanyIdHelper {
 
         $checkDigit = (10 - ($sum % 10)) % 10;
 
-        return (int)$ean[$length - 1] === $checkDigit;
+        return (int) $ean[$length - 1] === $checkDigit;
     }
 }

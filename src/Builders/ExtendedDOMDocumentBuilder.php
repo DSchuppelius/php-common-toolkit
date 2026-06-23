@@ -19,12 +19,12 @@ use DOMNode;
 
 /**
  * Fluent Builder für ExtendedDOMDocument.
- * 
+ *
  * Ermöglicht den strukturierten Aufbau von XML-Dokumenten direkt auf DOM-Ebene
  * mit einer intuitiven API. Im Gegensatz zum XmlDocumentBuilder arbeitet dieser
  * Builder direkt mit DOMElement-Objekten für bessere Performance bei großen
  * Dokumenten.
- * 
+ *
  * Beispiel:
  * ```php
  * $doc = ExtendedDOMDocumentBuilder::create('Document')
@@ -39,8 +39,6 @@ use DOMNode;
  *         ->end()
  *     ->build();
  * ```
- * 
- * @package CommonToolkit\Builders
  */
 class ExtendedDOMDocumentBuilder {
     private ExtendedDOMDocument $doc;
@@ -226,7 +224,7 @@ class ExtendedDOMDocumentBuilder {
 
     /**
      * Fügt mehrere Kind-Elemente aus einem Array hinzu.
-     * 
+     *
      * @param array<string, string|null> $elements Mapping von Name zu Wert
      */
     public function addChildren(array $elements): self {
@@ -289,7 +287,7 @@ class ExtendedDOMDocumentBuilder {
 
     /**
      * Führt einen Callback aus, wenn die Bedingung erfüllt ist.
-     * 
+     *
      * @param callable(self): self $callback
      */
     public function when(bool $condition, callable $callback): self {
@@ -301,7 +299,7 @@ class ExtendedDOMDocumentBuilder {
 
     /**
      * Iteriert über ein Array und führt für jedes Element einen Callback aus.
-     * 
+     *
      * @template T
      * @param T[] $items
      * @param callable(self, T, int): self $callback

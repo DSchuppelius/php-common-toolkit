@@ -14,7 +14,7 @@ use CommonToolkit\Helper\Data\StringHelper;
 use Tests\Contracts\BaseTestCase;
 
 class StringHelperExtendedTest extends BaseTestCase {
-    public function testSlugify(): void {
+    public function test_slugify(): void {
         $this->assertEquals('hello-world', StringHelper::slugify('Hello World'));
         $this->assertEquals('mueller-strasse', StringHelper::slugify('Müller Straße'));
         $this->assertEquals('test-und-mehr', StringHelper::slugify('Test & mehr'));
@@ -22,62 +22,62 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('Hello_World', StringHelper::slugify('Hello World', '_', false));
     }
 
-    public function testCamelToSnake(): void {
+    public function test_camel_to_snake(): void {
         $this->assertEquals('hello_world', StringHelper::camelToSnake('helloWorld'));
         $this->assertEquals('my_test_method', StringHelper::camelToSnake('myTestMethod'));
         $this->assertEquals('http_response', StringHelper::camelToSnake('HttpResponse'));
     }
 
-    public function testSnakeToCamel(): void {
+    public function test_snake_to_camel(): void {
         $this->assertEquals('helloWorld', StringHelper::snakeToCamel('hello_world'));
         $this->assertEquals('myTestMethod', StringHelper::snakeToCamel('my_test_method'));
         $this->assertEquals('HelloWorld', StringHelper::snakeToCamel('hello_world', true));
     }
 
-    public function testKebabToCamel(): void {
+    public function test_kebab_to_camel(): void {
         $this->assertEquals('helloWorld', StringHelper::kebabToCamel('hello-world'));
         $this->assertEquals('myTestMethod', StringHelper::kebabToCamel('my-test-method'));
         $this->assertEquals('HelloWorld', StringHelper::kebabToCamel('hello-world', true));
     }
 
-    public function testCamelToKebab(): void {
+    public function test_camel_to_kebab(): void {
         $this->assertEquals('hello-world', StringHelper::camelToKebab('helloWorld'));
         $this->assertEquals('my-test-method', StringHelper::camelToKebab('myTestMethod'));
     }
 
-    public function testMask(): void {
+    public function test_mask(): void {
         $this->assertEquals('****1234', StringHelper::mask('12341234', 0, 4));
         $this->assertEquals('12****34', StringHelper::mask('12341234', 2, 2));
         $this->assertEquals('1******4', StringHelper::mask('12341234', 1, 1));
         $this->assertEquals('1234', StringHelper::mask('1234', 2, 2)); // Zu kurz zum Maskieren
     }
 
-    public function testMaskEmail(): void {
+    public function test_mask_email(): void {
         $this->assertEquals('j***@example.com', StringHelper::maskEmail('john@example.com'));
         $this->assertEquals('ab@example.com', StringHelper::maskEmail('ab@example.com')); // Zu kurz zum Maskieren
         $this->assertEquals('a**@example.com', StringHelper::maskEmail('abc@example.com'));
     }
 
-    public function testWordCount(): void {
+    public function test_word_count(): void {
         $this->assertEquals(3, StringHelper::wordCount('Eins zwei drei'));
         $this->assertEquals(5, StringHelper::wordCount('Dies ist ein längerer Text'));
         $this->assertEquals(0, StringHelper::wordCount(''));
         $this->assertEquals(1, StringHelper::wordCount('Wort'));
     }
 
-    public function testStartsWith(): void {
+    public function test_starts_with(): void {
         $this->assertTrue(StringHelper::startsWith('Hello World', 'Hello'));
         $this->assertFalse(StringHelper::startsWith('Hello World', 'hello'));
         $this->assertTrue(StringHelper::startsWith('Hello World', 'hello', false));
     }
 
-    public function testEndsWith(): void {
+    public function test_ends_with(): void {
         $this->assertTrue(StringHelper::endsWith('Hello World', 'World'));
         $this->assertFalse(StringHelper::endsWith('Hello World', 'world'));
         $this->assertTrue(StringHelper::endsWith('Hello World', 'world', false));
     }
 
-    public function testExcerpt(): void {
+    public function test_excerpt(): void {
         $text = 'Dies ist ein längerer Text mit vielen Wörtern darin.';
         $excerpt = StringHelper::excerpt($text, 'längerer', 10);
         $this->assertNotNull($excerpt);
@@ -87,70 +87,70 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertNull(StringHelper::excerpt($text, 'nichtvorhanden'));
     }
 
-    public function testTitleCase(): void {
+    public function test_title_case(): void {
         $this->assertEquals('Hello World', StringHelper::titleCase('hello world'));
         $this->assertEquals('Müller Und Meier', StringHelper::titleCase('müller und meier'));
     }
 
-    public function testReverse(): void {
+    public function test_reverse(): void {
         $this->assertEquals('olleH', StringHelper::reverse('Hello'));
         $this->assertEquals('relläM', StringHelper::reverse('Mäller'));
     }
 
-    public function testIsAlpha(): void {
+    public function test_is_alpha(): void {
         $this->assertTrue(StringHelper::isAlpha('Hello'));
         $this->assertTrue(StringHelper::isAlpha('Müller'));
         $this->assertFalse(StringHelper::isAlpha('Hello123'));
         $this->assertFalse(StringHelper::isAlpha('Hello World'));
     }
 
-    public function testIsAlphanumeric(): void {
+    public function test_is_alphanumeric(): void {
         $this->assertTrue(StringHelper::isAlphanumeric('Hello123'));
         $this->assertTrue(StringHelper::isAlphanumeric('Müller2'));
         $this->assertFalse(StringHelper::isAlphanumeric('Hello 123'));
     }
 
-    public function testIsNumeric(): void {
+    public function test_is_numeric(): void {
         $this->assertTrue(StringHelper::isNumeric('12345'));
         $this->assertFalse(StringHelper::isNumeric('123.45'));
         $this->assertFalse(StringHelper::isNumeric('abc'));
     }
 
-    public function testCountOccurrences(): void {
+    public function test_count_occurrences(): void {
         $this->assertEquals(3, StringHelper::countOccurrences('ababab', 'ab'));
         $this->assertEquals(2, StringHelper::countOccurrences('Hello HELLO', 'hello', false));
         $this->assertEquals(1, StringHelper::countOccurrences('Hello HELLO', 'Hello', true));
     }
 
-    public function testPad(): void {
+    public function test_pad(): void {
         $this->assertEquals('test      ', StringHelper::pad('test', 10));
         $this->assertEquals('      test', StringHelper::pad('test', 10, ' ', STR_PAD_LEFT));
         $this->assertEquals('   test   ', StringHelper::pad('test', 10, ' ', STR_PAD_BOTH));
         $this->assertEquals('test000000', StringHelper::pad('test', 10, '0'));
     }
 
-    public function testRemoveDigits(): void {
+    public function test_remove_digits(): void {
         $this->assertEquals('abc', StringHelper::removeDigits('a1b2c3'));
         $this->assertEquals('Hello', StringHelper::removeDigits('Hello'));
     }
 
-    public function testExtractDigits(): void {
+    public function test_extract_digits(): void {
         $this->assertEquals('123', StringHelper::extractDigits('a1b2c3'));
         $this->assertEquals('', StringHelper::extractDigits('Hello'));
     }
 
-    public function testNormalizeLineEndings(): void {
+    public function test_normalize_line_endings(): void {
         $text = "Line1\r\nLine2\rLine3\nLine4";
         $normalized = StringHelper::normalizeLineEndings($text, "\n");
         $this->assertEquals("Line1\nLine2\nLine3\nLine4", $normalized);
     }
 
-    public function testCollapseWhitespace(): void {
+    public function test_collapse_whitespace(): void {
         $this->assertEquals('a b c', StringHelper::collapseWhitespace('a    b    c'));
         $this->assertEquals('hello world', StringHelper::collapseWhitespace("hello\t\n  world"));
     }
 
-    public function testWrap(): void {
+    public function test_wrap(): void {
         $text = 'Dies ist ein langer Text der umgebrochen werden soll.';
         $wrapped = StringHelper::wrap($text, 20);
         $lines = explode("\n", $wrapped);
@@ -161,7 +161,7 @@ class StringHelperExtendedTest extends BaseTestCase {
         }
     }
 
-    public function testWrapWithCut(): void {
+    public function test_wrap_with_cut(): void {
         $text = 'Superlangeeeeesssssswort';
         $wrapped = StringHelper::wrap($text, 10, "\n", true);
         $lines = explode("\n", $wrapped);
@@ -171,14 +171,14 @@ class StringHelperExtendedTest extends BaseTestCase {
         }
     }
 
-    public function testBetween(): void {
+    public function test_between(): void {
         $text = 'Vor [Inhalt] Nach';
         $this->assertEquals('Inhalt', StringHelper::between($text, '[', ']'));
         $this->assertEquals('[Inhalt]', StringHelper::between($text, '[', ']', true));
         $this->assertNull(StringHelper::between($text, '{', '}'));
     }
 
-    public function testContainsAny(): void {
+    public function test_contains_any(): void {
         $text = 'Hello World';
         $this->assertTrue(StringHelper::containsAny($text, ['Hello', 'Goodbye']));
         $this->assertTrue(StringHelper::containsAny($text, ['World']));
@@ -187,7 +187,7 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertFalse(StringHelper::containsAny($text, ['hello'], true));
     }
 
-    public function testContainsAll(): void {
+    public function test_contains_all(): void {
         $text = 'Hello World Test';
         $this->assertTrue(StringHelper::containsAll($text, ['Hello', 'World']));
         $this->assertFalse(StringHelper::containsAll($text, ['Hello', 'Goodbye']));
@@ -195,12 +195,12 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertTrue(StringHelper::containsAll($text, ['hello', 'world'], false));
     }
 
-    public function testStripHtml(): void {
+    public function test_strip_html(): void {
         $html = '<p>Hello <strong>World</strong></p>';
         $this->assertEquals('Hello World', StringHelper::stripHtml($html));
     }
 
-    public function testRepeat(): void {
+    public function test_repeat(): void {
         $this->assertEquals('abcabcabc', StringHelper::repeat('abc', 3));
         $this->assertEquals('abc-abc-abc', StringHelper::repeat('abc', 3, '-'));
         $this->assertEquals('', StringHelper::repeat('abc', 0));

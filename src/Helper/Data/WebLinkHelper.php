@@ -23,8 +23,6 @@ use ERRORToolkit\Traits\ErrorLog;
  * - URL-Normalisierung
  * - Query-String-Verarbeitung
  * - Domain-Extraktion
- *
- * @package CommonToolkit\Helper\Data
  */
 class WebLinkHelper {
     use ErrorLog;
@@ -388,7 +386,7 @@ class WebLinkHelper {
         }
 
         // Null-Werte entfernen
-        $mergedParams = array_filter($mergedParams, fn($v) => $v !== null);
+        $mergedParams = array_filter($mergedParams, fn ($v) => $v !== null);
 
         // URL ohne Query-String
         $baseUrl = strtok($url, '?');

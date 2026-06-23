@@ -138,10 +138,7 @@ class UnitConversionHelper {
     /**
      * Formatiert einen umgerechneten Wert inkl. Einheitensymbol.
      *
-     * @param float                                                                                              $value
      * @param TimeUnit|WeightUnit|VolumeUnit|LengthUnit|AreaUnit|SpeedUnit|PressureUnit|EnergyUnit|PowerUnit|AngleUnit|DataSizeUnit|ForceUnit|FrequencyUnit|AccelerationUnit|ElectricVoltageUnit|ElectricCurrentUnit  $unit
-     * @param int                                                                                                                                                                                                      $precision
-     * @return string
      */
     public static function format(
         float $value,

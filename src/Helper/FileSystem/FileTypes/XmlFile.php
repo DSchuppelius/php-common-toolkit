@@ -15,12 +15,11 @@ namespace CommonToolkit\Helper\FileSystem\FileTypes;
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Helper\Data\XmlHelper;
 use CommonToolkit\Helper\FileSystem\File;
-use Exception;
 use DOMDocument;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use Exception;
 
 class XmlFile extends HelperAbstract {
-
     /**
      * Prüft, ob die `DOMDocument`-Erweiterung verfügbar ist.
      *
@@ -44,7 +43,7 @@ class XmlFile extends HelperAbstract {
         self::checkDomExtension();
 
         $resolvedFile = self::resolveFile($file);
-        $xml = new DOMDocument();
+        $xml = new DOMDocument;
 
         libxml_use_internal_errors(true);
         if (!$xml->load($resolvedFile, LIBXML_NONET)) {
@@ -60,8 +59,8 @@ class XmlFile extends HelperAbstract {
 
         $metadata = [
             'RootElement' => $xml->documentElement->tagName ?? 'Unbekannt',
-            'Encoding'    => $xml->encoding ?? 'Unbekannt',
-            'Version'     => $xml->xmlVersion ?? 'Unbekannt'
+            'Encoding' => $xml->encoding ?? 'Unbekannt',
+            'Version' => $xml->xmlVersion ?? 'Unbekannt',
         ];
 
         libxml_clear_errors();
@@ -138,7 +137,7 @@ class XmlFile extends HelperAbstract {
         self::checkDomExtension();
 
         $resolvedFile = self::resolveFile($file);
-        $xml = new DOMDocument();
+        $xml = new DOMDocument;
         libxml_use_internal_errors(true);
 
         if (!$xml->load($resolvedFile, LIBXML_NONET)) {

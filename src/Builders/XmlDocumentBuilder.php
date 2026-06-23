@@ -13,16 +13,14 @@ declare(strict_types=1);
 namespace CommonToolkit\Builders;
 
 use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
-use CommonToolkit\Entities\XML\Attribute;
-use CommonToolkit\Entities\XML\Document;
-use CommonToolkit\Entities\XML\Element;
+use CommonToolkit\Entities\XML\{Attribute, Document, Element};
 
 /**
  * Fluent Builder für XML-Dokumente.
- * 
+ *
  * Ermöglicht den strukturierten Aufbau von XML-Dokumenten
  * mit einer intuitiven API.
- * 
+ *
  * Beispiel:
  * ```php
  * $doc = XmlDocumentBuilder::create('root')
@@ -33,8 +31,6 @@ use CommonToolkit\Entities\XML\Element;
  *         ->end()
  *     ->build();
  * ```
- * 
- * @package CommonToolkit\Builders
  */
 class XmlDocumentBuilder {
     private string $rootName;
@@ -131,7 +127,7 @@ class XmlDocumentBuilder {
 
     /**
      * Fügt mehrere Elemente hinzu.
-     * 
+     *
      * @param XmlElementInterface[] $elements
      */
     public function addElements(array $elements): self {
@@ -198,8 +194,6 @@ class XmlDocumentBuilder {
 
 /**
  * Builder für verschachtelte XML-Elemente.
- * 
- * @package CommonToolkit\Builders
  */
 class XmlElementBuilder {
     private string $name;
@@ -301,8 +295,6 @@ class XmlElementBuilder {
 
 /**
  * Builder für tiefere Verschachtelungen in XmlElementBuilder.
- * 
- * @package CommonToolkit\Builders
  */
 class XmlNestedElementBuilder {
     private string $name;

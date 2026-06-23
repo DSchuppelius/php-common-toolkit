@@ -159,7 +159,7 @@ class JsonHelper extends HelperAbstract {
                 if (!empty($matches[1])) {
                     $parts[] = ['type' => 'property', 'key' => $matches[1]];
                 }
-                $parts[] = ['type' => 'index', 'index' => (int)$matches[2]];
+                $parts[] = ['type' => 'index', 'index' => (int) $matches[2]];
             } else {
                 // Einfache Property: "data"
                 $parts[] = ['type' => 'property', 'key' => $segment];
@@ -182,7 +182,7 @@ class JsonHelper extends HelperAbstract {
         } catch (InvalidArgumentException $e) {
             return [
                 'valid' => false,
-                'errors' => ['Ungültiger JSON: ' . $e->getMessage()]
+                'errors' => ['Ungültiger JSON: ' . $e->getMessage()],
             ];
         }
 
@@ -191,7 +191,7 @@ class JsonHelper extends HelperAbstract {
 
         return [
             'valid' => empty($errors),
-            'errors' => $errors
+            'errors' => $errors,
         ];
     }
 
@@ -310,7 +310,7 @@ class JsonHelper extends HelperAbstract {
     private static function maskRecursive(mixed &$data, array $sensitiveFields, string $mask): void {
         if (is_array($data)) {
             foreach ($data as $key => &$value) {
-                if (in_array(strtolower((string)$key), array_map('strtolower', $sensitiveFields), true)) {
+                if (in_array(strtolower((string) $key), array_map('strtolower', $sensitiveFields), true)) {
                     $value = $mask;
                 } else {
                     self::maskRecursive($value, $sensitiveFields, $mask);

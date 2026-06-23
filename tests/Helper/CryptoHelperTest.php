@@ -16,7 +16,7 @@ class CryptoHelperTest extends BaseTestCase {
         $this->testSalt = random_bytes(32);
     }
 
-    public function testGenerateKey(): void {
+    public function test_generate_key(): void {
         $key = CryptoHelper::generateKey();
 
         $this->assertEquals(32, strlen($key)); // Default 32 bytes binary
@@ -28,7 +28,7 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertEquals(16, strlen($shortKey));
     }
 
-    public function testGenerateKeyInvalidLength(): void {
+    public function test_generate_key_invalid_length(): void {
         $this->expectException(\InvalidArgumentException::class);
         CryptoHelper::generateKey(15); // Too short
 
@@ -36,7 +36,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::generateKey(300); // Too long
     }
 
-    public function testEncryptDecrypt(): void {
+    public function test_encrypt_decrypt(): void {
         $encrypted = CryptoHelper::encrypt($this->testData, $this->testKey);
 
         $this->assertIsArray($encrypted);
@@ -53,21 +53,21 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertEquals($this->testData, $decrypted);
     }
 
-    public function testEncryptEmptyData(): void {
+    public function test_encrypt_empty_data(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Plaintext darf nicht leer sein');
 
         CryptoHelper::encrypt('', $this->testKey);
     }
 
-    public function testEncryptInvalidCipher(): void {
+    public function test_encrypt_invalid_cipher(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Nicht unterstützter Verschlüsselungsalgorithmus');
 
         CryptoHelper::encrypt($this->testData, $this->testKey, 'invalid-cipher');
     }
 
-    public function testEncryptInvalidKeyLength(): void {
+    public function test_encrypt_invalid_key_length(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Key muss 32 Bytes lang sein');
 
@@ -75,7 +75,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::encrypt($this->testData, $shortKey);
     }
 
-    public function testDecryptMissingKey(): void {
+    public function test_decrypt_missing_key(): void {
         $encryptedData = [
             'ciphertext' => 'some_data',
             'iv' => 'some_iv',
@@ -88,12 +88,12 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::decrypt($encryptedData, $this->testKey);
     }
 
-    public function testDecryptInvalidBase64(): void {
+    public function test_decrypt_invalid_base64(): void {
         $encryptedData = [
             'ciphertext' => 'invalid_base64!@#',
             'iv' => 'valid_base64',
             'tag' => 'valid_base64',
-            'algorithm' => 'aes-256-gcm'
+            'algorithm' => 'aes-256-gcm',
         ];
 
         $this->expectException(\InvalidArgumentException::class);
@@ -102,7 +102,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::decrypt($encryptedData, $this->testKey);
     }
 
-    public function testEncryptDecryptWithCBC(): void {
+    public function test_encrypt_decrypt_with_cbc(): void {
         $encrypted = CryptoHelper::encrypt($this->testData, $this->testKey, 'aes-256-cbc');
 
         $this->assertEquals('aes-256-cbc', $encrypted['algorithm']);
@@ -112,7 +112,7 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertEquals($this->testData, $decrypted);
     }
 
-    public function testDeriveKey(): void {
+    public function test_derive_key(): void {
         $password = 'test_password';
         $derivedKey = CryptoHelper::deriveKey($password, base64_encode($this->testSalt));
 
@@ -128,7 +128,7 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertNotEquals($derivedKey, $derivedKey3);
     }
 
-    public function testDeriveKeyInvalidParameters(): void {
+    public function test_derive_key_invalid_parameters(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Password darf nicht leer sein');
         CryptoHelper::deriveKey('', base64_encode($this->testSalt));
@@ -142,7 +142,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::deriveKey('password', base64_encode($this->testSalt), 5000);
     }
 
-    public function testSecureHashAndVerify(): void {
+    public function test_secure_hash_and_verify(): void {
         $hashData = CryptoHelper::secureHash($this->testData);
 
         $this->assertIsArray($hashData);
@@ -160,27 +160,27 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertEquals($customSalt, $hashData2['salt']);
     }
 
-    public function testSecureHashEmptyData(): void {
+    public function test_secure_hash_empty_data(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Zu hashende Daten dürfen nicht leer sein');
 
         CryptoHelper::secureHash('');
     }
 
-    public function testSecureHashInvalidAlgorithm(): void {
+    public function test_secure_hash_invalid_algorithm(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Nicht unterstützter Hash-Algorithmus');
 
         CryptoHelper::secureHash($this->testData, '', 'md5');
     }
 
-    public function testVerifyHashMissingKeys(): void {
+    public function test_verify_hash_missing_keys(): void {
         $invalidHashData = ['hash' => 'some_hash']; // Missing salt and algorithm
 
         $this->assertFalse(CryptoHelper::verifyHash($this->testData, $invalidHashData));
     }
 
-    public function testCreateAndVerifyHmac(): void {
+    public function test_create_and_verify_hmac(): void {
         $key = 'secret_hmac_key';
         $hmac = CryptoHelper::createHmac($this->testData, $key);
 
@@ -192,7 +192,7 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertFalse(CryptoHelper::verifyHmac($this->testData, $hmac, 'wrong_key'));
     }
 
-    public function testCreateHmacInvalidParameters(): void {
+    public function test_create_hmac_invalid_parameters(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Zu signierende Daten dürfen nicht leer sein');
         CryptoHelper::createHmac('', 'key');
@@ -206,7 +206,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::createHmac($this->testData, 'key', 'md5');
     }
 
-    public function testGenerateRsaKeyPair(): void {
+    public function test_generate_rsa_key_pair(): void {
         $keyPair = CryptoHelper::generateRsaKeyPair(2048);
 
         $this->assertIsArray($keyPair);
@@ -216,14 +216,14 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertStringContainsString('BEGIN PUBLIC KEY', $keyPair['public_key']);
     }
 
-    public function testGenerateRsaKeyPairInvalidSize(): void {
+    public function test_generate_rsa_key_pair_invalid_size(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('RSA-Schlüsselgröße muss 2048, 3072 oder 4096 Bits sein');
 
         CryptoHelper::generateRsaKeyPair(1024);
     }
 
-    public function testRsaEncryptDecrypt(): void {
+    public function test_rsa_encrypt_decrypt(): void {
         $keyPair = CryptoHelper::generateRsaKeyPair(2048);
         $shortData = 'Short message for RSA'; // RSA can't encrypt large data
 
@@ -234,7 +234,7 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertEquals($shortData, $decrypted);
     }
 
-    public function testRsaEncryptEmptyData(): void {
+    public function test_rsa_encrypt_empty_data(): void {
         $keyPair = CryptoHelper::generateRsaKeyPair(2048);
 
         $this->expectException(\InvalidArgumentException::class);
@@ -243,7 +243,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::rsaEncrypt('', $keyPair['public_key']);
     }
 
-    public function testRsaDecryptInvalidData(): void {
+    public function test_rsa_decrypt_invalid_data(): void {
         $keyPair = CryptoHelper::generateRsaKeyPair(2048);
 
         $this->expectException(\InvalidArgumentException::class);
@@ -252,7 +252,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::rsaDecrypt('invalid_base64!@#', $keyPair['private_key']);
     }
 
-    public function testRsaSignVerify(): void {
+    public function test_rsa_sign_verify(): void {
         $keyPair = CryptoHelper::generateRsaKeyPair(2048);
 
         $signature = CryptoHelper::rsaSign($this->testData, $keyPair['private_key']);
@@ -262,7 +262,7 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertFalse(CryptoHelper::rsaVerify('different_data', $signature, $keyPair['public_key']));
     }
 
-    public function testRsaSignEmptyData(): void {
+    public function test_rsa_sign_empty_data(): void {
         $keyPair = CryptoHelper::generateRsaKeyPair(2048);
 
         $this->expectException(\InvalidArgumentException::class);
@@ -271,7 +271,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::rsaSign('', $keyPair['private_key']);
     }
 
-    public function testRsaVerifyInvalidSignature(): void {
+    public function test_rsa_verify_invalid_signature(): void {
         $keyPair = CryptoHelper::generateRsaKeyPair(2048);
 
         $this->expectException(\InvalidArgumentException::class);
@@ -280,7 +280,7 @@ class CryptoHelperTest extends BaseTestCase {
         CryptoHelper::rsaVerify($this->testData, 'invalid_signature!@#', $keyPair['public_key']);
     }
 
-    public function testBase64UrlEncoding(): void {
+    public function test_base64_url_encoding(): void {
         $data = 'Hello World with special chars: +/=';
 
         $encoded = CryptoHelper::base64UrlEncode($data);
@@ -293,12 +293,12 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertEquals($data, $decoded);
     }
 
-    public function testBase64UrlDecodeInvalid(): void {
+    public function test_base64_url_decode_invalid(): void {
         $result = CryptoHelper::base64UrlDecode('invalid_base64!@#');
         $this->assertFalse($result);
     }
 
-    public function testBinHexConversion(): void {
+    public function test_bin_hex_conversion(): void {
         $binaryData = random_bytes(32);
 
         $hex = CryptoHelper::binToHex($binaryData);
@@ -309,12 +309,12 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertEquals($binaryData, $convertedBack);
     }
 
-    public function testHexToBinInvalid(): void {
+    public function test_hex_to_bin_invalid(): void {
         $result = CryptoHelper::hexToBin('invalid_hex_zz');
         $this->assertFalse($result);
     }
 
-    public function testSecureRandomInt(): void {
+    public function test_secure_random_int(): void {
         $random = CryptoHelper::secureRandomInt(1, 100);
         $this->assertGreaterThanOrEqual(1, $random);
         $this->assertLessThanOrEqual(100, $random);
@@ -331,14 +331,14 @@ class CryptoHelperTest extends BaseTestCase {
         }
     }
 
-    public function testSecureRandomIntInvalidRange(): void {
+    public function test_secure_random_int_invalid_range(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Min-Wert muss kleiner als Max-Wert sein');
 
         CryptoHelper::secureRandomInt(100, 50);
     }
 
-    public function testGetOpenSslStatus(): void {
+    public function test_get_open_ssl_status(): void {
         $status = CryptoHelper::getOpenSslStatus();
 
         $this->assertIsArray($status);
@@ -359,7 +359,7 @@ class CryptoHelperTest extends BaseTestCase {
         }
     }
 
-    public function testDifferentHashAlgorithms(): void {
+    public function test_different_hash_algorithms(): void {
         $algorithms = ['sha256', 'sha384', 'sha512'];
 
         foreach ($algorithms as $algo) {

@@ -17,12 +17,11 @@ use CommonToolkit\Helper\Data\PostalCodeHelper;
 use Tests\Contracts\BaseTestCase;
 
 class PostalCodeHelperTest extends BaseTestCase {
-
     // ========================================
     // Test: Deutsche Postleitzahlen
     // ========================================
 
-    public function testIsGermanPostalCodeValid(): void {
+    public function test_is_german_postal_code_valid(): void {
         // Gültige deutsche PLZ
         $this->assertTrue(PostalCodeHelper::isGermanPostalCode('10115'));
         $this->assertTrue(PostalCodeHelper::isGermanPostalCode('80331'));
@@ -31,7 +30,7 @@ class PostalCodeHelperTest extends BaseTestCase {
         $this->assertTrue(PostalCodeHelper::isGermanPostalCode('00000'));
     }
 
-    public function testIsGermanPostalCodeInvalid(): void {
+    public function test_is_german_postal_code_invalid(): void {
         // Ungültige deutsche PLZ
         $this->assertFalse(PostalCodeHelper::isGermanPostalCode('1011'));  // Zu kurz
         $this->assertFalse(PostalCodeHelper::isGermanPostalCode('101155')); // Zu lang
@@ -44,13 +43,13 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Österreichische Postleitzahlen
     // ========================================
 
-    public function testAustrianPostalCodeValid(): void {
+    public function test_austrian_postal_code_valid(): void {
         $this->assertTrue(PostalCodeHelper::isValid('1010', 'AT'));
         $this->assertTrue(PostalCodeHelper::isValid('8010', 'AT'));
         $this->assertTrue(PostalCodeHelper::isValid('5020', 'AT'));
     }
 
-    public function testAustrianPostalCodeInvalid(): void {
+    public function test_austrian_postal_code_invalid(): void {
         $this->assertFalse(PostalCodeHelper::isValid('10100', 'AT')); // 5 Ziffern
         $this->assertFalse(PostalCodeHelper::isValid('101', 'AT'));   // 3 Ziffern
     }
@@ -59,13 +58,13 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Schweizer Postleitzahlen
     // ========================================
 
-    public function testSwissPostalCodeValid(): void {
+    public function test_swiss_postal_code_valid(): void {
         $this->assertTrue(PostalCodeHelper::isValid('8001', 'CH'));
         $this->assertTrue(PostalCodeHelper::isValid('3000', 'CH'));
         $this->assertTrue(PostalCodeHelper::isValid('1200', 'CH'));
     }
 
-    public function testSwissPostalCodeInvalid(): void {
+    public function test_swiss_postal_code_invalid(): void {
         $this->assertFalse(PostalCodeHelper::isValid('80010', 'CH'));
         $this->assertFalse(PostalCodeHelper::isValid('800', 'CH'));
     }
@@ -74,13 +73,13 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Niederländische Postleitzahlen
     // ========================================
 
-    public function testDutchPostalCodeValid(): void {
+    public function test_dutch_postal_code_valid(): void {
         $this->assertTrue(PostalCodeHelper::isValid('1012 AB', 'NL'));
         $this->assertTrue(PostalCodeHelper::isValid('1012AB', 'NL'));
         $this->assertTrue(PostalCodeHelper::isValid('3511 GH', 'NL'));
     }
 
-    public function testDutchPostalCodeInvalid(): void {
+    public function test_dutch_postal_code_invalid(): void {
         $this->assertFalse(PostalCodeHelper::isValid('1012', 'NL'));     // Ohne Buchstaben
         $this->assertFalse(PostalCodeHelper::isValid('1012 ABC', 'NL')); // Zu viele Buchstaben
     }
@@ -89,7 +88,7 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: UK Postleitzahlen
     // ========================================
 
-    public function testUKPostalCodeValid(): void {
+    public function test_uk_postal_code_valid(): void {
         $this->assertTrue(PostalCodeHelper::isValid('EC1A 1BB', 'GB'));
         $this->assertTrue(PostalCodeHelper::isValid('W1A 0AX', 'GB'));
         $this->assertTrue(PostalCodeHelper::isValid('M1 1AE', 'GB'));
@@ -99,7 +98,7 @@ class PostalCodeHelperTest extends BaseTestCase {
         $this->assertTrue(PostalCodeHelper::isValid('SW1A1AA', 'GB')); // Ohne Leerzeichen
     }
 
-    public function testUKPostalCodeInvalid(): void {
+    public function test_uk_postal_code_invalid(): void {
         $this->assertFalse(PostalCodeHelper::isValid('12345', 'GB'));
         $this->assertFalse(PostalCodeHelper::isValid('ABCDE', 'GB'));
     }
@@ -108,13 +107,13 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Polnische Postleitzahlen
     // ========================================
 
-    public function testPolishPostalCodeValid(): void {
+    public function test_polish_postal_code_valid(): void {
         $this->assertTrue(PostalCodeHelper::isValid('00-001', 'PL'));
         $this->assertTrue(PostalCodeHelper::isValid('31-154', 'PL'));
         $this->assertTrue(PostalCodeHelper::isValid('00001', 'PL')); // Ohne Bindestrich
     }
 
-    public function testPolishPostalCodeInvalid(): void {
+    public function test_polish_postal_code_invalid(): void {
         $this->assertFalse(PostalCodeHelper::isValid('0001', 'PL'));
         $this->assertFalse(PostalCodeHelper::isValid('000-001', 'PL'));
     }
@@ -123,13 +122,13 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: US Postleitzahlen
     // ========================================
 
-    public function testUSPostalCodeValid(): void {
+    public function test_us_postal_code_valid(): void {
         $this->assertTrue(PostalCodeHelper::isValid('12345', 'US'));
         $this->assertTrue(PostalCodeHelper::isValid('12345-6789', 'US'));
         $this->assertTrue(PostalCodeHelper::isValid('90210', 'US'));
     }
 
-    public function testUSPostalCodeInvalid(): void {
+    public function test_us_postal_code_invalid(): void {
         $this->assertFalse(PostalCodeHelper::isValid('1234', 'US'));
         $this->assertFalse(PostalCodeHelper::isValid('123456', 'US'));
         $this->assertFalse(PostalCodeHelper::isValid('12345-678', 'US'));
@@ -139,13 +138,13 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Kanadische Postleitzahlen
     // ========================================
 
-    public function testCanadianPostalCodeValid(): void {
+    public function test_canadian_postal_code_valid(): void {
         $this->assertTrue(PostalCodeHelper::isValid('K1A 0B1', 'CA'));
         $this->assertTrue(PostalCodeHelper::isValid('K1A0B1', 'CA'));
         $this->assertTrue(PostalCodeHelper::isValid('V5K 0A1', 'CA'));
     }
 
-    public function testCanadianPostalCodeInvalid(): void {
+    public function test_canadian_postal_code_invalid(): void {
         $this->assertFalse(PostalCodeHelper::isValid('12345', 'CA'));
         $this->assertFalse(PostalCodeHelper::isValid('ABCDEF', 'CA'));
     }
@@ -154,7 +153,7 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Normalisierung
     // ========================================
 
-    public function testNormalize(): void {
+    public function test_normalize(): void {
         // Niederlande - Großbuchstaben
         $this->assertEquals('1012 AB', PostalCodeHelper::normalize('1012 ab', 'NL'));
 
@@ -172,7 +171,7 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Formatierung
     // ========================================
 
-    public function testFormat(): void {
+    public function test_format(): void {
         // Niederlande
         $this->assertEquals('1012 AB', PostalCodeHelper::format('1012AB', 'NL'));
 
@@ -194,7 +193,7 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Bundesland-Ermittlung
     // ========================================
 
-    public function testGetGermanState(): void {
+    public function test_get_german_state(): void {
         // Berlin
         $this->assertEquals('BE', PostalCodeHelper::getGermanState('10115'));
         $this->assertEquals('BE', PostalCodeHelper::getGermanState('12099'));
@@ -217,7 +216,7 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Unterstützte Länder
     // ========================================
 
-    public function testGetSupportedCountries(): void {
+    public function test_get_supported_countries(): void {
         $countries = PostalCodeHelper::getSupportedCountries();
 
         $this->assertContains('DE', $countries);
@@ -232,7 +231,7 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Erwartetes Format
     // ========================================
 
-    public function testGetExpectedFormat(): void {
+    public function test_get_expected_format(): void {
         $this->assertEquals('5 Ziffern', PostalCodeHelper::getExpectedFormat('DE'));
         $this->assertEquals('4 Ziffern', PostalCodeHelper::getExpectedFormat('AT'));
         $this->assertEquals('1234 AB', PostalCodeHelper::getExpectedFormat('NL'));
@@ -246,7 +245,7 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: CountryCode-Integration
     // ========================================
 
-    public function testMatchesCountry(): void {
+    public function test_matches_country(): void {
         $this->assertTrue(PostalCodeHelper::matchesCountry('10115', CountryCode::Germany));
         $this->assertTrue(PostalCodeHelper::matchesCountry('1010', CountryCode::Austria));
         $this->assertTrue(PostalCodeHelper::matchesCountry('8001', CountryCode::Switzerland));
@@ -259,7 +258,7 @@ class PostalCodeHelperTest extends BaseTestCase {
     // Test: Fallback für unbekannte Länder
     // ========================================
 
-    public function testUnknownCountryFallback(): void {
+    public function test_unknown_country_fallback(): void {
         // Alphanumerisch, 3-10 Zeichen
         $this->assertTrue(PostalCodeHelper::isValid('ABC123', 'XX'));
         $this->assertTrue(PostalCodeHelper::isValid('12345', 'XX'));

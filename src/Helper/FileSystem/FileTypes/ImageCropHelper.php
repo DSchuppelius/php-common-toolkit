@@ -15,14 +15,13 @@ namespace CommonToolkit\Helper\FileSystem\FileTypes;
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\Shell;
-use RuntimeException;
 
 /**
  * Helper-Klasse für Bild-Zuschnitt (Cropping).
- * 
+ *
  * Nutzt ImageMagick um Bilder auf definierte Bereiche zuzuschneiden.
  * Typische Anwendung: Versandetiketten aus Bilddateien extrahieren.
- * 
+ *
  * Koordinatensystem: Ursprung oben links (ImageMagick-Standard).
  * Geometrie-Format: WxH+X+Y (Width x Height + X-Offset + Y-Offset)
  */
@@ -34,9 +33,9 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
 
     /**
      * Schneidet ein Bild auf einen definierten Bereich zu.
-     * 
+     *
      * Koordinatenursprung ist oben links (ImageMagick-Standard).
-     * 
+     *
      * @param string $inputPath Pfad zur Quell-Bilddatei
      * @param string $outputPath Pfad zur Ziel-Bilddatei
      * @param int $x Linke Kante in Pixeln
@@ -116,7 +115,7 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
 
     /**
      * Schneidet den oberen Bereich eines Bildes mit prozentualer Angabe aus.
-     * 
+     *
      * @param string $inputPath Pfad zur Quell-Bilddatei
      * @param string $outputPath Pfad zur Ziel-Bilddatei
      * @param float $percent Prozent der Bildhöhe von oben (z.B. 50.0 = obere Hälfte)
@@ -139,7 +138,7 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
 
     /**
      * Schneidet den unteren Bereich eines Bildes mit prozentualer Angabe aus.
-     * 
+     *
      * @param string $inputPath Pfad zur Quell-Bilddatei
      * @param string $outputPath Pfad zur Ziel-Bilddatei
      * @param float $percent Prozent der Bildhöhe von unten (z.B. 50.0 = untere Hälfte)
@@ -163,10 +162,10 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
 
     /**
      * Ermittelt die Dimensionen einer Bilddatei.
-     * 
+     *
      * Nutzt PHP's getimagesize() für Standard-Formate.
      * Fällt auf ImageMagick identify zurück wenn nötig.
-     * 
+     *
      * @return array{width: int, height: int}|null null bei Fehler
      */
     public static function getImageDimensions(string $inputPath): ?array {

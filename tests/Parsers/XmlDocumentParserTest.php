@@ -12,8 +12,7 @@ declare(strict_types=1);
 
 namespace Tests\Parsers;
 
-use CommonToolkit\Entities\XML\Document;
-use CommonToolkit\Entities\XML\Element;
+use CommonToolkit\Entities\XML\{Document, Element};
 use CommonToolkit\Parsers\XmlDocumentParser;
 use PHPUnit\Framework\TestCase;
 
@@ -41,7 +40,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->document = Document::fromString($xml);
     }
 
-    public function testFromString(): void {
+    public function test_from_string(): void {
         $xml = '<test>value</test>';
         $doc = XmlDocumentParser::fromString($xml);
 
@@ -49,7 +48,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertSame('test', $doc->getRootElementName());
     }
 
-    public function testXpath(): void {
+    public function test_xpath(): void {
         $elements = XmlDocumentParser::xpath(
             $this->document,
             '//*[local-name()="person"]'
@@ -59,7 +58,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertContainsOnlyInstancesOf(Element::class, $elements);
     }
 
-    public function testXpathWithNamespace(): void {
+    public function test_xpath_with_namespace(): void {
         $elements = XmlDocumentParser::xpath(
             $this->document,
             '//ns:person',
@@ -69,7 +68,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertCount(2, $elements);
     }
 
-    public function testXpathFirst(): void {
+    public function test_xpath_first(): void {
         $element = XmlDocumentParser::xpathFirst(
             $this->document,
             '//*[local-name()="person"]'
@@ -80,7 +79,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertSame('1', $element->getAttributeValue('id'));
     }
 
-    public function testXpathFirstNull(): void {
+    public function test_xpath_first_null(): void {
         $element = XmlDocumentParser::xpathFirst(
             $this->document,
             '//*[local-name()="unknown"]'
@@ -89,7 +88,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertNull($element);
     }
 
-    public function testXpathValues(): void {
+    public function test_xpath_values(): void {
         $values = XmlDocumentParser::xpathValues(
             $this->document,
             '//*[local-name()="item"]'
@@ -99,7 +98,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertSame(['A', 'B', 'C'], $values);
     }
 
-    public function testXpathValue(): void {
+    public function test_xpath_value(): void {
         $value = XmlDocumentParser::xpathValue(
             $this->document,
             '//*[local-name()="name"][1]'
@@ -108,7 +107,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertSame('John Doe', $value);
     }
 
-    public function testXpathValueDefault(): void {
+    public function test_xpath_value_default(): void {
         $value = XmlDocumentParser::xpathValue(
             $this->document,
             '//*[local-name()="unknown"]',
@@ -119,7 +118,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertSame('default', $value);
     }
 
-    public function testGetMetadata(): void {
+    public function test_get_metadata(): void {
         $meta = XmlDocumentParser::getMetadata($this->document);
 
         $this->assertSame('root', $meta['rootElement']);
@@ -129,7 +128,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertSame(3, $meta['childCount']);
     }
 
-    public function testExtractNamespaces(): void {
+    public function test_extract_namespaces(): void {
         $namespaces = XmlDocumentParser::extractNamespaces($this->document);
 
         // Namespace-Extraktion gibt alle deklarierten Namespaces zurück
@@ -141,7 +140,7 @@ class XmlDocumentParserTest extends TestCase {
         );
     }
 
-    public function testCount(): void {
+    public function test_count(): void {
         $count = XmlDocumentParser::count(
             $this->document,
             '//*[local-name()="item"]'
@@ -150,7 +149,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertSame(3, $count);
     }
 
-    public function testExists(): void {
+    public function test_exists(): void {
         $this->assertTrue(XmlDocumentParser::exists(
             $this->document,
             '//*[local-name()="person"]'
@@ -162,7 +161,7 @@ class XmlDocumentParserTest extends TestCase {
         ));
     }
 
-    public function testToArray(): void {
+    public function test_to_array(): void {
         $simpleDoc = Document::fromString('<root><name>Test</name><value>123</value></root>');
         $array = XmlDocumentParser::toArray($simpleDoc);
 
@@ -171,7 +170,7 @@ class XmlDocumentParserTest extends TestCase {
         $this->assertArrayHasKey('value', $array);
     }
 
-    public function testToArrayWithAttributes(): void {
+    public function test_to_array_with_attributes(): void {
         $doc = Document::fromString('<root id="1"><child attr="value">text</child></root>');
         $array = XmlDocumentParser::toArray($doc, true, false);
 

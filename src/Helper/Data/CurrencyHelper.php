@@ -14,8 +14,8 @@ namespace CommonToolkit\Helper\Data;
 
 use CommonToolkit\Enums\CurrencyCode;
 use ERRORToolkit\Traits\ErrorLog;
-use NumberFormatter;
 use Locale;
+use NumberFormatter;
 use RuntimeException;
 
 class CurrencyHelper {
@@ -34,11 +34,6 @@ class CurrencyHelper {
 
     /**
      * Formatiert einen Betrag mit Währung nach aktuellem Gebietsschema
-     *
-     * @param float $amount
-     * @param CurrencyCode|string $currency
-     * @param string|null $locale
-     * @return string
      */
     public static function format(float $amount, CurrencyCode|string $currency = CurrencyCode::Euro, ?string $locale = null): string {
         self::ensureNumberFormatterAvailable();
@@ -57,11 +52,6 @@ class CurrencyHelper {
 
     /**
      * Parst einen Betrag mit Währung nach aktuellem Gebietsschema
-     *
-     * @param string $input
-     * @param CurrencyCode|string $currency
-     * @param string|null $locale
-     * @return float
      */
     public static function parse(string $input, CurrencyCode|string $currency = CurrencyCode::Euro, ?string $locale = null): float {
         self::ensureNumberFormatterAvailable();
@@ -80,10 +70,6 @@ class CurrencyHelper {
 
     /**
      * Rundet einen Betrag auf die angegebene Anzahl von Dezimalstellen
-     *
-     * @param float $amount
-     * @param int $precision
-     * @return float
      */
     public static function round(float $amount, int $precision = 2): float {
         return round($amount, $precision);
@@ -91,11 +77,6 @@ class CurrencyHelper {
 
     /**
      * Vergleicht zwei Beträge mit einer Toleranz
-     *
-     * @param float $a
-     * @param float $b
-     * @param float $tolerance
-     * @return bool
      */
     public static function equals(float $a, float $b, float $tolerance = 0.01): bool {
         return round(abs($a - $b), 10) <= $tolerance;
@@ -115,13 +96,11 @@ class CurrencyHelper {
 
     /**
      * Überprüft, ob der Betrag im US- oder DE-Format vorliegt
-     *
-     * @param string $input
-     * @param string|null $format
-     * @return bool
      */
     public static function isCurrency(string $input, ?string &$format = null): bool {
-        if (trim($input) === '') return false;
+        if (trim($input) === '') {
+            return false;
+        }
         $input = trim($input);
 
         if (preg_match("/\A(-)?([0-9]+)((,)[0-9]{3})*((\.)[0-9])?([0-9]*)\z/", $input)) {
@@ -145,12 +124,11 @@ class CurrencyHelper {
 
     /**
      * Wandelt einen Betrag vom US-Format ins DE-Format um
-     *
-     * @param string|null $amount
-     * @return string
      */
     public static function usToDe(?string $amount): string {
-        if ($amount === null || $amount === '') return '';
+        if ($amount === null || $amount === '') {
+            return '';
+        }
 
         $amount = trim(str_replace([" ", "+", "€"], '', $amount));
         $amount = trim($amount, "'");
@@ -175,12 +153,11 @@ class CurrencyHelper {
 
     /**
      * Wandelt einen Betrag vom DE-Format ins US-Format um
-     *
-     * @param string|null $amount
-     * @return string
      */
     public static function deToUs(?string $amount): string {
-        if ($amount === null || $amount === '') return '';
+        if ($amount === null || $amount === '') {
+            return '';
+        }
 
         $amount = trim(str_replace([" ", "+"], '', $amount));
         $amount = trim($amount, "'");

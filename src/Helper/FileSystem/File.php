@@ -82,7 +82,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function mimeType(string $file): string|false {
         $file = self::getRealExistingFile($file);
-        if ($file === false) return false;
+        if ($file === false) {
+            return false;
+        }
 
         static $finfo = null;
 
@@ -120,13 +122,17 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function mimeEncoding(string $file): string|false {
         $file = self::getRealExistingFile($file);
-        if ($file === false) return false;
+        if ($file === false) {
+            return false;
+        }
 
         if (class_exists('finfo')) {
             self::logDebug("Nutze finfo für MIME-Encoding: $file");
             $finfo = new \finfo(FILEINFO_MIME_ENCODING);
             $result = $finfo->file($file);
-            if ($result !== false) return $result;
+            if ($result !== false) {
+                return $result;
+            }
         }
 
         if (Platform::isLinux()) {
@@ -145,7 +151,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function chardet(string $file): string|false {
         $file = self::getRealExistingFile($file);
-        if ($file === false) return false;
+        if ($file === false) {
+            return false;
+        }
 
         if (array_key_exists($file, self::$chardetCache)) {
             return self::logDebugAndReturn(self::$chardetCache[$file], "Chardet Cache-Hit für $file");
@@ -379,7 +387,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function readPartial(string $file, int $length = 4096, int $offset = 0): string|false {
         $file = self::getRealExistingFile($file);
-        if ($file === false) return false;
+        if ($file === false) {
+            return false;
+        }
 
         $content = file_get_contents($file, false, null, $offset, $length);
         if ($content === false) {
@@ -734,7 +744,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 continue;
             }
 
-            if ($trimLines) $line = trim($line);
+            if ($trimLines) {
+                $line = trim($line);
+            }
 
             yield rtrim($line, "\r\n");
 
@@ -833,8 +845,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             }
 
             // Konvertierung nur wenn nötig - verwendet iconv für DOS-Codepages
-            if ($needsConversion) $line = StringHelper::convertToUtf8($line, $encoding);
-            if ($trimLines) $line = trim($line);
+            if ($needsConversion) {
+                $line = StringHelper::convertToUtf8($line, $encoding);
+            }
+            if ($trimLines) {
+                $line = trim($line);
+            }
 
             yield $line;
 
@@ -974,7 +990,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         // Zeilen zu UTF-8 konvertieren
         return array_map(
-            fn(string $line): string => mb_convert_encoding($line, 'UTF-8', $encoding) ?: $line,
+            fn (string $line): string => mb_convert_encoding($line, 'UTF-8', $encoding) ?: $line,
             $result
         );
     }
@@ -1328,7 +1344,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         while (!feof($handle)) {
             $line = fgets($handle);
-            if ($skipEmpty && trim($line) === '') continue;
+            if ($skipEmpty && trim($line) === '') {
+                continue;
+            }
             $lines++;
         }
         fclose($handle);
@@ -1359,9 +1377,6 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Gibt die Dateierweiterung zurück.
-     *
-     * @param string $file
-     * @return string
      */
     public static function extension(string $file): string {
         return pathinfo($file, PATHINFO_EXTENSION);
@@ -1369,10 +1384,6 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Gibt den Dateinamen zurück.
-     *
-     * @param string $file
-     * @param bool $withExtension
-     * @return string
      */
     public static function filename(string $file, bool $withExtension = true): string {
         return $withExtension ? basename($file) : pathinfo($file, PATHINFO_FILENAME);
@@ -1380,9 +1391,6 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Gibt das Verzeichnis der Datei zurück.
-     *
-     * @param string $file
-     * @return string
      */
     public static function directory(string $file): string {
         return dirname($file);
@@ -1391,10 +1399,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     /**
      * Überprüft, ob die Datei eine bestimmte Erweiterung hat.
      *
-     * @param string $file
      * @param array|string $extensions  Endung(en), optional mit führendem Punkt
-     * @param bool $caseSensitive
-     * @return bool
      */
     public static function isExtension(string $file, array|string $extensions, bool $caseSensitive = false): bool {
         // aktuelle Endung der Datei ermitteln
@@ -1402,13 +1407,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         // Eingaben normalisieren → Punkt vorne entfernen
         if (is_array($extensions)) {
-            $extensions = array_map(fn($ext) => ltrim($ext, '.'), $extensions);
+            $extensions = array_map(fn ($ext) => ltrim($ext, '.'), $extensions);
         } else {
             $extensions = ltrim($extensions, '.');
         }
 
         if (!$caseSensitive) {
-            $fileExt    = strtolower($fileExt);
+            $fileExt = strtolower($fileExt);
             $extensions = is_array($extensions) ? array_map('strtolower', $extensions) : strtolower($extensions);
         }
 
@@ -1420,10 +1425,6 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Ändert die Dateierweiterung.
-     *
-     * @param string $file
-     * @param string $newExtension
-     * @return string
      */
     public static function changeExtension(string $file, string $newExtension): string {
         $dir = self::directory($file);
@@ -1433,10 +1434,6 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Fügt einen Anhang an den Dateinamen an.
-     *
-     * @param string $file
-     * @param string $appendix
-     * @return string
      */
     public static function appendToFilename(string $file, string $appendix): string {
         $dir = self::directory($file);
@@ -1447,10 +1444,6 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Fügt einen Präfix an den Dateinamen an.
-     *
-     * @param string $file
-     * @param string $prefix
-     * @return string
      */
     public static function prependToFilename(string $file, string $prefix): string {
         $dir = self::directory($file);
@@ -1461,11 +1454,6 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Überprüft, ob die Datei einen bestimmten MIME-Typ hat.
-     *
-     * @param string $file
-     * @param array|string $mimeTypes
-     * @param bool $caseSensitive
-     * @return bool
      */
     public static function isMimeType(string $file, array|string $mimeTypes, bool $caseSensitive = false): bool {
         $fileMimeType = self::mimeType($file);
@@ -1820,8 +1808,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $handle2 = fopen($file2, 'rb');
 
         if ($handle1 === false || $handle2 === false) {
-            if ($handle1) fclose($handle1);
-            if ($handle2) fclose($handle2);
+            if ($handle1) {
+                fclose($handle1);
+            }
+            if ($handle2) {
+                fclose($handle2);
+            }
             return false;
         }
 

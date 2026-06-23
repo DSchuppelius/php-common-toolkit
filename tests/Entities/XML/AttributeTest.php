@@ -16,8 +16,7 @@ use CommonToolkit\Entities\XML\Attribute;
 use PHPUnit\Framework\TestCase;
 
 class AttributeTest extends TestCase {
-
-    public function testSimpleAttribute(): void {
+    public function test_simple_attribute(): void {
         $attr = new Attribute('name', 'value');
 
         $this->assertSame('name', $attr->getName());
@@ -27,7 +26,7 @@ class AttributeTest extends TestCase {
         $this->assertSame('name', $attr->getQualifiedName());
     }
 
-    public function testAttributeWithNamespace(): void {
+    public function test_attribute_with_namespace(): void {
         $attr = new Attribute('id', '123', 'http://example.com', 'ex');
 
         $this->assertSame('id', $attr->getName());
@@ -37,7 +36,7 @@ class AttributeTest extends TestCase {
         $this->assertSame('ex:id', $attr->getQualifiedName());
     }
 
-    public function testWithValue(): void {
+    public function test_with_value(): void {
         $attr = new Attribute('name', 'old');
         $newAttr = $attr->withValue('new');
 
@@ -49,8 +48,8 @@ class AttributeTest extends TestCase {
         $this->assertSame('name', $newAttr->getName());
     }
 
-    public function testFromDomAttr(): void {
-        $doc = new \DOMDocument();
+    public function test_from_dom_attr(): void {
+        $doc = new \DOMDocument;
         $doc->loadXML('<root xmlns:ex="http://example.com" ex:id="123" name="test"/>');
 
         // Normales Attribut
@@ -62,13 +61,13 @@ class AttributeTest extends TestCase {
         }
     }
 
-    public function testEmptyValue(): void {
+    public function test_empty_value(): void {
         $attr = new Attribute('empty', '');
 
         $this->assertSame('', $attr->getValue());
     }
 
-    public function testSpecialCharacters(): void {
+    public function test_special_characters(): void {
         $attr = new Attribute('special', 'Müller & Co. <GmbH>');
 
         $this->assertSame('Müller & Co. <GmbH>', $attr->getValue());

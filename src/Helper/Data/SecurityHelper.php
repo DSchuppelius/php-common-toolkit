@@ -30,7 +30,6 @@ use InvalidArgumentException;
  * - PCI DSS konforme Sicherheitsfunktionen
  */
 class SecurityHelper extends HelperAbstract {
-
     /** @var array<string, string> Default Security Headers */
     private const DEFAULT_SECURITY_HEADERS = [
         'X-Content-Type-Options' => 'nosniff',
@@ -38,7 +37,7 @@ class SecurityHelper extends HelperAbstract {
         'X-XSS-Protection' => '1; mode=block',
         'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains',
         'Content-Security-Policy' => "default-src 'self'",
-        'Referrer-Policy' => 'strict-origin-when-cross-origin'
+        'Referrer-Policy' => 'strict-origin-when-cross-origin',
     ];
 
     /** @var array<string> Gefährliche Zeichen für Input-Sanitization */
@@ -181,7 +180,7 @@ class SecurityHelper extends HelperAbstract {
             [$tokenSessionId, $tokenAction, $timestamp, $signature] = $parts;
 
             // Zeitvalidierung
-            if (time() - (int)$timestamp > $maxAge) {
+            if (time() - (int) $timestamp > $maxAge) {
                 return self::logWarningAndReturn(false, "CSRF-Token abgelaufen");
             }
 
@@ -222,7 +221,7 @@ class SecurityHelper extends HelperAbstract {
                 // HTML-Tags entfernen
                 $input = strip_tags($input);
 
-                // Gefährliche Zeichen und Wörter aggressiv neutralisieren  
+                // Gefährliche Zeichen und Wörter aggressiv neutralisieren
                 $input = preg_replace('/\balert\b/i', '', $input);
                 $input = preg_replace('/\bscript\b/i', '', $input);
                 $input = preg_replace('/javascript:/i', '', $input);
@@ -410,7 +409,7 @@ class SecurityHelper extends HelperAbstract {
                 $userAgent,
                 $ipAddress,
                 getmypid(),
-                $_SERVER['REQUEST_TIME_FLOAT'] ?? time()
+                $_SERVER['REQUEST_TIME_FLOAT'] ?? time(),
             ];
 
             $sessionData = implode('|', $entropy);

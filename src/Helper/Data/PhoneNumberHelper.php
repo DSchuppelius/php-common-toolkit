@@ -23,8 +23,6 @@ use ERRORToolkit\Traits\ErrorLog;
  * - Deutsche Telefonnummern
  * - Internationale Telefonnummern
  * - Mobilfunknummern
- *
- * @package CommonToolkit\Helper\Data
  */
 class PhoneNumberHelper {
     use ErrorLog;
@@ -358,7 +356,7 @@ class PhoneNumberHelper {
 
         // Prüfe auf bekannte Ländervorwahlen (längste zuerst)
         $codes = self::COUNTRY_CODES;
-        uasort($codes, fn($a, $b) => strlen($b) <=> strlen($a));
+        uasort($codes, fn ($a, $b) => strlen($b) <=> strlen($a));
 
         foreach ($codes as $country => $code) {
             if (str_starts_with($number, $code)) {
@@ -384,7 +382,7 @@ class PhoneNumberHelper {
 
         // Prüfe auf bekannte Ländervorwahlen (längste zuerst)
         $codes = self::COUNTRY_CODES;
-        uasort($codes, fn($a, $b) => strlen($b) <=> strlen($a));
+        uasort($codes, fn ($a, $b) => strlen($b) <=> strlen($a));
 
         foreach ($codes as $country => $code) {
             if (str_starts_with($number, $code)) {

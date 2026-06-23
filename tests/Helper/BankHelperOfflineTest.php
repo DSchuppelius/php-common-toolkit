@@ -38,7 +38,7 @@ class BankHelperOfflineTest extends BaseTestCase {
         return $method->invoke(null, $path, $url, $expiry, $networkEnabled);
     }
 
-    public function testMissingFileReturnsEmptyListWithoutThrowing(): void {
+    public function test_missing_file_returns_empty_list_without_throwing(): void {
         $absentPath = sys_get_temp_dir() . '/does-not-exist-' . bin2hex(random_bytes(4)) . '.csv';
 
         // Netzabruf deaktiviert -> kein Download, Datei fehlt -> leere Liste, kein Throw.
@@ -48,7 +48,7 @@ class BankHelperOfflineTest extends BaseTestCase {
         $this->assertFileDoesNotExist($absentPath);
     }
 
-    public function testEmptyFileReturnsEmptyListWithoutThrowing(): void {
+    public function test_empty_file_returns_empty_list_without_throwing(): void {
         $emptyPath = sys_get_temp_dir() . '/empty-bank-data-' . bin2hex(random_bytes(4)) . '.csv';
         file_put_contents($emptyPath, '');
 
@@ -60,7 +60,7 @@ class BankHelperOfflineTest extends BaseTestCase {
         }
     }
 
-    public function testFailedDownloadFallsBackToEmptyWhenNoLocalFile(): void {
+    public function test_failed_download_falls_back_to_empty_when_no_local_file(): void {
         // Ungültige URL-Schema -> File::download() liefert false; Datei fehlt -> leere Liste.
         $absentPath = sys_get_temp_dir() . '/no-data-' . bin2hex(random_bytes(4)) . '.csv';
 
@@ -69,7 +69,7 @@ class BankHelperOfflineTest extends BaseTestCase {
         $this->assertSame([], $result);
     }
 
-    public function testBicFromIbanDoesNotThrow(): void {
+    public function test_bic_from_iban_does_not_throw(): void {
         // Mit mitgelieferter Datendatei ist das Ergebnis ein String; ohne wäre es null.
         // Wichtig ist: es fliegt keine Exception (auch bei leerem Index -> null).
         $bic = BankHelper::bicFromIBAN('DE44500105175407324931');
@@ -80,7 +80,7 @@ class BankHelperOfflineTest extends BaseTestCase {
      * Kern-Regression: Mit den ausgelieferten Datendateien muss bicFromIBAN()/bicFromBLZ()
      * OHNE Online-Lauf einen echten BIC liefern (genau dieser Fall scheiterte downstream).
      */
-    public function testShippedDataYieldsRealBicOffline(): void {
+    public function test_shipped_data_yields_real_bic_offline(): void {
         BankHelper::setNetworkEnabled(false);
 
         // Commerzbank Berlin (BLZ 10040000) -> COBADEBBXXX laut ausgelieferter Bundesbank-Datei.
@@ -92,7 +92,7 @@ class BankHelperOfflineTest extends BaseTestCase {
         $this->assertSame('INGDDEFFXXX', $bicIban);
     }
 
-    public function testIsNetworkEnabledReflectsOverride(): void {
+    public function test_is_network_enabled_reflects_override(): void {
         // Default (kein Override): effektiver Wert ist true (Config-Default).
         $this->assertTrue(BankHelper::isNetworkEnabled());
 
@@ -107,7 +107,7 @@ class BankHelperOfflineTest extends BaseTestCase {
         $this->assertTrue(BankHelper::isNetworkEnabled());
     }
 
-    public function testClearCacheResetsNetworkOverride(): void {
+    public function test_clear_cache_resets_network_override(): void {
         BankHelper::setNetworkEnabled(false);
         $this->assertFalse(BankHelper::isNetworkEnabled());
 
@@ -120,7 +120,7 @@ class BankHelperOfflineTest extends BaseTestCase {
      * der BIC aus der lokalen Datei kommen. Wir geben absichtlich eine URL mit,
      * deren Abruf einen Fehler verursachen WÜRDE, falls er ausgelöst würde.
      */
-    public function testNetworkDisabledSkipsDownloadButReadsLocalFile(): void {
+    public function test_network_disabled_skips_download_but_reads_local_file(): void {
         $tmp = sys_get_temp_dir() . '/local-bank-data-' . bin2hex(random_bytes(4)) . '.txt';
         file_put_contents($tmp, "ABCDEFGH\nIJKLMNOP\n");
 
@@ -141,7 +141,7 @@ class BankHelperOfflineTest extends BaseTestCase {
      * schlägt fehl (ungültiges Schema -> File::download() liefert false) -> die
      * vorhandene (stale) Datei muss weiter geliefert werden, NICHT [].
      */
-    public function testStaleFileIsUsedWhenExpiredAndDownloadFails(): void {
+    public function test_stale_file_is_used_when_expired_and_download_fails(): void {
         $tmp = sys_get_temp_dir() . '/stale-bank-data-' . bin2hex(random_bytes(4)) . '.txt';
         file_put_contents($tmp, "STALELINE1\nSTALELINE2\n");
         // Datei künstlich altern lassen (über jedes vernünftige expiry hinaus).
@@ -161,18 +161,18 @@ class BankHelperOfflineTest extends BaseTestCase {
     // extractIBAN / extractIBANs
     // =====================================================================
 
-    public function testExtractIBANFindsFirstValidInText(): void {
+    public function test_extract_iban_finds_first_valid_in_text(): void {
         $text = 'Buchung Konto DE89370400440532013000 Betrag 10,00';
         $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN($text));
     }
 
-    public function testExtractIBANReturnsNullWhenNonePresent(): void {
+    public function test_extract_iban_returns_null_when_none_present(): void {
         $this->assertNull(BankHelper::extractIBAN('keine iban, nur text 12345'));
         $this->assertNull(BankHelper::extractIBAN(''));
         $this->assertNull(BankHelper::extractIBAN(null));
     }
 
-    public function testExtractIBANsDedupesAndKeepsOrder(): void {
+    public function test_extract_iba_ns_dedupes_and_keeps_order(): void {
         $text = 'A DE89370400440532013000 B DE89370400440532013000 C DE12500105170648489890';
         $this->assertSame(
             ['DE89370400440532013000', 'DE12500105170648489890'],
@@ -180,18 +180,18 @@ class BankHelperOfflineTest extends BaseTestCase {
         );
     }
 
-    public function testExtractIBANsIgnoresAnonymized(): void {
+    public function test_extract_iba_ns_ignores_anonymized(): void {
         $this->assertSame([], BankHelper::extractIBANs('Konto DE12XXXXXXXXXXXXXXXXXX Ende'));
     }
 
-    public function testExtractIBANStrictAppliesChecksum(): void {
+    public function test_extract_iban_strict_applies_checksum(): void {
         $badChecksum = 'DE00370400440532013000'; // Format gültig, Prüfsumme falsch
         $this->assertSame($badChecksum, BankHelper::extractIBAN($badChecksum));        // Format-Level
         $this->assertNull(BankHelper::extractIBAN($badChecksum, true));                // strikt
         $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('DE89370400440532013000', true));
     }
 
-    public function testExtractIBANSpaceTolerantHandlesGroupedIban(): void {
+    public function test_extract_iban_space_tolerant_handles_grouped_iban(): void {
         // PDF-typische 4er-Gruppierung mit 2-stelligem Rest – darf NICHT abgeschnitten werden.
         $text = 'Konto: DE89 3704 0044 0532 0130 00 (IBAN)';
         $this->assertNull(BankHelper::extractIBAN($text));                          // zusammenhängend: nichts

@@ -16,11 +16,9 @@ use UnitEnum;
 
 /**
  * Generic XSD validation result.
- * 
+ *
  * Provides a standardized structure for XSD schema validation results
  * that can be used by all format-specific validators.
- * 
- * @package CommonToolkit\FinancialFormats\Contracts\Abstracts
  */
 class XsdValidationResult {
     /**
@@ -36,8 +34,7 @@ class XsdValidationResult {
         public readonly ?UnitEnum $type = null,
         public readonly ?string $version = null,
         public readonly ?string $xsdFile = null
-    ) {
-    }
+    ) {}
 
     /**
      * Returns true if validation was successful.
@@ -48,7 +45,7 @@ class XsdValidationResult {
 
     /**
      * Returns the errors.
-     * 
+     *
      * @return array<string>
      */
     public function getErrors(): array {

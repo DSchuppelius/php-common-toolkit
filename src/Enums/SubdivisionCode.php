@@ -18,35 +18,35 @@ enum SubdivisionCode: string {
     case Ceuta = 'ES_CE';                   // Ceuta
     case Melilla = 'ES_ML';                 // Melilla
 
-        // Griechenland (GR) - Besonderes Verwaltungsgebiet
+    // Griechenland (GR) - Besonderes Verwaltungsgebiet
     case MountAthos = 'GR_69';              // Berg Athos
 
-        // Frankreich (FR) - Überseegebiete
+    // Frankreich (FR) - Überseegebiete
     case Guadeloupe = 'FR_GP';              // Guadeloupe
     case Martinique = 'FR_MQ';              // Martinique
     case FrenchGuiana = 'FR_GF';            // Französisch-Guayana
     case Réunion = 'FR_RE';                 // Réunion
     case Mayotte = 'FR_YT';                 // Mayotte
 
-        // Norwegen (NO) - Svalbard und Jan Mayen
+    // Norwegen (NO) - Svalbard und Jan Mayen
     case SvalbardAndJanMayen = 'NO_SJ';     // Svalbard und Jan Mayen
 
-        // USA (US) - Außengebiete
+    // USA (US) - Außengebiete
     case PuertoRico = 'US_PR';              // Puerto Rico
     case VirginIslandsUS = 'US_VI';         // Amerikanische Jungferninseln
     case Guam = 'US_GU';                    // Guam
     case AmericanSamoa = 'US_AS';           // Amerikanisch-Samoa
     case NorthernMarianaIslands = 'US_MP';  // Nördliche Marianen
 
-        // Australien (AU) - Externe Territorien
+    // Australien (AU) - Externe Territorien
     case NorfolkIsland = 'AU_NF';           // Norfolkinsel
     case ChristmasIsland = 'AU_CX';         // Weihnachtsinsel
     case CocosKeelingIslands = 'AU_CC';     // Kokosinseln (Keelinginseln)
 
-        // China (CN) - Spezielle Verwaltungsregionen
+    // China (CN) - Spezielle Verwaltungsregionen
     case HongKong = 'CN_HK';                // Hongkong
     case Macau = 'CN_MO';                   // Macau
 
-        // Finnland (FI) - Åland-Inseln
+    // Finnland (FI) - Åland-Inseln
     case AlandIslands = 'FI_AX';            // Åland-Inseln
 }

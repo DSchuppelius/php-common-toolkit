@@ -16,7 +16,7 @@ class CompanyIdHelperTest extends BaseTestCase {
     // Handelsregisternummer Tests
     // ========================================
 
-    public function testIsHRNumberWithValidFormats(): void {
+    public function test_is_hr_number_with_valid_formats(): void {
         $this->assertTrue(CompanyIdHelper::isHRNumber('HRB 12345'));
         $this->assertTrue(CompanyIdHelper::isHRNumber('HRA 1234'));
         $this->assertTrue(CompanyIdHelper::isHRNumber('HRB12345'));
@@ -26,7 +26,7 @@ class CompanyIdHelperTest extends BaseTestCase {
         $this->assertTrue(CompanyIdHelper::isHRNumber('HRB 12345B')); // Mit Suffix
     }
 
-    public function testIsHRNumberWithInvalidFormats(): void {
+    public function test_is_hr_number_with_invalid_formats(): void {
         $this->assertFalse(CompanyIdHelper::isHRNumber(null));
         $this->assertFalse(CompanyIdHelper::isHRNumber(''));
         $this->assertFalse(CompanyIdHelper::isHRNumber('12345')); // Kein Präfix
@@ -35,7 +35,7 @@ class CompanyIdHelperTest extends BaseTestCase {
         $this->assertFalse(CompanyIdHelper::isHRNumber('HRB')); // Keine Nummer
     }
 
-    public function testParseHRNumber(): void {
+    public function test_parse_hr_number(): void {
         $result = CompanyIdHelper::parseHRNumber('HRB 12345');
         $this->assertEquals('HRB', $result['prefix']);
         $this->assertEquals('12345', $result['number']);
@@ -47,13 +47,13 @@ class CompanyIdHelperTest extends BaseTestCase {
         $this->assertEquals('B', $result['suffix']);
     }
 
-    public function testParseHRNumberWithInvalid(): void {
+    public function test_parse_hr_number_with_invalid(): void {
         $result = CompanyIdHelper::parseHRNumber('invalid');
         $this->assertNull($result['prefix']);
         $this->assertNull($result['number']);
     }
 
-    public function testFormatHRNumber(): void {
+    public function test_format_hr_number(): void {
         $this->assertEquals('HRB 12345', CompanyIdHelper::formatHRNumber('HRB12345'));
         $this->assertEquals('HRA 1234 B', CompanyIdHelper::formatHRNumber('HRA1234B'));
     }
@@ -62,12 +62,12 @@ class CompanyIdHelperTest extends BaseTestCase {
     // LEI Tests
     // ========================================
 
-    public function testIsLEIWithValidFormat(): void {
+    public function test_is_lei_with_valid_format(): void {
         $this->assertTrue(CompanyIdHelper::isLEI('529900RDKKCVES7WJZ75'));
         $this->assertTrue(CompanyIdHelper::isLEI('5299 00RD KKCV ES7W JZ75')); // Mit Leerzeichen
     }
 
-    public function testIsLEIWithInvalidFormat(): void {
+    public function test_is_lei_with_invalid_format(): void {
         $this->assertFalse(CompanyIdHelper::isLEI(null));
         $this->assertFalse(CompanyIdHelper::isLEI(''));
         $this->assertFalse(CompanyIdHelper::isLEI('529900RDKKCVES7WJZ7')); // Zu kurz (19)
@@ -75,18 +75,18 @@ class CompanyIdHelperTest extends BaseTestCase {
         $this->assertFalse(CompanyIdHelper::isLEI('529900RDKKCVES7WJZ7!')); // Ungültiges Zeichen
     }
 
-    public function testValidateLEIWithValidChecksum(): void {
+    public function test_validate_lei_with_valid_checksum(): void {
         // Bekannte gültige LEIs (aus öffentlichen Registern)
         $this->assertTrue(CompanyIdHelper::validateLEI('7LTWFZYICNSX8D621K86')); // Apple Inc.
         $this->assertTrue(CompanyIdHelper::validateLEI('HWUPKR0MPOU8FGXBT394')); // Deutsche Bank
     }
 
-    public function testValidateLEIWithInvalidChecksum(): void {
+    public function test_validate_lei_with_invalid_checksum(): void {
         $this->assertFalse(CompanyIdHelper::validateLEI('529900RDKKCVES7WJZ70'));
         $this->assertFalse(CompanyIdHelper::validateLEI('12345678901234567890'));
     }
 
-    public function testFormatLEI(): void {
+    public function test_format_lei(): void {
         $this->assertEquals(
             '5299 00RD KKCV ES7W JZ75',
             CompanyIdHelper::formatLEI('529900RDKKCVES7WJZ75')
@@ -97,13 +97,13 @@ class CompanyIdHelperTest extends BaseTestCase {
     // D-U-N-S Tests
     // ========================================
 
-    public function testIsDUNSWithValidFormat(): void {
+    public function test_is_duns_with_valid_format(): void {
         $this->assertTrue(CompanyIdHelper::isDUNS('123456789'));
         $this->assertTrue(CompanyIdHelper::isDUNS('12-345-6789')); // Mit Bindestrichen
         $this->assertTrue(CompanyIdHelper::isDUNS('12 345 6789')); // Mit Leerzeichen
     }
 
-    public function testIsDUNSWithInvalidFormat(): void {
+    public function test_is_duns_with_invalid_format(): void {
         $this->assertFalse(CompanyIdHelper::isDUNS(null));
         $this->assertFalse(CompanyIdHelper::isDUNS(''));
         $this->assertFalse(CompanyIdHelper::isDUNS('12345678')); // Zu kurz (8)
@@ -111,7 +111,7 @@ class CompanyIdHelperTest extends BaseTestCase {
         $this->assertFalse(CompanyIdHelper::isDUNS('12345678A')); // Buchstabe
     }
 
-    public function testFormatDUNS(): void {
+    public function test_format_duns(): void {
         $this->assertEquals('12-345-6789', CompanyIdHelper::formatDUNS('123456789'));
     }
 
@@ -119,29 +119,29 @@ class CompanyIdHelperTest extends BaseTestCase {
     // GLN Tests
     // ========================================
 
-    public function testIsGLNWithValidFormat(): void {
+    public function test_is_gln_with_valid_format(): void {
         $this->assertTrue(CompanyIdHelper::isGLN('4012345000016'));
         $this->assertTrue(CompanyIdHelper::isGLN('4005999999997'));
     }
 
-    public function testIsGLNWithInvalidFormat(): void {
+    public function test_is_gln_with_invalid_format(): void {
         $this->assertFalse(CompanyIdHelper::isGLN(null));
         $this->assertFalse(CompanyIdHelper::isGLN(''));
         $this->assertFalse(CompanyIdHelper::isGLN('401234500001')); // Zu kurz (12)
         $this->assertFalse(CompanyIdHelper::isGLN('40123450000161')); // Zu lang (14)
     }
 
-    public function testValidateGLNWithValidChecksum(): void {
+    public function test_validate_gln_with_valid_checksum(): void {
         $this->assertTrue(CompanyIdHelper::validateGLN('4012345000016'));
         $this->assertTrue(CompanyIdHelper::validateGLN('4005999999997'));
     }
 
-    public function testValidateGLNWithInvalidChecksum(): void {
+    public function test_validate_gln_with_invalid_checksum(): void {
         $this->assertFalse(CompanyIdHelper::validateGLN('4012345000010'));
         $this->assertFalse(CompanyIdHelper::validateGLN('4012345000011'));
     }
 
-    public function testFormatGLN(): void {
+    public function test_format_gln(): void {
         $this->assertEquals('4-012345-00001-6', CompanyIdHelper::formatGLN('4012345000016'));
     }
 
@@ -149,13 +149,13 @@ class CompanyIdHelperTest extends BaseTestCase {
     // W-IdNr Tests
     // ========================================
 
-    public function testIsWIdNrWithValidFormat(): void {
+    public function test_is_w_id_nr_with_valid_format(): void {
         $this->assertTrue(CompanyIdHelper::isWIdNr('DE123456789'));
         $this->assertTrue(CompanyIdHelper::isWIdNr('de123456789')); // Kleinbuchstaben
         $this->assertTrue(CompanyIdHelper::isWIdNr('DE 123 456 789')); // Mit Leerzeichen
     }
 
-    public function testIsWIdNrWithInvalidFormat(): void {
+    public function test_is_w_id_nr_with_invalid_format(): void {
         $this->assertFalse(CompanyIdHelper::isWIdNr(null));
         $this->assertFalse(CompanyIdHelper::isWIdNr(''));
         $this->assertFalse(CompanyIdHelper::isWIdNr('DE12345678')); // Zu kurz
@@ -167,26 +167,26 @@ class CompanyIdHelperTest extends BaseTestCase {
     // EAN Tests
     // ========================================
 
-    public function testIsEANWithValidFormats(): void {
+    public function test_is_ean_with_valid_formats(): void {
         $this->assertTrue(CompanyIdHelper::isEAN('12345678', 8)); // EAN-8
         $this->assertTrue(CompanyIdHelper::isEAN('123456789012', 12)); // UPC-A
         $this->assertTrue(CompanyIdHelper::isEAN('1234567890123', 13)); // EAN-13
         $this->assertTrue(CompanyIdHelper::isEAN('12345678901234', 14)); // GTIN-14
     }
 
-    public function testIsEANWithInvalidFormats(): void {
+    public function test_is_ean_with_invalid_formats(): void {
         $this->assertFalse(CompanyIdHelper::isEAN(null));
         $this->assertFalse(CompanyIdHelper::isEAN(''));
         $this->assertFalse(CompanyIdHelper::isEAN('123456789012', 13)); // Falsche Länge
         $this->assertFalse(CompanyIdHelper::isEAN('12345', 5)); // Ungültige Länge
     }
 
-    public function testValidateEANWithValidChecksum(): void {
+    public function test_validate_ean_with_valid_checksum(): void {
         $this->assertTrue(CompanyIdHelper::validateEAN('4006381333931')); // EAN-13
         $this->assertTrue(CompanyIdHelper::validateEAN('96385074')); // EAN-8
     }
 
-    public function testValidateEANWithInvalidChecksum(): void {
+    public function test_validate_ean_with_invalid_checksum(): void {
         $this->assertFalse(CompanyIdHelper::validateEAN('4006381333932'));
         $this->assertFalse(CompanyIdHelper::validateEAN('96385075'));
     }
@@ -195,12 +195,12 @@ class CompanyIdHelperTest extends BaseTestCase {
     // Normalisierungs-Tests
     // ========================================
 
-    public function testNormalizeLEI(): void {
+    public function test_normalize_lei(): void {
         $this->assertEquals('529900RDKKCVES7WJZ75', CompanyIdHelper::normalizeLEI('5299 00RD KKCV ES7W JZ75'));
         $this->assertEquals('529900RDKKCVES7WJZ75', CompanyIdHelper::normalizeLEI('529900rdkkcves7wjz75'));
     }
 
-    public function testNormalizeDUNS(): void {
+    public function test_normalize_duns(): void {
         $this->assertEquals('123456789', CompanyIdHelper::normalizeDUNS('12-345-6789'));
         $this->assertEquals('123456789', CompanyIdHelper::normalizeDUNS('12 345 6789'));
     }

@@ -22,26 +22,23 @@ use RuntimeException;
 
 /**
  * Parser für ExtendedDOMDocument.
- * 
+ *
  * Bietet statische Factory-Methoden und Hilfsfunktionen für ExtendedDOMDocument:
  * - Factory-Methoden (fromString, fromFile)
  * - XSD-Validierung
  * - Namespace-Extraktion
  * - Metadaten-Extraktion
- * 
+ *
  * Für instanzbasierte XPath-Operationen nutze ExtendedDOMDocument direkt.
- * 
- * @package CommonToolkit\Parsers
  */
 class ExtendedDOMDocumentParser extends HelperAbstract {
-
     // =========================================================================
     // FACTORY METHODEN
     // =========================================================================
 
     /**
      * Parst einen XML-String zu einem ExtendedDOMDocument.
-     * 
+     *
      * @param string $xml Der XML-Inhalt
      * @throws RuntimeException Bei ungültigem XML
      */
@@ -53,7 +50,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Parst eine XML-Datei zu einem ExtendedDOMDocument.
-     * 
+     *
      * @param string $filePath Pfad zur XML-Datei
      * @throws RuntimeException Bei ungültigem XML oder Dateifehler
      */
@@ -64,7 +61,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Erstellt ein ExtendedDOMDocument aus einem bestehenden DOMDocument.
-     * 
+     *
      * @param \DOMDocument $dom Das bestehende DOMDocument
      * @return ExtendedDOMDocument Das konvertierte Dokument
      */
@@ -83,7 +80,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Parst und validiert gegen XSD.
-     * 
+     *
      * @param string $xml XML-Inhalt
      * @param string $xsdFile Pfad zur XSD-Datei
      * @return ExtendedDOMDocument Das geparste und validierte Dokument
@@ -102,7 +99,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Parst eine Datei und validiert gegen XSD.
-     * 
+     *
      * @param string $filePath Pfad zur XML-Datei
      * @param string $xsdFile Pfad zur XSD-Datei
      * @return ExtendedDOMDocument Das geparste und validierte Dokument
@@ -125,7 +122,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Validiert ein ExtendedDOMDocument gegen ein XSD-Schema.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das zu validierende Dokument
      * @param string $xsdFile Pfad zur XSD-Datei
      * @return array{valid: bool, errors: string[]}
@@ -144,7 +141,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Prüft ob ein XML-String wohlgeformt ist.
-     * 
+     *
      * @param string $xml Der XML-Inhalt
      * @return array{valid: bool, errors: string[]}
      */
@@ -152,7 +149,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
         libxml_use_internal_errors(true);
         libxml_clear_errors();
 
-        $doc = new DOMDocument();
+        $doc = new DOMDocument;
         $valid = $doc->loadXML($xml, LIBXML_NONET);
         $errors = $valid ? [] : XmlHelper::getLibXmlErrors();
 
@@ -165,7 +162,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Extrahiert Metadaten aus einem ExtendedDOMDocument.
-     * 
+     *
      * @return array{rootElement: string, namespace: ?string, encoding: ?string, version: ?string, childCount: int}
      */
     public static function getMetadata(ExtendedDOMDocument $document): array {
@@ -182,7 +179,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Extrahiert alle verwendeten Namespaces.
-     * 
+     *
      * @return array<string, string> Mapping von Prefix zu URI
      */
     public static function extractNamespaces(ExtendedDOMDocument $document): array {
@@ -207,7 +204,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Extrahiert alle Attributnamen eines Elements.
-     * 
+     *
      * @return string[]
      */
     public static function getAttributeNames(DOMElement $element): array {
@@ -224,7 +221,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Zählt Elemente mit einem bestimmten Tag-Namen.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Dokument
      * @param string $tagName Der Tag-Name (ohne Namespace-Prefix)
      * @return int Anzahl der gefundenen Elemente
@@ -235,7 +232,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Prüft ob ein Element mit einem bestimmten Tag-Namen existiert.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Dokument
      * @param string $tagName Der Tag-Name
      * @return bool True wenn mindestens ein Element existiert
@@ -246,7 +243,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Gibt das erste Element mit einem bestimmten Tag-Namen zurück.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Dokument
      * @param string $tagName Der Tag-Name
      * @return DOMElement|null Das erste Element oder null
@@ -259,7 +256,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Extrahiert den Text-Inhalt eines Elements via Tag-Name.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das Dokument
      * @param string $tagName Der Tag-Name
      * @param string|null $default Standardwert wenn nicht gefunden
@@ -272,7 +269,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
 
     /**
      * Klont ein ExtendedDOMDocument.
-     * 
+     *
      * @param ExtendedDOMDocument $document Das zu klonende Dokument
      * @return ExtendedDOMDocument Das geklonte Dokument
      */

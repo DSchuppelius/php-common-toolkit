@@ -6,13 +6,13 @@ use CommonToolkit\Entities\CSV\HeaderLine;
 use Tests\Contracts\BaseTestCase;
 
 class HeaderLineTest extends BaseTestCase {
-    public function testGetColumnNames(): void {
+    public function test_get_column_names(): void {
         $headerLine = new HeaderLine(['Name', 'Age', 'Email']);
 
         $this->assertEquals(['Name', 'Age', 'Email'], $headerLine->getColumnNames());
     }
 
-    public function testHasColumn(): void {
+    public function test_has_column(): void {
         $headerLine = new HeaderLine(['Name', 'Age', 'Email']);
 
         $this->assertTrue($headerLine->hasColumn('Name'));
@@ -22,7 +22,7 @@ class HeaderLineTest extends BaseTestCase {
         $this->assertFalse($headerLine->hasColumn('name')); // Case sensitive
     }
 
-    public function testGetColumnIndex(): void {
+    public function test_get_column_index(): void {
         $headerLine = new HeaderLine(['Name', 'Age', 'Email']);
 
         $this->assertEquals(0, $headerLine->getColumnIndex('Name'));
@@ -32,7 +32,7 @@ class HeaderLineTest extends BaseTestCase {
         $this->assertNull($headerLine->getColumnIndex('name')); // Case sensitive
     }
 
-    public function testWithDuplicateColumnNames(): void {
+    public function test_with_duplicate_column_names(): void {
         $headerLine = new HeaderLine(['Name', 'Name', 'Age']);
 
         $this->assertEquals(['Name', 'Name', 'Age'], $headerLine->getColumnNames());
@@ -40,7 +40,7 @@ class HeaderLineTest extends BaseTestCase {
         $this->assertEquals(0, $headerLine->getColumnIndex('Name')); // Returns first occurrence
     }
 
-    public function testWithEmptyColumnNames(): void {
+    public function test_with_empty_column_names(): void {
         $headerLine = new HeaderLine(['', 'Name', '']);
 
         $this->assertEquals(['', 'Name', ''], $headerLine->getColumnNames());

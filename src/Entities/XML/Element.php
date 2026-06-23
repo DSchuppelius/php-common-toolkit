@@ -12,19 +12,16 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Entities\XML;
 
-use CommonToolkit\Contracts\Interfaces\XML\XmlAttributeInterface;
-use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
+use CommonToolkit\Contracts\Interfaces\XML\{XmlAttributeInterface, XmlElementInterface};
 use DOMDocument;
 use DOMElement;
 use DOMNode;
 
 /**
  * Repräsentiert ein XML-Element.
- * 
+ *
  * Flexibles Value Object für XML-Elemente mit Namespace-Unterstützung,
  * Attributen und Kind-Elementen.
- * 
- * @package CommonToolkit\Entities\XML
  */
 class Element implements XmlElementInterface {
     private string $name;
@@ -129,7 +126,7 @@ class Element implements XmlElementInterface {
     public function getChildrenByName(string $name): array {
         return array_values(array_filter(
             $this->children,
-            fn(XmlElementInterface $child) => $child->getName() === $name
+            fn (XmlElementInterface $child) => $child->getName() === $name
         ));
     }
 
@@ -261,7 +258,7 @@ class Element implements XmlElementInterface {
 
     /**
      * Erstellt eine Kopie mit mehreren Kind-Elementen.
-     * 
+     *
      * @param XmlElementInterface[] $children
      */
     public function withChildren(array $children): self {
@@ -338,7 +335,7 @@ class Element implements XmlElementInterface {
 
     /**
      * Erstellt ein Element mit Kind-Elementen.
-     * 
+     *
      * @param XmlElementInterface[] $children
      */
     public static function withChildElements(string $name, array $children, ?string $namespaceUri = null, ?string $prefix = null): self {
@@ -354,7 +351,7 @@ class Element implements XmlElementInterface {
 
     /**
      * Gibt alle Kind-Element-Namen zurück.
-     * 
+     *
      * @return string[]
      */
     public function getChildNames(): array {
@@ -385,7 +382,7 @@ class Element implements XmlElementInterface {
 
     /**
      * Sucht rekursiv nach Kind-Elementen mit einem bestimmten Namen.
-     * 
+     *
      * @return Element[]
      */
     public function findDescendants(string $name): array {

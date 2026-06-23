@@ -13,13 +13,11 @@ declare(strict_types=1);
 namespace Tests\Builders;
 
 use CommonToolkit\Builders\XmlDocumentBuilder;
-use CommonToolkit\Entities\XML\Document;
-use CommonToolkit\Entities\XML\Element;
+use CommonToolkit\Entities\XML\{Document, Element};
 use PHPUnit\Framework\TestCase;
 
 class XmlDocumentBuilderTest extends TestCase {
-
-    public function testSimpleDocument(): void {
+    public function test_simple_document(): void {
         $doc = XmlDocumentBuilder::create('root')
             ->build();
 
@@ -27,7 +25,7 @@ class XmlDocumentBuilderTest extends TestCase {
         $this->assertSame('root', $doc->getRootElementName());
     }
 
-    public function testWithNamespace(): void {
+    public function test_with_namespace(): void {
         $doc = XmlDocumentBuilder::create('root')
             ->withNamespace('http://example.com', 'ex')
             ->build();
@@ -35,7 +33,7 @@ class XmlDocumentBuilderTest extends TestCase {
         $this->assertSame('http://example.com', $doc->getNamespace());
     }
 
-    public function testWithVersionAndEncoding(): void {
+    public function test_with_version_and_encoding(): void {
         $doc = XmlDocumentBuilder::create('root')
             ->withVersion('1.1')
             ->withEncoding('ISO-8859-1')
@@ -45,7 +43,7 @@ class XmlDocumentBuilderTest extends TestCase {
         $this->assertSame('ISO-8859-1', $doc->getEncoding());
     }
 
-    public function testAddAttribute(): void {
+    public function test_add_attribute(): void {
         $doc = XmlDocumentBuilder::create('root')
             ->addAttribute('version', '1.0')
             ->addAttribute('id', '123')
@@ -56,7 +54,7 @@ class XmlDocumentBuilderTest extends TestCase {
         $this->assertSame('123', $root->getAttributeValue('id'));
     }
 
-    public function testAddChild(): void {
+    public function test_add_child(): void {
         $doc = XmlDocumentBuilder::create('person')
             ->addChild('name', 'John')
             ->addChild('age', '30')
@@ -67,7 +65,7 @@ class XmlDocumentBuilderTest extends TestCase {
         $this->assertSame('30', $root->getChildValue('age'));
     }
 
-    public function testAddElement(): void {
+    public function test_add_element(): void {
         $child = Element::simple('custom', 'value');
 
         $doc = XmlDocumentBuilder::create('root')
@@ -78,7 +76,7 @@ class XmlDocumentBuilderTest extends TestCase {
         $this->assertTrue($root->hasChild('custom'));
     }
 
-    public function testAddElements(): void {
+    public function test_add_elements(): void {
         $elements = [
             Element::simple('a', '1'),
             Element::simple('b', '2'),
@@ -93,7 +91,7 @@ class XmlDocumentBuilderTest extends TestCase {
         $this->assertCount(3, $root->getChildren());
     }
 
-    public function testStartElement(): void {
+    public function test_start_element(): void {
         $doc = XmlDocumentBuilder::create('root')
             ->startElement('container')
             ->addChild('item', 'value')
@@ -109,69 +107,69 @@ class XmlDocumentBuilderTest extends TestCase {
         $this->assertSame('value', $container->getChildValue('item'));
     }
 
-    public function testToString(): void {
+    public function test_to_string(): void {
         $xml = XmlDocumentBuilder::create('greeting')
             ->addChild('message', 'Hello World')
             ->toString();
 
         $this->assertStringContainsString('<?xml version="1.0" encoding="UTF-8"?>', $xml);
-$this->assertStringContainsString('<greeting>', $xml);
-    $this->assertStringContainsString('<message>Hello World</message>', $xml);
+        $this->assertStringContainsString('<greeting>', $xml);
+        $this->assertStringContainsString('<message>Hello World</message>', $xml);
     }
 
-    public function testComplexDocument(): void {
-    $doc = XmlDocumentBuilder::create('Document')
-    ->withNamespace('urn:iso:std:iso:20022:tech:xsd:pain.001.003.03', 'pain')
-    ->startElement('CstmrCdtTrfInitn')
-    ->startElement('GrpHdr')
-    ->addChild('MsgId', 'MSG-001')
-    ->addChild('CreDtTm', '2026-01-01T12:00:00')
-    ->end()
-    ->end()
-    ->build();
+    public function test_complex_document(): void {
+        $doc = XmlDocumentBuilder::create('Document')
+            ->withNamespace('urn:iso:std:iso:20022:tech:xsd:pain.001.003.03', 'pain')
+            ->startElement('CstmrCdtTrfInitn')
+            ->startElement('GrpHdr')
+            ->addChild('MsgId', 'MSG-001')
+            ->addChild('CreDtTm', '2026-01-01T12:00:00')
+            ->end()
+            ->end()
+            ->build();
 
-    $xml = $doc->toString();
+        $xml = $doc->toString();
 
-    $this->assertStringContainsString('pain:Document', $xml);
-    $this->assertStringContainsString('urn:iso:std:iso:20022:tech:xsd:pain.001.003.03', $xml);
-    $this->assertStringContainsString('MSG-001', $xml);
+        $this->assertStringContainsString('pain:Document', $xml);
+        $this->assertStringContainsString('urn:iso:std:iso:20022:tech:xsd:pain.001.003.03', $xml);
+        $this->assertStringContainsString('MSG-001', $xml);
     }
 
-    public function testChainedBuilding(): void {
-    $xml = XmlDocumentBuilder::create('config')
-    ->addAttribute('version', '1.0')
-    ->addChild('setting1', 'value1')
-    ->addChild('setting2', 'value2')
-    ->startElement('nested')
-    ->addChild('deep', 'content')
-    ->end()
-    ->addChild('setting3', 'value3')
-    ->toString();
+    public function test_chained_building(): void {
+        $xml = XmlDocumentBuilder::create('config')
+            ->addAttribute('version', '1.0')
+            ->addChild('setting1', 'value1')
+            ->addChild('setting2', 'value2')
+            ->startElement('nested')
+            ->addChild('deep', 'content')
+            ->end()
+            ->addChild('setting3', 'value3')
+            ->toString();
 
-    $doc = Document::fromString($xml);
-    $root = $doc->getRootElement();
+        $doc = Document::fromString($xml);
+        $root = $doc->getRootElement();
 
-    $this->assertCount(4, $root->getChildren());
-    $this->assertSame('value1', $root->getChildValue('setting1'));
-    $this->assertSame('value3', $root->getChildValue('setting3'));
+        $this->assertCount(4, $root->getChildren());
+        $this->assertSame('value1', $root->getChildValue('setting1'));
+        $this->assertSame('value3', $root->getChildValue('setting3'));
 
-    $nested = $root->getFirstChildByName('nested');
-    $this->assertNotNull($nested);
-    $this->assertSame('content', $nested->getChildValue('deep'));
+        $nested = $root->getFirstChildByName('nested');
+        $this->assertNotNull($nested);
+        $this->assertSame('content', $nested->getChildValue('deep'));
     }
 
-    public function testWithFormatOutput(): void {
-    $formatted = XmlDocumentBuilder::create('root')
-    ->withFormatOutput(true)
-    ->addChild('child', 'value')
-    ->toString();
+    public function test_with_format_output(): void {
+        $formatted = XmlDocumentBuilder::create('root')
+            ->withFormatOutput(true)
+            ->addChild('child', 'value')
+            ->toString();
 
-    $compact = XmlDocumentBuilder::create('root')
-    ->withFormatOutput(false)
-    ->addChild('child', 'value')
-    ->toString();
+        $compact = XmlDocumentBuilder::create('root')
+            ->withFormatOutput(false)
+            ->addChild('child', 'value')
+            ->toString();
 
-    // Formatiert sollte Whitespace/Newlines haben
-    $this->assertGreaterThan(strlen($compact), strlen($formatted));
+        // Formatiert sollte Whitespace/Newlines haben
+        $this->assertGreaterThan(strlen($compact), strlen($formatted));
     }
-    }
+}

@@ -12,10 +12,8 @@ namespace CommonToolkit\Contracts\Abstracts\CSV;
 
 use CommonToolkit\Contracts\Interfaces\CSV\FieldInterface;
 use CommonToolkit\Enums\CountryCode;
-use CommonToolkit\Helper\Data\StringHelper;
-use CommonToolkit\Helper\Data\NumberHelper;
-use CommonToolkit\Helper\Data\DateHelper;
 use CommonToolkit\Helper\Data\CSV\StringHelper as CSVStringHelper;
+use CommonToolkit\Helper\Data\{DateHelper, NumberHelper, StringHelper};
 use DateTimeImmutable;
 use ERRORToolkit\Traits\ErrorLog;
 
@@ -48,7 +46,6 @@ class FieldAbstract implements FieldInterface {
      *
      * @param string $raw       Das rohe Feld.
      * @param string $enclosure Das Einschlusszeichen.
-     * @return void
      */
     private function analyze(string $raw, string $enclosure): void {
         $enc = preg_quote($enclosure, '/');
@@ -130,7 +127,6 @@ class FieldAbstract implements FieldInterface {
      * Analysiert einen unquoted Wert und setzt typedValue sowie originalFormat.
      *
      * @param string $value Der zu analysierende Wert.
-     * @return void
      */
     private function analyzeUnquotedValue(string $value): void {
         $this->typedValue = StringHelper::parseToTypedValue($value, $this->country);

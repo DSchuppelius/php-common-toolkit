@@ -13,23 +13,18 @@ declare(strict_types=1);
 namespace CommonToolkit\Generators\CSV;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Entities\CSV\ColumnWidthConfig;
-use CommonToolkit\Entities\CSV\DataLine;
-use CommonToolkit\Entities\CSV\Document;
-use CommonToolkit\Entities\CSV\HeaderLine;
+use CommonToolkit\Entities\CSV\{ColumnWidthConfig, DataLine, Document, HeaderLine};
 use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\FileSystem\File;
 
 /**
  * Generator für CSV-Dokumente.
- * 
+ *
  * Wandelt Document-Objekte in CSV-Strings um mit Unterstützung für:
  * - Benutzerdefinierte Trennzeichen und Einschlusszeichen
  * - Spaltenbreiten-Konfiguration
  * - Encoding-Konvertierung
  * - BOM-Unterstützung
- * 
- * @package CommonToolkit\Generators\CSV
  */
 class CSVGenerator extends HelperAbstract {
     /** Standard-Zeilentrennzeichen */
@@ -238,7 +233,6 @@ class CSVGenerator extends HelperAbstract {
      * @param string|null $targetEncoding Das Ziel-Encoding
      * @param bool $withBom Ob ein BOM geschrieben werden soll
      * @param bool $includeHeader Ob der Header mit ausgegeben werden soll
-     * @return void
      */
     public function toFile(
         Document $document,

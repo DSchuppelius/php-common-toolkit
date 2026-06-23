@@ -32,20 +32,20 @@ class CSVDocumentParserTest extends BaseTestCase {
 
     protected function setUp(): void {
         $base = dirname(__DIR__, 2) . '/.samples/';
-        $this->testFileComma              = $base . 'comma.csv';
-        $this->testFileSemicolon          = $base . 'semicolon.csv';
-        $this->testFileTab                = $base . 'tab.csv';
-        $this->testFileEmpty              = $base . 'empty.csv';
-        $this->testFileMalformed          = $base . 'malformed.csv';
-        $this->testFileMultiLine          = $base . 'multiline.csv';
-        $this->testFileQuoted             = $base . 'quoted.csv';
-        $this->testFileDoubleQuoted       = $base . 'doublequoted.csv';
+        $this->testFileComma = $base . 'comma.csv';
+        $this->testFileSemicolon = $base . 'semicolon.csv';
+        $this->testFileTab = $base . 'tab.csv';
+        $this->testFileEmpty = $base . 'empty.csv';
+        $this->testFileMalformed = $base . 'malformed.csv';
+        $this->testFileMultiLine = $base . 'multiline.csv';
+        $this->testFileQuoted = $base . 'quoted.csv';
+        $this->testFileDoubleQuoted = $base . 'doublequoted.csv';
         $this->testFileInconsistentQuoted = $base . 'quoted-inkonsistent.csv';
-        $this->testFileAnsi               = $base . 'ansi.csv';
-        $this->testFileIso                = $base . 'iso.csv';
+        $this->testFileAnsi = $base . 'ansi.csv';
+        $this->testFileIso = $base . 'iso.csv';
     }
 
-    public function testParseCommaSeparatedCSV(): void {
+    public function test_parse_comma_separated_csv(): void {
         $csv = file_get_contents($this->testFileComma);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
@@ -63,7 +63,7 @@ class CSVDocumentParserTest extends BaseTestCase {
      * mischt, das RFC4180-escapte Quotes (eingebettetes JSON) enthält – z. B.
      * PayPal-Aktivitäten-CSV. Muss vollständig (Header + alle Zeilen) parsen.
      */
-    public function testParseMixedSingleAndEscapedQuotedCSV(): void {
+    public function test_parse_mixed_single_and_escaped_quoted_csv(): void {
         $csv = "\"Datum\",\"Betrag\",\"Meta\"\n"
             . "\"09.01.2023\",\"60,00\",\"{\"\"order_id\"\":5227,\"\"order_key\"\":\"\"wc_a\"\"}\"\n"
             . "\"10.01.2023\",\"-2,18\",\"{\"\"order_id\"\":5228,\"\"note\"\":\"\"x,y\"\"}\"\n";
@@ -79,19 +79,19 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertSame('-2,18', $doc->getRow(1)?->getField(1)?->getValue());
     }
 
-    public function testParseSemicolonSeparatedCSV(): void {
+    public function test_parse_semicolon_separated_csv(): void {
         $csv = file_get_contents($this->testFileSemicolon);
         $doc = CSVDocumentParser::fromString($csv, ';', '"');
         $this->assertGreaterThan(0, $doc->countRows());
     }
 
-    public function testParseTabSeparatedCSV(): void {
+    public function test_parse_tab_separated_csv(): void {
         $csv = file_get_contents($this->testFileTab);
         $doc = CSVDocumentParser::fromString($csv, "\t", '"');
         $this->assertGreaterThan(0, $doc->countRows());
     }
 
-    public function testParseQuotedCSV(): void {
+    public function test_parse_quoted_csv(): void {
         $csv = file_get_contents($this->testFileQuoted);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
@@ -100,7 +100,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertStringContainsString('"', $row->toString());
     }
 
-    public function testParseDoubleQuotedCSV(): void {
+    public function test_parse_double_quoted_csv(): void {
         $csv = file_get_contents($this->testFileDoubleQuoted);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
@@ -108,7 +108,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertGreaterThanOrEqual(2, $nonStrict);
     }
 
-    public function testDetectMultiLineCSV(): void {
+    public function test_detect_multi_line_csv(): void {
         $csv = file_get_contents($this->testFileMultiLine);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
@@ -117,25 +117,25 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertStringContainsString("\n", $multiLineValue, 'Mehrzeiliger Inhalt erwartet');
     }
 
-    public function testEmptyCSVShouldThrow(): void {
+    public function test_empty_csv_should_throw(): void {
         $csv = file_get_contents($this->testFileEmpty);
         $this->expectException(RuntimeException::class);
         CSVDocumentParser::fromString($csv);
     }
 
-    public function testMalformedCSVShouldThrow(): void {
+    public function test_malformed_csv_should_throw(): void {
         $csv = file_get_contents($this->testFileMalformed);
         $this->expectException(RuntimeException::class);
         CSVDocumentParser::fromString($csv);
     }
 
-    public function testInconsistentQuotedCSVShouldThrow(): void {
+    public function test_inconsistent_quoted_csv_should_throw(): void {
         $csv = file_get_contents($this->testFileInconsistentQuoted);
         $this->expectException(RuntimeException::class);
         CSVDocumentParser::fromString($csv);
     }
 
-    public function testRoundTripIntegrity(): void {
+    public function test_round_trip_integrity(): void {
         $csv = file_get_contents($this->testFileComma);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
         $rebuilt = $doc->toString(',', '"');
@@ -144,7 +144,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertTrue($doc->equals($doc2), 'Roundtrip sollte identisch bleiben');
     }
 
-    public function testParseWithoutHeader(): void {
+    public function test_parse_without_header(): void {
         $doc = CSVDocumentParser::fromString('"Alice","alice@example.com"', ',', '"', false);
 
         $this->assertFalse($doc->hasHeader());
@@ -156,7 +156,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertEquals('alice@example.com', $row->getField(1)->getValue());
     }
 
-    public function testFromFileMethod(): void {
+    public function test_from_file_method(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -167,7 +167,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertGreaterThan(0, $doc->countRows());
     }
 
-    public function testFromFileWithStartLine(): void {
+    public function test_from_file_with_start_line(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -181,7 +181,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertLessThan($normalDoc->countRows(), $doc->countRows());
     }
 
-    public function testFromFileRange(): void {
+    public function test_from_file_range(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -193,14 +193,14 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertLessThanOrEqual(2, $doc->countRows()); // Header + max 2 Datenzeilen
     }
 
-    public function testFromFileRangeInvalidRange(): void {
+    public function test_from_file_range_invalid_range(): void {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Startzeile (5) darf nicht größer als Endzeile (3) sein');
 
         CSVDocumentParser::fromFileRange($this->testFileComma, 5, 3);
     }
 
-    public function testFromFileWithAnsiEncoding(): void {
+    public function test_from_file_with_ansi_encoding(): void {
         if (!file_exists($this->testFileAnsi)) {
             $this->markTestSkipped('ansi.csv Test-Datei nicht gefunden');
         }
@@ -225,7 +225,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertStringContainsString('München', $rowString, 'München muss in Datenzeile korrekt konvertiert sein');
     }
 
-    public function testFromFileWithAnsiEncodingAllRows(): void {
+    public function test_from_file_with_ansi_encoding_all_rows(): void {
         if (!file_exists($this->testFileAnsi)) {
             $this->markTestSkipped('ansi.csv Test-Datei nicht gefunden');
         }
@@ -238,7 +238,9 @@ class CSVDocumentParserTest extends BaseTestCase {
 
         for ($i = 0; $i < $doc->countRows(); $i++) {
             $row = $doc->getRow($i);
-            if ($row === null) continue;
+            if ($row === null) {
+                continue;
+            }
 
             $rowString = $row->toString();
             $this->assertTrue(mb_check_encoding($rowString, 'UTF-8'), "Zeile $i muss gültiges UTF-8 sein");
@@ -253,7 +255,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertCount(count($expectedUmlauts), $foundUmlauts, 'Alle erwarteten Umlaute müssen gefunden werden');
     }
 
-    public function testFromFileWithIsoEncoding(): void {
+    public function test_from_file_with_iso_encoding(): void {
         if (!file_exists($this->testFileIso)) {
             $this->markTestSkipped('iso.csv Test-Datei nicht gefunden');
         }
@@ -267,7 +269,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertTrue(mb_check_encoding($docString, 'UTF-8'), 'Gesamtes Dokument muss gültiges UTF-8 sein');
     }
 
-    public function testFromFileRangeWithAnsiEncoding(): void {
+    public function test_from_file_range_with_ansi_encoding(): void {
         if (!file_exists($this->testFileAnsi)) {
             $this->markTestSkipped('ansi.csv Test-Datei nicht gefunden');
         }
@@ -286,7 +288,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertStringContainsString('München', $rowString, 'München muss korrekt konvertiert sein');
     }
 
-    public function testFromStringWithEncodingParameter(): void {
+    public function test_from_string_with_encoding_parameter(): void {
         // Simuliere ISO-8859-1 kodierten Inhalt
         $isoContent = mb_convert_encoding("Name;Stadt\nTest;München", 'ISO-8859-1', 'UTF-8');
 
@@ -303,7 +305,7 @@ class CSVDocumentParserTest extends BaseTestCase {
 
     // ===== Streaming-Tests für große CSV-Dateien =====
 
-    public function testStreamRows(): void {
+    public function test_stream_rows(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -318,7 +320,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertGreaterThan(0, $rowCount, 'Mindestens eine Datenzeile erwartet');
     }
 
-    public function testStreamRowsWithoutHeader(): void {
+    public function test_stream_rows_without_header(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -337,7 +339,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertEquals($rowCountWithHeader + 1, $rowCountWithoutHeader);
     }
 
-    public function testStreamAll(): void {
+    public function test_stream_all(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -359,7 +361,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertGreaterThan(0, $rowCount, 'Mindestens eine Datenzeile erwartet');
     }
 
-    public function testStreamRowsWithMultiLineFields(): void {
+    public function test_stream_rows_with_multi_line_fields(): void {
         if (!file_exists($this->testFileMultiLine)) {
             $this->markTestSkipped('multiline.csv Test-Datei nicht gefunden');
         }
@@ -380,7 +382,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertTrue($foundMultiLine, 'Mehrzeiliges Feld sollte erkannt werden');
     }
 
-    public function testReadHeader(): void {
+    public function test_read_header(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -391,7 +393,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertGreaterThan(0, $header->countFields());
     }
 
-    public function testProcessBatches(): void {
+    public function test_process_batches(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -420,7 +422,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertEquals($totalRows, $totalRowsFromBatches, 'Gesamtzeilen sollten übereinstimmen');
     }
 
-    public function testStreamRowsWithEncodingConversion(): void {
+    public function test_stream_rows_with_encoding_conversion(): void {
         if (!file_exists($this->testFileAnsi)) {
             $this->markTestSkipped('ansi.csv Test-Datei nicht gefunden');
         }
@@ -438,7 +440,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertTrue($foundMuenchen, 'München sollte korrekt konvertiert gefunden werden');
     }
 
-    public function testStreamRowsComparedToFromFile(): void {
+    public function test_stream_rows_compared_to_from_file(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }
@@ -467,7 +469,7 @@ class CSVDocumentParserTest extends BaseTestCase {
         }
     }
 
-    public function testCountRows(): void {
+    public function test_count_rows(): void {
         if (!file_exists($this->testFileComma)) {
             $this->markTestSkipped('Test-Datei nicht gefunden');
         }

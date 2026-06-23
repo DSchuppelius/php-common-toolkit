@@ -324,8 +324,7 @@ enum CountryCode: string {
             self::Slovakia,
             self::Slovenia,
             self::Spain,
-            self::Sweden,
-            => true,
+            self::Sweden, => true,
 
             default => false,
         };
@@ -352,8 +351,7 @@ enum CountryCode: string {
             self::Slovakia,
             self::Slovenia,
             self::Spain,
-            self::Croatia,
-            => true,
+            self::Croatia, => true,
 
             default => false,
         };
@@ -679,8 +677,7 @@ enum CountryCode: string {
             self::Tunisia,
             self::Uganda,
             self::Zambia,
-            self::Zimbabwe
-            => 'Afrika',
+            self::Zimbabwe => 'Afrika',
 
             self::Anguilla,
             self::AntiguaAndBarbuda,
@@ -737,8 +734,7 @@ enum CountryCode: string {
             self::Uruguay,
             self::VirginIslandsBritish,
             self::VirginIslandsUS,
-            self::VenezuelaBolivarianRepublicOf
-            => 'Amerika',
+            self::VenezuelaBolivarianRepublicOf => 'Amerika',
 
             self::Afghanistan,
             self::Armenia,
@@ -790,8 +786,7 @@ enum CountryCode: string {
             self::UnitedArabEmirates,
             self::Uzbekistan,
             self::VietNam,
-            self::Yemen
-            => 'Asien',
+            self::Yemen => 'Asien',
 
             self::Albania,
             self::Andorra,
@@ -844,8 +839,7 @@ enum CountryCode: string {
             self::Sweden,
             self::Switzerland,
             self::Ukraine,
-            self::UnitedKingdomOfGreatBritainAndNorthernIreland
-            => 'Europa',
+            self::UnitedKingdomOfGreatBritainAndNorthernIreland => 'Europa',
 
             self::AmericanSamoa,
             self::Australia,
@@ -871,14 +865,12 @@ enum CountryCode: string {
             self::Tonga,
             self::Tuvalu,
             self::Vanuatu,
-            self::WallisAndFutuna
-            => 'Ozeanien',
+            self::WallisAndFutuna => 'Ozeanien',
 
             self::Antarctica,
             self::FrenchSouthernTerritories,
             self::BouvetIsland,
-            self::SouthGeorgiaAndTheSouthSandwichIslands
-            => 'Antarktis',
+            self::SouthGeorgiaAndTheSouthSandwichIslands => 'Antarktis',
 
             default => 'Unbekannt',
         };
@@ -1084,7 +1076,7 @@ enum CountryCode: string {
      * @return self[]
      */
     public static function getIBANCountries(): array {
-        return array_filter(self::cases(), fn(self $country) => $country->hasIBAN());
+        return array_filter(self::cases(), fn (self $country) => $country->hasIBAN());
     }
 
     /**
@@ -1093,6 +1085,6 @@ enum CountryCode: string {
      * @return self[]
      */
     public static function getSEPACountries(): array {
-        return array_filter(self::cases(), fn(self $country) => $country->isSEPA());
+        return array_filter(self::cases(), fn (self $country) => $country->isSEPA());
     }
 }

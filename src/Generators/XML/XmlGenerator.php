@@ -13,25 +13,21 @@ declare(strict_types=1);
 namespace CommonToolkit\Generators\XML;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
-use CommonToolkit\Contracts\Interfaces\XML\XmlDocumentInterface;
-use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
+use CommonToolkit\Contracts\Interfaces\XML\{XmlDocumentInterface, XmlElementInterface};
 use CommonToolkit\Helper\FileSystem\File;
 use DOMDocument;
 use RuntimeException;
 
 /**
  * Generator für XML-Dokumente.
- * 
+ *
  * Bietet erweiterte Generierungsfunktionen für XML-Dokumente:
  * - Pretty-Print Formatierung
  * - XSD-Schema-Location hinzufügen
  * - Namespace-Management
  * - Batch-Generierung
- * 
- * @package CommonToolkit\Generators\XML
  */
 class XmlGenerator extends HelperAbstract {
-
     /**
      * Generiert XML-String aus einem Dokument.
      */
@@ -65,7 +61,7 @@ class XmlGenerator extends HelperAbstract {
 
     /**
      * Generiert XML mit Schema-Location.
-     * 
+     *
      * @param XmlDocumentInterface $document Das Dokument
      * @param string $schemaLocation XSD Schema-Location (z.B. "urn:iso:std:iso:20022:tech:xsd:pain.001.003.03 pain.001.003.03.xsd")
      */
@@ -95,7 +91,7 @@ class XmlGenerator extends HelperAbstract {
 
     /**
      * Speichert ein Dokument in eine Datei.
-     * 
+     *
      * @throws RuntimeException Bei Fehlern
      */
     public static function toFile(XmlDocumentInterface $document, string $filePath, bool $formatOutput = true): void {
@@ -105,7 +101,7 @@ class XmlGenerator extends HelperAbstract {
 
     /**
      * Speichert mehrere Dokumente in Dateien.
-     * 
+     *
      * @param array<string, XmlDocumentInterface> $documents Mapping von Dateipfad zu Dokument
      * @return array{success: string[], failed: string[]} Ergebnis
      */
@@ -149,7 +145,7 @@ class XmlGenerator extends HelperAbstract {
 
     /**
      * Generiert XML mit zusätzlichen Namespace-Deklarationen im Root.
-     * 
+     *
      * @param array<string, string> $namespaces Mapping von Prefix zu URI
      */
     public static function generateWithNamespaces(

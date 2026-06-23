@@ -14,11 +14,11 @@ namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Contracts\Abstracts\{HelperAbstract, TextDocumentAbstract};
-use CommonToolkit\Entities\CSV\{HeaderLine, DataLine};
+use CommonToolkit\Contracts\Interfaces\CSV\{FieldInterface, LineInterface};
+use CommonToolkit\Entities\CSV\{DataLine, HeaderLine};
+use CommonToolkit\Entities\CSV\Document;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use CommonToolkit\Helper\Data\StringHelper as DataStringHelper;
-use CommonToolkit\Contracts\Interfaces\CSV\{LineInterface, FieldInterface};
-use CommonToolkit\Entities\CSV\Document;
 use CommonToolkit\Helper\FileSystem\File;
 use CommonToolkit\Helper\FileSystem\FileTypes\CsvFile;
 use Generator;
@@ -41,7 +41,6 @@ use Throwable;
  * @see \CommonToolkit\Helper\Data\CSV\StringHelper Für String-Operationen
  */
 class CSVDocumentParser extends HelperAbstract {
-
     /**
      * Erkennt automatisch das Trennzeichen einer CSV-Datei.
      * Delegiert an CsvFile::detectDelimiter().
@@ -544,7 +543,6 @@ class CSVDocumentParser extends HelperAbstract {
      * @param string $delimiter Delimiter
      * @param string $enclosure Enclosure
      * @param int $lineNumber Zeilennummer für Fehlermeldungen
-     * @return HeaderLine
      * @throws RuntimeException Bei Parsing-Fehlern
      */
     private static function parseHeaderLine(string $line, string $delimiter, string $enclosure, int $lineNumber): HeaderLine {
@@ -563,7 +561,6 @@ class CSVDocumentParser extends HelperAbstract {
      * @param string $delimiter Delimiter
      * @param string $enclosure Enclosure
      * @param int $lineNumber Zeilennummer für Fehlermeldungen
-     * @return DataLine
      * @throws RuntimeException Bei Parsing-Fehlern
      */
     private static function parseDataLine(string $line, string $delimiter, string $enclosure, int $lineNumber): DataLine {

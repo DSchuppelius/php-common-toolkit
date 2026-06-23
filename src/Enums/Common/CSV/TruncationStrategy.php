@@ -14,10 +14,8 @@ namespace CommonToolkit\Enums\Common\CSV;
 
 /**
  * Enum für CSV-Truncation-Strategien.
- * 
+ *
  * Definiert wie Felder gekürzt werden, wenn sie die maximale Länge überschreiten.
- * 
- * @package CommonToolkit\Enums\Common\CSV
  */
 enum TruncationStrategy: string {
     /**

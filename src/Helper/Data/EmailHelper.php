@@ -22,8 +22,6 @@ use ERRORToolkit\Traits\ErrorLog;
  * - Domain-Extraktion und -Prüfung
  * - Normalisierung
  * - Wegwerf-E-Mail-Erkennung (optional)
- *
- * @package CommonToolkit\Helper\Data
  */
 class EmailHelper {
     use ErrorLog;

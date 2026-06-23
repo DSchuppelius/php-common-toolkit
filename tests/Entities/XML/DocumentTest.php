@@ -12,14 +12,12 @@ declare(strict_types=1);
 
 namespace Tests\Entities\XML;
 
-use CommonToolkit\Entities\XML\Document;
-use CommonToolkit\Entities\XML\Element;
-use PHPUnit\Framework\TestCase;
+use CommonToolkit\Entities\XML\{Document, Element};
 use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 
 class DocumentTest extends TestCase {
-
-    public function testCreateDocument(): void {
+    public function test_create_document(): void {
         $root = Element::simple('root', 'content');
         $doc = new Document($root);
 
@@ -29,14 +27,14 @@ class DocumentTest extends TestCase {
         $this->assertNull($doc->getNamespace());
     }
 
-    public function testCreateWithNamespace(): void {
+    public function test_create_with_namespace(): void {
         $root = Element::simple('root', null, 'http://example.com', 'ex');
         $doc = new Document($root);
 
         $this->assertSame('http://example.com', $doc->getNamespace());
     }
 
-    public function testToString(): void {
+    public function test_to_string(): void {
         $root = Element::simple('greeting', 'Hello World');
         $doc = new Document($root);
 
@@ -46,7 +44,7 @@ class DocumentTest extends TestCase {
         $this->assertStringContainsString('<greeting>Hello World</greeting>', $xml);
     }
 
-    public function testFromString(): void {
+    public function test_from_string(): void {
         $xml = '<?xml version="1.0" encoding="UTF-8"?><root><child>value</child></root>';
         $doc = Document::fromString($xml);
 
@@ -57,17 +55,17 @@ class DocumentTest extends TestCase {
         $this->assertSame('value', $root->getChildValue('child'));
     }
 
-    public function testFromStringInvalid(): void {
+    public function test_from_string_invalid(): void {
         $this->expectException(InvalidArgumentException::class);
         Document::fromString('<invalid><xml>');
     }
 
-    public function testFromStringNoRoot(): void {
+    public function test_from_string_no_root(): void {
         $this->expectException(InvalidArgumentException::class);
         Document::fromString('<?xml version="1.0"?>');
     }
 
-    public function testToDomDocument(): void {
+    public function test_to_dom_document(): void {
         $root = Element::simple('root');
         $doc = new Document($root);
 
@@ -77,14 +75,14 @@ class DocumentTest extends TestCase {
         $this->assertSame('root', $dom->documentElement->tagName);
     }
 
-    public function testIsWellFormed(): void {
+    public function test_is_well_formed(): void {
         $root = Element::simple('root');
         $doc = new Document($root);
 
         $this->assertTrue($doc->isWellFormed());
     }
 
-    public function testWithMethods(): void {
+    public function test_with_methods(): void {
         $root = Element::simple('root');
         $doc = new Document($root);
 
@@ -104,21 +102,21 @@ class DocumentTest extends TestCase {
         $this->assertSame('newRoot', $withNewRoot->getRootElementName());
     }
 
-    public function testCreate(): void {
+    public function test_create(): void {
         $doc = Document::create('root');
 
         $this->assertSame('root', $doc->getRootElementName());
         $this->assertNull($doc->getNamespace());
     }
 
-    public function testCreateWithNamespaceFactory(): void {
+    public function test_create_with_namespace_factory(): void {
         $doc = Document::create('root', 'http://example.com', 'ex');
 
         $this->assertSame('root', $doc->getRootElementName());
         $this->assertSame('http://example.com', $doc->getNamespace());
     }
 
-    public function testComplexDocument(): void {
+    public function test_complex_document(): void {
         $children = [
             Element::simple('name', 'John'),
             Element::simple('age', '30'),
@@ -140,7 +138,7 @@ class DocumentTest extends TestCase {
         $this->assertStringContainsString('<city>Berlin</city>', $xml);
     }
 
-    public function testRoundTrip(): void {
+    public function test_round_trip(): void {
         $originalXml = '<?xml version="1.0" encoding="UTF-8"?>
 <root>
   <item id="1">First</item>

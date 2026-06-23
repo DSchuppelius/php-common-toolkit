@@ -27,82 +27,82 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testMimeType() {
+    public function test_mime_type() {
         $mimeType = File::mimeType($this->testFile);
         $this->assertEquals('text/plain', $mimeType);
     }
 
-    public function testMimeEncoding() {
+    public function test_mime_encoding() {
         $encoding = File::mimeEncoding($this->testFile);
         $this->assertIsString($encoding);
         $this->assertNotEmpty($encoding);
     }
 
-    public function testChardet() {
+    public function test_chardet() {
         $encoding = File::chardet($this->testFile);
         $this->assertIsString($encoding);
         $this->assertNotEmpty($encoding);
     }
 
-    public function testMimeTypeFailure() {
+    public function test_mime_type_failure() {
         $invalidFile = '/path/to/nonexistent/file';
         $this->assertFalse(File::mimeType($invalidFile));
     }
 
-    public function testMimeEncodingFailure() {
+    public function test_mime_encoding_failure() {
         $invalidFile = '/path/to/nonexistent/file';
         $this->assertFalse(File::mimeEncoding($invalidFile));
     }
 
-    public function testChardetFailure() {
+    public function test_chardet_failure() {
         $invalidFile = '/path/to/nonexistent/file';
         $this->assertFalse(File::chardet($invalidFile));
     }
 
-    public function testFileExistsReturnsTrueForExistingFile() {
+    public function test_file_exists_returns_true_for_existing_file() {
         $testFile = tempnam(sys_get_temp_dir(), 'test');
         $this->assertTrue(File::exists($testFile));
         unlink($testFile);
     }
 
-    public function testFileExistsReturnsFalseForNonExistingFile() {
+    public function test_file_exists_returns_false_for_non_existing_file() {
         $nonExistingFile = '/path/to/non/existing/file.txt';
         $this->assertFalse(File::exists($nonExistingFile));
     }
 
-    public function testReadReturnsContent() {
+    public function test_read_returns_content() {
         $content = File::read($this->testFile);
         $this->assertEquals('This is a test file.', $content);
     }
 
-    public function testWriteOverwritesFile() {
+    public function test_write_overwrites_file() {
         File::write($this->testFile, 'Updated content');
         $this->assertEquals('Updated content', file_get_contents($this->testFile));
     }
 
-    public function testDeleteRemovesFile() {
+    public function test_delete_removes_file() {
         File::delete($this->testFile);
         $this->assertFileDoesNotExist($this->testFile);
     }
 
-    public function testSizeReturnsCorrectFileSize() {
+    public function test_size_returns_correct_file_size() {
         $size = File::size($this->testFile);
         $this->assertEquals(strlen('This is a test file.'), $size);
     }
 
-    public function testIsReadableReturnsTrue() {
+    public function test_is_readable_returns_true() {
         $this->assertTrue(File::isReadable($this->testFile));
     }
 
-    public function testIsReadyReturnsTrue() {
+    public function test_is_ready_returns_true() {
         $this->assertTrue(File::isReady($this->testFile));
     }
 
-    public function testWait4ReadyReturnsTrueImmediately() {
+    public function test_wait4_ready_returns_true_immediately() {
         $this->assertTrue(File::wait4Ready($this->testFile));
     }
 
-    public function testCreateNewFile() {
+    public function test_create_new_file() {
         $newFile = sys_get_temp_dir() . '/created_test_file.txt';
         File::create($newFile, 0644, 'Hello world');
         $this->assertFileExists($newFile);
@@ -110,7 +110,7 @@ class FileTest extends BaseTestCase {
         unlink($newFile);
     }
 
-    public function testRenameFile() {
+    public function test_rename_file() {
         $newName = $this->testFile . '_renamed';
         File::rename($this->testFile, $newName);
         $this->assertFileExists($newName);
@@ -118,7 +118,7 @@ class FileTest extends BaseTestCase {
         unlink($newName);
     }
 
-    public function testCopyFile() {
+    public function test_copy_file() {
         $copyTarget = $this->testFile . '_copy';
         File::copy($this->testFile, $copyTarget);
         $this->assertFileExists($copyTarget);
@@ -126,7 +126,7 @@ class FileTest extends BaseTestCase {
         unlink($copyTarget);
     }
 
-    public function testMoveFile() {
+    public function test_move_file() {
         $moveTarget = $this->testFile . '_moved';
         File::move($this->testFile, sys_get_temp_dir(), basename($moveTarget));
         $this->assertFileExists($moveTarget);
@@ -134,70 +134,70 @@ class FileTest extends BaseTestCase {
         unlink($moveTarget);
     }
 
-    public function testContainsKeywordFindsMatch() {
+    public function test_contains_keyword_finds_match() {
         $this->assertTrue(File::containsKeyword($this->testFile, 'test'));
     }
 
-    public function testContainsKeywordReturnsFalseOnNoMatch() {
+    public function test_contains_keyword_returns_false_on_no_match() {
         $this->assertFalse(File::containsKeyword($this->testFile, 'xyz123'));
     }
 
-    public function testLineCount() {
+    public function test_line_count() {
         file_put_contents($this->testFile, "line1\nline2\nline3\n");
         $this->assertEquals(4, File::lineCount($this->testFile));
     }
 
-    public function testCharCount() {
+    public function test_char_count() {
         file_put_contents($this->testFile, "abc123");
         $this->assertEquals(6, File::charCount($this->testFile));
     }
 
-    public function testIsWindowsReservedNameDetectsNUL() {
+    public function test_is_windows_reserved_name_detects_nul() {
         $this->assertTrue(File::isWindowsReservedName('/path/to/NUL'));
         $this->assertTrue(File::isWindowsReservedName('/path/to/nul'));
         $this->assertTrue(File::isWindowsReservedName('/path/to/NUL.txt'));
         $this->assertTrue(File::isWindowsReservedName('NUL'));
     }
 
-    public function testIsWindowsReservedNameDetectsAllReservedNames() {
+    public function test_is_windows_reserved_name_detects_all_reserved_names() {
         foreach (File::WINDOWS_RESERVED_NAMES as $name) {
             $this->assertTrue(File::isWindowsReservedName("/path/to/$name"), "Failed for $name");
             $this->assertTrue(File::isWindowsReservedName("/path/to/$name.txt"), "Failed for $name.txt");
         }
     }
 
-    public function testIsWindowsReservedNameReturnsFalseForNormalFiles() {
+    public function test_is_windows_reserved_name_returns_false_for_normal_files() {
         $this->assertFalse(File::isWindowsReservedName('/path/to/normal.txt'));
         $this->assertFalse(File::isWindowsReservedName('/path/to/file'));
         $this->assertFalse(File::isWindowsReservedName('/path/to/NULLABLE.txt'));
         $this->assertFalse(File::isWindowsReservedName('/path/to/connect.log'));
     }
 
-    public function testExistsReturnsFalseForWindowsReservedNames() {
+    public function test_exists_returns_false_for_windows_reserved_names() {
         $this->assertFalse(File::exists('/tmp/NUL'));
         $this->assertFalse(File::exists('/tmp/CON'));
         $this->assertFalse(File::exists('/tmp/PRN'));
     }
 
-    public function testWriteThrowsExceptionForWindowsReservedName() {
+    public function test_write_throws_exception_for_windows_reserved_name() {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Windows-reservierter Gerätename');
         File::write('/tmp/NUL', 'test');
     }
 
-    public function testCreateThrowsExceptionForWindowsReservedName() {
+    public function test_create_throws_exception_for_windows_reserved_name() {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Windows-reservierter Gerätename');
         File::create('/tmp/NUL.txt');
     }
 
-    public function testRenameThrowsExceptionForWindowsReservedName() {
+    public function test_rename_throws_exception_for_windows_reserved_name() {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Windows-reservierter Gerätename');
         File::rename($this->testFile, '/tmp/NUL');
     }
 
-    public function testReadAsUtf8WithAnsiCsv(): void {
+    public function test_read_as_utf8_with_ansi_csv(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
         $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');
 
@@ -221,7 +221,7 @@ class FileTest extends BaseTestCase {
         $this->assertStringContainsString('Straße', $content, 'Straße muss korrekt konvertiert sein');
     }
 
-    public function testReadLinesAsUtf8WithAnsiCsv(): void {
+    public function test_read_lines_as_utf8_with_ansi_csv(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
         $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');
 
@@ -240,7 +240,7 @@ class FileTest extends BaseTestCase {
         $this->assertStringContainsString('Straße', $allContent, 'Straße muss im Header korrekt konvertiert sein');
     }
 
-    public function testReadLinesAsUtf8WithSkipEmpty(): void {
+    public function test_read_lines_as_utf8_with_skip_empty(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
 
         $linesAll = iterator_to_array(File::readLinesAsUtf8($ansiFile, false));
@@ -252,7 +252,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testReadLinesAsUtf8WithMaxLines(): void {
+    public function test_read_lines_as_utf8_with_max_lines(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
 
         $lines = iterator_to_array(File::readLinesAsUtf8($ansiFile, false, 2));
@@ -262,7 +262,7 @@ class FileTest extends BaseTestCase {
         $this->assertTrue(mb_check_encoding($lines[1], 'UTF-8'), 'Zweite Zeile muss gültiges UTF-8 sein');
     }
 
-    public function testReadLinesAsUtf8WithStartLine(): void {
+    public function test_read_lines_as_utf8_with_start_line(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
 
         // Ab Zeile 2 lesen (überspringt Header)
@@ -275,7 +275,7 @@ class FileTest extends BaseTestCase {
         $this->assertStringNotContainsString('Hausnummer', $lines[0], 'Header sollte übersprungen sein');
     }
 
-    public function testReadLinesAsArrayUtf8(): void {
+    public function test_read_lines_as_array_utf8(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
 
         $lines = File::readLinesAsArrayUtf8($ansiFile);
@@ -293,7 +293,7 @@ class FileTest extends BaseTestCase {
         $this->assertStringContainsString('Köln', $allContent);
     }
 
-    public function testTailReturnsLastLines(): void {
+    public function test_tail_returns_last_lines(): void {
         // Erstelle Testdatei mit mehreren Zeilen
         $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
         $content = "Zeile 1\nZeile 2\nZeile 3\nZeile 4\nZeile 5\nZeile 6\nZeile 7\nZeile 8\nZeile 9\nZeile 10";
@@ -311,7 +311,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testTailWithDefaultLines(): void {
+    public function test_tail_with_default_lines(): void {
         // Erstelle Testdatei mit mehr als 10 Zeilen
         $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
         $lines = [];
@@ -331,7 +331,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testTailWithSkipEmpty(): void {
+    public function test_tail_with_skip_empty(): void {
         $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
         $content = "Zeile 1\n\nZeile 2\n\n\nZeile 3\nZeile 4\n\nZeile 5";
         file_put_contents($testFile, $content);
@@ -350,7 +350,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testTailWithEmptyFile(): void {
+    public function test_tail_with_empty_file(): void {
         $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
         file_put_contents($testFile, '');
 
@@ -362,7 +362,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testTailWithFewerLinesThanRequested(): void {
+    public function test_tail_with_fewer_lines_than_requested(): void {
         $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
         $content = "Zeile 1\nZeile 2\nZeile 3";
         file_put_contents($testFile, $content);
@@ -379,17 +379,17 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testTailThrowsExceptionForInvalidLines(): void {
+    public function test_tail_throws_exception_for_invalid_lines(): void {
         $this->expectException(\InvalidArgumentException::class);
         File::tail($this->testFile, 0);
     }
 
-    public function testTailThrowsExceptionForNonExistingFile(): void {
+    public function test_tail_throws_exception_for_non_existing_file(): void {
         $this->expectException(\ERRORToolkit\Exceptions\FileSystem\FileNotFoundException::class);
         File::tail('/path/to/nonexistent/file.txt', 10);
     }
 
-    public function testTailAsUtf8(): void {
+    public function test_tail_as_utf8(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
 
         $lines = File::tailAsUtf8($ansiFile, 5);
@@ -403,7 +403,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testTailWithWindowsLineEndings(): void {
+    public function test_tail_with_windows_line_endings(): void {
         $testFile = tempnam(sys_get_temp_dir(), 'tail_test');
         $content = "Zeile 1\r\nZeile 2\r\nZeile 3\r\nZeile 4\r\nZeile 5";
         file_put_contents($testFile, $content);
@@ -420,7 +420,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testIsBlockedByOpenBasedirWithNoRestriction(): void {
+    public function test_is_blocked_by_open_basedir_with_no_restriction(): void {
         // Wenn open_basedir nicht gesetzt ist, sollte nichts blockiert sein
         $currentOpenBasedir = ini_get('open_basedir');
 
@@ -433,7 +433,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testIsBlockedByOpenBasedirWithAllowedPath(): void {
+    public function test_is_blocked_by_open_basedir_with_allowed_path(): void {
         // Test mit temporärem Verzeichnis, das normalerweise erlaubt ist
         $tempDir = sys_get_temp_dir();
         $testFile = tempnam($tempDir, 'basedir_test');
@@ -446,7 +446,7 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function testExistsReturnsFalseForBlockedPath(): void {
+    public function test_exists_returns_false_for_blocked_path(): void {
         // Dieser Test prüft indirekt die open_basedir-Integration in exists()
         // Bei einem blockierten Pfad sollte exists() false zurückgeben
         $currentOpenBasedir = ini_get('open_basedir');
@@ -463,29 +463,29 @@ class FileTest extends BaseTestCase {
         $this->assertFalse(File::exists('/nonexistent/path/file.txt'));
     }
 
-    public function testSanitizeFilenameBasic(): void {
+    public function test_sanitize_filename_basic(): void {
         $this->assertSame('mein-dokument', File::sanitizeFilename('mein-dokument.csv'));
         $this->assertSame('export-2026', File::sanitizeFilename('export-2026.xlsx'));
         $this->assertSame('Kontoauszug_2026', File::sanitizeFilename('Kontoauszug 2026.pdf'));
     }
 
-    public function testSanitizeFilenameWithPath(): void {
+    public function test_sanitize_filename_with_path(): void {
         $this->assertSame('report', File::sanitizeFilename('/home/user/downloads/report.csv'));
         // Windows-Pfade: basename() auf Linux erkennt \ nicht als Trenner
         $this->assertSame('data', File::sanitizeFilename('C:/Users/test/data.txt'));
     }
 
-    public function testSanitizeFilenameSpecialChars(): void {
+    public function test_sanitize_filename_special_chars(): void {
         $this->assertSame('Umsatz_bersicht_M_rz', File::sanitizeFilename('Umsatzübersicht März.csv'));
         $this->assertSame('file_with_many_spaces', File::sanitizeFilename('file   with   many   spaces.txt'));
     }
 
-    public function testSanitizeFilenameEmpty(): void {
+    public function test_sanitize_filename_empty(): void {
         $this->assertSame('', File::sanitizeFilename(''));
         $this->assertSame('', File::sanitizeFilename('.csv'));
     }
 
-    public function testSanitizeFilenameMaxLength(): void {
+    public function test_sanitize_filename_max_length(): void {
         $longName = str_repeat('a', 300) . '.txt';
         $result = File::sanitizeFilename($longName);
         $this->assertLessThanOrEqual(255, strlen($result));
@@ -494,25 +494,25 @@ class FileTest extends BaseTestCase {
         $this->assertLessThanOrEqual(10, strlen($result10));
     }
 
-    public function testSanitizeFilenameWindowsReserved(): void {
+    public function test_sanitize_filename_windows_reserved(): void {
         $this->assertSame('_CON', File::sanitizeFilename('CON.txt'));
         $this->assertSame('_NUL', File::sanitizeFilename('NUL.csv'));
     }
 
-    public function testSanitizeFilenameKeepExtension(): void {
+    public function test_sanitize_filename_keep_extension(): void {
         $this->assertSame('mein-dokument.csv', File::sanitizeFilename('mein-dokument.csv', true));
         $this->assertSame('Kontoauszug_2026.pdf', File::sanitizeFilename('Kontoauszug 2026.pdf', true));
         $this->assertSame('report.csv', File::sanitizeFilename('/home/user/downloads/report.csv', true));
     }
 
-    public function testSanitizeFilenameKeepExtensionSpecialChars(): void {
+    public function test_sanitize_filename_keep_extension_special_chars(): void {
         // Extension mit Sonderzeichen wird bereinigt ($ wird entfernt)
         $this->assertSame('test.cv', File::sanitizeFilename('test.c$v', true));
         // Ohne Extension bleibt ohne Extension
         $this->assertSame('', File::sanitizeFilename('.csv', true));
     }
 
-    public function testSanitizeFilenameKeepExtensionWindowsReserved(): void {
+    public function test_sanitize_filename_keep_extension_windows_reserved(): void {
         $this->assertSame('_CON.txt', File::sanitizeFilename('CON.txt', true));
         $this->assertSame('_NUL.csv', File::sanitizeFilename('NUL.csv', true));
     }

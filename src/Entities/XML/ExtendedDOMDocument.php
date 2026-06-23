@@ -25,7 +25,7 @@ use RuntimeException;
 
 /**
  * Erweiterte DOMDocument-Klasse mit XPath-Hilfsmethoden.
- * 
+ *
  * Bietet erweiterte Funktionalität für XML-Parsing:
  * - Automatische Namespace-Erkennung und -Registrierung
  * - XPath-Hilfsmethoden (xpathString, xpathStringWithFallback)
@@ -33,14 +33,14 @@ use RuntimeException;
  * - Datentyp-Konvertierung (parseAmount, parseDateTime, parseAmountWithCurrency)
  * - Integration mit CommonToolkit XML-Entities
  * - PSR-3 konformes Logging
- * 
+ *
  * Verwendung:
  * ```php
  * $doc = ExtendedDOMDocumentParser::fromString($xmlContent);
  * $value = $doc->xpathString('//ns:Element/ns:Value');
  * $nodes = $doc->findNodes('//ns:Items/ns:Item');
  * ```
- * 
+ *
  * @see ExtendedDOMDocumentParser Factory-Methoden zum Erstellen
  */
 class ExtendedDOMDocument extends DOMDocument {
@@ -59,7 +59,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Initialisiert das Dokument aus einem XML-String.
-     * 
+     *
      * @param string $xmlContent Der XML-Inhalt
      * @throws RuntimeException Bei ungültigem XML
      * @internal Wird vom ExtendedDOMDocumentParser aufgerufen
@@ -80,7 +80,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Initialisiert XPath mit automatischer Namespace-Erkennung.
-     * 
+     *
      * @internal Wird vom ExtendedDOMDocumentParser aufgerufen
      */
     public function initializeXPath(): void {
@@ -96,7 +96,7 @@ class ExtendedDOMDocument extends DOMDocument {
     /**
      * Erkennt den Namespace des XML-Dokuments.
      * Kann von Unterklassen überschrieben werden.
-     * 
+     *
      * @return string|null Der erkannte Namespace oder null
      */
     protected function detectNamespace(): ?string {
@@ -121,7 +121,7 @@ class ExtendedDOMDocument extends DOMDocument {
     /**
      * Gibt den zu verwendenden Namespace-Prefix zurück.
      * Kann von Unterklassen überschrieben werden.
-     * 
+     *
      * @return string Der Namespace-Prefix (z.B. 'ns', 'p', 'camt')
      */
     public function getNamespacePrefix(): string {
@@ -130,7 +130,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Registriert einen Namespace im XPath.
-     * 
+     *
      * @param string $prefix Der Namespace-Prefix
      * @param string $namespace Die Namespace-URI
      */
@@ -163,7 +163,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Gibt das Namespace-Mapping für XPath-Queries zurück.
-     * 
+     *
      * @return array<string, string>
      */
     public function getNamespaceMapping(): array {
@@ -182,7 +182,7 @@ class ExtendedDOMDocument extends DOMDocument {
     /**
      * Evaluiert einen XPath-Ausdruck und gibt einen String oder null zurück.
      * Fügt automatisch string(...) hinzu, wenn nicht vorhanden.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return string|null Ergebnis oder null wenn leer
@@ -197,12 +197,12 @@ class ExtendedDOMDocument extends DOMDocument {
             ? $this->xpath->evaluate($expression, $context)
             : $this->xpath->evaluate($expression);
 
-        return !empty($result) ? (string)$result : null;
+        return !empty($result) ? (string) $result : null;
     }
 
     /**
      * Evaluiert einen XPath-Ausdruck mit Fallback-Alternativen.
-     * 
+     *
      * @param array<string> $expressions Liste von XPath-Ausdrücken
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return string|null Erstes nicht-leeres Ergebnis oder null
@@ -219,7 +219,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Evaluiert einen XPath-Ausdruck und gibt das Ergebnis zurück.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return mixed Das Evaluierungsergebnis
@@ -232,7 +232,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Findet einen Node via XPath.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return DOMNode|null Der gefundene Node oder null
@@ -247,7 +247,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Findet einen erforderlichen Node via XPath.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param string $errorMessage Fehlermeldung wenn nicht gefunden
      * @param DOMNode|null $context Kontext-Node (optional)
@@ -264,7 +264,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Findet alle Nodes via XPath.
-     * 
+     *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
      * @return DOMNodeList<DOMNode> Die gefundenen Nodes
@@ -281,7 +281,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Parst einen Betrag aus einem String.
-     * 
+     *
      * @param string|null $amountStr Betrags-String
      * @return float Betrag als Float
      */
@@ -294,7 +294,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Parst einen Betrag mit Währung aus einem Element mit Ccy-Attribut.
-     * 
+     *
      * @param string $amountPath XPath zum Betrags-Element
      * @param DOMNode $context Kontext-Node
      * @param CurrencyCode $default Standard-Währung
@@ -321,7 +321,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Parst einen Betrag mit Währung aus einem CommonToolkit Element.
-     * 
+     *
      * @param Element $element Element mit Ccy-Attribut
      * @param CurrencyCode $default Standard-Währung
      * @return array{amount: float, currency: CurrencyCode}
@@ -339,10 +339,9 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Parst einen DateTime-String zu DateTimeImmutable.
-     * 
+     *
      * @param string|null $dateTimeStr Der DateTime-String
      * @param DateTimeImmutable|null $default Standardwert wenn leer
-     * @return DateTimeImmutable|null
      */
     public function parseDateTime(?string $dateTimeStr, ?DateTimeImmutable $default = null): ?DateTimeImmutable {
         if (empty($dateTimeStr)) {
@@ -353,7 +352,7 @@ class ExtendedDOMDocument extends DOMDocument {
 
     /**
      * Konvertiert leere Strings zu null.
-     * 
+     *
      * @param string $value Der String
      * @return string|null Null wenn leer, sonst der String
      */

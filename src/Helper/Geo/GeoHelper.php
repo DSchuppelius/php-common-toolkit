@@ -73,8 +73,6 @@ final class GeoHelper {
      * übergeben werden.
      *
      * @param iterable<array-key, array<array-key, int|float>> $points
-     * @param int|string $latKey
-     * @param int|string $lonKey
      */
     public static function trackLengthKm(iterable $points, int|string $latKey = 'lat', int|string $lonKey = 'lon'): float {
         $total = 0.0;
@@ -137,8 +135,6 @@ final class GeoHelper {
      * Ermittelt den umschließenden Koordinatenbereich einer Punktfolge.
      *
      * @param iterable<array-key, array<array-key, int|float>> $points
-     * @param int|string $latKey
-     * @param int|string $lonKey
      * @return array{minLat: float, maxLat: float, minLon: float, maxLon: float}
      */
     public static function boundingBox(iterable $points, int|string $latKey = 'lat', int|string $lonKey = 'lon'): array {

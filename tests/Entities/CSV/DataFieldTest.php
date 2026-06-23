@@ -16,7 +16,7 @@ use CommonToolkit\Entities\CSV\DataField;
 use Tests\Contracts\BaseTestCase;
 
 class DataFieldTest extends BaseTestCase {
-    public function testSimpleQuotedValue(): void {
+    public function test_simple_quoted_value(): void {
         $field = new DataField('"ABC"');
         $this->assertTrue($field->isQuoted(), 'Feld sollte gequotet sein');
         $this->assertSame('ABC', $field->getValue());
@@ -24,7 +24,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('"ABC"', $field->toString());
     }
 
-    public function testUnquotedValue(): void {
+    public function test_unquoted_value(): void {
         $field = new DataField('ABC');
         $this->assertFalse($field->isQuoted());
         $this->assertSame('ABC', $field->getValue());
@@ -32,7 +32,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('ABC', $field->toString());
     }
 
-    public function testEmptyQuotedValue(): void {
+    public function test_empty_quoted_value(): void {
         $field = new DataField('""');
         $this->assertTrue($field->isQuoted());
         $this->assertSame('', $field->getValue());
@@ -40,7 +40,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('""', $field->toString());
     }
 
-    public function testRepeatedEnclosures(): void {
+    public function test_repeated_enclosures(): void {
         $tests = [
             // reine leere Felder
             ['raw' => '""',        'expected_value' => '',       'expected_repeat' => 1],
@@ -85,14 +85,14 @@ class DataFieldTest extends BaseTestCase {
             );
         }
     }
-    public function testEscapedQuotesInsideValue(): void {
+    public function test_escaped_quotes_inside_value(): void {
         $field = new DataField('"A ""quoted"" text"');
         $this->assertTrue($field->isQuoted());
         $this->assertSame('A ""quoted"" text', $field->getValue());
         $this->assertSame('"A ""quoted"" text"', $field->toString());
     }
 
-    public function testWhitespaceAroundValue(): void {
+    public function test_whitespace_around_value(): void {
         $raw = ' "ABC" ';
         $field = new DataField($raw);
         $this->assertTrue($field->isQuoted(), 'Whitespace außen soll erkannt werden');
@@ -102,27 +102,27 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('"ABC"', $field->toString(null, true), 'toString(trimmed: true) identisch');
     }
 
-    public function testRawValuePreserved(): void {
+    public function test_raw_value_preserved(): void {
         $raw = '"ABC"';
         $field = new DataField($raw);
         $this->assertSame($raw, $field->getRaw());
     }
 
-    public function testDifferentEnclosureCharacter(): void {
+    public function test_different_enclosure_character(): void {
         $field = new DataField("'XYZ'", "'");
         $this->assertTrue($field->isQuoted());
         $this->assertSame('XYZ', $field->getValue());
         $this->assertSame("'XYZ'", $field->toString("'"));
     }
 
-    public function testNonMatchingQuoteDoesNotQuote(): void {
+    public function test_non_matching_quote_does_not_quote(): void {
         $field = new DataField('"ABC');
         $this->assertFalse($field->isQuoted(), 'Ungeschlossene Quotes dürfen nicht als Quote erkannt werden');
         $this->assertSame('"ABC', $field->getValue());
         $this->assertSame('"ABC', $field->toString());
     }
 
-    public function testEmptyFieldWithoutQuotes(): void {
+    public function test_empty_field_without_quotes(): void {
         $field = new DataField('');
         $this->assertFalse($field->isQuoted());
         $this->assertSame('', $field->getValue());
@@ -132,7 +132,7 @@ class DataFieldTest extends BaseTestCase {
 
     // ========== Tests für setValue() ==========
 
-    public function testSetValueChangesValueMutably(): void {
+    public function test_set_value_changes_value_mutably(): void {
         $field = new DataField('"ABC"');
         $this->assertSame('ABC', $field->getValue());
 
@@ -141,7 +141,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertTrue($field->isQuoted(), 'Quote-Status bleibt erhalten');
     }
 
-    public function testSetValueWithUnquotedFieldDetectsTypes(): void {
+    public function test_set_value_with_unquoted_field_detects_types(): void {
         $field = new DataField('test');
         $this->assertFalse($field->isQuoted());
 
@@ -155,7 +155,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertTrue($field->getTypedValue(), 'Boolean sollte erkannt werden');
     }
 
-    public function testSetValueWithQuotedFieldPreservesStringType(): void {
+    public function test_set_value_with_quoted_field_preserves_string_type(): void {
         $field = new DataField('"test"');
         $this->assertTrue($field->isQuoted());
 
@@ -165,7 +165,7 @@ class DataFieldTest extends BaseTestCase {
 
     // ========== Tests für withValue() ==========
 
-    public function testWithValueReturnsNewInstance(): void {
+    public function test_with_value_returns_new_instance(): void {
         $original = new DataField('"ABC"');
         $new = $original->withValue('XYZ');
 
@@ -174,7 +174,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('XYZ', $new->getValue(), 'Neue Instanz hat neuen Wert');
     }
 
-    public function testWithValuePreservesQuotedStatus(): void {
+    public function test_with_value_preserves_quoted_status(): void {
         $quoted = new DataField('"ABC"');
         $newQuoted = $quoted->withValue('XYZ');
         $this->assertTrue($newQuoted->isQuoted(), 'Quote-Status muss erhalten bleiben');
@@ -184,7 +184,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertFalse($newUnquoted->isQuoted(), 'Unquoted-Status muss erhalten bleiben');
     }
 
-    public function testWithValueDetectsTypesForUnquotedFields(): void {
+    public function test_with_value_detects_types_for_unquoted_fields(): void {
         $field = new DataField('123'); // unquoted integer field
 
         $intField = $field->withValue('456');
@@ -197,7 +197,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertTrue($boolField->getTypedValue());
     }
 
-    public function testWithValuePreservesEnclosureRepeat(): void {
+    public function test_with_value_preserves_enclosure_repeat(): void {
         $field = new DataField('""ABC""');
         $this->assertSame(2, $field->getEnclosureRepeat());
 
@@ -207,7 +207,7 @@ class DataFieldTest extends BaseTestCase {
 
     // ========== Tests für withTypedValue() ==========
 
-    public function testWithTypedValueReturnsNewInstance(): void {
+    public function test_with_typed_value_returns_new_instance(): void {
         $original = new DataField('100');
         $new = $original->withTypedValue(200);
 
@@ -216,7 +216,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame(200, $new->getTypedValue());
     }
 
-    public function testWithTypedValueAcceptsInteger(): void {
+    public function test_with_typed_value_accepts_integer(): void {
         $field = new DataField('0');
         $new = $field->withTypedValue(42);
 
@@ -224,7 +224,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('42', $new->getValue());
     }
 
-    public function testWithTypedValueAcceptsFloat(): void {
+    public function test_with_typed_value_accepts_float(): void {
         $field = new DataField('0');
         $new = $field->withTypedValue(3.14159);
 
@@ -233,7 +233,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('3,14159', $new->getValue());
     }
 
-    public function testWithTypedValueAcceptsBoolean(): void {
+    public function test_with_typed_value_accepts_boolean(): void {
         $field = new DataField('0');
 
         $trueField = $field->withTypedValue(true);
@@ -245,7 +245,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('', $falseField->getValue(), 'Boolean false wird zu leerem String konvertiert');
     }
 
-    public function testWithTypedValueAcceptsNull(): void {
+    public function test_with_typed_value_accepts_null(): void {
         $field = new DataField('test');
         $new = $field->withTypedValue(null);
 
@@ -253,7 +253,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('', $new->getValue());
     }
 
-    public function testWithTypedValueAcceptsDateTimeImmutable(): void {
+    public function test_with_typed_value_accepts_date_time_immutable(): void {
         $field = new DataField('2025-01-01');
         $date = new \DateTimeImmutable('2025-12-26');
         $new = $field->withTypedValue($date);
@@ -263,7 +263,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('2025-12-26', $new->getValue());
     }
 
-    public function testWithTypedValuePreservesQuotedStatus(): void {
+    public function test_with_typed_value_preserves_quoted_status(): void {
         $quoted = new DataField('"100"');
         $newQuoted = $quoted->withTypedValue(200);
         $this->assertTrue($newQuoted->isQuoted());
@@ -273,7 +273,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertFalse($newUnquoted->isQuoted());
     }
 
-    public function testWithTypedValueNoTypeAnalysis(): void {
+    public function test_with_typed_value_no_type_analysis(): void {
         // withTypedValue setzt den Wert direkt, ohne Analyse
         $field = new DataField('text');
         $new = $field->withTypedValue('42'); // String "42", nicht Integer
@@ -284,7 +284,7 @@ class DataFieldTest extends BaseTestCase {
 
     // ========== Kombinations-Tests ==========
 
-    public function testImmutabilityChain(): void {
+    public function test_immutability_chain(): void {
         $original = new DataField('10');
         $step1 = $original->withTypedValue(20);
         $step2 = $step1->withTypedValue(30);
@@ -296,7 +296,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame(40, $step3->getTypedValue());
     }
 
-    public function testMutableVsImmutableBehavior(): void {
+    public function test_mutable_vs_immutable_behavior(): void {
         $field = new DataField('original');
 
         // Mutable: ändert das Objekt
@@ -311,7 +311,7 @@ class DataFieldTest extends BaseTestCase {
 
     // ========== Tests für Whitespace-Erhaltung und toString() mit trimmed Parameter ==========
 
-    public function testUnquotedFieldPreservesTrailingWhitespace(): void {
+    public function test_unquoted_field_preserves_trailing_whitespace(): void {
         $raw = 'Aussenanlage               ';
         $field = new DataField($raw);
 
@@ -321,7 +321,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame($raw, $field->getRaw(), 'getRaw() liefert Original');
     }
 
-    public function testUnquotedFieldPreservesLeadingWhitespace(): void {
+    public function test_unquoted_field_preserves_leading_whitespace(): void {
         $raw = '   ABC';
         $field = new DataField($raw);
 
@@ -330,7 +330,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame($raw, $field->toString(), 'toString() erhält Leading-Whitespace');
     }
 
-    public function testUnquotedFieldPreservesBothWhitespaces(): void {
+    public function test_unquoted_field_preserves_both_whitespaces(): void {
         $raw = '  Value mit Spaces  ';
         $field = new DataField($raw);
 
@@ -339,7 +339,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame($raw, $field->toString(), 'toString() erhält beide Whitespaces');
     }
 
-    public function testToStringTrimmedForUnquotedField(): void {
+    public function test_to_string_trimmed_for_unquoted_field(): void {
         $raw = '  Aussenanlage               ';
         $field = new DataField($raw);
 
@@ -347,7 +347,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('Aussenanlage', $field->toString(null, true), 'toString(trimmed: true) liefert getrimmten Wert');
     }
 
-    public function testToStringTrimmedForQuotedField(): void {
+    public function test_to_string_trimmed_for_quoted_field(): void {
         $raw = '"  Wert mit Spaces  "';
         $field = new DataField($raw);
 
@@ -358,7 +358,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame($raw, $field->toString(null, true), 'toString(trimmed: true) identisch');
     }
 
-    public function testToStringTrimmedWithCustomEnclosure(): void {
+    public function test_to_string_trimmed_with_custom_enclosure(): void {
         $field = new DataField("'  Value  '", "'");
 
         $this->assertTrue($field->isQuoted());
@@ -367,7 +367,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame("'  Value  '", $field->toString("'", true), 'toString(trimmed: true) identisch');
     }
 
-    public function testWhitespaceFieldRoundTrip(): void {
+    public function test_whitespace_field_round_trip(): void {
         // Ein Feld das nur aus Whitespace besteht
         // Bei reinem Whitespace werden Leading und Trailing separat gespeichert,
         // da der Wert nach trim() leer ist
@@ -381,7 +381,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('', $field->toString(null, true), 'toString(trimmed: true) ist leer');
     }
 
-    public function testTypedValueWithWhitespace(): void {
+    public function test_typed_value_with_whitespace(): void {
         // Integer mit Leading/Trailing Whitespace
         $raw = '  42  ';
         $field = new DataField($raw);
@@ -393,7 +393,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('42', $field->toString(null, true), 'toString(trimmed: true) ohne Whitespace');
     }
 
-    public function testFloatWithWhitespace(): void {
+    public function test_float_with_whitespace(): void {
         // Float mit Trailing Whitespace
         $raw = '3,14   ';
         $field = new DataField($raw);
@@ -404,7 +404,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('3,14', $field->toString(null, true), 'toString(trimmed: true) ohne Whitespace');
     }
 
-    public function testDateWithWhitespace(): void {
+    public function test_date_with_whitespace(): void {
         // Datum mit Leading Whitespace
         $raw = '   2025-12-26';
         $field = new DataField($raw);
@@ -416,7 +416,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('2025-12-26', $field->toString(null, true), 'toString(trimmed: true) ohne Whitespace');
     }
 
-    public function testEmptyFieldPreservation(): void {
+    public function test_empty_field_preservation(): void {
         $raw = '';
         $field = new DataField($raw);
 
@@ -426,7 +426,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('', $field->toString(null, true));
     }
 
-    public function testRepeatedEnclosureWithTrimmed(): void {
+    public function test_repeated_enclosure_with_trimmed(): void {
         $raw = '""  Inner Value  ""';
         $field = new DataField($raw);
 
@@ -438,7 +438,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame($raw, $field->toString(null, true), 'toString(trimmed: true) identisch');
     }
 
-    public function testQuotedFieldWithOuterWhitespace(): void {
+    public function test_quoted_field_with_outer_whitespace(): void {
         // Quoted Field mit Whitespace außerhalb der Quotes - wird ignoriert
         $raw = '   "Quoted Value"   ';
         $field = new DataField($raw);
@@ -450,7 +450,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('"Quoted Value"', $field->toString(null, true), 'toString(trimmed: true) identisch');
     }
 
-    public function testQuotedFieldWithInnerAndOuterWhitespace(): void {
+    public function test_quoted_field_with_inner_and_outer_whitespace(): void {
         // Quoted Field mit Whitespace innen UND außen
         // Äußerer Whitespace wird ignoriert, innerer bleibt erhalten
         $raw = '  "  Inner Spaces  "  ';
@@ -463,7 +463,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('"  Inner Spaces  "', $field->toString(null, true), 'toString(trimmed: true) identisch');
     }
 
-    public function testEmptyQuotedFieldWithOuterWhitespace(): void {
+    public function test_empty_quoted_field_with_outer_whitespace(): void {
         // Leeres quoted Field mit Whitespace außen
         // Hinweis: Reines Quote-Feld wird als Sonderfall behandelt (vor Whitespace-Extraktion)
         $raw = '  ""  ';
@@ -476,7 +476,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('""', $field->toString(null, true), 'toString(trimmed: true) ohne äußeren Whitespace');
     }
 
-    public function testUnquotedFieldWithOnlyWhitespace(): void {
+    public function test_unquoted_field_with_only_whitespace(): void {
         // Unquoted Field, das nur aus Whitespace besteht (z.B. 27 Leerzeichen)
         // Wichtig: Round-Trip muss exakt funktionieren, ohne Verdoppelung des Whitespace
         $raw = str_repeat(' ', 27);
@@ -489,7 +489,7 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame(27, strlen($field->toString()), 'toString() Länge muss 27 sein (nicht 54)');
     }
 
-    public function testUnquotedFieldWithVariousWhitespaceOnlyContent(): void {
+    public function test_unquoted_field_with_various_whitespace_only_content(): void {
         // Verschiedene Whitespace-Varianten testen
         $tests = [
             str_repeat(' ', 1),   // 1 Leerzeichen

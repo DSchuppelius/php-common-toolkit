@@ -17,8 +17,7 @@ use CommonToolkit\Entities\HTML\Document;
 use Tests\Contracts\BaseTestCase;
 
 class HTMLDocumentBuilderTest extends BaseTestCase {
-
-    public function testCreateEmptyDocument(): void {
+    public function test_create_empty_document(): void {
         $doc = HTMLDocumentBuilder::create()->build();
 
         $this->assertInstanceOf(Document::class, $doc);
@@ -28,14 +27,14 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('</html>', $html);
     }
 
-    public function testCreateWithTitle(): void {
+    public function test_create_with_title(): void {
         $html = HTMLDocumentBuilder::create('Test Page')
             ->render();
 
         $this->assertStringContainsString('<title>Test Page</title>', $html);
     }
 
-    public function testAddMeta(): void {
+    public function test_add_meta(): void {
         $html = HTMLDocumentBuilder::create()
             ->meta('description', 'Test description')
             ->meta('keywords', 'test, php')
@@ -46,7 +45,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('name="keywords"', $html);
     }
 
-    public function testViewport(): void {
+    public function test_viewport(): void {
         $html = HTMLDocumentBuilder::create()
             ->viewport()
             ->render();
@@ -55,7 +54,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('width=device-width', $html);
     }
 
-    public function testAddInlineStyle(): void {
+    public function test_add_inline_style(): void {
         $html = HTMLDocumentBuilder::create()
             ->addInlineStyle('body { color: red; }')
             ->render();
@@ -65,7 +64,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('</style>', $html);
     }
 
-    public function testHeadings(): void {
+    public function test_headings(): void {
         $html = HTMLDocumentBuilder::create()
             ->h1('Heading 1')
             ->h2('Heading 2')
@@ -77,7 +76,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('<h3>Heading 3</h3>', $html);
     }
 
-    public function testParagraph(): void {
+    public function test_paragraph(): void {
         $html = HTMLDocumentBuilder::create()
             ->p('This is a paragraph.')
             ->render();
@@ -85,7 +84,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('<p>This is a paragraph.</p>', $html);
     }
 
-    public function testLink(): void {
+    public function test_link(): void {
         $html = HTMLDocumentBuilder::create()
             ->a('https://example.com', 'Click here')
             ->render();
@@ -94,7 +93,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('>Click here</a>', $html);
     }
 
-    public function testImage(): void {
+    public function test_image(): void {
         $html = HTMLDocumentBuilder::create()
             ->img('image.png', 'Alt text')
             ->render();
@@ -103,7 +102,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('alt="Alt text"', $html);
     }
 
-    public function testNestedDiv(): void {
+    public function test_nested_div(): void {
         $html = HTMLDocumentBuilder::create()
             ->startDiv(['class' => 'container'])
             ->h1('Title')
@@ -116,7 +115,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('<p>Content</p>', $html);
     }
 
-    public function testUnorderedList(): void {
+    public function test_unordered_list(): void {
         $html = HTMLDocumentBuilder::create()
             ->ul(['Item 1', 'Item 2', 'Item 3'])
             ->render();
@@ -128,7 +127,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('</ul>', $html);
     }
 
-    public function testOrderedList(): void {
+    public function test_ordered_list(): void {
         $html = HTMLDocumentBuilder::create()
             ->ol(['First', 'Second', 'Third'])
             ->render();
@@ -138,7 +137,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('</ol>', $html);
     }
 
-    public function testManualList(): void {
+    public function test_manual_list(): void {
         $html = HTMLDocumentBuilder::create()
             ->startUl(['class' => 'menu'])
             ->li('Home')
@@ -151,13 +150,13 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('<li>Home</li>', $html);
     }
 
-    public function testSimpleTable(): void {
+    public function test_simple_table(): void {
         $html = HTMLDocumentBuilder::create()
             ->table(
                 ['Name', 'Age'],
                 [
                     ['Alice', '30'],
-                    ['Bob', '25']
+                    ['Bob', '25'],
                 ]
             )
             ->render();
@@ -172,7 +171,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('</table>', $html);
     }
 
-    public function testManualTable(): void {
+    public function test_manual_table(): void {
         $html = HTMLDocumentBuilder::create()
             ->startTable(['class' => 'data-table'])
             ->startThead()
@@ -195,7 +194,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('<td>Value 1</td>', $html);
     }
 
-    public function testForm(): void {
+    public function test_form(): void {
         $html = HTMLDocumentBuilder::create()
             ->startForm('/submit', 'post', ['id' => 'myform'])
             ->label('name', 'Your Name:')
@@ -212,7 +211,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('type="submit"', $html);
     }
 
-    public function testSemanticElements(): void {
+    public function test_semantic_elements(): void {
         $html = HTMLDocumentBuilder::create()
             ->startHeader()
             ->h1('Site Title')
@@ -238,7 +237,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('</footer>', $html);
     }
 
-    public function testBodyClass(): void {
+    public function test_body_class(): void {
         $html = HTMLDocumentBuilder::create()
             ->bodyClass('dark-mode')
             ->render();
@@ -246,7 +245,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('class="dark-mode"', $html);
     }
 
-    public function testHtmlAttribute(): void {
+    public function test_html_attribute(): void {
         $html = HTMLDocumentBuilder::create('Test', 'en')
             ->htmlAttribute('data-theme', 'light')
             ->render();
@@ -255,7 +254,7 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('data-theme="light"', $html);
     }
 
-    public function testComplexDocument(): void {
+    public function test_complex_document(): void {
         $html = HTMLDocumentBuilder::create('My Website', 'de')
             ->viewport()
             ->meta('description', 'Eine tolle Webseite')
@@ -284,18 +283,18 @@ class HTMLDocumentBuilderTest extends BaseTestCase {
         $this->assertStringContainsString('id="intro"', $html);
     }
 
-    public function testToString(): void {
+    public function test_to_string(): void {
         $builder = HTMLDocumentBuilder::create('Test')
             ->p('Content');
 
-        $html = (string)$builder;
+        $html = (string) $builder;
 
         $this->assertStringContainsString('<!DOCTYPE html>', $html);
         $this->assertStringContainsString('<title>Test</title>', $html);
         $this->assertStringContainsString('<p>Content</p>', $html);
     }
 
-    public function testScripts(): void {
+    public function test_scripts(): void {
         $html = HTMLDocumentBuilder::create()
             ->addHeadScript('head.js', defer: true)
             ->addScript('footer.js')
