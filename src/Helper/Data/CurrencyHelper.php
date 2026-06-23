@@ -213,6 +213,27 @@ class CurrencyHelper {
     }
 
     /**
+     * Parst einen US-Betrag, kehrt das Vorzeichen um und gibt ihn im DE-Format zurück.
+     *
+     * Gedacht für Zahlungsdienstleister-Exporte (Stripe, GoCardless), deren
+     * Vorzeichen-Konvention der DATEV-Sicht entgegengesetzt ist. Leere Eingabe gilt
+     * als "0" (Ergebnis "-0,00").
+     *
+     * @param string $amount US-Betrag (z.B. "1,234.56" oder "-1,234.56").
+     * @return string DE-Betrag mit umgekehrtem Vorzeichen (z.B. "-1234,56").
+     */
+    public static function negateUsToDe(string $amount): string {
+        $amount = trim($amount);
+        if ($amount === '') {
+            $amount = '0';
+        }
+
+        return str_starts_with($amount, '-')
+            ? self::usToDe(substr($amount, 1))
+            : self::usToDe('-' . $amount);
+    }
+
+    /**
      * Entfernt Währungssymbole und -codes aus einem Betrag.
      *
      * Unterstützt:
