@@ -15,9 +15,6 @@ use CommonToolkit\Helper\Data\CSV\StringHelper;
 use ERRORToolkit\Traits\ErrorLog;
 use RuntimeException;
 
-/**
- * @phpstan-consistent-constructor
- */
 abstract class LineAbstract implements LineInterface {
     use ErrorLog;
 
@@ -43,25 +40,31 @@ abstract class LineAbstract implements LineInterface {
     abstract protected static function createField(string $rawValue, string $enclosure): FieldInterface;
 
     /**
-     * Erstellt eine CSVLine-Instanz aus einer rohen CSV-Zeichenkette.
+     * Zerlegt eine rohe CSV-Zeichenkette in typisierte Felder.
+     *
+     * Gemeinsame Hilfsmethode für die fromString()-Fabriken der konkreten
+     * Line-Klassen. fromString() selbst liegt bewusst in den konkreten Klassen
+     * (DataLine/HeaderLine) und nicht hier: Die Basisklasse garantiert keine
+     * konsistente Konstruktor-Signatur (Subklassen wie enum-getriebene
+     * DATEV-Header besitzen abweichende Konstruktoren), weshalb hier kein
+     * typsicheres new static() möglich ist.
      *
      * @param string $line      Die rohe CSV-Zeichenkette.
      * @param string $delimiter Die Trennzeichen-Zeichenkette.
      * @param string $enclosure Die Einschlusszeichen-Zeichenkette.
+     * @return FieldInterface[]
      *
      * @throws RuntimeException
      */
-    public static function fromString(string $line, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE): static {
+    protected static function parseFields(string $line, string $delimiter, string $enclosure): array {
         if ($delimiter === '') {
             static::logErrorAndThrow(RuntimeException::class, 'CSV delimiter darf nicht leer sein');
         }
 
-        $fields = array_map(
+        return array_map(
             fn (string $raw) => static::createField($raw, $enclosure),
             StringHelper::parseLineToFields($line, $delimiter, $enclosure)
         );
-
-        return new static($fields, $delimiter, $enclosure);
     }
 
     /**

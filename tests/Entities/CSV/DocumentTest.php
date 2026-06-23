@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\CommonToolkit\Entities\CSV;
+namespace Tests\Entities\CSV;
 
 use CommonToolkit\Builders\CSVDocumentBuilder;
 use CommonToolkit\Entities\CSV\{DataLine, HeaderLine};

@@ -24,9 +24,6 @@ use RuntimeException;
  *
  * Verwendet:
  * - CSVGenerator: Generierung von CSV-Strings
- *
- *
- * @phpstan-consistent-constructor
  */
 class Document extends TextDocumentAbstract {
     protected ?HeaderLine $header;
@@ -109,6 +106,23 @@ class Document extends TextDocumentAbstract {
     }
 
     /**
+     * Erzeugt eine Kopie dieses Dokuments mit ausgetauschten Datenzeilen.
+     *
+     * Verwendet clone statt new static(), damit Subklassen den Konstruktor frei
+     * anpassen können (z.B. DATEV-Dokumente mit zusätzlichem MetaHeader-Parameter),
+     * ohne dass die abgeleiteten Filter-/Slice-/Sortier-Operationen brechen.
+     *
+     * @param DataLine[] $rows Die neuen Datenzeilen
+     * @return static Kopie mit übernommener Konfiguration und neuen Zeilen
+     */
+    protected function withRows(array $rows): static {
+        $clone = clone $this;
+        $clone->rows = $rows;
+
+        return $clone;
+    }
+
+    /**
      * Filtert Zeilen anhand einer Callback-Funktion und gibt ein neues Document zurück.
      * Das Callback erhält jede DataLine und den Zeilen-Index als Parameter.
      *
@@ -126,7 +140,7 @@ class Document extends TextDocumentAbstract {
             }
         }
 
-        return new static($this->header, $filtered, $this->delimiter, $this->enclosure, $this->columnWidthConfig, $this->encoding);
+        return $this->withRows($filtered);
     }
 
     /**
@@ -140,7 +154,7 @@ class Document extends TextDocumentAbstract {
     public function sliceRows(int $offset, ?int $length = null): static {
         $sliced = array_slice($this->rows, $offset, $length);
 
-        return new static($this->header, $sliced, $this->delimiter, $this->enclosure, $this->columnWidthConfig, $this->encoding);
+        return $this->withRows($sliced);
     }
 
     /**
@@ -191,7 +205,7 @@ class Document extends TextDocumentAbstract {
             return $ascending ? $cmp : -$cmp;
         });
 
-        return new static($this->header, $sorted, $this->delimiter, $this->enclosure, $this->columnWidthConfig, $this->encoding);
+        return $this->withRows($sorted);
     }
 
     public function getDelimiter(): string {
@@ -326,7 +340,7 @@ class Document extends TextDocumentAbstract {
      * Bietet vollständigen Zugriff auf Field-Metadaten (Wert, Raw-Wert, Quote-Info, etc.).
      *
      * @param string $columnName Name der Spalte
-     * @return FieldInterface[] Array mit allen Field-Objekten der Spalte
+     * @return list<FieldInterface|null> Field-Objekte der Spalte; null für Zeilen ohne dieses Feld
      * @throws RuntimeException Wenn die Spalte nicht gefunden wird
      */
     public function getFieldsByName(string $columnName): array {
@@ -349,15 +363,17 @@ class Document extends TextDocumentAbstract {
      */
     public function getColumnByName(string $columnName): array {
         $fields = $this->getFieldsByName($columnName);
-        return array_map(fn ($field) => $field->getValue(), $fields);
+        return array_map(fn ($field) => $field?->getValue() ?? '', $fields);
     }
 
     /**
      * Liefert alle Field-Objekte einer Spalte anhand des Index.
      * Bietet vollständigen Zugriff auf Field-Metadaten (Wert, Raw-Wert, Quote-Info, etc.).
      *
+     * Zeilen, die an diesem Index kein Feld besitzen (kürzere Zeilen), liefern null.
+     *
      * @param int $index Index der Spalte
-     * @return FieldInterface[] Array mit allen Field-Objekten der Spalte
+     * @return list<FieldInterface|null> Field-Objekte der Spalte; null für Zeilen ohne dieses Feld
      * @throws RuntimeException Wenn der Index ungültig ist
      */
     public function getFieldsByIndex(int $index): array {
@@ -384,7 +400,7 @@ class Document extends TextDocumentAbstract {
      */
     public function getColumnByIndex(int $index): array {
         $fields = $this->getFieldsByIndex($index);
-        return array_map(fn ($field) => $field->getValue(), $fields);
+        return array_map(fn ($field) => $field?->getValue() ?? '', $fields);
     }
 
     /**
@@ -699,7 +715,7 @@ class Document extends TextDocumentAbstract {
         $numbers = [];
 
         foreach ($fields as $rowIndex => $field) {
-            if ($field->isBlank()) {
+            if ($field === null || $field->isBlank()) {
                 if ($skipNonNumeric) {
                     continue;
                 }

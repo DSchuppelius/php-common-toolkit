@@ -13,6 +13,7 @@ namespace CommonToolkit\Entities\CSV;
 use CommonToolkit\Contracts\Abstracts\CSV\LineAbstract;
 use CommonToolkit\Contracts\Interfaces\CSV\FieldInterface;
 use CommonToolkit\Enums\CountryCode;
+use RuntimeException;
 
 /**
  * Einfache CSV-Datenzeile ohne Header-Wissen.
@@ -29,5 +30,14 @@ class DataLine extends LineAbstract {
 
     protected static function createField(string $rawValue, string $enclosure): FieldInterface {
         return new DataField($rawValue, $enclosure, CountryCode::Germany);
+    }
+
+    /**
+     * Erstellt eine DataLine aus einer rohen CSV-Zeichenkette.
+     *
+     * @throws RuntimeException
+     */
+    public static function fromString(string $line, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE): self {
+        return new self(static::parseFields($line, $delimiter, $enclosure), $delimiter, $enclosure);
     }
 }

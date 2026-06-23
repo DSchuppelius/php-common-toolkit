@@ -10,7 +10,10 @@
 
 declare(strict_types=1);
 
+namespace Tests\Helper;
+
 use CommonToolkit\Helper\Geo\GeoHelper;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class GeoHelperTest extends TestCase {

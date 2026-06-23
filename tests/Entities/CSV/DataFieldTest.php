@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\CommonToolkit\Entities\CSV;
+namespace Tests\Entities\CSV;
 
 use CommonToolkit\Entities\CSV\DataField;
 use Tests\Contracts\BaseTestCase;

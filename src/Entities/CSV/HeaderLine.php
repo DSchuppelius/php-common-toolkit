@@ -13,6 +13,7 @@ namespace CommonToolkit\Entities\CSV;
 use CommonToolkit\Contracts\Abstracts\CSV\LineAbstract;
 use CommonToolkit\Contracts\Interfaces\CSV\{FieldInterface, LineInterface};
 use CommonToolkit\Enums\CountryCode;
+use RuntimeException;
 
 class HeaderLine extends LineAbstract {
     public function __construct(array $fields, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE) {
@@ -22,6 +23,15 @@ class HeaderLine extends LineAbstract {
 
     protected static function createField(string $rawValue, string $enclosure): FieldInterface {
         return new HeaderField($rawValue, $enclosure, CountryCode::Germany);
+    }
+
+    /**
+     * Erstellt eine HeaderLine aus einer rohen CSV-Zeichenkette.
+     *
+     * @throws RuntimeException
+     */
+    public static function fromString(string $line, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE): self {
+        return new self(static::parseFields($line, $delimiter, $enclosure), $delimiter, $enclosure);
     }
 
     /**

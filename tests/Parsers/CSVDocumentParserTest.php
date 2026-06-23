@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\CommonToolkit\Parsers;
+namespace Tests\Parsers;
 
 use CommonToolkit\Entities\CSV\{DataLine, HeaderLine};
 use CommonToolkit\Parsers\CSVDocumentParser;

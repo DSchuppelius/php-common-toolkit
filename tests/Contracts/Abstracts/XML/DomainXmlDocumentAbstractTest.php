@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace CommonToolkit\Tests\Contracts\Abstracts\XML;
+namespace Tests\Contracts\Abstracts\XML;
 
 use CommonToolkit\Contracts\Abstracts\XML\DomainXmlDocumentAbstract;
 use CommonToolkit\Contracts\Interfaces\XML\{XmlDocumentInterface, XmlElementInterface};

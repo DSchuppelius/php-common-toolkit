@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Helper;
+namespace Tests\Helper\CSV;
 
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use Tests\Contracts\BaseTestCase;

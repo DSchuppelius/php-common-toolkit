@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace APIToolkit\Enums;
+namespace CommonToolkit\Enums;
 
 enum SubdivisionCode: string {
     // Spanien (ES) - Autonome Gemeinschaften und besondere Verwaltungsgebiete

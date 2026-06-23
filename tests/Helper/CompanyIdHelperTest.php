@@ -8,6 +8,8 @@
  * License Uri  : https://opensource.org/license/mit
  */
 
+namespace Tests\Helper;
+
 use CommonToolkit\Helper\Data\CompanyIdHelper;
 use Tests\Contracts\BaseTestCase;
 

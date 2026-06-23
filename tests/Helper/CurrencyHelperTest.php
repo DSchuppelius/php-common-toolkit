@@ -10,6 +10,8 @@
 
 declare(strict_types=1);
 
+namespace Tests\Helper;
+
 use CommonToolkit\Helper\Data\CurrencyHelper;
 use Tests\Contracts\BaseTestCase;
 

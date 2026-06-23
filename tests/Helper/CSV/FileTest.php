@@ -10,8 +10,11 @@
 
 declare(strict_types=1);
 
+namespace Tests\Helper\CSV;
+
 use CommonToolkit\Helper\FileSystem\FileTypes\CsvFile;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use Exception;
 use Tests\Contracts\BaseTestCase;
 
 class FileTest extends BaseTestCase {

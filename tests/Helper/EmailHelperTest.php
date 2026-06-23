@@ -8,6 +8,8 @@
  * License Uri  : https://opensource.org/license/mit
  */
 
+namespace Tests\Helper;
+
 use CommonToolkit\Helper\Data\EmailHelper;
 use Tests\Contracts\BaseTestCase;
 

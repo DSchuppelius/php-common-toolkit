@@ -10,10 +10,14 @@
 
 declare(strict_types=1);
 
+namespace Tests\Helper;
+
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Entities\Executables\JavaExecutable;
 use CommonToolkit\Helper\Java;
 use ConfigToolkit\ConfigLoader;
+use Exception;
+use ReflectionClass;
 use Tests\Contracts\BaseTestCase;
 
 class JavaTest extends BaseTestCase {

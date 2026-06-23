@@ -10,8 +10,11 @@
 
 declare(strict_types=1);
 
+namespace Tests\Helper;
+
 use CommonToolkit\Helper\FileSystem\FileTypes\XmlFile;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use Exception;
 use Tests\Contracts\BaseTestCase;
 
 class XmlFileTest extends BaseTestCase {

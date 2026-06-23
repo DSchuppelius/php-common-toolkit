@@ -10,9 +10,12 @@
 
 declare(strict_types=1);
 
+namespace Tests\Helper;
+
 use CommonToolkit\Enums\{CountryCode, CurrencyCode, TemperatureUnit};
 use CommonToolkit\Helper\Data\NumberHelper;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 final class NumberHelperTest extends TestCase {
     public function test_format_bytes(): void {

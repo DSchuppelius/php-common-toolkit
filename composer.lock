@@ -52,16 +52,16 @@
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.4",
+            "version": "v2.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "811f15af983bf304dbb6d4901782b1dca59a1ae1"
+                "reference": "30f3f9395feb9e293f1e9836e542fd66175b63eb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/811f15af983bf304dbb6d4901782b1dca59a1ae1",
-                "reference": "811f15af983bf304dbb6d4901782b1dca59a1ae1",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/30f3f9395feb9e293f1e9836e542fd66175b63eb",
+                "reference": "30f3f9395feb9e293f1e9836e542fd66175b63eb",
                 "shasum": ""
             },
             "require": {
@@ -69,6 +69,7 @@
                 "psr/log": "^3.0"
             },
             "require-dev": {
+                "laravel/pint": "^1.27",
                 "phpstan/phpstan": "^2.1",
                 "phpunit/phpunit": "^11.0"
             },
@@ -91,9 +92,9 @@
             "description": "Reused codes for my api php sdks",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.4"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.4.1"
             },
-            "time": "2026-05-04T08:33:52+00:00"
+            "time": "2026-06-23T18:39:06+00:00"
         },
         {
             "name": "psr/log",
@@ -453,11 +454,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.1",
+            "version": "2.2.2",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/dea9c8f2d25cc849391042b71e429c1a4bf82660",
-                "reference": "dea9c8f2d25cc849391042b71e429c1a4bf82660",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e5cc34d491a90e79c216d824f60fe21fd4d93bd6",
+                "reference": "e5cc34d491a90e79c216d824f60fe21fd4d93bd6",
                 "shasum": ""
             },
             "require": {
@@ -513,7 +514,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-05-28T14:44:12+00:00"
+            "time": "2026-06-05T09:00:01+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",

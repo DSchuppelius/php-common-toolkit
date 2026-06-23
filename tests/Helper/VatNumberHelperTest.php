@@ -8,6 +8,8 @@
  * License Uri  : https://opensource.org/license/mit
  */
 
+namespace Tests\Helper;
+
 use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Helper\Data\VatNumberHelper;
 use Tests\Contracts\BaseTestCase;
