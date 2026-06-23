@@ -468,6 +468,34 @@ class DateHelper {
     }
 
     /**
+     * Konvertiert eine Excel-/Spreadsheet-Seriennummer in ein DateTimeImmutable.
+     *
+     * Reine Datumsmathematik ohne PhpSpreadsheet-Abhängigkeit: Das 1900-System
+     * nutzt die Basis 1899-12-30 (gleicht den fiktiven 29.02.1900 für alle Daten
+     * ab dem 01.03.1900 aus), das 1904-System die Basis 1904-01-01. Nachkommastellen
+     * werden als Tageszeit interpretiert.
+     *
+     * @param int|float $serial Die Excel-Seriennummer.
+     * @param bool $use1904System Mac-/1904-Datumssystem statt des Standard-1900-Systems.
+     * @return DateTimeImmutable|null Das Datum oder null bei ungültiger Eingabe.
+     */
+    public static function fromExcelSerial(int|float $serial, bool $use1904System = false): ?DateTimeImmutable {
+        if ($serial < 0) {
+            return self::logErrorAndReturn(null, "Ungültige Excel-Seriennummer: $serial");
+        }
+
+        $days = (int) floor($serial);
+        $seconds = (int) round(($serial - $days) * 86400);
+        $base = $use1904System ? '1904-01-01' : '1899-12-30';
+
+        try {
+            return (new DateTimeImmutable($base))->modify("+{$days} days +{$seconds} seconds");
+        } catch (Throwable $e) {
+            return self::logErrorAndReturn(null, "Fehler bei Excel-Serial-Konvertierung ($serial): " . $e->getMessage());
+        }
+    }
+
+    /**
      * Formatiert ein Datum in das angegebene Ziel-Format.
      *
      * @param string $value Das Datum, das formatiert werden soll.
