@@ -170,6 +170,30 @@ class NumberHelper {
     }
 
     /**
+     * Wie {@see toGermanFormat()}, aber gibt für leere oder nicht-numerische
+     * Strings `null` zurück, statt sie als "0,00" zu interpretieren.
+     *
+     * Gedacht für rohe Spreadsheet-/CSV-Betragszellen: Header oder Freitext sollen
+     * nicht fälschlich zu "0,00" werden. Aufrufer entscheiden per `?? $roh`, ob der
+     * unbekannte Wert unverändert durchgereicht oder verworfen wird.
+     *
+     * @param string|float|int $value Betrag (reine Zahl) oder beliebiger Zellwert.
+     * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
+     * @param bool $withThousandsSeparator Tausendertrenner anzeigen (Standard: false).
+     * @return string|null Deutsches Format oder null, wenn kein numerischer Wert.
+     */
+    public static function toGermanFormatOrNull(string|float|int $value, int $decimals = 2, bool $withThousandsSeparator = false): ?string {
+        if (is_string($value)) {
+            $value = trim($value);
+            if ($value === '' || !is_numeric($value)) {
+                return null;
+            }
+        }
+
+        return self::toGermanFormat($value, $decimals, $withThousandsSeparator);
+    }
+
+    /**
      * Konvertiert einen Betrag zu US-Format mit optionalen Tausendertrennern.
      * 
      * Akzeptiert deutsches Format (1.234,56), US-Format (1,234.56) und gemischte Formate.
