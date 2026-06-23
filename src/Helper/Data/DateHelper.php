@@ -496,6 +496,54 @@ class DateHelper {
     }
 
     /**
+     * Normalisiert einen rohen Spreadsheet-Zellwert (Excel/ODS) zu einem
+     * deutschen Datum (TT.MM.JJJJ).
+     *
+     * setReadDataOnly() verwirft die Zell-Formatierung, sodass Datumsspalten als
+     * DateTimeInterface, ISO-String, rohe Excel-Seriennummer oder vorformatierter
+     * DE-/Slash-/Dash-String ankommen können. Erkannt werden:
+     *  - DateTimeInterface                       → d.m.Y
+     *  - leerer Wert                             → null
+     *  - Excel-Serial (serialMin..serialMax)     → {@see fromExcelSerial}
+     *  - ISO (JJJJ-MM-TT, opt. Zeit)             → TT.MM.JJJJ
+     *  - TT[./-]MM[./-]JJ(JJ) (opt. Zeit)        → TT.MM.JJJJ
+     *  - sonst                                   → null
+     *
+     * Zweistellige Jahre werden über das 50-Jahr-Fenster von {@see expandYear}
+     * aufgelöst (für aktuelle Bankexporte praktisch immer 20JJ).
+     *
+     * @param mixed $value Der rohe Zellwert.
+     * @param int $serialMin Untere Grenze, ab der eine Zahl als Excel-Serial gilt.
+     * @param int $serialMax Obere Grenze für die Excel-Serial-Erkennung.
+     * @return string|null Deutsches Datum oder null, wenn nicht als Datum erkennbar.
+     */
+    public static function excelCellToGerman(mixed $value, int $serialMin = 20000, int $serialMax = 80000): ?string {
+        if ($value instanceof DateTimeInterface) {
+            return $value->format('d.m.Y');
+        }
+
+        $str = trim((string) $value);
+        if ($str === '') {
+            return null;
+        }
+
+        if (is_numeric($str) && (float) $str > $serialMin && (float) $str < $serialMax) {
+            return self::fromExcelSerial((float) $str)?->format('d.m.Y');
+        }
+
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $str, $m)) {
+            return sprintf('%s.%s.%s', $m[3], $m[2], $m[1]);
+        }
+
+        if (preg_match('#^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})#', $str, $m)) {
+            $jahr = strlen($m[3]) === 2 ? self::expandYear((int) $m[3]) : (int) $m[3];
+            return sprintf('%02d.%02d.%04d', (int) $m[1], (int) $m[2], $jahr);
+        }
+
+        return null;
+    }
+
+    /**
      * Formatiert ein Datum in das angegebene Ziel-Format.
      *
      * @param string $value Das Datum, das formatiert werden soll.
