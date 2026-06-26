@@ -328,6 +328,31 @@ class DateHelper {
     }
 
     /**
+     * Parst ein Datum mit englischem Monatsnamen (abgekürzt oder voll).
+     *
+     * Deckt Schreibweisen wie "30 JUN 2025", "1 June 2025", "15-Dec-2024" ab
+     * (case-insensitiv). Diese textuellen Monatsformate kennt {@see parseFlexible()}
+     * bewusst nicht; gedacht für Bank-/Statement-Exporte mit englischen
+     * Monatskürzeln (z.B. JPMorgan). Tag-/Monatsüberläufe ("32 JUN 2025") und
+     * unbekannte Monate werden als ungültig verworfen (null).
+     *
+     * @param string $value Datumsstring mit englischem Monatsnamen.
+     * @return DateTimeImmutable|null Geparstes Datum oder null bei ungültigem Wert.
+     */
+    public static function parseEnglishMonthDate(string $value): ?DateTimeImmutable {
+        $value = trim($value);
+        foreach (['!d M Y', '!d-M-Y', '!d F Y', '!d-F-Y'] as $format) {
+            $date = DateTime::createFromFormat($format, $value);
+            if (self::isCleanDateParse($date)) {
+                /** @var DateTime $date */
+                return DateTimeImmutable::createFromMutable($date);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Gibt das aktuelle Datum und die Uhrzeit zurück.
      *
      * @return DateTimeImmutable Das aktuelle Datum und die Uhrzeit.
