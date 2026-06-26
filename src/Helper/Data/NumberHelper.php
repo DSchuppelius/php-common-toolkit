@@ -181,8 +181,13 @@ class NumberHelper {
      */
     public static function toGermanFormatOrNull(string|float|int $value, int $decimals = 2, bool $withThousandsSeparator = false): ?string {
         if (is_string($value)) {
-            $value = trim($value);
-            if ($value === '' || !is_numeric($value)) {
+            // Auch FORMATIERTE Beträge ("22,00", "1,234.56", "1.234,56", "-318,00")
+            // akzeptieren – nicht nur is_numeric()-Strings. Verworfen werden nur
+            // Leerwerte und Nicht-Zahlen (Header/Freitext); normalizeDecimal()
+            // übernimmt danach die DE/US-Erkennung. Hinweis: erwartet eine Betrags-
+            // zelle; mehrteilige Werte (z.B. Datumsangaben) sind nicht im Skopus.
+            $cleaned = str_replace(' ', '', trim($value));
+            if ($cleaned === '' || !preg_match('/^[+-]?(?=.*\d)[\d.,]+$/', $cleaned)) {
                 return null;
             }
         }

@@ -184,6 +184,21 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('12,345', NumberHelper::formatNumberByTemplate(12345, '00,000')); // US-Stil
     }
 
+    public function test_to_german_format_or_null(): void {
+        // Formatierte Beträge (US + DE) werden akzeptiert und konvertiert.
+        $this->assertEquals('592615,13', NumberHelper::toGermanFormatOrNull('592,615.13'));
+        $this->assertEquals('1234,56', NumberHelper::toGermanFormatOrNull('1.234,56'));
+        $this->assertEquals('22,00', NumberHelper::toGermanFormatOrNull('22,00'));
+        $this->assertEquals('-318,00', NumberHelper::toGermanFormatOrNull('-318,00'));
+        $this->assertEquals('0,00', NumberHelper::toGermanFormatOrNull('0'));
+        $this->assertEquals('1234,56', NumberHelper::toGermanFormatOrNull('1 234,56'));
+        // Leer-/Nicht-Zahlen → null (Header/Freitext nicht zu 0,00 machen).
+        $this->assertNull(NumberHelper::toGermanFormatOrNull(''));
+        $this->assertNull(NumberHelper::toGermanFormatOrNull('   '));
+        $this->assertNull(NumberHelper::toGermanFormatOrNull('Betrag'));
+        $this->assertNull(NumberHelper::toGermanFormatOrNull('n/a'));
+    }
+
     public function test_format_with_sign(): void {
         // Positive Zahlen
         $this->assertEquals('+10,00', NumberHelper::formatWithSign(10));
