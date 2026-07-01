@@ -542,4 +542,59 @@ final class StringHelper extends BaseStringHelper {
 
         return $value;
     }
+
+    /**
+     * Encodiert einen einzelnen CSV-Feldwert (RFC 4180) für die Ausgabe.
+     *
+     * Gegenstück zu {@see parseField()}: Ein Feld wird nur dann in Enclosures
+     * gesetzt, wenn es das Trennzeichen, das Enclosure selbst oder einen
+     * Zeilenumbruch (\n / \r) enthält; enthaltene Enclosures werden verdoppelt.
+     * Mit $forceEnclosure wird IMMER umschlossen (z. B. für Formate, die jedes
+     * Feld quoten). Ist $enclosure leer, wird der Wert unverändert zurückgegeben.
+     *
+     * @param string $value          Der zu encodierende Feldwert.
+     * @param string $delimiter       Das Spaltentrennzeichen.
+     * @param string $enclosure       Das Enclosure-Zeichen ('' = kein Quoting).
+     * @param bool   $forceEnclosure  Immer umschließen statt nur bei Bedarf.
+     * @return string                 Das encodierte Feld.
+     */
+    public static function encodeField(string $value, string $delimiter = ',', string $enclosure = '"', bool $forceEnclosure = false): string {
+        if ($enclosure === '') {
+            return $value;
+        }
+
+        $needsEnclosure = $forceEnclosure
+            || str_contains($value, $delimiter)
+            || str_contains($value, $enclosure)
+            || str_contains($value, "\n")
+            || str_contains($value, "\r");
+
+        if (!$needsEnclosure) {
+            return $value;
+        }
+
+        return $enclosure . str_replace($enclosure, $enclosure . $enclosure, $value) . $enclosure;
+    }
+
+    /**
+     * Encodiert eine komplette CSV-Zeile aus Feldwerten (ohne Zeilenumbruch).
+     *
+     * Nutzt {@see encodeField()} je Feld und verbindet mit dem Trennzeichen.
+     * `null`-Werte werden zu ''. Für streamende Exporte den Zeilenumbruch
+     * (z. B. "\r\n") selbst anhängen.
+     *
+     * @param array<int|string, scalar|null> $fields Feldwerte in Spaltenreihenfolge.
+     * @param string                          $delimiter       Das Spaltentrennzeichen.
+     * @param string                          $enclosure       Das Enclosure-Zeichen.
+     * @param bool                            $forceEnclosure  Jedes Feld immer umschließen.
+     * @return string                                          Die encodierte Zeile ohne Zeilenumbruch.
+     */
+    public static function encodeLine(array $fields, string $delimiter = ',', string $enclosure = '"', bool $forceEnclosure = false): string {
+        $parts = [];
+        foreach (array_values($fields) as $value) {
+            $parts[] = self::encodeField($value === null ? '' : (string) $value, $delimiter, $enclosure, $forceEnclosure);
+        }
+
+        return implode($delimiter, $parts);
+    }
 }
