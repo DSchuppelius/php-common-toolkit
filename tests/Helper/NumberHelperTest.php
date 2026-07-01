@@ -115,6 +115,23 @@ final class NumberHelperTest extends TestCase {
         }
     }
 
+    public function test_divide_or_default(): void {
+        // Positiver Divisor → normale Division.
+        $this->assertSame('2.50', NumberHelper::divideOrDefault('5', '2', 2));
+        $this->assertSame('33.33', NumberHelper::divideOrDefault('100', '3', 2));
+
+        // Nicht-positiver Divisor (0 / negativ) → Fallback.
+        $this->assertSame('0', NumberHelper::divideOrDefault('5', '0', 2));
+        $this->assertSame('0.0000', NumberHelper::divideOrDefault('5', '0', 4, '0.0000'));
+        $this->assertSame('7', NumberHelper::divideOrDefault('5', '-3', 2, '7'));
+
+        // Byte-gleich zum gekapselten Muster: bccomp($b,'0',$s) > 0 ? bcdiv : $default
+        foreach ([['10', '4', 2, '0'], ['10', '0', 2, 'x'], ['9', '-2', 0, 'fb']] as [$a, $b, $s, $d]) {
+            $expected = bccomp($b, '0', $s) > 0 ? bcdiv($a, $b, $s) : $d;
+            $this->assertSame($expected, NumberHelper::divideOrDefault($a, $b, $s, $d));
+        }
+    }
+
     // === Neue Tests für verschobene Number-Format-Funktionen ===
 
     public function test_detect_number_format(): void {

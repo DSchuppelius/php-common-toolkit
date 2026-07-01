@@ -961,6 +961,25 @@ class NumberHelper {
     }
 
     /**
+     * Sichere Division mit Fallback: teilt $a durch $b nur, wenn $b GRÖSSER
+     * als 0 ist; andernfalls wird $default zurückgegeben (kein Fehler).
+     *
+     * Für „sicherer Durchschnitt/Rate"-Muster: Wert/Menge, Anteil/Summe, Kosten/
+     * Stückzahl — wo ein nicht-positiver Divisor (leer/0/negativ) fachlich einen
+     * definierten Ersatzwert liefern soll statt zu werfen. Kapselt das häufige
+     * `bccomp($b,'0',$scale) > 0 ? bcdiv($a,$b,$scale) : $default`.
+     *
+     * @param string $a       Dividend (numerischer String).
+     * @param string $b       Divisor (numerischer String).
+     * @param int    $scale   Anzahl Dezimalstellen (Standard: 0).
+     * @param string $default Ersatzwert, wenn $b nicht > 0 (Standard: "0").
+     * @return string         Quotient oder $default.
+     */
+    public static function divideOrDefault(string $a, string $b, int $scale = 0, string $default = '0'): string {
+        return bccomp($b, '0', $scale) > 0 ? bcdiv($a, $b, $scale) : $default;
+    }
+
+    /**
      * Berechnet die Summe eines Arrays großer Zahlen ohne Präzisionsverlust.
      *
      * @param array<string> $numbers Array von Zahlen als Strings.
