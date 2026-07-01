@@ -81,6 +81,40 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals(0.0, NumberHelper::normalizeDecimal("   "));
     }
 
+    public function test_normalize_decimal_string(): void {
+        // Kanonischer Punkt-Dezimal-String OHNE float-Roundtrip (bcmath-tauglich).
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalString('1.234,56'));
+        $this->assertSame('7890.12', NumberHelper::normalizeDecimalString('7 890,12'));
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalString('1,234.56'));
+        $this->assertSame('1234567.89', NumberHelper::normalizeDecimalString('1,234,567.89'));
+        $this->assertSame('1.5', NumberHelper::normalizeDecimalString('1,5'));
+        $this->assertSame('1.5', NumberHelper::normalizeDecimalString('1.5'));
+        $this->assertSame('123.456', NumberHelper::normalizeDecimalString('123,456'));
+        $this->assertSame('1.234', NumberHelper::normalizeDecimalString('1,234'));
+        $this->assertSame('1234', NumberHelper::normalizeDecimalString('1234'));
+        $this->assertSame('0', NumberHelper::normalizeDecimalString(''));
+        $this->assertSame('0', NumberHelper::normalizeDecimalString('   '));
+
+        // Präzision bleibt erhalten (kein float-Verlust bei vielen Stellen).
+        $this->assertSame('12345678901234.99', NumberHelper::normalizeDecimalString('12.345.678.901.234,99', CountryCode::Germany));
+
+        // Deutsches Tausender-Pattern mit Country-Hint.
+        $this->assertSame('2000', NumberHelper::normalizeDecimalString('2.000', CountryCode::Germany));
+        $this->assertSame('2000.50', NumberHelper::normalizeDecimalString('2.000,50', CountryCode::Germany));
+    }
+
+    public function test_normalize_decimal_string_is_consistent_with_float_variant(): void {
+        // Invariante: (float) normalizeDecimalString(x) === normalizeDecimal(x)
+        $cases = ['1.234,56', '1,234.56', '1,5', '1.5', '123,456', '1,234', '1234', '', '-2.000,50', '+7 890,12'];
+        foreach ($cases as $c) {
+            $this->assertSame(
+                NumberHelper::normalizeDecimal($c),
+                (float) NumberHelper::normalizeDecimalString($c),
+                "Inkonsistenz bei: {$c}"
+            );
+        }
+    }
+
     // === Neue Tests für verschobene Number-Format-Funktionen ===
 
     public function test_detect_number_format(): void {

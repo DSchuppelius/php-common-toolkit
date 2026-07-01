@@ -241,9 +241,30 @@ class NumberHelper {
      * @return float Der normalisierte Wert.
      */
     public static function normalizeDecimal(string $value, ?CountryCode $country = null): float {
+        // Delegiert an die string-basierte Normalisierung (Single Source of Truth)
+        // und castet erst am Ende auf float.
+        return (float) self::normalizeDecimalString($value, $country);
+    }
+
+    /**
+     * Normalisiert einen Zahl-String auf kanonisches Punkt-Dezimalformat, OHNE
+     * float-Konvertierung — präzisionswahrend für bcmath (Geld/Mengen).
+     *
+     * Gleiche Format-Erkennung wie {@see normalizeDecimal()} (deutsche/US-
+     * Tausender- und Dezimaltrennzeichen), liefert aber den kanonischen String:
+     * Punkt als Dezimaltrenner, keine Tausendertrenner. Leere Eingabe → "0".
+     *
+     * Beispiele: "1.234,56" → "1234.56", "1,234.56" → "1234.56",
+     * "1234,56" → "1234.56", "1234.56" → "1234.56", "2.000" (DE) → "2000".
+     *
+     * @param string $value Der zu normalisierende Wert.
+     * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
+     * @return string Kanonischer Punkt-Dezimal-String.
+     */
+    public static function normalizeDecimalString(string $value, ?CountryCode $country = null): string {
         $value = trim(str_replace(' ', '', $value));
         if ($value === '') {
-            return 0.0;
+            return '0';
         }
 
         // Deutsche/europäische Tausendertrennzeichen eindeutig erkennen:
@@ -252,8 +273,7 @@ class NumberHelper {
         // Nicht betroffen: -902.36 (nur 2 Ziffern nach Punkt), 2.5 (nur 1 Ziffer)
         if ($country === CountryCode::Germany && preg_match('/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/', $value)) {
             $value = str_replace('.', '', $value);
-            $value = str_replace(',', '.', $value);
-            return (float) $value;
+            return str_replace(',', '.', $value);
         }
 
         // Position von Punkt und Komma finden
@@ -275,9 +295,9 @@ class NumberHelper {
             // (wie im deutschen Format üblich)
             $value = str_replace(',', '.', $value);
         }
-        // Nur Punkt: PHP versteht es bereits als Dezimal
+        // Nur Punkt: bereits kanonischer Dezimaltrenner
 
-        return (float) $value;
+        return $value;
     }
 
     /**
