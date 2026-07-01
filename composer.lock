@@ -52,16 +52,16 @@
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.4.1",
+            "version": "v2.4.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "30f3f9395feb9e293f1e9836e542fd66175b63eb"
+                "reference": "1363a104c1f4e17994e45990b8f068a5330da18e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/30f3f9395feb9e293f1e9836e542fd66175b63eb",
-                "reference": "30f3f9395feb9e293f1e9836e542fd66175b63eb",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/1363a104c1f4e17994e45990b8f068a5330da18e",
+                "reference": "1363a104c1f4e17994e45990b8f068a5330da18e",
                 "shasum": ""
             },
             "require": {
@@ -92,9 +92,9 @@
             "description": "Reused codes for my api php sdks",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.4.1"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.4.2"
             },
-            "time": "2026-06-23T18:39:06+00:00"
+            "time": "2026-06-23T20:35:53+00:00"
         },
         {
             "name": "psr/log",
@@ -454,11 +454,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.2",
+            "version": "2.2.3",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e5cc34d491a90e79c216d824f60fe21fd4d93bd6",
-                "reference": "e5cc34d491a90e79c216d824f60fe21fd4d93bd6",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/4048833dd47b377287818841877fb3087289509c",
+                "reference": "4048833dd47b377287818841877fb3087289509c",
                 "shasum": ""
             },
             "require": {
@@ -514,7 +514,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-05T09:00:01+00:00"
+            "time": "2026-06-30T21:15:26+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
