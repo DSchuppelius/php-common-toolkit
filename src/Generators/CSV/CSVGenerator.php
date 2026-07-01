@@ -14,6 +14,7 @@ namespace CommonToolkit\Generators\CSV;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\CSV\{ColumnWidthConfig, DataLine, Document, HeaderLine};
+use CommonToolkit\Helper\Data\CSV\StringHelper as CsvStringHelper;
 use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\FileSystem\File;
 
@@ -39,6 +40,10 @@ class CSVGenerator extends HelperAbstract {
      * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
      * @param string|null $targetEncoding Das Ziel-Encoding. Wenn null, wird das Dokument-Encoding verwendet.
      * @param bool $includeHeader Ob der Header mit ausgegeben werden soll. Standard: true.
+     * @param bool $encodeValues RFC-4180-sichere Ausgabe-Encodierung je Feld (Standard: true):
+     *                           bedingtes Quoting + Verdopplung eingebetteter Enclosures.
+     *                           false = bisheriges round-trip-Verhalten (reproduziert das beim
+     *                           Parsen erkannte Quoting; für format-exakte Wiedergabe).
      * @return string Der generierte CSV-String
      */
     public function generate(
@@ -47,7 +52,8 @@ class CSVGenerator extends HelperAbstract {
         ?string $enclosure = null,
         ?int $enclosureRepeat = null,
         ?string $targetEncoding = null,
-        bool $includeHeader = true
+        bool $includeHeader = true,
+        bool $encodeValues = true
     ): string {
         $delimiter ??= $document->getDelimiter();
         $enclosure ??= $document->getEnclosure();
@@ -59,12 +65,16 @@ class CSVGenerator extends HelperAbstract {
         // Header generieren (ohne Spaltenbreiten-Kürzung)
         $header = $document->getHeader();
         if ($header !== null && $includeHeader) {
-            $lines[] = $this->generateLineWithEnclosureRepeat($header, $delimiter, $enclosure, $enclosureRepeat);
+            $lines[] = $encodeValues
+                ? $this->generateLineEncoded($header, $delimiter, $enclosure)
+                : $this->generateLineWithEnclosureRepeat($header, $delimiter, $enclosure, $enclosureRepeat);
         }
 
         // Datenzeilen generieren
         foreach ($document->getRows() as $row) {
-            if ($columnWidthConfig !== null) {
+            if ($encodeValues) {
+                $lines[] = $this->generateLineEncoded($row, $delimiter, $enclosure, $columnWidthConfig, $header);
+            } elseif ($columnWidthConfig !== null) {
                 $lines[] = $this->generateLineWithColumnWidth(
                     $row,
                     $header,
@@ -118,6 +128,31 @@ class CSVGenerator extends HelperAbstract {
      */
     protected function generateLine(HeaderLine|DataLine $line, string $delimiter, string $enclosure): string {
         return $line->toString($delimiter, $enclosure);
+    }
+
+    /**
+     * Generiert eine CSV-Zeile im Ausgabe-Encode-Modus (Serialisierung frisch
+     * erzeugter Werte): jeder Feldwert wird über {@see StringHelper::encodeField()}
+     * nach RFC 4180 encodiert — bedingtes Quoting bei Trennzeichen/Enclosure/
+     * Zeilenumbruch plus Verdopplung eingebetteter Enclosures, unabhängig davon,
+     * ob das Feld beim Parsen als quoted markiert war. Gegenstück zum
+     * round-trip-orientierten {@see generateLine()}. Optionale ColumnWidth-
+     * Kürzung wird vor dem Encoden angewandt.
+     */
+    protected function generateLineEncoded(HeaderLine|DataLine $line, string $delimiter, string $enclosure, ?ColumnWidthConfig $config = null, ?HeaderLine $header = null): string {
+        $parts = [];
+        foreach ($line->getFields() as $index => $field) {
+            $value = $field->getValue();
+            if ($config !== null) {
+                $columnKey = $this->getColumnKey($header, $index);
+                if ($config->hasWidthConfig($columnKey)) {
+                    $value = $config->truncateValue($value, $columnKey);
+                }
+            }
+            $parts[] = CsvStringHelper::encodeField($value, $delimiter, $enclosure);
+        }
+
+        return implode($delimiter, $parts);
     }
 
     /**
@@ -209,10 +244,11 @@ class CSVGenerator extends HelperAbstract {
         Document $document,
         ?string $targetEncoding = null,
         ?string $delimiter = null,
-        ?string $enclosure = null
+        ?string $enclosure = null,
+        bool $encodeValues = true
     ): string {
         $targetEncoding ??= $document->getEncoding();
-        $csv = $this->generate($document, $delimiter, $enclosure, null, $targetEncoding);
+        $csv = $this->generate($document, $delimiter, $enclosure, null, $targetEncoding, true, $encodeValues);
 
         $bom = StringHelper::getBomForEncoding($targetEncoding);
         if ($bom !== null) {
@@ -242,14 +278,15 @@ class CSVGenerator extends HelperAbstract {
         ?int $enclosureRepeat = null,
         ?string $targetEncoding = null,
         bool $withBom = true,
-        bool $includeHeader = true
+        bool $includeHeader = true,
+        bool $encodeValues = true
     ): void {
         $targetEncoding ??= $document->getEncoding();
 
         if ($withBom) {
-            $csv = $this->generateWithBom($document, $targetEncoding, $delimiter, $enclosure);
+            $csv = $this->generateWithBom($document, $targetEncoding, $delimiter, $enclosure, $encodeValues);
         } else {
-            $csv = $this->generate($document, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $includeHeader);
+            $csv = $this->generate($document, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $includeHeader, $encodeValues);
         }
 
         File::write($file, $csv);

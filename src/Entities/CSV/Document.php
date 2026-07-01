@@ -288,8 +288,8 @@ class Document extends TextDocumentAbstract {
      * @param int|null $enclosureRepeat Die Anzahl der Enclosure-Wiederholungen.
      * @param string|null $targetEncoding Das Ziel-Encoding. Wenn null, wird das Dokument-Encoding verwendet.
      */
-    public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null): string {
-        return (new CSVGenerator)->generate($this, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $this->exportWithHeader);
+    public function toString(?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null, bool $encodeValues = true): string {
+        return (new CSVGenerator)->generate($this, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $this->exportWithHeader, $encodeValues);
     }
 
     /**
@@ -304,8 +304,8 @@ class Document extends TextDocumentAbstract {
      *
      * @throws RuntimeException
      */
-    public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null, bool $withBom = true): void {
-        (new CSVGenerator)->toFile($this, $file, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $withBom, $this->exportWithHeader);
+    public function toFile(string $file, ?string $delimiter = null, ?string $enclosure = null, ?int $enclosureRepeat = null, ?string $targetEncoding = null, bool $withBom = true, bool $encodeValues = true): void {
+        (new CSVGenerator)->toFile($this, $file, $delimiter, $enclosure, $enclosureRepeat, $targetEncoding, $withBom, $this->exportWithHeader, $encodeValues);
     }
 
     /**
