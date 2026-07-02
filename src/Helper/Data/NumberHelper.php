@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, TemperatureUnit};
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, RoundingMode, TemperatureUnit};
 use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
 use RuntimeException;
@@ -911,53 +911,88 @@ class NumberHelper {
     /**
      * Addiert zwei große Zahlen ohne Präzisionsverlust.
      *
-     * @param string $a Erste Zahl (als String).
-     * @param string $b Zweite Zahl (als String).
-     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * Hinweis: bcmath schneidet am `$scale` ab, es rundet nicht. Mit `$mode`
+     * (Standard: {@see RoundingMode::Truncate} = unverändertes bcmath-Verhalten)
+     * wird das exakte Zwischenergebnis stattdessen echt auf `$scale` gerundet.
+     *
+     * @param string       $a Erste Zahl (als String).
+     * @param string       $b Zweite Zahl (als String).
+     * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
+     * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
      * @return string Das Ergebnis.
      */
-    public static function addPrecise(string $a, string $b, int $scale = 0): string {
-        return bcadd($a, $b, $scale);
+    public static function addPrecise(string $a, string $b, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
+        if ($mode === RoundingMode::Truncate) {
+            return bcadd($a, $b, $scale);
+        }
+        $exact = bcadd($a, $b, max(self::decimalScale(trim($a)), self::decimalScale(trim($b))));
+        return self::roundPrecise($exact, $scale, $mode);
     }
 
     /**
      * Subtrahiert zwei große Zahlen ohne Präzisionsverlust.
      *
-     * @param string $a Erste Zahl (Minuend).
-     * @param string $b Zweite Zahl (Subtrahend).
-     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * Zum Rundungsverhalten siehe {@see addPrecise()}.
+     *
+     * @param string       $a Erste Zahl (Minuend).
+     * @param string       $b Zweite Zahl (Subtrahend).
+     * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
+     * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
      * @return string Das Ergebnis.
      */
-    public static function subtractPrecise(string $a, string $b, int $scale = 0): string {
-        return bcsub($a, $b, $scale);
+    public static function subtractPrecise(string $a, string $b, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
+        if ($mode === RoundingMode::Truncate) {
+            return bcsub($a, $b, $scale);
+        }
+        $exact = bcsub($a, $b, max(self::decimalScale(trim($a)), self::decimalScale(trim($b))));
+        return self::roundPrecise($exact, $scale, $mode);
     }
 
     /**
      * Multipliziert zwei große Zahlen ohne Präzisionsverlust.
      *
-     * @param string $a Erste Zahl.
-     * @param string $b Zweite Zahl.
-     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * Ohne `$mode` schneidet bcmath am `$scale` ab (bei Produkten der Normalfall,
+     * da Nachkommastellen sich addieren). Mit `$mode` wird das exakte Produkt
+     * (Skala = Summe der Operanden-Nachkommastellen) echt auf `$scale` gerundet.
+     *
+     * @param string       $a Erste Zahl.
+     * @param string       $b Zweite Zahl.
+     * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
+     * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
      * @return string Das Ergebnis.
      */
-    public static function multiplyPrecise(string $a, string $b, int $scale = 0): string {
-        return bcmul($a, $b, $scale);
+    public static function multiplyPrecise(string $a, string $b, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
+        if ($mode === RoundingMode::Truncate) {
+            return bcmul($a, $b, $scale);
+        }
+        $exact = bcmul($a, $b, self::decimalScale(trim($a)) + self::decimalScale(trim($b)));
+        return self::roundPrecise($exact, $scale, $mode);
     }
 
     /**
      * Dividiert zwei große Zahlen ohne Präzisionsverlust.
      *
-     * @param string $a Dividend.
-     * @param string $b Divisor.
-     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * bcdiv schneidet am `$scale` ab – bei periodischen Quotienten (z. B. 2/3)
+     * praktisch immer. Mit `$mode` wird über einen Puffer gerechnet und das
+     * Ergebnis echt auf `$scale` gerundet (kaufmännisch: `RoundingMode::HalfUp`).
+     *
+     * @param string       $a Dividend.
+     * @param string       $b Divisor.
+     * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
+     * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
      * @return string Das Ergebnis.
      * @throws RuntimeException Bei Division durch Null.
      */
-    public static function dividePrecise(string $a, string $b, int $scale = 0): string {
-        if (bccomp($b, '0', $scale) === 0) {
+    public static function dividePrecise(string $a, string $b, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
+        // Divisor vollpräzise gegen Null prüfen (nicht am $scale trunkiert –
+        // sonst gälte z. B. "0.4" bei $scale=0 fälschlich als Null).
+        if (self::isZeroPrecise($b)) {
             self::logErrorAndThrow(RuntimeException::class, "Division durch Null nicht erlaubt");
         }
-        return bcdiv($a, $b, $scale);
+        if ($mode === RoundingMode::Truncate) {
+            return bcdiv($a, $b, $scale);
+        }
+        return self::roundPrecise(bcdiv($a, $b, $scale + 10), $scale, $mode);
     }
 
     /**
@@ -982,35 +1017,61 @@ class NumberHelper {
     /**
      * Berechnet die Summe eines Arrays großer Zahlen ohne Präzisionsverlust.
      *
-     * @param array<string> $numbers Array von Zahlen als Strings.
-     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * Mit `$mode` wird exakt akkumuliert und erst das Endergebnis gerundet –
+     * keine wiederholte Zwischentrunkierung. Standard bleibt Truncate.
+     *
+     * @param array<array-key,string|int|float> $numbers Array von Zahlen als Strings.
+     * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
+     * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
      * @return string Die Summe.
      */
-    public static function sumPrecise(array $numbers, int $scale = 0): string {
+    public static function sumPrecise(array $numbers, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
+        if ($mode === RoundingMode::Truncate) {
+            $result = '0';
+            foreach ($numbers as $number) {
+                $result = bcadd($result, (string) $number, $scale);
+            }
+            return $result;
+        }
+
+        $work = $scale;
+        foreach ($numbers as $number) {
+            $work = max($work, self::decimalScale(trim((string) $number)));
+        }
         $result = '0';
         foreach ($numbers as $number) {
-            $result = bcadd($result, (string) $number, $scale);
+            $result = bcadd($result, (string) $number, $work);
         }
-        return $result;
+        return self::roundPrecise($result, $scale, $mode);
     }
 
     /**
      * Berechnet die Differenz eines Arrays großer Zahlen (erstes Element minus alle weiteren).
      *
-     * @param array<string> $numbers Array von Zahlen als Strings.
-     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
+     * Zum Rundungsverhalten siehe {@see sumPrecise()}.
+     *
+     * @param array<array-key,string|int|float> $numbers Array von Zahlen als Strings.
+     * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
+     * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
      * @return string Die Differenz.
      */
-    public static function subtractAllPrecise(array $numbers, int $scale = 0): string {
+    public static function subtractAllPrecise(array $numbers, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
         if (empty($numbers)) {
             return '0';
         }
 
+        $work = $scale;
+        if ($mode !== RoundingMode::Truncate) {
+            foreach ($numbers as $number) {
+                $work = max($work, self::decimalScale(trim((string) $number)));
+            }
+        }
+
         $result = (string) array_shift($numbers);
         foreach ($numbers as $number) {
-            $result = bcsub($result, (string) $number, $scale);
+            $result = bcsub($result, (string) $number, $work);
         }
-        return $result;
+        return $mode === RoundingMode::Truncate ? $result : self::roundPrecise($result, $scale, $mode);
     }
 
     /**
@@ -1058,5 +1119,389 @@ class NumberHelper {
      */
     public static function sqrtPrecise(string $number, int $scale = 0): string {
         return bcsqrt($number, $scale);
+    }
+
+    // ==================== Präzise Rundung / Vorzeichen / Verteilung ====================
+
+    /**
+     * Ermittelt die Anzahl der Nachkommastellen eines kanonischen Zahl-Strings.
+     * Interner Helfer für skalen-erhaltende Precise-Operationen.
+     */
+    private static function decimalScale(string $value): int {
+        $dot = strpos($value, '.');
+        return $dot === false ? 0 : strlen($value) - $dot - 1;
+    }
+
+    /**
+     * Rundet einen numerischen String präzisionswahrend auf `$scale` Nachkommastellen.
+     *
+     * Schließt die zentrale bcmath-Lücke: bcadd/bcdiv & Co. runden nicht, sie
+     * schneiden Richtung Null ab. Diese Methode rundet echt gemäß {@see RoundingMode}
+     * (Standard: kaufmännisch HalfUp) und arbeitet vorzeichensicher (kein "-0").
+     *
+     * @param string       $value Numerischer String (kanonisch, Punkt als Dezimaltrenner).
+     * @param int          $scale Ziel-Nachkommastellen (>= 0).
+     * @param RoundingMode $mode  Rundungsverfahren (Standard: HalfUp).
+     * @return string Der gerundete Wert mit genau `$scale` Nachkommastellen.
+     * @throws InvalidArgumentException Bei negativer Skala.
+     */
+    public static function roundPrecise(string $value, int $scale = 0, RoundingMode $mode = RoundingMode::HalfUp): string {
+        if ($scale < 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Scale darf nicht negativ sein: $scale");
+        }
+
+        $value = trim($value);
+        $negative = str_starts_with($value, '-');
+        $abs = $negative ? substr($value, 1) : ltrim($value, '+');
+
+        $work = max(self::decimalScale($abs), $scale + 1);
+        $truncated = bcadd($abs, '0', $scale);          // Betrag Richtung Null gekürzt
+        $rest = bcsub($abs, $truncated, $work);         // exakter Rest jenseits der Zielskala
+        $half = '0.' . str_repeat('0', $scale) . '5';   // 0,5 · 10^-scale
+
+        $roundUp = match ($mode) {
+            RoundingMode::Truncate => false,
+            RoundingMode::Ceil => !$negative && bccomp($rest, '0', $work) > 0,
+            RoundingMode::Floor => $negative && bccomp($rest, '0', $work) > 0,
+            RoundingMode::HalfUp => bccomp($rest, $half, $work) >= 0,
+            RoundingMode::HalfDown => bccomp($rest, $half, $work) > 0,
+            RoundingMode::HalfEven => self::halfEvenRoundsUp($rest, $half, $truncated, $work),
+        };
+
+        if ($roundUp) {
+            $ulp = $scale === 0 ? '1' : '0.' . str_repeat('0', $scale - 1) . '1';
+            $truncated = bcadd($truncated, $ulp, $scale);
+        }
+
+        $result = $negative ? '-' . $truncated : $truncated;
+        // "-0[,00]" auf positives Null normalisieren
+        return bccomp($result, '0', $scale) === 0 ? bcadd('0', '0', $scale) : $result;
+    }
+
+    /**
+     * HalfEven-Entscheidung: bei exakter Hälfte zur geraden Endziffer runden.
+     */
+    private static function halfEvenRoundsUp(string $rest, string $half, string $truncated, int $work): bool {
+        $cmp = bccomp($rest, $half, $work);
+        if ($cmp !== 0) {
+            return $cmp > 0;
+        }
+        $digits = str_replace(['.', '-'], '', $truncated);
+        return ((int) substr($digits, -1)) % 2 === 1;
+    }
+
+    /**
+     * Absolutwert eines numerischen Strings – exakt, ohne Skalen- oder Präzisionsverlust.
+     *
+     * Ersetzt das verbreitete `bccomp($v,'0',$s) < 0 ? bcmul($v,'-1',$s) : $v`-Muster.
+     *
+     * @param string $value Numerischer String.
+     * @return string Betrag von `$value`.
+     */
+    public static function absPrecise(string $value): string {
+        $value = trim($value);
+        return str_starts_with($value, '-') ? substr($value, 1) : ltrim($value, '+');
+    }
+
+    /**
+     * Negiert einen numerischen String skalen-erhaltend (kein "-0").
+     *
+     * @param string $value Numerischer String.
+     * @return string Das Negative von `$value`.
+     */
+    public static function negatePrecise(string $value): string {
+        $value = trim($value);
+        return bcmul($value, '-1', self::decimalScale($value));
+    }
+
+    /**
+     * Vorzeichen eines numerischen Strings.
+     *
+     * @param string $value Numerischer String.
+     * @return int -1, 0 oder 1.
+     */
+    public static function signPrecise(string $value): int {
+        return bccomp(trim($value), '0', self::decimalScale(trim($value)));
+    }
+
+    /**
+     * Prüft, ob ein numerischer String (bei gegebener Skala) null ist.
+     *
+     * @param string   $value Numerischer String.
+     * @param int|null $scale Vergleichsskala; null = volle Präzision des Werts.
+     */
+    public static function isZeroPrecise(string $value, ?int $scale = null): bool {
+        $value = trim($value);
+        return bccomp($value, '0', $scale ?? self::decimalScale($value)) === 0;
+    }
+
+    /**
+     * Prüft, ob ein numerischer String (bei gegebener Skala) positiv ist (> 0).
+     */
+    public static function isPositivePrecise(string $value, ?int $scale = null): bool {
+        $value = trim($value);
+        return bccomp($value, '0', $scale ?? self::decimalScale($value)) > 0;
+    }
+
+    /**
+     * Prüft, ob ein numerischer String (bei gegebener Skala) negativ ist (< 0).
+     */
+    public static function isNegativePrecise(string $value, ?int $scale = null): bool {
+        $value = trim($value);
+        return bccomp($value, '0', $scale ?? self::decimalScale($value)) < 0;
+    }
+
+    /**
+     * Gibt den kleineren zweier numerischer Strings zurück (Original unverändert).
+     *
+     * @param int|null $scale Vergleichsskala; null = maximale Präzision beider Werte.
+     */
+    public static function minPrecise(string $a, string $b, ?int $scale = null): string {
+        $scale ??= max(self::decimalScale(trim($a)), self::decimalScale(trim($b)));
+        return bccomp($a, $b, $scale) <= 0 ? $a : $b;
+    }
+
+    /**
+     * Gibt den größeren zweier numerischer Strings zurück (Original unverändert).
+     *
+     * @param int|null $scale Vergleichsskala; null = maximale Präzision beider Werte.
+     */
+    public static function maxPrecise(string $a, string $b, ?int $scale = null): string {
+        $scale ??= max(self::decimalScale(trim($a)), self::decimalScale(trim($b)));
+        return bccomp($a, $b, $scale) >= 0 ? $a : $b;
+    }
+
+    /**
+     * Begrenzt einen numerischen String präzise auf [$min, $max].
+     *
+     * @param int|null $scale Vergleichsskala; null = maximale Präzision aller Werte.
+     */
+    public static function clampPrecise(string $value, string $min, string $max, ?int $scale = null): string {
+        $scale ??= max(self::decimalScale(trim($value)), self::decimalScale(trim($min)), self::decimalScale(trim($max)));
+        if (bccomp($value, $min, $scale) < 0) {
+            return $min;
+        }
+        if (bccomp($value, $max, $scale) > 0) {
+            return $max;
+        }
+        return $value;
+    }
+
+    /**
+     * Rundet einen numerischen String präzise auf das nächste Vielfache von `$step`.
+     * Präzisionswahrende Entsprechung zu {@see roundToNearest()}.
+     *
+     * @param string       $value Numerischer String.
+     * @param string       $step  Schrittweite (> 0), z. B. "0.05" für 5-Cent-Rundung.
+     * @param int          $scale Ziel-Nachkommastellen des Ergebnisses.
+     * @param RoundingMode $mode  Rundungsverfahren für den Zwischenschritt.
+     * @throws InvalidArgumentException Wenn `$step` nicht > 0 ist.
+     */
+    public static function roundToStepPrecise(string $value, string $step, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
+        if (bccomp($step, '0', self::decimalScale(trim($step))) <= 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Schrittweite muss > 0 sein: $step");
+        }
+        $work = $scale + 8;
+        $steps = self::roundPrecise(bcdiv($value, $step, $work), 0, $mode);
+        return bcmul($steps, $step, $scale);
+    }
+
+    /**
+     * Berechnet den prozentualen Anteil von `$part` an `$total` (Teil/Gesamt·100).
+     * Präzise Entsprechung zu {@see percentage()}; Gesamt = 0 → "0".
+     *
+     * @param string $part  Teilwert.
+     * @param string $total Gesamtwert.
+     * @param int    $scale Nachkommastellen des Ergebnisses (Standard: 2).
+     */
+    public static function percentagePrecise(string $part, string $total, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
+        if (self::isZeroPrecise($total)) {
+            return bcadd('0', '0', $scale);
+        }
+        $work = $scale + 6;
+        return self::roundPrecise(bcdiv(bcmul($part, '100', $work), $total, $work), $scale, $mode);
+    }
+
+    /**
+     * Berechnet `$percent` Prozent von `$value` (Wert·Prozent/100).
+     * Typischer Anwendungsfall: Steuer-/Rabattbeträge (z. B. 19 % USt).
+     *
+     * @param string $value   Basiswert.
+     * @param string $percent Prozentsatz (z. B. "19" für 19 %).
+     * @param int    $scale   Nachkommastellen des Ergebnisses (Standard: 2).
+     */
+    public static function percentOfPrecise(string $value, string $percent, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
+        $work = $scale + 6;
+        return self::roundPrecise(bcdiv(bcmul($value, $percent, $work), '100', $work), $scale, $mode);
+    }
+
+    /**
+     * Verteilt einen Gesamtbetrag cent-sicher gemäß Gewichten auf mehrere Positionen.
+     *
+     * Nutzt das Largest-Remainder-Verfahren: erst wird abgerundet, der durch die
+     * Rundung verbleibende Restbetrag (in ULPs = 10^-scale) wird anschließend auf die
+     * Positionen mit den größten Nachkomma-Resten verteilt. Dadurch gilt garantiert
+     * `sum(result) === round(total, scale)` – kein Cent geht verloren oder entsteht.
+     *
+     * Array-Schlüssel der Gewichte bleiben erhalten. Sind alle Gewichte 0 (oder leer),
+     * wird gleichmäßig verteilt. Negative Gesamtbeträge werden betragsweise verteilt
+     * und das Vorzeichen zurückgegeben.
+     *
+     * @param string                       $total   Zu verteilender Gesamtbetrag.
+     * @param array<array-key,string|int|float> $weights Gewichte/Verhältnisse je Position.
+     * @param int                          $scale   Nachkommastellen (Standard: 2).
+     * @return array<array-key,string> Verteilte Beträge (gleiche Schlüssel wie `$weights`).
+     */
+    public static function allocate(string $total, array $weights, int $scale = 2): array {
+        $keys = array_keys($weights);
+        $n = count($keys);
+        if ($n === 0) {
+            return [];
+        }
+
+        $negative = self::isNegativePrecise($total);
+        $absTotal = self::absPrecise(trim($total));
+        $work = $scale + 8;
+
+        $weightStrings = array_map(static fn ($w): string => (string) $w, array_values($weights));
+        $weightSum = self::sumPrecise($weightStrings, $work);
+        if (bccomp($weightSum, '0', $work) <= 0) {
+            $weightStrings = array_fill(0, $n, '1');
+            $weightSum = (string) $n;
+        }
+
+        $floors = [];
+        $remainders = [];
+        $allocated = bcadd('0', '0', $scale);
+        foreach ($weightStrings as $i => $w) {
+            $exact = bcdiv(bcmul($absTotal, $w, $work), $weightSum, $work);
+            $floor = self::roundPrecise($exact, $scale, RoundingMode::Floor);
+            $floors[$i] = $floor;
+            $remainders[$i] = bcsub($exact, $floor, $work);
+            $allocated = bcadd($allocated, $floor, $scale);
+        }
+
+        $ulp = $scale === 0 ? '1' : '0.' . str_repeat('0', $scale - 1) . '1';
+        $remainder = bcsub($absTotal, $allocated, $scale);
+        $steps = (int) bcdiv($remainder, $ulp, 0);
+
+        // Positionen nach Rest absteigend; bei Gleichstand niedrigerer Index zuerst (deterministisch)
+        $order = range(0, $n - 1);
+        usort($order, static function (int $x, int $y) use ($remainders, $work): int {
+            $cmp = bccomp($remainders[$y], $remainders[$x], $work);
+            return $cmp !== 0 ? $cmp : $x <=> $y;
+        });
+
+        for ($k = 0; $k < $steps; $k++) {
+            $idx = $order[$k % $n];
+            $floors[$idx] = bcadd($floors[$idx], $ulp, $scale);
+        }
+
+        $result = [];
+        foreach ($keys as $pos => $key) {
+            $value = $floors[$pos];
+            $result[$key] = $negative && !self::isZeroPrecise($value, $scale) ? self::negatePrecise($value) : $value;
+        }
+        return $result;
+    }
+
+    /**
+     * Verteilt einen Gesamtbetrag cent-sicher gleichmäßig auf `$parts` Positionen.
+     * Kurzform von {@see allocate()} mit gleichen Gewichten.
+     *
+     * @param string $total Zu verteilender Gesamtbetrag.
+     * @param int    $parts Anzahl Positionen (> 0).
+     * @param int    $scale Nachkommastellen (Standard: 2).
+     * @return array<int,string> Liste der verteilten Beträge.
+     * @throws InvalidArgumentException Wenn `$parts` <= 0.
+     */
+    public static function allocateEvenly(string $total, int $parts, int $scale = 2): array {
+        if ($parts <= 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Anzahl Positionen muss > 0 sein: $parts");
+        }
+        return self::allocate($total, array_fill(0, $parts, '1'), $scale);
+    }
+
+    /**
+     * Berechnet den arithmetischen Durchschnitt einer Liste numerischer Strings – präzise.
+     *
+     * @param array<array-key,string|int|float> $numbers Zahlenliste. Leer → "0".
+     * @param int          $scale Nachkommastellen (Standard: 2).
+     * @param RoundingMode $mode  Rundungsverfahren (Standard: HalfUp).
+     */
+    public static function averagePrecise(array $numbers, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
+        if (empty($numbers)) {
+            return bcadd('0', '0', $scale);
+        }
+        $work = $scale + 6;
+        $sum = self::sumPrecise(array_map(static fn ($n): string => (string) $n, $numbers), $work);
+        return self::roundPrecise(bcdiv($sum, (string) count($numbers), $work), $scale, $mode);
+    }
+
+    /**
+     * Berechnet den Median einer Liste numerischer Strings – präzise.
+     *
+     * @param array<array-key,string|int|float> $numbers Zahlenliste. Leer → "0".
+     * @param int          $scale Nachkommastellen (Standard: 2).
+     * @param RoundingMode $mode  Rundungsverfahren für den Mittelwert bei gerader Anzahl.
+     */
+    public static function medianPrecise(array $numbers, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
+        if (empty($numbers)) {
+            return bcadd('0', '0', $scale);
+        }
+        $nums = array_map(static fn ($n): string => (string) $n, array_values($numbers));
+        $work = $scale + 6;
+        usort($nums, static fn (string $a, string $b): int => bccomp($a, $b, $work));
+
+        $count = count($nums);
+        $mid = intdiv($count, 2);
+        if ($count % 2 === 0) {
+            return self::roundPrecise(bcdiv(bcadd($nums[$mid - 1], $nums[$mid], $work), '2', $work), $scale, $mode);
+        }
+        return self::roundPrecise($nums[$mid], $scale, $mode);
+    }
+
+    /**
+     * Gibt den kleinsten Wert einer Liste numerischer Strings zurück (Original unverändert).
+     *
+     * @param array<array-key,string|int|float> $numbers Zahlenliste.
+     * @param int|null $scale Vergleichsskala; null = maximale Präzision aller Werte.
+     * @return string|null Kleinster Wert oder null bei leerer Liste.
+     */
+    public static function minOfPrecise(array $numbers, ?int $scale = null): ?string {
+        if (empty($numbers)) {
+            return null;
+        }
+        $nums = array_map(static fn ($n): string => (string) $n, array_values($numbers));
+        $scale ??= max(array_map(static fn (string $n): int => self::decimalScale(trim($n)), $nums));
+        $min = $nums[0];
+        foreach ($nums as $n) {
+            if (bccomp($n, $min, $scale) < 0) {
+                $min = $n;
+            }
+        }
+        return $min;
+    }
+
+    /**
+     * Gibt den größten Wert einer Liste numerischer Strings zurück (Original unverändert).
+     *
+     * @param array<array-key,string|int|float> $numbers Zahlenliste.
+     * @param int|null $scale Vergleichsskala; null = maximale Präzision aller Werte.
+     * @return string|null Größter Wert oder null bei leerer Liste.
+     */
+    public static function maxOfPrecise(array $numbers, ?int $scale = null): ?string {
+        if (empty($numbers)) {
+            return null;
+        }
+        $nums = array_map(static fn ($n): string => (string) $n, array_values($numbers));
+        $scale ??= max(array_map(static fn (string $n): int => self::decimalScale(trim($n)), $nums));
+        $max = $nums[0];
+        foreach ($nums as $n) {
+            if (bccomp($n, $max, $scale) > 0) {
+                $max = $n;
+            }
+        }
+        return $max;
     }
 }
