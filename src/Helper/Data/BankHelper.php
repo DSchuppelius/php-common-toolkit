@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\CountryCode;
+use CommonToolkit\Enums\{CountryCode, HashAlgorithm};
 use CommonToolkit\Helper\FileSystem\{File, Folder};
 use ConfigToolkit\ConfigLoader;
 use ERRORToolkit\Traits\ErrorLog;
@@ -97,6 +97,23 @@ class BankHelper {
         $normalized = strtoupper(preg_replace('/\s+/', '', $iban) ?? '');
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    /**
+     * Deterministischer Digest der normalisierten IBAN (Blind-Index).
+     *
+     * Komposition aus {@see self::normalizeIBAN()} und
+     * {@see CryptoHelper::hash()}: null/leer → null, sonst Digest der
+     * normalisierten IBAN (Default: SHA-256, Hex). Das Ausgabeformat ist
+     * Format-Anker für persistierte Blind-Indizes — Änderungen brechen
+     * bestehende Indizes.
+     *
+     * @param string|null $iban Die IBAN (roh, ggf. mit Leerzeichen/gemischter Schreibweise).
+     * @param HashAlgorithm $algorithm Hash-Algorithmus (Default SHA-256).
+     * @return string|null Hex-Digest der normalisierten IBAN oder null bei null/leerer Eingabe.
+     */
+    public static function hashIBAN(?string $iban, HashAlgorithm $algorithm = HashAlgorithm::SHA256): ?string {
+        return CryptoHelper::hash(self::normalizeIBAN($iban), $algorithm);
     }
 
     /**

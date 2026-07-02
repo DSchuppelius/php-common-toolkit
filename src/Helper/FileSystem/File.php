@@ -14,7 +14,7 @@ namespace CommonToolkit\Helper\FileSystem;
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Contracts\Interfaces\FileSystemInterface;
-use CommonToolkit\Enums\SearchMode;
+use CommonToolkit\Enums\{HashAlgorithm, SearchMode};
 use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\{Platform, Shell};
 use CommonToolkit\Traits\RealPathTrait;
@@ -1846,13 +1846,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Berechnet den Hash einer Datei.
      *
      * @param string $file Der Pfad zur Datei.
-     * @param string $algorithm Hash-Algorithmus (Standard: 'sha256'). Weitere: 'md5', 'sha1', 'sha512', etc.
+     * @param HashAlgorithm|string $algorithm Hash-Algorithmus (Standard: SHA-256); Strings weiter erlaubt ('md5', 'sha1', …).
      * @return string Der berechnete Hash.
      * @throws FileNotFoundException Wenn die Datei nicht existiert.
      * @throws InvalidArgumentException Wenn der Algorithmus ungültig ist.
      */
-    public static function hash(string $file, string $algorithm = 'sha256'): string {
+    public static function hash(string $file, HashAlgorithm|string $algorithm = HashAlgorithm::SHA256): string {
         $file = self::resolveFile($file);
+        $algorithm = $algorithm instanceof HashAlgorithm ? $algorithm->value : $algorithm;
 
         if (!in_array($algorithm, hash_algos(), true)) {
             self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiger Hash-Algorithmus: $algorithm");
@@ -1872,11 +1873,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * @param string $file1 Pfad zur ersten Datei.
      * @param string $file2 Pfad zur zweiten Datei.
      * @param bool $byHash Vergleich per Hash (Standard: true) oder byte-für-byte (false).
-     * @param string $algorithm Hash-Algorithmus für Hash-Vergleich (Standard: 'sha256').
+     * @param HashAlgorithm|string $algorithm Hash-Algorithmus für Hash-Vergleich (Standard: SHA-256).
      * @return bool True wenn die Dateien identisch sind.
      * @throws FileNotFoundException Wenn eine der Dateien nicht existiert.
      */
-    public static function compare(string $file1, string $file2, bool $byHash = true, string $algorithm = 'sha256'): bool {
+    public static function compare(string $file1, string $file2, bool $byHash = true, HashAlgorithm|string $algorithm = HashAlgorithm::SHA256): bool {
         $file1 = self::resolveFile($file1);
         $file2 = self::resolveFile($file2);
 

@@ -34,9 +34,6 @@ class CryptoHelper extends HelperAbstract {
     /** @var string Standard-Verschlüsselungsalgorithmus */
     private const DEFAULT_CIPHER = 'aes-256-gcm';
 
-    /** @var string Standard-Hash-Algorithmus */
-    private const DEFAULT_HASH = 'sha256';
-
     /** @var int Standard-IV-Länge */
     private const IV_LENGTH = 12;
 
@@ -194,11 +191,11 @@ class CryptoHelper extends HelperAbstract {
      * @param string $salt Der Salt (mindestens 16 Bytes)
      * @param int $iterations Anzahl Iterationen (mindestens 10000)
      * @param int $length Ausgabelänge in Bytes
-     * @param string $algorithm Hash-Algorithmus
+     * @param HashAlgorithm|string $algorithm Hash-Algorithmus
      * @return string Der abgeleitete Schlüssel (Base64-kodiert)
      * @throws InvalidArgumentException Bei ungültigen Parametern
      */
-    public static function deriveKey(string $password, string $salt, int $iterations = 100000, int $length = 32, string $algorithm = 'sha256'): string {
+    public static function deriveKey(string $password, string $salt, int $iterations = 100000, int $length = 32, HashAlgorithm|string $algorithm = HashAlgorithm::SHA256): string {
         try {
             if (strlen($password) < 1) {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'Password darf nicht leer sein');
@@ -212,9 +209,7 @@ class CryptoHelper extends HelperAbstract {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'Mindestens 10000 Iterationen erforderlich');
             }
 
-            if (!in_array($algorithm, self::ALLOWED_HASHES)) {
-                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
-            }
+            $algorithm = self::resolveCryptographicAlgorithm($algorithm);
 
             $derivedKey = hash_pbkdf2($algorithm, $password, $salt, $iterations, $length, true);
             $result = base64_encode($derivedKey);
@@ -224,6 +219,30 @@ class CryptoHelper extends HelperAbstract {
             self::logException($e);
             throw $e;
         }
+    }
+
+    /**
+     * Löst einen HashAlgorithm|string-Algo-Parameter für die kryptographischen
+     * APIs auf. Enum-Eingaben werden über {@see HashAlgorithm::isCryptographic()}
+     * geprüft (lehnt MD5/SHA1/CRC/XXH ab), String-Eingaben weiterhin über die
+     * ALLOWED_HASHES-Liste (BC).
+     *
+     * @throws InvalidArgumentException Bei ungeeignetem Algorithmus
+     */
+    private static function resolveCryptographicAlgorithm(HashAlgorithm|string $algorithm): string {
+        if ($algorithm instanceof HashAlgorithm) {
+            if (!$algorithm->isCryptographic()) {
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm->value);
+            }
+
+            return $algorithm->value;
+        }
+
+        if (!in_array($algorithm, self::ALLOWED_HASHES)) {
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
+        }
+
+        return $algorithm;
     }
 
     /**
@@ -251,19 +270,17 @@ class CryptoHelper extends HelperAbstract {
      *
      * @param string $data Die zu hashenden Daten
      * @param string $salt Der Salt (wird generiert wenn leer)
-     * @param string $algorithm Hash-Algorithmus
+     * @param HashAlgorithm|string $algorithm Hash-Algorithmus
      * @return array{hash: string, salt: string, algorithm: string} Hash-Ergebnis
      * @throws InvalidArgumentException Bei ungültigen Parametern
      */
-    public static function secureHash(string $data, string $salt = '', string $algorithm = self::DEFAULT_HASH): array {
+    public static function secureHash(string $data, string $salt = '', HashAlgorithm|string $algorithm = HashAlgorithm::SHA256): array {
         try {
             if (empty($data)) {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'Zu hashende Daten dürfen nicht leer sein');
             }
 
-            if (!in_array($algorithm, self::ALLOWED_HASHES)) {
-                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
-            }
+            $algorithm = self::resolveCryptographicAlgorithm($algorithm);
 
             if (empty($salt)) {
                 $salt = random_bytes(32);
@@ -322,11 +339,11 @@ class CryptoHelper extends HelperAbstract {
      *
      * @param string $data Die zu signierenden Daten
      * @param string $key Der HMAC-Schlüssel
-     * @param string $algorithm Hash-Algorithmus
+     * @param HashAlgorithm|string $algorithm Hash-Algorithmus
      * @return string Die HMAC-Signatur (Base64-kodiert)
      * @throws InvalidArgumentException Bei ungültigen Parametern
      */
-    public static function createHmac(string $data, string $key, string $algorithm = self::DEFAULT_HASH): string {
+    public static function createHmac(string $data, string $key, HashAlgorithm|string $algorithm = HashAlgorithm::SHA256): string {
         try {
             if (empty($data)) {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'Zu signierende Daten dürfen nicht leer sein');
@@ -336,9 +353,7 @@ class CryptoHelper extends HelperAbstract {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'HMAC-Schlüssel darf nicht leer sein');
             }
 
-            if (!in_array($algorithm, self::ALLOWED_HASHES)) {
-                self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
-            }
+            $algorithm = self::resolveCryptographicAlgorithm($algorithm);
 
             $hmac = hash_hmac($algorithm, $data, $key, true);
             $result = base64_encode($hmac);
@@ -356,10 +371,10 @@ class CryptoHelper extends HelperAbstract {
      * @param string $data Die ursprünglichen Daten
      * @param string $signature Die zu verifizierende Signatur
      * @param string $key Der HMAC-Schlüssel
-     * @param string $algorithm Hash-Algorithmus
+     * @param HashAlgorithm|string $algorithm Hash-Algorithmus
      * @return bool True wenn Signatur gültig ist
      */
-    public static function verifyHmac(string $data, string $signature, string $key, string $algorithm = self::DEFAULT_HASH): bool {
+    public static function verifyHmac(string $data, string $signature, string $key, HashAlgorithm|string $algorithm = HashAlgorithm::SHA256): bool {
         try {
             $expectedSignature = self::createHmac($data, $key, $algorithm);
             $result = hash_equals($expectedSignature, $signature);
