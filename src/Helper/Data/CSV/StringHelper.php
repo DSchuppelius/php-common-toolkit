@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\Data\CSV;
 
 use CommonToolkit\Entities\CSV\DataLine;
+use CommonToolkit\Enums\Common\CSV\QuotingStyle;
 use CommonToolkit\Helper\Data\StringHelper as BaseStringHelper;
 use RuntimeException;
 use Throwable;
@@ -546,24 +547,42 @@ final class StringHelper extends BaseStringHelper {
     /**
      * Encodiert einen einzelnen CSV-Feldwert (RFC 4180) für die Ausgabe.
      *
-     * Gegenstück zu {@see parseField()}: Ein Feld wird nur dann in Enclosures
-     * gesetzt, wenn es das Trennzeichen, das Enclosure selbst oder einen
-     * Zeilenumbruch (\n / \r) enthält; enthaltene Enclosures werden verdoppelt.
-     * Mit $forceEnclosure wird IMMER umschlossen (z. B. für Formate, die jedes
-     * Feld quoten). Ist $enclosure leer, wird der Wert unverändert zurückgegeben.
+     * Gegenstück zu {@see parseField()}. Das Quoting-Verhalten steuert
+     * {@see QuotingStyle}:
+     * - {@see QuotingStyle::MINIMAL}: Nur quoten, wenn das Feld Trennzeichen,
+     *   Enclosure oder Zeilenumbruch (\n / \r) enthält; Enclosures werden verdoppelt.
+     * - {@see QuotingStyle::ALWAYS}: Jedes Feld wird immer umschlossen.
+     * - {@see QuotingStyle::FPUTCSV}: Byte-kompatibel zu PHPs fputcsv(): quotet
+     *   zusätzlich bei Escape-Zeichen ($escape), Tab (\t) und Leerzeichen;
+     *   Enclosures werden nur verdoppelt, wenn sie NICHT unmittelbar auf das
+     *   Escape-Zeichen folgen (fputcsv-Escape-Semantik). Byte-Parität gilt für
+     *   Ein-Zeichen-Delimiter/-Enclosure/-Escape ($escape = '' entspricht
+     *   fputcsv mit deaktiviertem Escape).
      *
-     * @param string $value          Der zu encodierende Feldwert.
-     * @param string $delimiter       Das Spaltentrennzeichen.
-     * @param string $enclosure       Das Enclosure-Zeichen ('' = kein Quoting).
-     * @param bool   $forceEnclosure  Immer umschließen statt nur bei Bedarf.
-     * @return string                 Das encodierte Feld.
+     * Ist $enclosure leer, wird der Wert unverändert zurückgegeben.
+     *
+     * @param string            $value     Der zu encodierende Feldwert.
+     * @param string            $delimiter Das Spaltentrennzeichen.
+     * @param string            $enclosure Das Enclosure-Zeichen ('' = kein Quoting).
+     * @param bool|QuotingStyle $quoting   Quoting-Strategie. Bool ist der rückwärtskompatible
+     *                                     Alias des früheren $forceEnclosure-Parameters
+     *                                     (true = ALWAYS, false = MINIMAL) und gilt als deprecated.
+     * @param string            $escape    Escape-Zeichen für QuotingStyle::FPUTCSV
+     *                                     (Standard '\\' wie bei fputcsv; '' = kein Escape).
+     * @return string                      Das encodierte Feld.
      */
-    public static function encodeField(string $value, string $delimiter = ',', string $enclosure = '"', bool $forceEnclosure = false): string {
+    public static function encodeField(string $value, string $delimiter = ',', string $enclosure = '"', bool|QuotingStyle $quoting = QuotingStyle::MINIMAL, string $escape = '\\'): string {
         if ($enclosure === '') {
             return $value;
         }
 
-        $needsEnclosure = $forceEnclosure
+        $style = is_bool($quoting) ? ($quoting ? QuotingStyle::ALWAYS : QuotingStyle::MINIMAL) : $quoting;
+
+        if ($style === QuotingStyle::FPUTCSV) {
+            return self::encodeFieldFputcsv($value, $delimiter, $enclosure, $escape);
+        }
+
+        $needsEnclosure = $style === QuotingStyle::ALWAYS
             || str_contains($value, $delimiter)
             || str_contains($value, $enclosure)
             || str_contains($value, "\n")
@@ -577,22 +596,74 @@ final class StringHelper extends BaseStringHelper {
     }
 
     /**
+     * Encodiert ein Feld byte-kompatibel zu PHPs fputcsv().
+     *
+     * Nachbildung der fputcsv-Schreiblogik (php_fputcsv, ext/standard/file.c):
+     * Gequotet wird, wenn das Feld Delimiter, Enclosure, Escape-Zeichen,
+     * \n, \r, \t oder Leerzeichen enthält. Beim Schreiben wird ein Enclosure
+     * nur verdoppelt, wenn es nicht unmittelbar auf das Escape-Zeichen folgt.
+     *
+     * @param string $value     Der zu encodierende Feldwert.
+     * @param string $delimiter Das Spaltentrennzeichen (1 Zeichen).
+     * @param string $enclosure Das Enclosure-Zeichen (1 Zeichen).
+     * @param string $escape    Das Escape-Zeichen (1 Zeichen, '' = kein Escape).
+     * @return string           Das encodierte Feld.
+     */
+    private static function encodeFieldFputcsv(string $value, string $delimiter, string $enclosure, string $escape): string {
+        $needsEnclosure = str_contains($value, $delimiter)
+            || str_contains($value, $enclosure)
+            || ($escape !== '' && str_contains($value, $escape))
+            || str_contains($value, "\n")
+            || str_contains($value, "\r")
+            || str_contains($value, "\t")
+            || str_contains($value, ' ');
+
+        if (!$needsEnclosure) {
+            return $value;
+        }
+
+        $result = $enclosure;
+        $escaped = false;
+        $len = strlen($value);
+
+        for ($i = 0; $i < $len; $i++) {
+            $char = $value[$i];
+            if ($escape !== '' && $char === $escape) {
+                $escaped = true;
+            } elseif (!$escaped && $char === $enclosure) {
+                $result .= $enclosure; // Enclosure verdoppeln (RFC-4180-Escape)
+            } else {
+                $escaped = false;
+            }
+            $result .= $char;
+        }
+
+        return $result . $enclosure;
+    }
+
+    /**
      * Encodiert eine komplette CSV-Zeile aus Feldwerten (ohne Zeilenumbruch).
      *
      * Nutzt {@see encodeField()} je Feld und verbindet mit dem Trennzeichen.
      * `null`-Werte werden zu ''. Für streamende Exporte den Zeilenumbruch
      * (z. B. "\r\n") selbst anhängen.
      *
-     * @param array<int|string, scalar|null> $fields Feldwerte in Spaltenreihenfolge.
-     * @param string                          $delimiter       Das Spaltentrennzeichen.
-     * @param string                          $enclosure       Das Enclosure-Zeichen.
-     * @param bool                            $forceEnclosure  Jedes Feld immer umschließen.
-     * @return string                                          Die encodierte Zeile ohne Zeilenumbruch.
+     * Terminator-Konvention: fputcsv() hängt standardmäßig "\n" an die Zeile an,
+     * encodeLine() bewusst NICHT. Für Byte-Parität mit fputcsv() daher
+     * encodeLine(..., QuotingStyle::FPUTCSV) . "\n" verwenden.
+     *
+     * @param array<int|string, scalar|null> $fields    Feldwerte in Spaltenreihenfolge.
+     * @param string                         $delimiter Das Spaltentrennzeichen.
+     * @param string                         $enclosure Das Enclosure-Zeichen.
+     * @param bool|QuotingStyle              $quoting   Quoting-Strategie (bool = deprecated
+     *                                                  Alias für $forceEnclosure, s. {@see encodeField()}).
+     * @param string                         $escape    Escape-Zeichen für QuotingStyle::FPUTCSV.
+     * @return string                                   Die encodierte Zeile ohne Zeilenumbruch.
      */
-    public static function encodeLine(array $fields, string $delimiter = ',', string $enclosure = '"', bool $forceEnclosure = false): string {
+    public static function encodeLine(array $fields, string $delimiter = ',', string $enclosure = '"', bool|QuotingStyle $quoting = QuotingStyle::MINIMAL, string $escape = '\\'): string {
         $parts = [];
         foreach (array_values($fields) as $value) {
-            $parts[] = self::encodeField($value === null ? '' : (string) $value, $delimiter, $enclosure, $forceEnclosure);
+            $parts[] = self::encodeField($value === null ? '' : (string) $value, $delimiter, $enclosure, $quoting, $escape);
         }
 
         return implode($delimiter, $parts);

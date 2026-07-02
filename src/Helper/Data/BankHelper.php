@@ -79,6 +79,27 @@ class BankHelper {
     }
 
     /**
+     * Normalisiert eine IBAN für Vergleich, Speicherung und Hash-Bildung.
+     *
+     * Entfernt sämtlichen Whitespace (auch Tabs/Zeilenumbrüche, egal an welcher
+     * Position) und vereinheitlicht auf Großschreibung. Es findet bewusst KEINE
+     * Validierung und KEINE Formatierung statt – die Rückgabe ist formatstabil
+     * und damit z.B. als Grundlage für Blind-Indizes/Hashes geeignet.
+     *
+     * @param string|null $iban Die IBAN (roh, ggf. mit Leerzeichen/gemischter Schreibweise).
+     * @return string|null Die normalisierte IBAN oder null bei null/leerer Eingabe.
+     */
+    public static function normalizeIBAN(?string $iban): ?string {
+        if ($iban === null) {
+            return null;
+        }
+
+        $normalized = strtoupper(preg_replace('/\s+/', '', $iban) ?? '');
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    /**
      * Validiert eine IBAN mit optionaler Prüfsummenvalidierung.
      *
      * Diese Methode kombiniert Format- und Prüfsummenvalidierung:

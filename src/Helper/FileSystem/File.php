@@ -1471,6 +1471,92 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Liefert die übliche Dateiendung (ohne Punkt) zu einem MIME-Typ.
+     *
+     * Umkehrhelfer zu {@see mimeType()}: nützlich, wenn Inhalte ohne Dateinamen
+     * vorliegen (z.B. HTTP-Downloads mit Content-Type) und ein Dateiname erzeugt
+     * werden soll. MIME-Parameter (z.B. "; charset=utf-8") werden ignoriert,
+     * Groß-/Kleinschreibung spielt keine Rolle. Bei MIME-Typen mit mehreren
+     * gebräuchlichen Endungen wird die üblichste gewählt (z.B. image/jpeg → jpg).
+     *
+     * @param string $mimeType Der MIME-Typ (z.B. "application/pdf" oder "text/csv; charset=utf-8").
+     * @return string|null Die Dateiendung ohne Punkt oder null bei unbekanntem MIME-Typ.
+     */
+    public static function extensionForMimeType(string $mimeType): ?string {
+        $normalized = strtolower(trim(explode(';', $mimeType, 2)[0]));
+
+        return match ($normalized) {
+            'application/pdf' => 'pdf',
+            'image/jpeg', 'image/pjpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/tiff' => 'tif',
+            'image/webp' => 'webp',
+            'image/avif' => 'avif',
+            'image/bmp', 'image/x-ms-bmp' => 'bmp',
+            'image/svg+xml' => 'svg',
+            'image/heic', 'image/heic-sequence' => 'heic',
+            'image/heif', 'image/heif-sequence' => 'heif',
+            'image/x-icon', 'image/vnd.microsoft.icon' => 'ico',
+            'application/xml', 'text/xml', 'application/x-xml' => 'xml',
+            'text/csv', 'application/csv' => 'csv',
+            'text/plain' => 'txt',
+            'text/html', 'application/xhtml+xml' => 'html',
+            'text/css' => 'css',
+            'text/markdown', 'text/x-markdown' => 'md',
+            'text/calendar' => 'ics',
+            'text/vcard', 'text/x-vcard' => 'vcf',
+            'text/yaml', 'application/yaml', 'application/x-yaml' => 'yaml',
+            'application/json' => 'json',
+            'application/ld+json' => 'jsonld',
+            'application/javascript', 'text/javascript' => 'js',
+            'application/sql' => 'sql',
+            'application/zip', 'application/x-zip', 'application/x-zip-compressed' => 'zip',
+            'application/gzip', 'application/x-gzip' => 'gz',
+            'application/x-tar' => 'tar',
+            'application/x-7z-compressed' => '7z',
+            'application/vnd.rar', 'application/x-rar', 'application/x-rar-compressed' => 'rar',
+            'application/x-bzip2' => 'bz2',
+            'application/x-xz' => 'xz',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            'application/vnd.ms-excel.sheet.macroenabled.12' => 'xlsm',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+            'application/vnd.ms-word.document.macroenabled.12' => 'docm',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+            'application/vnd.ms-powerpoint.presentation.macroenabled.12' => 'pptm',
+            'application/vnd.ms-excel' => 'xls',
+            'application/msword' => 'doc',
+            'application/vnd.ms-powerpoint' => 'ppt',
+            'application/vnd.oasis.opendocument.text' => 'odt',
+            'application/vnd.oasis.opendocument.spreadsheet' => 'ods',
+            'application/vnd.oasis.opendocument.presentation' => 'odp',
+            'application/vnd.oasis.opendocument.graphics' => 'odg',
+            'application/rtf', 'text/rtf' => 'rtf',
+            'application/epub+zip' => 'epub',
+            'message/rfc822' => 'eml',
+            'application/vnd.ms-outlook' => 'msg',
+            'audio/mpeg' => 'mp3',
+            'audio/wav', 'audio/vnd.wave', 'audio/x-wav' => 'wav',
+            'audio/ogg' => 'ogg',
+            'audio/flac', 'audio/x-flac' => 'flac',
+            'audio/aac' => 'aac',
+            'audio/mp4', 'audio/x-m4a' => 'm4a',
+            'audio/opus' => 'opus',
+            'video/mp4' => 'mp4',
+            'video/mpeg' => 'mpeg',
+            'video/webm' => 'webm',
+            'video/quicktime' => 'mov',
+            'video/x-msvideo' => 'avi',
+            'video/x-matroska' => 'mkv',
+            'font/woff', 'application/font-woff' => 'woff',
+            'font/woff2' => 'woff2',
+            'font/ttf', 'application/x-font-ttf' => 'ttf',
+            'font/otf', 'application/x-font-opentype' => 'otf',
+            default => null,
+        };
+    }
+
+    /**
      * Prüft ob der Dateiname ein Windows-reservierter Gerätename ist.
      * Diese Namen existieren unter Windows "virtuell" und file_exists() gibt fälschlicherweise true zurück.
      * Diese Prüfung ist auch auf Linux für Samba-Kompatibilität relevant.

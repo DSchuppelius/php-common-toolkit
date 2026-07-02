@@ -639,6 +639,27 @@ class StringHelper {
     }
 
     /**
+     * Stellt einem String ein BOM (Byte Order Mark) voran (Gegenstück zu {@see stripBom()}).
+     *
+     * Idempotent: Beginnt der Inhalt bereits mit dem BOM des angegebenen Encodings,
+     * wird er unverändert zurückgegeben (kein doppeltes BOM). Für Encodings ohne
+     * BOM (z.B. ISO-8859-1 oder unbekannte Angaben, vgl. {@see getBomForEncoding()})
+     * wird der Inhalt ebenfalls unverändert zurückgegeben.
+     *
+     * @param string $content  Der Inhalt, dem das BOM vorangestellt werden soll
+     * @param string $encoding Das Ziel-Encoding (Standard: UTF-8)
+     * @return string          Der Inhalt mit genau einem führenden BOM (sofern das Encoding eines besitzt)
+     */
+    public static function prependBom(string $content, string $encoding = 'UTF-8'): string {
+        $bom = self::getBomForEncoding($encoding);
+        if ($bom === null || str_starts_with($content, $bom)) {
+            return $content;
+        }
+
+        return $bom . $content;
+    }
+
+    /**
      * Entfernt nicht druckbare Zeichen aus einem String.
      *
      * @param string|null $input Der zu bereinigende String (null wird als leerer String behandelt).
