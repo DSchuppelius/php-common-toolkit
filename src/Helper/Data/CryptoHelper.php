@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\Data;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Enums\HashAlgorithm;
 use Exception;
 use InvalidArgumentException;
 
@@ -223,6 +224,26 @@ class CryptoHelper extends HelperAbstract {
             self::logException($e);
             throw $e;
         }
+    }
+
+    /**
+     * Deterministischer, ungesalzener Digest eines Strings.
+     *
+     * Gegenstück zu {@see self::secureHash()} (gesalzen/base64): Gleicher
+     * Input ergibt immer denselben Digest — geeignet für Blind-Indizes,
+     * Dedupe-Keys und Integritätsprüfungen, NICHT für Passwörter.
+     *
+     * @param string|null $data Der zu hashende String (null → null; '' wird regulär gehasht).
+     * @param HashAlgorithm $algorithm Hash-Algorithmus (Default SHA-256).
+     * @param bool $binary True für Roh-Bytes statt Hex-Darstellung.
+     * @return string|null Digest (hex, oder binär bei $binary) bzw. null bei null-Eingabe.
+     */
+    public static function hash(?string $data, HashAlgorithm $algorithm = HashAlgorithm::SHA256, bool $binary = false): ?string {
+        if ($data === null) {
+            return null;
+        }
+
+        return hash($algorithm->value, $data, $binary);
     }
 
     /**
