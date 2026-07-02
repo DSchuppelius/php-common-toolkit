@@ -915,11 +915,11 @@ class NumberHelper {
      * (Standard: {@see RoundingMode::Truncate} = unverändertes bcmath-Verhalten)
      * wird das exakte Zwischenergebnis stattdessen echt auf `$scale` gerundet.
      *
-     * @param string       $a Erste Zahl (als String).
-     * @param string       $b Zweite Zahl (als String).
+     * @param numeric-string $a Erste Zahl (als String).
+     * @param numeric-string $b Zweite Zahl (als String).
      * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
      * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
-     * @return string Das Ergebnis.
+     * @return numeric-string Das Ergebnis.
      */
     public static function addPrecise(string $a, string $b, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
         if ($mode === RoundingMode::Truncate) {
@@ -934,11 +934,11 @@ class NumberHelper {
      *
      * Zum Rundungsverhalten siehe {@see addPrecise()}.
      *
-     * @param string       $a Erste Zahl (Minuend).
-     * @param string       $b Zweite Zahl (Subtrahend).
+     * @param numeric-string $a Erste Zahl (Minuend).
+     * @param numeric-string $b Zweite Zahl (Subtrahend).
      * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
      * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
-     * @return string Das Ergebnis.
+     * @return numeric-string Das Ergebnis.
      */
     public static function subtractPrecise(string $a, string $b, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
         if ($mode === RoundingMode::Truncate) {
@@ -955,11 +955,11 @@ class NumberHelper {
      * da Nachkommastellen sich addieren). Mit `$mode` wird das exakte Produkt
      * (Skala = Summe der Operanden-Nachkommastellen) echt auf `$scale` gerundet.
      *
-     * @param string       $a Erste Zahl.
-     * @param string       $b Zweite Zahl.
+     * @param numeric-string $a Erste Zahl.
+     * @param numeric-string $b Zweite Zahl.
      * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
      * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
-     * @return string Das Ergebnis.
+     * @return numeric-string Das Ergebnis.
      */
     public static function multiplyPrecise(string $a, string $b, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
         if ($mode === RoundingMode::Truncate) {
@@ -976,11 +976,11 @@ class NumberHelper {
      * praktisch immer. Mit `$mode` wird über einen Puffer gerechnet und das
      * Ergebnis echt auf `$scale` gerundet (kaufmännisch: `RoundingMode::HalfUp`).
      *
-     * @param string       $a Dividend.
-     * @param string       $b Divisor.
+     * @param numeric-string $a Dividend.
+     * @param numeric-string $b Divisor.
      * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
      * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
-     * @return string Das Ergebnis.
+     * @return numeric-string Das Ergebnis.
      * @throws RuntimeException Bei Division durch Null.
      */
     public static function dividePrecise(string $a, string $b, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
@@ -1004,11 +1004,11 @@ class NumberHelper {
      * definierten Ersatzwert liefern soll statt zu werfen. Kapselt das häufige
      * `bccomp($b,'0',$scale) > 0 ? bcdiv($a,$b,$scale) : $default`.
      *
-     * @param string $a       Dividend (numerischer String).
-     * @param string $b       Divisor (numerischer String).
-     * @param int    $scale   Anzahl Dezimalstellen (Standard: 0).
-     * @param string $default Ersatzwert, wenn $b nicht > 0 (Standard: "0").
-     * @return string         Quotient oder $default.
+     * @param numeric-string $a       Dividend.
+     * @param numeric-string $b       Divisor.
+     * @param int            $scale   Anzahl Dezimalstellen (Standard: 0).
+     * @param numeric-string $default Ersatzwert, wenn $b nicht > 0 (Standard: "0").
+     * @return numeric-string         Quotient oder $default.
      */
     public static function divideOrDefault(string $a, string $b, int $scale = 0, string $default = '0'): string {
         return bccomp($b, '0', $scale) > 0 ? bcdiv($a, $b, $scale) : $default;
@@ -1023,7 +1023,7 @@ class NumberHelper {
      * @param array<array-key,string|int|float> $numbers Array von Zahlen als Strings.
      * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
      * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
-     * @return string Die Summe.
+     * @return numeric-string Die Summe.
      */
     public static function sumPrecise(array $numbers, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
         if ($mode === RoundingMode::Truncate) {
@@ -1053,7 +1053,7 @@ class NumberHelper {
      * @param array<array-key,string|int|float> $numbers Array von Zahlen als Strings.
      * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
      * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
-     * @return string Die Differenz.
+     * @return numeric-string Die Differenz.
      */
     public static function subtractAllPrecise(array $numbers, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
         if (empty($numbers)) {
@@ -1077,8 +1077,8 @@ class NumberHelper {
     /**
      * Vergleicht zwei große Zahlen.
      *
-     * @param string $a Erste Zahl.
-     * @param string $b Zweite Zahl.
+     * @param numeric-string $a Erste Zahl.
+     * @param numeric-string $b Zweite Zahl.
      * @param int $scale Anzahl Dezimalstellen (Standard: 0).
      * @return int -1 wenn a < b, 0 wenn gleich, 1 wenn a > b.
      */
@@ -1089,36 +1089,54 @@ class NumberHelper {
     /**
      * Berechnet den Modulo großer Zahlen ohne Präzisionsverlust.
      *
-     * @param string $a Dividend.
-     * @param string $b Divisor.
+     * @param numeric-string $a Dividend.
+     * @param numeric-string $b Divisor.
      * @param int $scale Anzahl Dezimalstellen (Standard: 0).
-     * @return string Der Rest.
+     * @return numeric-string Der Rest.
+     * @throws RuntimeException Bei Modulo durch Null.
      */
     public static function modPrecise(string $a, string $b, int $scale = 0): string {
+        if (bccomp($b, '0', $scale) === 0) {
+            self::logErrorAndThrow(RuntimeException::class, "Modulo durch Null nicht erlaubt");
+        }
         return bcmod($a, $b, $scale);
     }
 
     /**
      * Potenziert eine große Zahl ohne Präzisionsverlust.
      *
-     * @param string $base Basis.
-     * @param string $exponent Exponent.
+     * Mit `$mode` wird mit Reserve-Skala gerechnet und das Endergebnis echt
+     * gerundet, statt Richtung Null zu kürzen. Standard bleibt Truncate.
+     *
+     * @param numeric-string $base Basis.
+     * @param numeric-string $exponent Exponent (ganzzahliger Anteil; bcpow-Semantik).
      * @param int $scale Anzahl Dezimalstellen (Standard: 0).
-     * @return string Das Ergebnis.
+     * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
+     * @return numeric-string Das Ergebnis.
      */
-    public static function powPrecise(string $base, string $exponent, int $scale = 0): string {
-        return bcpow($base, $exponent, $scale);
+    public static function powPrecise(string $base, string $exponent, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
+        if ($mode === RoundingMode::Truncate) {
+            return bcpow($base, $exponent, $scale);
+        }
+        return self::roundPrecise(bcpow($base, $exponent, $scale + 10), $scale, $mode);
     }
 
     /**
      * Berechnet die Quadratwurzel einer großen Zahl.
      *
-     * @param string $number Die Zahl.
-     * @param int $scale Anzahl Dezimalstellen (Standard: 0).
-     * @return string Die Quadratwurzel.
+     * Mit `$mode` wird mit Reserve-Skala gerechnet und das Endergebnis echt
+     * gerundet, statt Richtung Null zu kürzen. Standard bleibt Truncate.
+     *
+     * @param numeric-string $number Die Zahl.
+     * @param int            $scale Anzahl Dezimalstellen (Standard: 0).
+     * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
+     * @return numeric-string Die Quadratwurzel.
      */
-    public static function sqrtPrecise(string $number, int $scale = 0): string {
-        return bcsqrt($number, $scale);
+    public static function sqrtPrecise(string $number, int $scale = 0, RoundingMode $mode = RoundingMode::Truncate): string {
+        if ($mode === RoundingMode::Truncate) {
+            return bcsqrt($number, $scale);
+        }
+        return self::roundPrecise(bcsqrt($number, $scale + 10), $scale, $mode);
     }
 
     // ==================== Präzise Rundung / Vorzeichen / Verteilung ====================
@@ -1139,10 +1157,10 @@ class NumberHelper {
      * schneiden Richtung Null ab. Diese Methode rundet echt gemäß {@see RoundingMode}
      * (Standard: kaufmännisch HalfUp) und arbeitet vorzeichensicher (kein "-0").
      *
-     * @param string       $value Numerischer String (kanonisch, Punkt als Dezimaltrenner).
-     * @param int          $scale Ziel-Nachkommastellen (>= 0).
-     * @param RoundingMode $mode  Rundungsverfahren (Standard: HalfUp).
-     * @return string Der gerundete Wert mit genau `$scale` Nachkommastellen.
+     * @param numeric-string $value Numerischer String (kanonisch, Punkt als Dezimaltrenner).
+     * @param int            $scale Ziel-Nachkommastellen (>= 0).
+     * @param RoundingMode   $mode  Rundungsverfahren (Standard: HalfUp).
+     * @return numeric-string Der gerundete Wert mit genau `$scale` Nachkommastellen.
      * @throws InvalidArgumentException Bei negativer Skala.
      */
     public static function roundPrecise(string $value, int $scale = 0, RoundingMode $mode = RoundingMode::HalfUp): string {
@@ -1173,7 +1191,7 @@ class NumberHelper {
             $truncated = bcadd($truncated, $ulp, $scale);
         }
 
-        $result = $negative ? '-' . $truncated : $truncated;
+        $result = $negative ? bcmul($truncated, '-1', $scale) : $truncated;
         // "-0[,00]" auf positives Null normalisieren
         return bccomp($result, '0', $scale) === 0 ? bcadd('0', '0', $scale) : $result;
     }
@@ -1195,8 +1213,8 @@ class NumberHelper {
      *
      * Ersetzt das verbreitete `bccomp($v,'0',$s) < 0 ? bcmul($v,'-1',$s) : $v`-Muster.
      *
-     * @param string $value Numerischer String.
-     * @return string Betrag von `$value`.
+     * @param numeric-string $value Numerischer String.
+     * @return numeric-string Betrag von `$value`.
      */
     public static function absPrecise(string $value): string {
         $value = trim($value);
@@ -1206,8 +1224,8 @@ class NumberHelper {
     /**
      * Negiert einen numerischen String skalen-erhaltend (kein "-0").
      *
-     * @param string $value Numerischer String.
-     * @return string Das Negative von `$value`.
+     * @param numeric-string $value Numerischer String.
+     * @return numeric-string Das Negative von `$value`.
      */
     public static function negatePrecise(string $value): string {
         $value = trim($value);
@@ -1217,7 +1235,7 @@ class NumberHelper {
     /**
      * Vorzeichen eines numerischen Strings.
      *
-     * @param string $value Numerischer String.
+     * @param numeric-string $value Numerischer String.
      * @return int -1, 0 oder 1.
      */
     public static function signPrecise(string $value): int {
@@ -1227,8 +1245,8 @@ class NumberHelper {
     /**
      * Prüft, ob ein numerischer String (bei gegebener Skala) null ist.
      *
-     * @param string   $value Numerischer String.
-     * @param int|null $scale Vergleichsskala; null = volle Präzision des Werts.
+     * @param numeric-string $value Numerischer String.
+     * @param int|null       $scale Vergleichsskala; null = volle Präzision des Werts.
      */
     public static function isZeroPrecise(string $value, ?int $scale = null): bool {
         $value = trim($value);
@@ -1237,6 +1255,9 @@ class NumberHelper {
 
     /**
      * Prüft, ob ein numerischer String (bei gegebener Skala) positiv ist (> 0).
+     *
+     * @param numeric-string $value Numerischer String.
+     * @param int|null       $scale Vergleichsskala; null = volle Präzision des Werts.
      */
     public static function isPositivePrecise(string $value, ?int $scale = null): bool {
         $value = trim($value);
@@ -1245,6 +1266,9 @@ class NumberHelper {
 
     /**
      * Prüft, ob ein numerischer String (bei gegebener Skala) negativ ist (< 0).
+     *
+     * @param numeric-string $value Numerischer String.
+     * @param int|null       $scale Vergleichsskala; null = volle Präzision des Werts.
      */
     public static function isNegativePrecise(string $value, ?int $scale = null): bool {
         $value = trim($value);
@@ -1254,7 +1278,10 @@ class NumberHelper {
     /**
      * Gibt den kleineren zweier numerischer Strings zurück (Original unverändert).
      *
-     * @param int|null $scale Vergleichsskala; null = maximale Präzision beider Werte.
+     * @param numeric-string $a     Numerischer String.
+     * @param numeric-string $b     Numerischer String.
+     * @param int|null       $scale Vergleichsskala; null = maximale Präzision beider Werte.
+     * @return numeric-string
      */
     public static function minPrecise(string $a, string $b, ?int $scale = null): string {
         $scale ??= max(self::decimalScale(trim($a)), self::decimalScale(trim($b)));
@@ -1264,7 +1291,10 @@ class NumberHelper {
     /**
      * Gibt den größeren zweier numerischer Strings zurück (Original unverändert).
      *
-     * @param int|null $scale Vergleichsskala; null = maximale Präzision beider Werte.
+     * @param numeric-string $a     Numerischer String.
+     * @param numeric-string $b     Numerischer String.
+     * @param int|null       $scale Vergleichsskala; null = maximale Präzision beider Werte.
+     * @return numeric-string
      */
     public static function maxPrecise(string $a, string $b, ?int $scale = null): string {
         $scale ??= max(self::decimalScale(trim($a)), self::decimalScale(trim($b)));
@@ -1274,7 +1304,11 @@ class NumberHelper {
     /**
      * Begrenzt einen numerischen String präzise auf [$min, $max].
      *
-     * @param int|null $scale Vergleichsskala; null = maximale Präzision aller Werte.
+     * @param numeric-string $value Numerischer String.
+     * @param numeric-string $min   Untere Grenze.
+     * @param numeric-string $max   Obere Grenze.
+     * @param int|null       $scale Vergleichsskala; null = maximale Präzision aller Werte.
+     * @return numeric-string
      */
     public static function clampPrecise(string $value, string $min, string $max, ?int $scale = null): string {
         $scale ??= max(self::decimalScale(trim($value)), self::decimalScale(trim($min)), self::decimalScale(trim($max)));
@@ -1291,10 +1325,11 @@ class NumberHelper {
      * Rundet einen numerischen String präzise auf das nächste Vielfache von `$step`.
      * Präzisionswahrende Entsprechung zu {@see roundToNearest()}.
      *
-     * @param string       $value Numerischer String.
-     * @param string       $step  Schrittweite (> 0), z. B. "0.05" für 5-Cent-Rundung.
-     * @param int          $scale Ziel-Nachkommastellen des Ergebnisses.
-     * @param RoundingMode $mode  Rundungsverfahren für den Zwischenschritt.
+     * @param numeric-string $value Numerischer String.
+     * @param numeric-string $step  Schrittweite (> 0), z. B. "0.05" für 5-Cent-Rundung.
+     * @param int            $scale Ziel-Nachkommastellen des Ergebnisses.
+     * @param RoundingMode   $mode  Rundungsverfahren für den Zwischenschritt.
+     * @return numeric-string
      * @throws InvalidArgumentException Wenn `$step` nicht > 0 ist.
      */
     public static function roundToStepPrecise(string $value, string $step, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
@@ -1310,9 +1345,10 @@ class NumberHelper {
      * Berechnet den prozentualen Anteil von `$part` an `$total` (Teil/Gesamt·100).
      * Präzise Entsprechung zu {@see percentage()}; Gesamt = 0 → "0".
      *
-     * @param string $part  Teilwert.
-     * @param string $total Gesamtwert.
-     * @param int    $scale Nachkommastellen des Ergebnisses (Standard: 2).
+     * @param numeric-string $part  Teilwert.
+     * @param numeric-string $total Gesamtwert.
+     * @param int            $scale Nachkommastellen des Ergebnisses (Standard: 2).
+     * @return numeric-string
      */
     public static function percentagePrecise(string $part, string $total, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
         if (self::isZeroPrecise($total)) {
@@ -1326,9 +1362,10 @@ class NumberHelper {
      * Berechnet `$percent` Prozent von `$value` (Wert·Prozent/100).
      * Typischer Anwendungsfall: Steuer-/Rabattbeträge (z. B. 19 % USt).
      *
-     * @param string $value   Basiswert.
-     * @param string $percent Prozentsatz (z. B. "19" für 19 %).
-     * @param int    $scale   Nachkommastellen des Ergebnisses (Standard: 2).
+     * @param numeric-string $value   Basiswert.
+     * @param numeric-string $percent Prozentsatz (z. B. "19" für 19 %).
+     * @param int            $scale   Nachkommastellen des Ergebnisses (Standard: 2).
+     * @return numeric-string
      */
     public static function percentOfPrecise(string $value, string $percent, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
         $work = $scale + 6;
@@ -1347,10 +1384,10 @@ class NumberHelper {
      * wird gleichmäßig verteilt. Negative Gesamtbeträge werden betragsweise verteilt
      * und das Vorzeichen zurückgegeben.
      *
-     * @param string                       $total   Zu verteilender Gesamtbetrag.
+     * @param numeric-string                    $total   Zu verteilender Gesamtbetrag.
      * @param array<array-key,string|int|float> $weights Gewichte/Verhältnisse je Position.
-     * @param int                          $scale   Nachkommastellen (Standard: 2).
-     * @return array<array-key,string> Verteilte Beträge (gleiche Schlüssel wie `$weights`).
+     * @param int                               $scale   Nachkommastellen (Standard: 2).
+     * @return array<array-key,numeric-string> Verteilte Beträge (gleiche Schlüssel wie `$weights`).
      */
     public static function allocate(string $total, array $weights, int $scale = 2): array {
         $keys = array_keys($weights);
@@ -1409,10 +1446,10 @@ class NumberHelper {
      * Verteilt einen Gesamtbetrag cent-sicher gleichmäßig auf `$parts` Positionen.
      * Kurzform von {@see allocate()} mit gleichen Gewichten.
      *
-     * @param string $total Zu verteilender Gesamtbetrag.
-     * @param int    $parts Anzahl Positionen (> 0).
-     * @param int    $scale Nachkommastellen (Standard: 2).
-     * @return array<int,string> Liste der verteilten Beträge.
+     * @param numeric-string $total Zu verteilender Gesamtbetrag.
+     * @param int            $parts Anzahl Positionen (> 0).
+     * @param int            $scale Nachkommastellen (Standard: 2).
+     * @return array<array-key,numeric-string> Liste der verteilten Beträge.
      * @throws InvalidArgumentException Wenn `$parts` <= 0.
      */
     public static function allocateEvenly(string $total, int $parts, int $scale = 2): array {
@@ -1426,8 +1463,9 @@ class NumberHelper {
      * Berechnet den arithmetischen Durchschnitt einer Liste numerischer Strings – präzise.
      *
      * @param array<array-key,string|int|float> $numbers Zahlenliste. Leer → "0".
-     * @param int          $scale Nachkommastellen (Standard: 2).
-     * @param RoundingMode $mode  Rundungsverfahren (Standard: HalfUp).
+     * @param int                               $scale Nachkommastellen (Standard: 2).
+     * @param RoundingMode                      $mode  Rundungsverfahren (Standard: HalfUp).
+     * @return numeric-string
      */
     public static function averagePrecise(array $numbers, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
         if (empty($numbers)) {
@@ -1442,8 +1480,9 @@ class NumberHelper {
      * Berechnet den Median einer Liste numerischer Strings – präzise.
      *
      * @param array<array-key,string|int|float> $numbers Zahlenliste. Leer → "0".
-     * @param int          $scale Nachkommastellen (Standard: 2).
-     * @param RoundingMode $mode  Rundungsverfahren für den Mittelwert bei gerader Anzahl.
+     * @param int                               $scale Nachkommastellen (Standard: 2).
+     * @param RoundingMode                      $mode  Rundungsverfahren für den Mittelwert bei gerader Anzahl.
+     * @return numeric-string
      */
     public static function medianPrecise(array $numbers, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
         if (empty($numbers)) {
@@ -1465,8 +1504,8 @@ class NumberHelper {
      * Gibt den kleinsten Wert einer Liste numerischer Strings zurück (Original unverändert).
      *
      * @param array<array-key,string|int|float> $numbers Zahlenliste.
-     * @param int|null $scale Vergleichsskala; null = maximale Präzision aller Werte.
-     * @return string|null Kleinster Wert oder null bei leerer Liste.
+     * @param int|null                          $scale Vergleichsskala; null = maximale Präzision aller Werte.
+     * @return numeric-string|null Kleinster Wert oder null bei leerer Liste.
      */
     public static function minOfPrecise(array $numbers, ?int $scale = null): ?string {
         if (empty($numbers)) {
@@ -1487,8 +1526,8 @@ class NumberHelper {
      * Gibt den größten Wert einer Liste numerischer Strings zurück (Original unverändert).
      *
      * @param array<array-key,string|int|float> $numbers Zahlenliste.
-     * @param int|null $scale Vergleichsskala; null = maximale Präzision aller Werte.
-     * @return string|null Größter Wert oder null bei leerer Liste.
+     * @param int|null                          $scale Vergleichsskala; null = maximale Präzision aller Werte.
+     * @return numeric-string|null Größter Wert oder null bei leerer Liste.
      */
     public static function maxOfPrecise(array $numbers, ?int $scale = null): ?string {
         if (empty($numbers)) {

@@ -207,6 +207,16 @@ class NumberHelperPreciseTest extends BaseTestCase {
         $this->assertEquals('0.00', NumberHelper::multiplyPrecise('0.005', '0.005', 2, RoundingMode::HalfUp));
     }
 
+    public function test_pow_sqrt_precise_round(): void {
+        // 1.5^3 = 3.375 → Truncate 3.37, HalfUp 3.38
+        $this->assertEquals('3.37', NumberHelper::powPrecise('1.5', '3', 2));
+        $this->assertEquals('3.38', NumberHelper::powPrecise('1.5', '3', 2, RoundingMode::HalfUp));
+
+        // sqrt(3) = 1.73205080… → Truncate 1.7320, HalfUp 1.7321
+        $this->assertEquals('1.7320', NumberHelper::sqrtPrecise('3', 4));
+        $this->assertEquals('1.7321', NumberHelper::sqrtPrecise('3', 4, RoundingMode::HalfUp));
+    }
+
     public function test_add_subtract_precise_round(): void {
         $this->assertEquals('3.02', NumberHelper::addPrecise('1.008', '2.007', 2, RoundingMode::HalfUp));      // 3.015 → 3.02
         $this->assertEquals('1.00', NumberHelper::subtractPrecise('2.000', '1.005', 2, RoundingMode::HalfUp)); // 0.995 → 1.00
@@ -227,6 +237,16 @@ class NumberHelperPreciseTest extends BaseTestCase {
     public function test_divide_precise_zero_divisor_throws(): void {
         $this->expectException(\RuntimeException::class);
         NumberHelper::dividePrecise('1', '0', 2);
+    }
+
+    public function test_mod_precise(): void {
+        $this->assertEquals('1', NumberHelper::modPrecise('7', '3'));
+        $this->assertEquals('1.5', NumberHelper::modPrecise('7.5', '2', 1));
+    }
+
+    public function test_mod_precise_zero_divisor_throws(): void {
+        $this->expectException(\RuntimeException::class);
+        NumberHelper::modPrecise('7', '0', 2);
     }
 
     // --------------------------------------------------------------- Aggregation
