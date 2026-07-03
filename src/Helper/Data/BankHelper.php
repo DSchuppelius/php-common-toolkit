@@ -110,7 +110,9 @@ class BankHelper {
      *
      * @param string|null $iban Die IBAN (roh, ggf. mit Leerzeichen/gemischter Schreibweise).
      * @param HashAlgorithm $algorithm Hash-Algorithmus (Default SHA-256).
-     * @return string|null Hex-Digest der normalisierten IBAN oder null bei null/leerer Eingabe.
+     * @return string|null Hex-Digest der normalisierten IBAN oder null bei null/leerer
+     *                     Eingabe (auch Whitespace-only → null; daher bewusst KEINE
+     *                     konditionale ($iban is null …)-Annotation).
      */
     public static function hashIBAN(?string $iban, HashAlgorithm $algorithm = HashAlgorithm::SHA256): ?string {
         return CryptoHelper::hash(self::normalizeIBAN($iban), $algorithm);

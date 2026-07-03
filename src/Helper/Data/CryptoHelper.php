@@ -255,7 +255,7 @@ class CryptoHelper extends HelperAbstract {
      * @param string|null $data Der zu hashende String (null → null; '' wird regulär gehasht).
      * @param HashAlgorithm $algorithm Hash-Algorithmus (Default SHA-256).
      * @param bool $binary True für Roh-Bytes statt Hex-Darstellung.
-     * @return string|null Digest (hex, oder binär bei $binary) bzw. null bei null-Eingabe.
+     * @return ($data is null ? null : string) Digest (hex, oder binär bei $binary) bzw. null bei null-Eingabe.
      */
     public static function hash(?string $data, HashAlgorithm $algorithm = HashAlgorithm::SHA256, bool $binary = false): ?string {
         if ($data === null) {
