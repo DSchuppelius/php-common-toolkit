@@ -3,7 +3,7 @@
  * Created on   : Wed Jul 08 2026
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : StructureTests.php
+ * Filename     : StructureTest.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -15,7 +15,7 @@ namespace Tests\Helper\CSV;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use Tests\Contracts\BaseTestCase;
 
-class StructureTests extends BaseTestCase {
+class StructureTest extends BaseTestCase {
     public function test_check_structure_with_field_array(): void {
         $tests = [
             ['row' => ['01.02.2024', '1.234,56', 'Miete Januar'],           'pattern' => 'dbt',   'expected' => true],
@@ -71,6 +71,27 @@ class StructureTests extends BaseTestCase {
         $this->assertFalse(StringHelper::checkStructure(['01.02.2024'], ''));
         // Unbekanntes Symbol fällt nicht mehr still durch, sondern schlägt sauber fehl
         $this->assertFalse(StringHelper::checkStructure(['01.02.2024', '1,00'], 'dx'));
+        // Verirrte '?' (ohne Symbol davor bzw. doppelt) sind ungültig
+        $this->assertFalse(StringHelper::checkStructure(['01.02.2024'], '?d'));
+        $this->assertFalse(StringHelper::checkStructure(['01.02.2024', '1,00'], 'd??'));
+    }
+
+    public function test_check_structure_optional_modifier(): void {
+        // 'b?' = Betrag oder leer; Soll/Haben-Spalten, von denen nur eine gefüllt ist
+        $this->assertTrue(StringHelper::checkStructure(['01.02.2024', 'Miete', '-50,00', ''], 'dtb?b?'));
+        $this->assertTrue(StringHelper::checkStructure(['01.02.2024', 'Miete', '', '+100,00'], 'dtb?b?'));
+        $this->assertTrue(StringHelper::checkStructure(['01.02.2024', 'Miete', '', ''], 'dtb?b?'));
+        // Gefüllter Wert muss weiterhin dem Typ entsprechen
+        $this->assertFalse(StringHelper::checkStructure(['01.02.2024', 'Miete', 'kein Betrag', ''], 'dtb?b?'));
+
+        // 'd?' entspricht dem Alt-Kürzel 'D'
+        $this->assertTrue(StringHelper::checkStructure(['', '1.234,56'], 'd?b'));
+        $this->assertTrue(StringHelper::checkStructure(['01.02.2024', '1.234,56'], 'd?b'));
+        $this->assertFalse(StringHelper::checkStructure(['kein Datum', '1.234,56'], 'd?b'));
+
+        // Token-Anzahl (nicht String-Länge) bestimmt die erwartete Spaltenanzahl
+        $this->assertTrue(StringHelper::checkStructure(['01.02.2024', ''], 'db?'));
+        $this->assertFalse(StringHelper::checkStructure(['01.02.2024'], 'db?'));
     }
 
     public function test_match_columns_with_field_array(): void {

@@ -3,7 +3,7 @@
  * Created on   : Wed Oct 15 2025
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : LineTests.php
+ * Filename     : LineTest.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -15,7 +15,7 @@ namespace Tests\Helper\CSV;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use Tests\Contracts\BaseTestCase;
 
-class LineTests extends BaseTestCase {
+class LineTest extends BaseTestCase {
     public function test_detect_enclosure_repeat(): void {
         $tests = [
 

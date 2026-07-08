@@ -3,7 +3,7 @@
  * Created on   : Wed Jul 01 2026
  * Author       : Daniel Jörg Schuppelius
  * Author Uri   : https://schuppelius.org
- * Filename     : EncodeTests.php
+ * Filename     : EncodeTest.php
  * License      : MIT License
  * License Uri  : https://opensource.org/license/mit
  */
@@ -15,7 +15,7 @@ namespace Tests\Helper\CSV;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use Tests\Contracts\BaseTestCase;
 
-class EncodeTests extends BaseTestCase {
+class EncodeTest extends BaseTestCase {
     public function test_encode_field_leaves_plain_values_unquoted(): void {
         $this->assertSame('hello', StringHelper::encodeField('hello', ';', '"'));
         $this->assertSame('123', StringHelper::encodeField('123', ';', '"'));

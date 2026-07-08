@@ -536,10 +536,14 @@ final class StringHelper extends BaseStringHelper {
      * i = IBAN, I = maskierte IBAN, c = BIC, t = Text, u = alphanumerisch (Großschreibung),
      * _ = beliebig.
      *
+     * Ein an ein Symbol angehängtes '?' erlaubt zusätzlich leere Werte
+     * (z. B. 'b?' = Betrag oder leer); 'D' ist das Alt-Kürzel für 'd?'.
+     * Die erwartete Spaltenanzahl bemisst sich an der Token-Anzahl des Musters.
+     *
      * @param array<int|string, scalar|null>|string $row Zeile als Feld-Array oder rohe CSV-Zeile
-     * @param string      $pattern   Das Strukturmuster (z. B. "dbkti")
+     * @param string      $pattern   Das Strukturmuster (z. B. "dbkti" oder "d_b?b?")
      * @param int|null    $columns   Erwartete Spaltenanzahl (optional)
-     * @param bool        $strict    Spaltenanzahl muss exakt der Musterlänge entsprechen (Standard: true)
+     * @param bool        $strict    Spaltenanzahl muss exakt der Token-Anzahl entsprechen (Standard: true)
      * @param string|null $delimiter Trennzeichen für String-Eingaben (null = automatisch erkennen)
      * @param string      $enclosure Enclosure-Zeichen für String-Eingaben
      */
@@ -548,7 +552,12 @@ final class StringHelper extends BaseStringHelper {
             return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: leeres Strukturmuster.");
         }
 
-        $unknown = array_diff(array_unique(str_split($pattern)), Validator::STRUCTURE_SYMBOLS);
+        // Muster tokenisieren: Symbol + optionaler '?'-Modifikator (leerer Wert erlaubt).
+        // Verirrte '?' werden zu eigenen Tokens und scheitern an der Symbol-Prüfung.
+        preg_match_all('/(.)(\??)/su', $pattern, $matches, PREG_SET_ORDER);
+        $tokens = array_map(static fn ($m) => [$m[1], $m[2] === '?'], $matches);
+
+        $unknown = array_diff(array_unique(array_column($tokens, 0)), Validator::STRUCTURE_SYMBOLS);
         if ($unknown !== []) {
             return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: unbekannte Mustersymbole '" . implode("', '", $unknown) . "' in '$pattern'.");
         }
@@ -558,19 +567,20 @@ final class StringHelper extends BaseStringHelper {
             return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: Zeile nicht parsebar.");
         }
 
+        $expected = count($tokens);
         if (!is_null($columns) && count($fields) !== $columns) {
             return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet $columns Spalten, erhalten: " . count($fields));
-        } elseif ($strict && count($fields) !== strlen($pattern)) {
-            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet " . strlen($pattern) . " Spalten, erhalten: " . count($fields));
-        } elseif (!$strict && count($fields) < strlen($pattern)) {
-            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet mindestens " . strlen($pattern) . " Spalten, erhalten: " . count($fields));
+        } elseif ($strict && count($fields) !== $expected) {
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet $expected Spalten, erhalten: " . count($fields));
+        } elseif (!$strict && count($fields) < $expected) {
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet mindestens $expected Spalten, erhalten: " . count($fields));
         }
 
-        foreach (str_split($pattern) as $index => $symbol) {
+        foreach ($tokens as $index => [$symbol, $optional]) {
             $value = $fields[$index] ?? '';
 
-            // Optionales Datum
-            if ($symbol === 'D' && trim($value) === '') {
+            // Optionales Feld: '?'-Modifikator bzw. Alt-Kürzel 'D' erlauben leere Werte
+            if (($optional || $symbol === 'D') && trim($value) === '') {
                 continue;
             }
 
