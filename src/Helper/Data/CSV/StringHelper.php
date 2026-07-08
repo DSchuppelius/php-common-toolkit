@@ -14,7 +14,7 @@ namespace CommonToolkit\Helper\Data\CSV;
 
 use CommonToolkit\Entities\CSV\DataLine;
 use CommonToolkit\Enums\Common\CSV\QuotingStyle;
-use CommonToolkit\Helper\Data\StringHelper as BaseStringHelper;
+use CommonToolkit\Helper\Data\{StringHelper as BaseStringHelper, Validator};
 use RuntimeException;
 use Throwable;
 
@@ -503,6 +503,133 @@ final class StringHelper extends BaseStringHelper {
         }
 
         return $fields;
+    }
+
+    /**
+     * Wandelt eine Zeile (Feld-Array oder rohe CSV-Zeile) in ein Feld-Array um.
+     *
+     * @param array<int|string, scalar|null>|string $row Feld-Array oder rohe CSV-Zeile
+     * @param string|null $delimiter Trennzeichen für String-Eingaben (null = automatisch erkennen)
+     * @param string      $enclosure Enclosure-Zeichen für String-Eingaben
+     * @return array<int, string>|null Feld-Array oder null, wenn die Zeile nicht parsebar ist
+     */
+    private static function rowToFields(array|string $row, ?string $delimiter, string $enclosure): ?array {
+        if (is_array($row)) {
+            return array_map(static fn ($value) => (string) ($value ?? ''), array_values($row));
+        }
+
+        try {
+            $delimiter ??= self::detectDelimiter($row);
+            return self::extractFields($row, $delimiter, $enclosure);
+        } catch (Throwable $e) {
+            self::logDebug("Zeile konnte nicht als CSV geparst werden: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Prüft eine CSV-Zeile gegen ein Struktur-/Typmuster (z. B. "ti__d").
+     *
+     * Jedes Zeichen des Musters beschreibt den erwarteten Typ einer Spalte
+     * ({@see Validator::validateBySymbol()}, Symbole: {@see Validator::STRUCTURE_SYMBOLS}):
+     * d = Datum, D = optionales Datum, b = Betrag, B = Bankleitzahl, k = Kontonummer,
+     * i = IBAN, I = maskierte IBAN, c = BIC, t = Text, u = alphanumerisch (Großschreibung),
+     * _ = beliebig.
+     *
+     * @param array<int|string, scalar|null>|string $row Zeile als Feld-Array oder rohe CSV-Zeile
+     * @param string      $pattern   Das Strukturmuster (z. B. "dbkti")
+     * @param int|null    $columns   Erwartete Spaltenanzahl (optional)
+     * @param bool        $strict    Spaltenanzahl muss exakt der Musterlänge entsprechen (Standard: true)
+     * @param string|null $delimiter Trennzeichen für String-Eingaben (null = automatisch erkennen)
+     * @param string      $enclosure Enclosure-Zeichen für String-Eingaben
+     */
+    public static function checkStructure(array|string $row, string $pattern, ?int $columns = null, bool $strict = true, ?string $delimiter = null, string $enclosure = '"'): bool {
+        if ($pattern === '') {
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: leeres Strukturmuster.");
+        }
+
+        $unknown = array_diff(array_unique(str_split($pattern)), Validator::STRUCTURE_SYMBOLS);
+        if ($unknown !== []) {
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: unbekannte Mustersymbole '" . implode("', '", $unknown) . "' in '$pattern'.");
+        }
+
+        $fields = self::rowToFields($row, $delimiter, $enclosure);
+        if ($fields === null) {
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: Zeile nicht parsebar.");
+        }
+
+        if (!is_null($columns) && count($fields) !== $columns) {
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet $columns Spalten, erhalten: " . count($fields));
+        } elseif ($strict && count($fields) !== strlen($pattern)) {
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet " . strlen($pattern) . " Spalten, erhalten: " . count($fields));
+        } elseif (!$strict && count($fields) < strlen($pattern)) {
+            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet mindestens " . strlen($pattern) . " Spalten, erhalten: " . count($fields));
+        }
+
+        foreach (str_split($pattern) as $index => $symbol) {
+            $value = $fields[$index] ?? '';
+
+            // Optionales Datum
+            if ($symbol === 'D' && trim($value) === '') {
+                continue;
+            }
+
+            if (!Validator::validateBySymbol($symbol, $value)) {
+                return self::logDebugAndReturn(false, "Spalte $index entspricht nicht dem erwarteten Musterzeichen '$symbol' – Wert: '$value'");
+            }
+        }
+
+        return self::logDebugAndReturn(true, "Strukturprüfung erfolgreich für Muster: '$pattern'");
+    }
+
+    /**
+     * Prüft, ob die Spalten einer Zeile mit den angegebenen Mustern beginnen.
+     *
+     * Jedes Muster wird als Präfix-Vergleich auf die jeweilige Spalte angewendet,
+     * '*' überspringt eine Spalte.
+     *
+     * @param array<int|string, scalar|null>|string $row Zeile als Feld-Array oder rohe CSV-Zeile
+     * @param array<int, string> $patterns Die Muster für die Spalten
+     * @param string      $encoding  Zeichenkodierung der Eingabe (Standard: 'UTF-8')
+     * @param bool        $strict    Spaltenanzahl muss exakt der Musteranzahl entsprechen (Standard: true)
+     * @param string|null $delimiter Trennzeichen für String-Eingaben (null = automatisch erkennen)
+     * @param string      $enclosure Enclosure-Zeichen für String-Eingaben
+     */
+    public static function matchColumns(array|string $row, array $patterns, string $encoding = 'UTF-8', bool $strict = true, ?string $delimiter = null, string $enclosure = '"'): bool {
+        if (empty($patterns)) {
+            return self::logDebugAndReturn(false, "matchColumns erwartet mindestens ein Muster.");
+        }
+
+        $fields = self::rowToFields($row, $delimiter, $enclosure);
+        if ($fields === null || $fields === []) {
+            return self::logDebugAndReturn(false, "matchColumns erwartet eine nicht-leere Zeile.");
+        }
+
+        if (implode('', $fields) === '') {
+            return self::logDebugAndReturn(false, "Leere Zeile erkannt, kein Vergleich notwendig.");
+        } elseif ($strict && count($fields) !== count($patterns)) {
+            return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($fields) . ") entspricht nicht der Musteranzahl (" . count($patterns) . ").");
+        } elseif (!$strict && count($fields) < count($patterns)) {
+            return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($fields) . ") ist kleiner als die Musteranzahl (" . count($patterns) . ").");
+        }
+
+        foreach (array_values($patterns) as $index => $pattern) {
+            $pattern = (string) $pattern;
+            if ($pattern === '*') {
+                continue;
+            }
+
+            $cell = $fields[$index] ?? '';
+            // Encoding berücksichtigen
+            $cellUtf8 = mb_convert_encoding($cell, 'UTF-8', $encoding);
+            $patternQuoted = preg_quote($pattern, '/');
+
+            if (!preg_match("/^$patternQuoted/", $cell) && !preg_match("/^$patternQuoted/", $cellUtf8)) {
+                return self::logDebugAndReturn(false, "Muster nicht gefunden: »" . $pattern . "« in Spalte[$index] = »" . $cell . "«");
+            }
+        }
+
+        return self::logDebugAndReturn(true, "Alle Muster erfolgreich in den Spalten gefunden.");
     }
 
     /**

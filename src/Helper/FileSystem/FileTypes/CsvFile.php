@@ -15,7 +15,6 @@ namespace CommonToolkit\Helper\FileSystem\FileTypes;
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\CSV\DataLine;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
-use CommonToolkit\Helper\Data\Validator;
 use CommonToolkit\Helper\FileSystem\File;
 use Exception;
 use Generator;
@@ -231,6 +230,8 @@ class CsvFile extends HelperAbstract {
     /**
      * Überprüft die Struktur einer CSV-Datei anhand eines Strukturmusters.
      *
+     * Die Zeilen-Prüfung übernimmt {@see StringHelper::checkStructure()}.
+     *
      * @param string $file            Der Pfad zur CSV-Datei.
      * @param string $structurePattern Das Strukturmuster (z. B. "dbkti").
      * @param string|null $delimiter  Das Trennzeichen (optional).
@@ -246,7 +247,7 @@ class CsvFile extends HelperAbstract {
         }
 
         foreach (self::readLines($file, $delimiter) as $row) {
-            if (!self::checkStructure($row, $structurePattern, $expectedColumns, $strict)) {
+            if (!StringHelper::checkStructure($row, $structurePattern, $expectedColumns, $strict)) {
                 return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen bei Zeile: " . implode($delimiter, $row));
             }
 
@@ -260,6 +261,8 @@ class CsvFile extends HelperAbstract {
 
     /**
      * Sucht eine Zeile in einer CSV-Datei, die mit den angegebenen Mustern übereinstimmt.
+     *
+     * Die Zeilen-Prüfung übernimmt {@see StringHelper::matchColumns()}.
      *
      * @param string $file            Der Pfad zur CSV-Datei.
      * @param array $columnPatterns   Die Muster für die Spalten.
@@ -276,89 +279,13 @@ class CsvFile extends HelperAbstract {
         }
 
         foreach (self::readLines($file, $delimiter) as $row) {
-            if (self::matchColumns($row, $columnPatterns, $encoding, $strict)) {
+            if (StringHelper::matchColumns($row, $columnPatterns, $encoding, $strict)) {
                 $matchingRow = $row;
                 return self::logDebugAndReturn(true, "Zeile mit Muster gefunden: " . implode($delimiter, $row));
             }
         }
 
         return self::logDebugAndReturn(false, "Keine passende Zeile in $file gefunden.");
-    }
-
-    /**
-     * Prüft, ob die Spalten einer Zeile mit den angegebenen Mustern übereinstimmen.
-     *
-     * @param array|null $row       Die CSV-Zeile als Array.
-     * @param array|null $patterns  Die Muster für die Spalten.
-     * @param string $encoding      Die Zeichenkodierung (Standard: 'UTF-8').
-     * @param bool $strict         Strikte Übereinstimmung (Standard: true).
-     */
-    public static function matchColumns(?array $row, ?array $patterns, string $encoding = 'UTF-8', bool $strict = true): bool {
-        if (!is_array($row) || empty($row)) {
-            return self::logDebugAndReturn(false, "matchColumns erwartet ein Array als erste Zeile.");
-        } elseif (!is_array($patterns) || empty($patterns)) {
-            return self::logDebugAndReturn(false, "matchColumns erwartet ein Array als Muster.");
-        } elseif (implode('', $row) === '') {
-            return self::logDebugAndReturn(false, "Leere Zeile erkannt, kein Vergleich notwendig.");
-        } elseif ($strict && count($row) != count($patterns)) {
-            return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($row) . ") entspricht nicht der Musteranzahl (" . count($patterns) . ").");
-        } elseif (!$strict && count($row) < count($patterns)) {
-            return self::logDebugAndReturn(false, "Spaltenanzahl (" . count($row) . ") ist kleiner als die Musteranzahl (" . count($patterns) . ").");
-        }
-
-        foreach ($row as $index => $cell) {
-            if (!isset($patterns[$index])) {
-                break;
-            }
-            $pattern = $patterns[$index];
-
-            if ($pattern === '*') {
-                continue;
-            }
-
-            // Encoding berücksichtigen
-            $cellUtf8 = mb_convert_encoding($cell ?? '', 'UTF-8', $encoding);
-            $patternQuoted = preg_quote($pattern, '/');
-
-            if (!preg_match("/^$patternQuoted/", $cell) && !preg_match("/^$patternQuoted/", $cellUtf8)) {
-                return self::logDebugAndReturn(false, "Muster nicht gefunden: »" . $patternQuoted . "« in Spalte[$index] = »" . $cell . "«");
-            }
-        }
-
-        return self::logDebugAndReturn(true, "Alle Muster erfolgreich in den Spalten gefunden.");
-    }
-
-    /**
-     * Prüft eine CSV-Zeile gegen ein Strukturmuster.
-     *
-     * @param array $row        Die CSV-Zeile als Array.
-     * @param string $patterns  Ein Strukturmuster (z. B. "dbkti").
-     * @param int|null $columns Erwartete Spaltenanzahl (optional).
-     * @param bool $strict      Strikte Übereinstimmung (Standard: true).
-     */
-    public static function checkStructure(array $row, string $patterns, ?int $columns = null, bool $strict = true): bool {
-        if (!is_null($columns) && count($row) !== $columns) {
-            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet $columns Spalten, erhalten: " . count($row));
-        } elseif ($strict && count($row) != strlen($patterns)) {
-            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet " . strlen($patterns) . " Spalten, erhalten: " . count($row));
-        } elseif (!$strict && count($row) < strlen($patterns)) {
-            return self::logDebugAndReturn(false, "Strukturprüfung fehlgeschlagen: erwartet mindestens " . strlen($patterns) . " Spalten, erhalten: " . count($row));
-        }
-
-        foreach (str_split($patterns) as $index => $symbol) {
-            $wert = $row[$index] ?? '';
-
-            // Optionales Datum
-            if ($symbol === 'D' && empty(trim($wert))) {
-                continue;
-            }
-
-            if (!Validator::validateBySymbol($symbol, $wert)) {
-                return self::logDebugAndReturn(false, "Spalte $index entspricht nicht dem erwarteten Musterzeichen '$symbol' – Wert: '$wert'");
-            }
-        }
-
-        return self::logDebugAndReturn(true, "Strukturprüfung erfolgreich für Muster: '$patterns'");
     }
 
     /**

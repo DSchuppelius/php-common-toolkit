@@ -22,6 +22,13 @@ namespace CommonToolkit\Helper\Data;
  */
 class Validator {
     /**
+     * Unterstützte Struktursymbole für {@see validateBySymbol()} (Muster-DSL, z. B. "dbkti").
+     *
+     * @var string[]
+     */
+    public const STRUCTURE_SYMBOLS = ['d', 'D', 'b', 'B', 'k', 'i', 'I', 'c', 't', 'u', '_'];
+
+    /**
      * Prüft, ob der Wert ein gültiges Datum ist.
      */
     public static function isDate(string $value): bool {
@@ -47,7 +54,7 @@ class Validator {
      * Prüft, ob der Wert eine maskierte IBAN ist.
      */
     public static function isMaskedIBAN(string $value): bool {
-        // z. B. DE4430020900XXXXXX123
+        // z. B. DEXX30020900123XXXX456
         return BankHelper::isIBANAnon($value);
     }
 
