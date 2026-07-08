@@ -534,7 +534,7 @@ final class StringHelper extends BaseStringHelper {
      * ({@see Validator::validateBySymbol()}, Symbole: {@see Validator::STRUCTURE_SYMBOLS}):
      * d = Datum, D = optionales Datum, b = Betrag, B = Bankleitzahl, k = Kontonummer,
      * i = IBAN, I = maskierte IBAN, c = BIC, t = Text, u = alphanumerisch (Großschreibung),
-     * _ = beliebig.
+     * e = leer (Feld muss leer sein), _ = beliebig.
      *
      * Ein an ein Symbol angehängtes '?' erlaubt zusätzlich leere Werte
      * (z. B. 'b?' = Betrag oder leer); 'D' ist das Alt-Kürzel für 'd?'.

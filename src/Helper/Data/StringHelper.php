@@ -160,7 +160,30 @@ class StringHelper {
         $encoding = strtoupper(trim($encoding));
         // DOS-Codepages werden von mb_* nicht unterstützt
         $unsupported = ['CP437', 'IBM437', '437', 'CP850', 'IBM850', '850', 'CP852', 'IBM852', '852', 'CP865', 'IBM865', '865'];
-        return !in_array($encoding, $unsupported, true);
+        if (in_array($encoding, $unsupported, true)) {
+            return false;
+        }
+
+        // Nur Encodings zulassen, die mbstring tatsächlich kennt (inkl. Aliase) —
+        // mb_convert_encoding() wirft seit PHP 8 sonst einen ValueError
+        // (z. B. bei chardet-Fehlerkennungen wie "JOHAB").
+        static $known = null;
+        if ($known === null) {
+            $known = [];
+            // Pseudo-Encodings melden bei mb_encoding_aliases() Deprecations (PHP 8.3+)
+            $pseudo = ['BASE64', 'QUOTED-PRINTABLE', 'UUENCODE', 'HTML-ENTITIES'];
+            foreach (mb_list_encodings() as $enc) {
+                $known[] = strtoupper($enc);
+                if (in_array(strtoupper($enc), $pseudo, true)) {
+                    continue;
+                }
+                foreach (mb_encoding_aliases($enc) as $alias) {
+                    $known[] = strtoupper($alias);
+                }
+            }
+        }
+
+        return in_array($encoding, $known, true);
     }
 
     /**

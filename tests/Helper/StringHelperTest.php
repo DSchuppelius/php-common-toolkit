@@ -232,4 +232,26 @@ class StringHelperTest extends BaseTestCase {
         $result2 = StringHelper::detectDosVsWindowsEncoding($win1252Text);
         $this->assertSame('Windows-1252', $result2);
     }
+
+    public function test_is_mb_encoding_supported_rejects_unknown_encodings(): void {
+        // Von mbstring unterstützte Encodings
+        $this->assertTrue(StringHelper::isMbEncodingSupported('UTF-8'));
+        $this->assertTrue(StringHelper::isMbEncodingSupported('ISO-8859-15'));
+        $this->assertTrue(StringHelper::isMbEncodingSupported('Windows-1252'));
+
+        // mbstring-fremde Encodings (DOS-Codepages, chardet-Fehlerkennungen) → iconv-Pfad
+        $this->assertFalse(StringHelper::isMbEncodingSupported('CP850'));
+        $this->assertFalse(StringHelper::isMbEncodingSupported('JOHAB'));
+        $this->assertFalse(StringHelper::isMbEncodingSupported('UNSINN-99'));
+    }
+
+    public function test_convert_to_utf8_survives_unknown_encoding(): void {
+        // mb_convert_encoding() würde bei unbekanntem Encoding einen ValueError werfen —
+        // convertToUtf8 muss stattdessen über iconv bzw. Fallback ein Ergebnis liefern.
+        $result = StringHelper::convertToUtf8("test \xB0\xA1", 'JOHAB');
+        $this->assertNotSame('', $result);
+
+        $unchanged = StringHelper::convertToUtf8('nur ascii', 'UNSINN-99');
+        $this->assertSame('nur ascii', $unchanged);
+    }
 }

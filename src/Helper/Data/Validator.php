@@ -26,7 +26,7 @@ class Validator {
      *
      * @var string[]
      */
-    public const STRUCTURE_SYMBOLS = ['d', 'D', 'b', 'B', 'k', 'i', 'I', 'c', 't', 'u', '_'];
+    public const STRUCTURE_SYMBOLS = ['d', 'D', 'b', 'B', 'k', 'i', 'I', 'c', 't', 'u', 'e', '_'];
 
     /**
      * Prüft, ob der Wert ein gültiges Datum ist.
@@ -140,6 +140,7 @@ class Validator {
             'c' => self::isBIC($value),
             't' => self::isText($value),
             'u' => self::isAlphaNumericUppercase($value),
+            'e' => trim($value) === '',
             '_' => true,
             default => false,
         };

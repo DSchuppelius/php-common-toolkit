@@ -94,6 +94,13 @@ class StructureTest extends BaseTestCase {
         $this->assertFalse(StringHelper::checkStructure(['01.02.2024'], 'db?'));
     }
 
+    public function test_check_structure_empty_symbol(): void {
+        // 'e' = Feld muss leer sein (Layout-Unterscheidung über Leer-Spalten)
+        $this->assertTrue(StringHelper::checkStructure(['01.02.2024', '', '1.234,56'], 'deb'));
+        $this->assertTrue(StringHelper::checkStructure(['01.02.2024', '   ', '1.234,56'], 'deb'));
+        $this->assertFalse(StringHelper::checkStructure(['01.02.2024', 'Inhalt', '1.234,56'], 'deb'));
+    }
+
     public function test_match_columns_with_field_array(): void {
         $row = ['Buchungstag', 'Wertstellung', 'Betrag'];
 
