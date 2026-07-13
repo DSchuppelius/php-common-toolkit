@@ -498,9 +498,11 @@ class DateHelper {
      * Konvertiert eine Excel-/Spreadsheet-Seriennummer in ein DateTimeImmutable.
      *
      * Reine Datumsmathematik ohne PhpSpreadsheet-Abhängigkeit: Das 1900-System
-     * nutzt die Basis 1899-12-30 (gleicht den fiktiven 29.02.1900 für alle Daten
-     * ab dem 01.03.1900 aus), das 1904-System die Basis 1904-01-01. Nachkommastellen
-     * werden als Tageszeit interpretiert.
+     * nutzt die Basis 1899-12-30 (gleicht den fiktiven 29.02.1900 — Lotus-1-2-3-Bug,
+     * Serial 60 — für alle Daten ab dem 01.03.1900 aus). Serials < 60 liegen vor dem
+     * fiktiven Schalttag und erhalten einen Tag Aufschlag (Serial 1 = 01.01.1900,
+     * Serial 59 = 28.02.1900). Das 1904-System nutzt die Basis 1904-01-01.
+     * Nachkommastellen werden als Tageszeit interpretiert.
      *
      * @param int|float $serial Die Excel-Seriennummer.
      * @param bool $use1904System Mac-/1904-Datumssystem statt des Standard-1900-Systems.
@@ -513,6 +515,12 @@ class DateHelper {
 
         $days = (int) floor($serial);
         $seconds = (int) round(($serial - $days) * 86400);
+
+        // 1900-System: vor dem fiktiven 29.02.1900 (Serial 60) einen Tag addieren.
+        if (!$use1904System && $days < 60) {
+            $days++;
+        }
+
         $base = $use1904System ? '1904-01-01' : '1899-12-30';
 
         try {

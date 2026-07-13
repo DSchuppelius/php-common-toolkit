@@ -23,6 +23,25 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertEquals(25, $age);
     }
 
+    /**
+     * Referenzwerte des Excel-1900-Datumssystems (inkl. Lotus-1-2-3-Schaltjahr-Bug):
+     * Serial 1 = 01.01.1900, Serial 59 = 28.02.1900, Serial 60 = fiktiver
+     * 29.02.1900 (existiert real nicht), Serial 61 = 01.03.1900.
+     */
+    public function test_from_excel_serial_reference_values(): void {
+        $this->assertSame('1900-01-01', DateHelper::fromExcelSerial(1)?->format('Y-m-d'));
+        $this->assertSame('1900-02-28', DateHelper::fromExcelSerial(59)?->format('Y-m-d'));
+        $this->assertSame('1900-03-01', DateHelper::fromExcelSerial(61)?->format('Y-m-d'));
+        $this->assertSame('2026-07-01', DateHelper::fromExcelSerial(46204)?->format('Y-m-d'));
+
+        // Nachkommastellen sind der Tagesbruchteil (Uhrzeit)
+        $this->assertSame('2026-07-01 12:00:00', DateHelper::fromExcelSerial(46204.5)?->format('Y-m-d H:i:s'));
+
+        // 1904-System (Mac): Serial 0 = 01.01.1904, kein Lotus-Bug
+        $this->assertSame('1904-01-01', DateHelper::fromExcelSerial(0, true)?->format('Y-m-d'));
+        $this->assertSame('1904-01-02', DateHelper::fromExcelSerial(1, true)?->format('Y-m-d'));
+    }
+
     public function test_get_quarter(): void {
         $this->assertEquals(1, DateHelper::getQuarter(new DateTimeImmutable('2025-01-15')));
         $this->assertEquals(1, DateHelper::getQuarter(new DateTimeImmutable('2025-03-31')));

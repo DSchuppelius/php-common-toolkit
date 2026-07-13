@@ -16,7 +16,13 @@ use CommonToolkit\Builders\XLSXDocumentBuilder;
 use CommonToolkit\Entities\XLSX\{Cell, Document, Row, Sheet};
 use CommonToolkit\Generators\XLSX\XLSXGenerator;
 use CommonToolkit\Parsers\XLSXDocumentParser;
+use DateTimeImmutable;
+use DateTimeInterface;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use Tests\Contracts\BaseTestCase;
+use ZipArchive;
 
 class XLSXDocumentTest extends BaseTestCase {
     private string $tempDir;
@@ -194,6 +200,100 @@ class XLSXDocumentTest extends BaseTestCase {
         $row1 = $sheet->getRow(0);
         $this->assertNotNull($row1);
         $this->assertEquals('Wert1', $row1->getCell(0)?->getValue());
+    }
+
+    /**
+     * Referenzwerte des Excel-1900-Datumssystems (inkl. Lotus-1-2-3-Schaltjahr-Bug):
+     *   Serial 1     = 01.01.1900
+     *   Serial 59    = 28.02.1900
+     *   Serial 60    = fiktiver 29.02.1900 (existiert real nicht, 1900 war kein Schaltjahr)
+     *   Serial 61    = 01.03.1900
+     *   Serial 46204 = 01.07.2026
+     * Regression: dateTimeToExcel() korrigierte den Lotus-Bug doppelt (Epoche
+     * 1899-12-30 UND +1 ab Serial 60) — alle Daten ab dem 01.03.1900 waren um
+     * einen Tag verschoben (2026-07-01 → 46205 statt 46204).
+     */
+    public function test_date_time_to_excel_reference_values(): void {
+        $generator = new class extends XLSXGenerator {
+            public function serial(DateTimeInterface $date): float {
+                return $this->dateTimeToExcel($date);
+            }
+        };
+
+        $this->assertSame(1.0, $generator->serial(new DateTimeImmutable('1900-01-01')));
+        $this->assertSame(59.0, $generator->serial(new DateTimeImmutable('1900-02-28')));
+        $this->assertSame(61.0, $generator->serial(new DateTimeImmutable('1900-03-01')));
+        $this->assertSame(46204.0, $generator->serial(new DateTimeImmutable('2026-07-01')));
+
+        // Zeitanteil als Tagesbruchteil
+        $this->assertSame(46204.5, $generator->serial(new DateTimeImmutable('2026-07-01 12:00:00')));
+    }
+
+    /**
+     * Regression: generateStyles() schrieb nur einen einzigen cellXf, obwohl
+     * generateCell() für Datumszellen Style-Index 1 referenziert — Datumszellen
+     * verloren ihr Datumsformat (Excel zeigte die rohe Serial-Zahl).
+     */
+    public function test_generated_date_cell_references_date_style(): void {
+        $doc = (new XLSXDocumentBuilder)
+            ->sheet('Termine')
+            ->setHeader(['Datum'])
+            ->addRow([new DateTimeImmutable('2026-07-01')])
+            ->build();
+
+        $outputPath = $this->tempDir . '/date_style.xlsx';
+        XLSXGenerator::toFile($doc, $outputPath);
+
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($outputPath));
+
+        // styles.xml: Index 1 der cellXfs muss der Datums-Style (Built-in numFmtId 14) sein
+        $styles = new DOMDocument;
+        $styles->loadXML((string) $zip->getFromName('xl/styles.xml'));
+        $xpath = new DOMXPath($styles);
+        $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+
+        $cellXfs = $xpath->query('//s:cellXfs/s:xf');
+        $this->assertNotFalse($cellXfs);
+        $this->assertGreaterThanOrEqual(2, $cellXfs->length, 'cellXfs muss neben dem Standard- auch den Datums-Style enthalten');
+
+        $dateXf = $cellXfs->item(1);
+        $this->assertInstanceOf(DOMElement::class, $dateXf);
+        $this->assertSame('14', $dateXf->getAttribute('numFmtId'));
+
+        // sheet1.xml: Datumszelle referenziert Style-Index 1 und trägt die korrekte Serial
+        $sheetXml = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+
+        $this->assertStringContainsString('s="1"', $sheetXml);
+        $this->assertStringContainsString('<v>46204</v>', $sheetXml);
+    }
+
+    public function test_round_trip_with_date_cells(): void {
+        $doc = (new XLSXDocumentBuilder)
+            ->sheet('Termine')
+            ->setHeader(['Bezeichnung', 'Datum'])
+            ->addRow(['Frist', new DateTimeImmutable('2026-07-01')])
+            ->addRow(['Übergabe', new DateTimeImmutable('2026-07-01 15:30:00')])
+            ->addRow(['Nach Lotus-Schalttag', new DateTimeImmutable('1900-03-01')])
+            ->addRow(['Vor Lotus-Schalttag', new DateTimeImmutable('1900-01-01')])
+            ->build();
+
+        $outputPath = $this->tempDir . '/dates.xlsx';
+        XLSXGenerator::toFile($doc, $outputPath);
+
+        $parsed = XLSXDocumentParser::fromFile($outputPath);
+        $sheet = $parsed->getFirstSheet();
+        $this->assertNotNull($sheet);
+
+        $dates = $sheet->getColumnByName('Datum');
+        $this->assertCount(4, $dates);
+        $this->assertContainsOnlyInstancesOf(DateTimeImmutable::class, $dates);
+
+        $this->assertSame('2026-07-01 00:00:00', $dates[0]->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-07-01 15:30:00', $dates[1]->format('Y-m-d H:i:s'));
+        $this->assertSame('1900-03-01', $dates[2]->format('Y-m-d'));
+        $this->assertSame('1900-01-01', $dates[3]->format('Y-m-d'));
     }
 
     public function test_round_trip_with_special_characters(): void {

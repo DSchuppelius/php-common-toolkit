@@ -526,12 +526,15 @@ class XLSXDocumentParser extends HelperAbstract {
 
         $excelDate = (float) $value;
 
-        // Excel-Epoche ist 1899-12-30 (mit dem berühmten Lotus-Bug)
-        // Für Werte < 60 muss ein Tag abgezogen werden (1900 war kein Schaltjahr)
+        // Excel-Epoche ist 1899-12-30: Ab Serial 61 (= 01.03.1900) gleicht die
+        // Basis den fiktiven 29.02.1900 (Lotus-1-2-3-Bug, Serial 60) direkt aus.
+        // Serials < 60 liegen vor dem fiktiven Schalttag, dort gilt
+        // Serial 1 = 01.01.1900, Serial 59 = 28.02.1900 → ein Tag addieren.
+        // Serial 60 selbst (den 29.02.1900 gibt es nicht) fällt auf den 28.02.1900.
         $epoch = new DateTimeImmutable('1899-12-30');
 
         if ($excelDate < 60) {
-            $excelDate -= 1;
+            $excelDate += 1;
         }
 
         $days = (int) floor($excelDate);

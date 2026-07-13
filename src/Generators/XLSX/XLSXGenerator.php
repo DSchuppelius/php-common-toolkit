@@ -346,9 +346,14 @@ class XLSXGenerator extends HelperAbstract {
     </cellStyleXfs>';
 
         // Cell XFs
-        $xml .= '<cellXfs count="1">';
+        // Index 0: Standard, Index 1: Datum (Built-in-Format 14 nach ECMA-376,
+        // lokalisiertes Kurzdatum) — wird von generateCell() für
+        // DateTimeInterface-Werte über s="1" referenziert.
+        $xml .= '<cellXfs count="2">';
         $xml .= '
         <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" />';
+        $xml .= '
+        <xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" />';
         $xml .= '
     </cellXfs>';
 
@@ -500,7 +505,13 @@ class XLSXGenerator extends HelperAbstract {
     }
 
     /**
-     * Konvertiert ein DateTime in einen Excel-Datumswert.
+     * Konvertiert ein DateTime in einen Excel-Datumswert (1900-System).
+     *
+     * Die Basis 1899-12-30 gleicht den fiktiven 29.02.1900 (Lotus-1-2-3-Bug,
+     * Serial 60) bereits vollständig aus: Für alle Daten ab dem 01.03.1900
+     * entspricht die Tagesdifferenz direkt der Excel-Serial (01.03.1900 = 61).
+     * Nur Daten davor liegen vor dem fiktiven Schalttag und brauchen -1
+     * (01.01.1900 = 1, 28.02.1900 = 59).
      */
     protected function dateTimeToExcel(DateTimeInterface $date): float {
         $epoch = new \DateTimeImmutable('1899-12-30');
@@ -511,14 +522,15 @@ class XLSXGenerator extends HelperAbstract {
             $days = -$days;
         }
 
+        // Vor dem 01.03.1900 (Tagesdifferenz < 61) existiert der fiktive
+        // Schalttag noch nicht: Serial = Differenz - 1.
+        if ($days < 61) {
+            $days--;
+        }
+
         // Zeitanteil
         $seconds = $date->format('H') * 3600 + $date->format('i') * 60 + $date->format('s');
         $fraction = $seconds / 86400;
-
-        // Lotus-Bug korrigieren (1900 war kein Schaltjahr)
-        if ($days >= 60) {
-            $days++;
-        }
 
         return $days + $fraction;
     }
