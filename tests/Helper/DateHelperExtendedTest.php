@@ -42,6 +42,32 @@ class DateHelperExtendedTest extends BaseTestCase {
         $this->assertSame('1904-01-02', DateHelper::fromExcelSerial(1, true)?->format('Y-m-d'));
     }
 
+    public function test_clamp_day_to_month(): void {
+        // Überlaufende Tage werden auf den Monatsletzten geklemmt
+        $this->assertSame('28.02.2023', DateHelper::clampDayToMonth('30.02.2023'));
+        $this->assertSame('29.02.2024', DateHelper::clampDayToMonth('30.02.2024')); // Schaltjahr
+        $this->assertSame('30.04.2024', DateHelper::clampDayToMonth('31.04.2024'));
+        $this->assertSame('28.02.2023', DateHelper::clampDayToMonth('29.02.2023')); // kein Schaltjahr
+        $this->assertSame('2023-02-28', DateHelper::clampDayToMonth('2023-02-30')); // ISO-Reihenfolge
+        $this->assertSame('30-04-2024', DateHelper::clampDayToMonth('31-04-2024')); // Bindestrich
+        $this->assertSame('30/04/2024', DateHelper::clampDayToMonth('31/04/2024')); // Slash
+
+        // Zweistelliges Jahr (via expandYear) und angehängte Uhrzeit
+        $this->assertSame('28.02.23', DateHelper::clampDayToMonth('30.02.23'));
+        $this->assertSame('28.02.2023 14:30', DateHelper::clampDayToMonth('30.02.2023 14:30'));
+
+        // Gültige Daten bleiben unverändert (idempotent)
+        $this->assertSame('15.06.2025', DateHelper::clampDayToMonth('15.06.2025'));
+        $this->assertSame('28.02.2023', DateHelper::clampDayToMonth('28.02.2023'));
+        $this->assertSame('2024-02-29', DateHelper::clampDayToMonth('2024-02-29'));
+
+        // Unbekannte/ungültige Eingaben unverändert
+        $this->assertSame('kein datum', DateHelper::clampDayToMonth('kein datum'));
+        $this->assertSame('20230230', DateHelper::clampDayToMonth('20230230')); // kompakt ohne Trenner
+        $this->assertSame('30.13.2023', DateHelper::clampDayToMonth('30.13.2023')); // Monat ungültig
+        $this->assertSame('', DateHelper::clampDayToMonth(''));
+    }
+
     public function test_get_quarter(): void {
         $this->assertEquals(1, DateHelper::getQuarter(new DateTimeImmutable('2025-01-15')));
         $this->assertEquals(1, DateHelper::getQuarter(new DateTimeImmutable('2025-03-31')));

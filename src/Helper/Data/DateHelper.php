@@ -54,6 +54,60 @@ class DateHelper {
     }
 
     /**
+     * Klemmt einen überlaufenden Kalendertag in einem getrennt formatierten
+     * Datums-String auf den letzten gültigen Tag des Monats.
+     *
+     * Beispiele: "30.02.2023" → "28.02.2023", "31.04.2024" → "30.04.2024",
+     * "29.02.2023" → "28.02.2023", "2023-02-30" → "2023-02-28".
+     *
+     * Fängt reale Bank-/Export-Fehler ab, bei denen ein ungültiger Tag sonst
+     * still auf den Folgemonat überläuft (DateTime::createFromFormat / strtotime
+     * normalisieren "30.02." klammheimlich zu "02.03."). Erkannt werden deutsche
+     * Reihenfolge (TT.MM.JJJJ mit Trenner '.', '-' oder '/') und ISO-Reihenfolge
+     * (JJJJ-MM-TT, führende 4-stellige Zahl). Kompakte Formate ohne Trennzeichen
+     * sowie unbekannte/ungültige Eingaben werden unverändert zurückgegeben.
+     * Bereits gültige Daten bleiben unangetastet (idempotent).
+     *
+     * @param string $date Datums-String, ggf. mit angehängter Uhrzeit.
+     * @return string Datums-String mit auf den Monatsletzten geklemmtem Tag.
+     */
+    public static function clampDayToMonth(string $date): string {
+        if (!preg_match('/^(\d{1,4})([.\-\/])(\d{1,2})\2(\d{1,4})(.*)$/', trim($date), $m)) {
+            return $date;
+        }
+
+        [, $first, $sep, $middle, $last, $rest] = $m;
+        $month = (int) $middle;
+        if ($month < 1 || $month > 12) {
+            return $date;
+        }
+
+        // Führende 4-stellige Zahl ⇒ ISO-Reihenfolge (JJJJ-MM-TT), sonst TT.MM.JJJJ.
+        $isoOrder = strlen($first) === 4;
+        $day = (int) ($isoOrder ? $last : $first);
+        $year = (int) ($isoOrder ? $first : $last);
+        if ($day < 1) {
+            return $date;
+        }
+        if ($year < 100) {
+            $year = self::expandYear($year);
+        }
+
+        $lastDay = self::getLastDay($year, $month);
+        if ($lastDay < 1 || $day <= $lastDay) {
+            return $date; // gültiger Tag ⇒ unverändert
+        }
+
+        // Original-Feldbreite des Tages beibehalten (z.B. "30" → "28", "3" → "…").
+        $dayField = $isoOrder ? $last : $first;
+        $clamped = str_pad((string) $lastDay, strlen($dayField), '0', STR_PAD_LEFT);
+
+        return $isoOrder
+            ? $first . $sep . $middle . $sep . $clamped . $rest
+            : $clamped . $sep . $middle . $sep . $last . $rest;
+    }
+
+    /**
      * Gibt den n-ten Wochentag eines Monats zurück.
      *
      * @param int $year Das Jahr.
