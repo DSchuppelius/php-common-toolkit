@@ -92,6 +92,18 @@ class BankHelperOfflineTest extends BaseTestCase {
         $this->assertSame('INGDDEFFXXX', $bicIban);
     }
 
+    /**
+     * Bankname aus dem Bezeichnungsfeld (Offset 9, Länge 58) derselben BLZ-Datei.
+     */
+    public function test_shipped_data_yields_bank_name_offline(): void {
+        BankHelper::setNetworkEnabled(false);
+
+        $this->assertStringContainsString('Commerzbank', (string) BankHelper::bankNameFromBLZ('10040000'));
+        $this->assertStringContainsString('Commerzbank', (string) BankHelper::bankNameFromIBAN('DE89370400440532013000'));
+        // Unbekannte BLZ -> null.
+        $this->assertNull(BankHelper::bankNameFromBLZ('00000000'));
+    }
+
     public function test_is_network_enabled_reflects_override(): void {
         // Default (kein Override): effektiver Wert ist true (Config-Default).
         $this->assertTrue(BankHelper::isNetworkEnabled());

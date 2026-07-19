@@ -101,6 +101,15 @@ final class NumberHelperTest extends TestCase {
         // Deutsches Tausender-Pattern mit Country-Hint.
         $this->assertSame('2000', NumberHelper::normalizeDecimalString('2.000', CountryCode::Germany));
         $this->assertSame('2000.50', NumberHelper::normalizeDecimalString('2.000,50', CountryCode::Germany));
+
+        // Anhaftende Währungssymbole (€ £ $) werden entfernt, das Vorzeichen bleibt
+        // auch bei nachgestelltem Minus vor dem Symbol erhalten.
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalString('1.234,56 €'));
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalString('€ 1.234,56'));
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalString('$1,234.56'));
+        $this->assertSame('2500.00', NumberHelper::normalizeDecimalString('2.500,00 £'));
+        $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('-1.234,56 €'));
+        $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('1.234,56- €'));
     }
 
     public function test_normalize_decimal_string_is_consistent_with_float_variant(): void {

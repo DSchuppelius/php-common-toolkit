@@ -267,6 +267,14 @@ class NumberHelper {
             return '0';
         }
 
+        // Anhaftende Währungssymbole (€ £ $) früh entfernen – VOR der Vorzeichen-
+        // erkennung, damit ein trailing-Symbol das nachgestellte Minus nicht verdeckt
+        // (z.B. "1.234,56- €"). Sonst bräche ein Symbol zudem den bcmath-Pfad.
+        $value = trim(str_replace(['€', '£', '$'], '', $value));
+        if ($value === '') {
+            return '0';
+        }
+
         // --- Vorzeichen-/Kennungs-Erkennung VOR dem Entfernen der Trennzeichen ---
         $negative = false;
 
@@ -293,6 +301,7 @@ class NumberHelper {
         // Tausender-/Rauschtrenner entfernen, die kein Punkt oder Komma sind:
         // ASCII-Space, geschütztes (U+00A0) und schmales (U+202F) Leerzeichen sowie
         // Schweizer Apostroph (gerade ' und typografisch ’). Vorzeichen separat behandelt.
+        // (Währungssymbole werden bereits oben vor der Vorzeichenerkennung entfernt.)
         $value = str_replace([' ', "\u{00A0}", "\u{202F}", "'", "\u{2019}", '+', '-'], '', $value);
         if ($value === '') {
             return '0';

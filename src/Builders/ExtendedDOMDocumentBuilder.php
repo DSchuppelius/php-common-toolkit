@@ -14,6 +14,7 @@ namespace CommonToolkit\Builders;
 
 use CommonToolkit\Entities\XML\ExtendedDOMDocument;
 use CommonToolkit\Generators\XML\ExtendedDOMDocumentGenerator;
+use CommonToolkit\Helper\Data\StringHelper;
 use DOMElement;
 use DOMNode;
 
@@ -163,7 +164,7 @@ class ExtendedDOMDocumentBuilder {
         $element = $this->createElement($name);
 
         if ($value !== null) {
-            $element->textContent = $value;
+            $element->textContent = StringHelper::stripInvalidXmlChars($value);
         }
 
         $this->current->appendChild($element);
@@ -178,7 +179,7 @@ class ExtendedDOMDocumentBuilder {
         $element = $this->createElement($name);
 
         if ($value !== null) {
-            $element->textContent = $value;
+            $element->textContent = StringHelper::stripInvalidXmlChars($value);
         }
 
         $this->current->appendChild($element);
@@ -215,7 +216,7 @@ class ExtendedDOMDocumentBuilder {
         $element = $this->doc->createElementNS($namespaceUri, $qualifiedName);
 
         if ($value !== null) {
-            $element->textContent = $value;
+            $element->textContent = StringHelper::stripInvalidXmlChars($value);
         }
 
         $this->current->appendChild($element);
@@ -238,7 +239,7 @@ class ExtendedDOMDocumentBuilder {
      * Fügt ein CDATA-Section hinzu.
      */
     public function addCData(string $data): self {
-        $cdata = $this->doc->createCDATASection($data);
+        $cdata = $this->doc->createCDATASection(StringHelper::stripInvalidXmlChars($data));
         $this->current->appendChild($cdata);
         return $this;
     }

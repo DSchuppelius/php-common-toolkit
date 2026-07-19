@@ -442,6 +442,40 @@ class BankHelper {
     }
 
     /**
+     * Gibt den Klarnamen (Bezeichnung) einer Bank aus einer BLZ zurück.
+     *
+     * Liest das Bezeichnungsfeld (Offset 9, Länge 58) der Bundesbank-BLZ-Datei –
+     * dieselbe Datei/derselbe O(1)-Index wie {@see bicFromBLZ()}, nur ein anderes
+     * Feld. Deckt alle ~15.000 deutschen Banken mit BLZ ab, nicht nur die per BIC
+     * im Zahlungsdienstleister-Verzeichnis geführten.
+     *
+     * @param string $blz Die Bankleitzahl (8-stellig).
+     * @return string|null Der Bankname oder null, wenn keiner gefunden wurde.
+     */
+    public static function bankNameFromBLZ(string $blz): ?string {
+        $blz = trim($blz);
+        $index = self::getBlzIndex();
+
+        if (isset($index[$blz])) {
+            $name = trim(substr($index[$blz], 9, 58));
+            return $name !== '' ? $name : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Gibt den Klarnamen (Bezeichnung) einer Bank aus einer IBAN zurück.
+     *
+     * @param string $iban Die IBAN.
+     * @return string|null Der Bankname oder null, wenn keiner gefunden wurde.
+     */
+    public static function bankNameFromIBAN(string $iban): ?string {
+        $blz = substr($iban, 4, 8);
+        return self::bankNameFromBLZ($blz);
+    }
+
+    /**
      * Gibt die erste passende BLZ zu einer BIC zurück.
      *
      * Durchsucht den BLZ-Index nach der BIC (8 Zeichen ohne Suffix).

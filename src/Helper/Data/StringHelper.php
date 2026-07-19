@@ -696,6 +696,60 @@ class StringHelper {
     }
 
     /**
+     * Entfernt in XML 1.0 unzulässige Steuerzeichen aus einem String.
+     *
+     * Erlaubt bleiben Tab (0x09), LF (0x0A) und CR (0x0D); alle übrigen
+     * C0-Steuerzeichen (0x00–0x08, 0x0B, 0x0C, 0x0E–0x1F) werden entfernt.
+     * Druckbare Zeichen, Umlaute und sonstiges Unicode bleiben unangetastet –
+     * im Gegensatz zu {@see sanitizePrintable()}, das auch diese verwirft.
+     *
+     * Die Prüfung ist byteweise (kein /u-Modifier): Da C0-Steuerbytes in gültigem
+     * UTF-8 nie als Folgebytes auftreten, ist das für UTF-8 wie für Latin-1 sicher
+     * und kann bei ungültigem UTF-8 nicht den ganzen String verwerfen.
+     *
+     * Nötig, weil solche Zeichen (z.B. aus fehlerhaften PDF-/CSV-Extraktionen)
+     * sonst ungültiges camt-/pain-XML erzeugen.
+     *
+     * @param string|null $input Der zu bereinigende String (null → leerer String).
+     * @return string Der von XML-invaliden Steuerzeichen bereinigte String.
+     */
+    public static function stripInvalidXmlChars(?string $input): string {
+        if ($input === null || $input === '') {
+            return '';
+        }
+        return preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $input) ?? '';
+    }
+
+    /**
+     * Bildet einen Freitext auf den SEPA-Zeichensatz (EPC217-08) ab.
+     *
+     * Basiszeichensatz laut DFÜ-Abkommen Anlage 3 / EPC „Latin Character Set":
+     * 0–9, A–Z, a–z, Leerzeichen und die Sonderzeichen ' : ? , - ( + . ) /.
+     *
+     * Vorgehen: (1) Umlaute/ß + Diakritika nach ASCII falten (via {@see toAscii()},
+     * Ä→AE … ß→ss). (2) Die „zu unterstützenden" Zusatzzeichen gemäß der EPC-Best-
+     * Practice-Umsetzung konvertieren: & → +, * → ., $ → ., % → . (3) Alle danach
+     * noch unzulässigen Zeichen (z.B. < > " @ #) durch ein Leerzeichen ersetzen,
+     * Mehrfach-Leerzeichen kollabieren, Ränder trimmen.
+     *
+     * Für SEPA-Zahlungsinitiierung (pain) an Name/Verwendungszweck anzuwenden, damit
+     * die erzeugten Nachrichten den geforderten Zeichenvorrat einhalten. Für
+     * camt-Reporting NICHT nötig (dort gilt der volle Latin-1-Satz).
+     *
+     * @param string|null $input Der Eingabestring (null → leerer String).
+     * @return string Der auf den SEPA-Zeichensatz reduzierte String.
+     */
+    public static function toSepaRestrictedCharset(?string $input): string {
+        if (self::isNullOrEmpty($input)) {
+            return '';
+        }
+        $ascii = self::toAscii($input);
+        $ascii = strtr($ascii, ['&' => '+', '*' => '.', '$' => '.', '%' => '.']);
+        $restricted = preg_replace("/[^A-Za-z0-9\\/\\-?:().,'+ ]/", ' ', $ascii) ?? '';
+        return trim((string) preg_replace('/\s{2,}/', ' ', $restricted));
+    }
+
+    /**
      * Entfernt nicht-ASCII-Zeichen aus einem String.
      *
      * @param string|null $input Der zu bereinigende String (null wird als leerer String behandelt).

@@ -36,6 +36,29 @@ class StringHelperTest extends BaseTestCase {
         $this->assertStringNotContainsString(chr(7), $cleaned);
     }
 
+    public function test_strip_invalid_xml_chars(): void {
+        // C0-Steuerzeichen (außer Tab/LF/CR) werden entfernt …
+        $input = "Zahlung" . chr(0x0C) . "ABC" . chr(0x00) . chr(0x1F) . " Ende";
+        $this->assertSame('ZahlungABC Ende', StringHelper::stripInvalidXmlChars($input));
+        // … Tab (0x09), LF (0x0A) und CR (0x0D) bleiben erhalten …
+        $this->assertSame("a\tb\nc\rd", StringHelper::stripInvalidXmlChars("a\tb\nc\rd"));
+        // … und Umlaute/UTF-8 bleiben unangetastet (anders als sanitizePrintable).
+        $this->assertSame('Müller & Söhne', StringHelper::stripInvalidXmlChars('Müller & Söhne'));
+        $this->assertSame('', StringHelper::stripInvalidXmlChars(null));
+    }
+
+    public function test_to_sepa_restricted_charset(): void {
+        // Umlaute/Akzente gefaltet; erlaubte Sonderzeichen (/ - ? : ( ) . , ' +) bleiben.
+        $this->assertSame('Rechnung Nr. 12/2026 (Jan)', StringHelper::toSepaRestrictedCharset('Rechnung Nr. 12/2026 (Jan)'));
+        $this->assertSame('Francois Lefevre, Paris', StringHelper::toSepaRestrictedCharset('François Lefèvre, Paris'));
+        // EPC-Best-Practice-Umsetzung: & -> +, * -> ., $ -> ., % -> . (DFÜ-Abkommen Anlage 3).
+        $this->assertSame('Mueller + Soehne GmbH', StringHelper::toSepaRestrictedCharset('Müller & Söhne GmbH'));
+        $this->assertSame('Preis .100 + mehr', StringHelper::toSepaRestrictedCharset('Preis $100 & mehr'));
+        // Nicht abgedeckte Zeichen (< > ") werden entfernt.
+        $this->assertSame('A + B Co x', StringHelper::toSepaRestrictedCharset('A & B <Co> "x"'));
+        $this->assertSame('', StringHelper::toSepaRestrictedCharset(null));
+    }
+
     public function test_remove_non_ascii(): void {
         $input = "ÄÖÜabc";
         $ascii = StringHelper::removeNonAscii($input);
