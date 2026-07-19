@@ -262,16 +262,64 @@ class NumberHelper {
      * @return string Kanonischer Punkt-Dezimal-String.
      */
     public static function normalizeDecimalString(string $value, ?CountryCode $country = null): string {
-        $value = trim(str_replace(' ', '', $value));
+        $value = trim($value);
         if ($value === '') {
             return '0';
         }
 
+        // --- Vorzeichen-/Kennungs-Erkennung VOR dem Entfernen der Trennzeichen ---
+        $negative = false;
+
+        // Accounting-Klammer-Minus: "(1.234,56)" ⇒ negativ.
+        if (preg_match('/^\((.+)\)$/', $value, $m)) {
+            $negative = true;
+            $value = trim($m[1]);
+        }
+
+        // Deutsches Soll-/Haben-Suffix aus Bankauszügen: "123,45 S" = Soll (negativ),
+        // "123,45 H" = Haben (positiv). Greift nur, wenn direkt davor eine Ziffer steht.
+        if (preg_match('/^(.*\d)\s*([SsHh])$/u', $value, $m)) {
+            if (strcasecmp($m[2], 'S') === 0) {
+                $negative = true;
+            }
+            $value = $m[1];
+        }
+
+        // Explizites Minus (führend oder nachgestellt, z.B. "1234,56-").
+        if (str_starts_with($value, '-') || str_ends_with($value, '-')) {
+            $negative = true;
+        }
+
+        // Tausender-/Rauschtrenner entfernen, die kein Punkt oder Komma sind:
+        // ASCII-Space, geschütztes (U+00A0) und schmales (U+202F) Leerzeichen sowie
+        // Schweizer Apostroph (gerade ' und typografisch ’). Vorzeichen separat behandelt.
+        $value = str_replace([' ', "\u{00A0}", "\u{202F}", "'", "\u{2019}", '+', '-'], '', $value);
+        if ($value === '') {
+            return '0';
+        }
+
+        $normalized = self::normalizeUnsignedDecimalString($value, $country);
+
+        if ($negative && preg_match('/[1-9]/', $normalized)) {
+            $normalized = '-' . $normalized;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Kern-Normalisierung von Punkt/Komma zum kanonischen Punkt-Dezimal-String.
+     *
+     * Erwartet einen bereits von Vorzeichen, Whitespace und Apostrophen befreiten
+     * Wert (siehe {@see normalizeDecimalString()}). Getrennt gehalten, damit die
+     * Tausender-/Dezimal-Heuristik unabhängig von der Vorzeichenbehandlung bleibt.
+     */
+    private static function normalizeUnsignedDecimalString(string $value, ?CountryCode $country = null): string {
         // Deutsche/europäische Tausendertrennzeichen eindeutig erkennen:
         // Pattern: 1-3 Ziffern, dann Gruppen von exakt 3 Ziffern nach Punkt, optional Dezimalkomma
-        // Beispiele: 2.000 → 2000, 1.234.567 → 1234567, -2.000,50 → -2000.50
-        // Nicht betroffen: -902.36 (nur 2 Ziffern nach Punkt), 2.5 (nur 1 Ziffer)
-        if ($country === CountryCode::Germany && preg_match('/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/', $value)) {
+        // Beispiele: 2.000 → 2000, 1.234.567 → 1234567, 2.000,50 → 2000.50
+        // Nicht betroffen: 902.36 (nur 2 Ziffern nach Punkt), 2.5 (nur 1 Ziffer)
+        if ($country === CountryCode::Germany && preg_match('/^\d{1,3}(\.\d{3})+(,\d+)?$/', $value)) {
             $value = str_replace('.', '', $value);
             return str_replace(',', '.', $value);
         }

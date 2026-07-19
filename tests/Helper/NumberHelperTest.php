@@ -115,6 +115,36 @@ final class NumberHelperTest extends TestCase {
         }
     }
 
+    public function test_normalize_decimal_string_swiss_apostrophe(): void {
+        // Schweizer Apostroph (gerade und typografisch) als Tausendertrenner –
+        // ohne Behandlung würde (float) "1'234.56" zu 1.0 zerfallen.
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalString("1'234.56"));
+        $this->assertSame('1234567.89', NumberHelper::normalizeDecimalString("1'234'567.89"));
+        $this->assertSame('1234567.89', NumberHelper::normalizeDecimalString("1'234'567,89"));
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalString("1’234.56")); // typografisch
+    }
+
+    public function test_normalize_decimal_string_parentheses_minus(): void {
+        // Accounting-Klammer-Notation ⇒ negativ.
+        $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('(1.234,56)'));
+        $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('(1,234.56)'));
+        $this->assertSame('-2000.50', NumberHelper::normalizeDecimalString('(2.000,50)', CountryCode::Germany));
+    }
+
+    public function test_normalize_decimal_string_soll_haben_suffix(): void {
+        // Deutsche Bankauszug-Kennung: S = Soll (negativ), H = Haben (positiv).
+        $this->assertSame('-123.45', NumberHelper::normalizeDecimalString('123,45 S'));
+        $this->assertSame('123.45', NumberHelper::normalizeDecimalString('123,45 H'));
+        $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('1.234,56 S'));
+        $this->assertSame('-123.45', NumberHelper::normalizeDecimalString('123,45S'));  // ohne Space
+        $this->assertSame('123.45', NumberHelper::normalizeDecimalString('123,45h'));   // Kleinbuchstabe
+        $this->assertSame('0.00', NumberHelper::normalizeDecimalString('0,00 S'));      // kein negatives Null
+    }
+
+    public function test_normalize_decimal_string_trailing_minus(): void {
+        $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('1234,56-'));
+    }
+
     public function test_divide_or_default(): void {
         // Positiver Divisor → normale Division.
         $this->assertSame('2.50', NumberHelper::divideOrDefault('5', '2', 2));
