@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\{CountryCode, HashAlgorithm};
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, HashAlgorithm};
 use CommonToolkit\Helper\FileSystem\{File, Folder};
 use ConfigToolkit\ConfigLoader;
 use ERRORToolkit\Traits\ErrorLog;
@@ -100,6 +100,42 @@ class BankHelper {
     }
 
     /**
+     * Bereinigt eine IBAN von offensichtlichem Zusatzmüll.
+     *
+     * Aufbauend auf {@see self::normalizeIBAN()} (Whitespace weg + Großschreibung)
+     * wird ein direkt angehängter, exakt bekannter ISO-4217-Währungscode entfernt,
+     * sofern die IBAN dadurch wieder auf die erwartete Länderlänge zurückfällt
+     * (z.B. "DE89 3704 0044 0532 0130 00 EUR" bzw. "DE...EUR" → "DE..."). Das ist
+     * ein häufiger Extraktions-/Eingabefehler, bei dem das Währungskürzel aus einem
+     * Nachbarfeld (Payment currency, MT940 :25:) an die IBAN geklebt wird.
+     *
+     * Bewusst konservativ: Es wird NUR ein Suffix entfernt, das exakt einem
+     * bekannten Währungscode entspricht und dessen Wegfall die korrekte
+     * Länderlänge herstellt. Keine Prüfsummen-/Formatvalidierung — das Ergebnis
+     * kann weiterhin ungültig sein und ist anschließend via {@see validateIBAN()}
+     * (ggf. strict) zu prüfen.
+     *
+     * @param string|null $iban Die IBAN (roh, ggf. mit Whitespace/Währungssuffix).
+     * @return string|null Die bereinigte IBAN oder null bei null/leerer Eingabe.
+     */
+    public static function sanitizeIBAN(?string $iban): ?string {
+        $normalized = self::normalizeIBAN($iban);
+        if ($normalized === null) {
+            return null;
+        }
+
+        $expectedLength = CountryCode::tryFrom(substr($normalized, 0, 2))?->getIBANLength();
+        if ($expectedLength !== null && strlen($normalized) > $expectedLength) {
+            $suffix = substr($normalized, $expectedLength);
+            if (CurrencyCode::tryFrom($suffix) !== null) {
+                return substr($normalized, 0, $expectedLength);
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
      * Deterministischer Digest der normalisierten IBAN (Blind-Index).
      *
      * Komposition aus {@see self::normalizeIBAN()} und
@@ -162,8 +198,8 @@ class BankHelper {
 
         $result = [];
         foreach ($matches[0] as $match) {
-            $candidate = $spaceTolerant ? str_replace(' ', '', $match) : $match;
-            if (self::validateIBAN($candidate, $strict) && !in_array($candidate, $result, true)) {
+            $candidate = self::sanitizeIBAN($spaceTolerant ? str_replace(' ', '', $match) : $match);
+            if ($candidate !== null && self::validateIBAN($candidate, $strict) && !in_array($candidate, $result, true)) {
                 $result[] = $candidate;
             }
         }
