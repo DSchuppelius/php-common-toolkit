@@ -90,10 +90,19 @@ class CryptoHelper extends HelperAbstract {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'Verschlüsselung fehlgeschlagen: ' . openssl_error_string());
             }
 
+            if ($tag === null) {
+                // Encrypt-then-MAC für Nicht-AEAD-Modi (CBC): authentifiziert
+                // algorithm|iv|ciphertext mit einem separaten HMAC-Schlüssel.
+                // Das macht CBC nicht mehr manipulierbar (kein Padding-Oracle)
+                // und verhindert ein Downgrade von GCM durch Verändern des
+                // gespeicherten 'algorithm'-Felds.
+                $tag = hash_hmac('sha256', $cipher . '|' . $iv . '|' . $ciphertext, self::macKey($key), true);
+            }
+
             $result = [
                 'ciphertext' => base64_encode($ciphertext),
                 'iv' => base64_encode($iv),
-                'tag' => $tag ? base64_encode($tag) : '',
+                'tag' => base64_encode($tag),
                 'algorithm' => $cipher,
             ];
 
@@ -140,13 +149,29 @@ class CryptoHelper extends HelperAbstract {
                 }
 
                 $tag = base64_decode($encryptedData['tag'], true);
-                if ($tag === false) {
-                    self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger Authentication Tag');
+                // Feste 16-Byte-Länge erzwingen: openssl akzeptiert gekürzte
+                // GCM-Tags (bis 4 Byte), was die Fälschungssicherheit drastisch
+                // senkt (Tag-Truncation-Angriff).
+                if ($tag === false || strlen($tag) !== 16) {
+                    self::logErrorAndThrow(InvalidArgumentException::class, 'Ungültiger oder gekürzter Authentication Tag');
                 }
 
                 $plaintext = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
             } else {
-                // CBC Mode
+                // CBC Mode: Encrypt-then-MAC vor dem Entschlüsseln prüfen.
+                // Ohne gültigen Tag wird der (potenziell manipulierte)
+                // Ciphertext abgelehnt — verhindert Padding-Oracle und
+                // Algorithmus-Downgrade.
+                if (empty($encryptedData['tag'])) {
+                    self::logErrorAndThrow(InvalidArgumentException::class, 'Authentication Tag fehlt — unauthentifizierter Ciphertext wird abgelehnt');
+                }
+
+                $tag = base64_decode($encryptedData['tag'], true);
+                $expectedTag = hash_hmac('sha256', $cipher . '|' . $iv . '|' . $ciphertext, self::macKey($key), true);
+                if ($tag === false || !hash_equals($expectedTag, $tag)) {
+                    self::logErrorAndThrow(InvalidArgumentException::class, 'Integritätsprüfung fehlgeschlagen — Authentication Tag ungültig');
+                }
+
                 $plaintext = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv);
             }
 
@@ -159,6 +184,14 @@ class CryptoHelper extends HelperAbstract {
             self::logException($e);
             throw $e;
         }
+    }
+
+    /**
+     * Leitet aus dem Verschlüsselungsschlüssel einen separaten HMAC-Schlüssel
+     * für das Encrypt-then-MAC der Nicht-AEAD-Modi ab (Schlüsseltrennung).
+     */
+    private static function macKey(string $key): string {
+        return hash_hmac('sha256', 'cbc-encrypt-then-mac-key', $key, true);
     }
 
     /**
@@ -189,13 +222,17 @@ class CryptoHelper extends HelperAbstract {
      *
      * @param string $password Das Password
      * @param string $salt Der Salt (mindestens 16 Bytes)
-     * @param int $iterations Anzahl Iterationen (mindestens 10000)
+     * @param int $iterations Anzahl Iterationen (Default an OWASP 2023 orientiert;
+     *                        Minimum 10000). BC-Hinweis: der Default wurde von
+     *                        100000 auf 600000 angehoben — wer einen zuvor mit
+     *                        dem alten Default abgeleiteten Schlüssel reproduzieren
+     *                        muss, gibt iterations explizit an.
      * @param int $length Ausgabelänge in Bytes
      * @param HashAlgorithm|string $algorithm Hash-Algorithmus
      * @return string Der abgeleitete Schlüssel (Base64-kodiert)
      * @throws InvalidArgumentException Bei ungültigen Parametern
      */
-    public static function deriveKey(string $password, string $salt, int $iterations = 100000, int $length = 32, HashAlgorithm|string $algorithm = HashAlgorithm::SHA256): string {
+    public static function deriveKey(string $password, string $salt, int $iterations = 600000, int $length = 32, HashAlgorithm|string $algorithm = HashAlgorithm::SHA256): string {
         try {
             if (strlen($password) < 1) {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'Password darf nicht leer sein');
@@ -207,6 +244,10 @@ class CryptoHelper extends HelperAbstract {
 
             if ($iterations < 10000) {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'Mindestens 10000 Iterationen erforderlich');
+            }
+
+            if ($iterations < 600000) {
+                self::logWarning("PBKDF2 mit nur {$iterations} Iterationen — OWASP 2023 empfiehlt >= 600000 für PBKDF2-HMAC-SHA256.");
             }
 
             $algorithm = self::resolveCryptographicAlgorithm($algorithm);

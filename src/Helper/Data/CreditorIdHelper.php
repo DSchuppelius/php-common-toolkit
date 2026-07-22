@@ -55,14 +55,19 @@ class CreditorIdHelper {
             return false;
         }
 
-        // Minimale Länge: 8 Zeichen (Ländercode + Prüfziffern + mindestens 4 Zeichen)
-        if (strlen($creditorId) < 8) {
+        // Länge begrenzen (SEPA Creditor Identifier: 8–35 Zeichen). Die
+        // Obergrenze VOR dem Regex verhindert übermäßiges Backtracking auf
+        // langen Eingaben (ReDoS).
+        $length = strlen($creditorId);
+        if ($length < 8 || $length > 35) {
             return false;
         }
 
         // Format: Ländercode (2) + Prüfziffern (2) + Geschäftsbereich (3) + nationale Kennung (variabel)
-        // Nur alphanumerische Zeichen erlaubt
-        return preg_match('/^[A-Z]{2}[0-9]{2}[A-Z0-9]{3,}[A-Z0-9]+$/i', $creditorId) === 1;
+        // Nur alphanumerische Zeichen erlaubt. Eine einzelne beschränkte
+        // Quantor-Gruppe {4,31} statt der früheren mehrdeutigen
+        // {3,}[A-Z0-9]+ Folge (die O(n^2)-Backtracking auslöste).
+        return preg_match('/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4,31}$/i', $creditorId) === 1;
     }
 
     /**

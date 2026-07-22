@@ -71,7 +71,11 @@ class BankHelper {
      * @return bool True, wenn die IBAN gültig ist, andernfalls false.
      */
     public static function isIBAN(?string $value): bool {
-        if ($value === null || preg_match("/X{5,}/", $value)) {
+        // Anonymisierte/maskierte IBANs ablehnen. Der frühere X{5,}-Guard traf
+        // das eigene Maskenformat (…XXXX…, max. 4 X am Stück) nie; jetzt wird
+        // explizit auf isIBANAnon() geprüft und zusätzlich jeder Lauf von 4+ X
+        // erkannt.
+        if ($value === null || self::isIBANAnon($value) || preg_match("/X{4,}/", $value) === 1) {
             return false;
         }
         $value = str_replace(' ', '', $value);

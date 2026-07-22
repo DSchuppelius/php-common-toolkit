@@ -106,10 +106,45 @@ class CryptoHelperTest extends BaseTestCase {
         $encrypted = CryptoHelper::encrypt($this->testData, $this->testKey, 'aes-256-cbc');
 
         $this->assertEquals('aes-256-cbc', $encrypted['algorithm']);
-        $this->assertEmpty($encrypted['tag']); // CBC mode has no tag
+        // CBC is now authenticated via Encrypt-then-MAC, so a tag is present.
+        $this->assertNotEmpty($encrypted['tag']);
 
         $decrypted = CryptoHelper::decrypt($encrypted, $this->testKey);
         $this->assertEquals($this->testData, $decrypted);
+    }
+
+    public function test_cbc_rejects_tampered_ciphertext(): void {
+        $encrypted = CryptoHelper::encrypt($this->testData, $this->testKey, 'aes-256-cbc');
+
+        // Flip a byte in the ciphertext — Encrypt-then-MAC must reject it
+        // instead of running the CBC decrypt (padding-oracle surface).
+        $raw = base64_decode($encrypted['ciphertext'], true);
+        $raw[0] = $raw[0] ^ "\x01";
+        $encrypted['ciphertext'] = base64_encode($raw);
+
+        $this->expectException(\InvalidArgumentException::class);
+        CryptoHelper::decrypt($encrypted, $this->testKey);
+    }
+
+    public function test_gcm_rejects_downgrade_to_cbc(): void {
+        $encrypted = CryptoHelper::encrypt($this->testData, $this->testKey, 'aes-256-gcm');
+
+        // Attacker flips the stored algorithm to the non-AEAD path; the MAC
+        // check (and IV/tag mismatch) must reject it rather than decrypt.
+        $encrypted['algorithm'] = 'aes-256-cbc';
+
+        $this->expectException(\InvalidArgumentException::class);
+        CryptoHelper::decrypt($encrypted, $this->testKey);
+    }
+
+    public function test_gcm_rejects_truncated_tag(): void {
+        $encrypted = CryptoHelper::encrypt($this->testData, $this->testKey, 'aes-256-gcm');
+
+        $tag = base64_decode($encrypted['tag'], true);
+        $encrypted['tag'] = base64_encode(substr($tag, 0, 4)); // truncate 16 -> 4 bytes
+
+        $this->expectException(\InvalidArgumentException::class);
+        CryptoHelper::decrypt($encrypted, $this->testKey);
     }
 
     public function test_derive_key(): void {

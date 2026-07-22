@@ -435,8 +435,10 @@ class VatNumberHelper {
             return (int) $key === $computed;
         }
 
-        // Erweiterte Prüfung für alphanumerische Keys
-        return true; // Format-Check ist bereits erfolgt
+        // Alphanumerischer Key: der numerische MOD-97-Algorithmus ist hier
+        // nicht anwendbar. Im strengen Modus darf eine ungeprüfte Nummer NICHT
+        // als gültig gemeldet werden (vorher wurde fälschlich true geliefert).
+        return self::logWarningAndReturn(false, "FR-USt-ID mit alphanumerischem Key kann nicht per Prüfsumme verifiziert werden: {$vatId}");
     }
 
     /**
