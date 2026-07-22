@@ -61,12 +61,7 @@ class SecurityHelper extends HelperAbstract {
                 self::logErrorAndThrow(InvalidArgumentException::class, 'Password zu lang (max. 4096 Zeichen)');
             }
 
-            $cost = $options['cost'] ?? 12;
-            if ($cost < 10 || $cost > 15) {
-                self::logErrorAndThrow(InvalidArgumentException::class, 'Cost-Parameter muss zwischen 10 und 15 liegen');
-            }
-
-            $hash = password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 65536, 'time_cost' => 4, 'threads' => 3]);
+            $hash = password_hash($password, PASSWORD_ARGON2ID, self::argon2idOptions($options));
 
             return self::logDebugAndReturn($hash, "Sicherer Password-Hash erstellt");
         } catch (Exception $e) {
@@ -107,11 +102,27 @@ class SecurityHelper extends HelperAbstract {
      */
     public static function needsRehash(string $hash, array $options = []): bool {
         try {
-            $cost = $options['cost'] ?? 12;
-            return password_needs_rehash($hash, PASSWORD_ARGON2ID, ['memory_cost' => 65536, 'time_cost' => 4, 'threads' => 3]);
+            return password_needs_rehash($hash, PASSWORD_ARGON2ID, self::argon2idOptions($options));
         } catch (Exception $e) {
             return self::logErrorAndReturn(true, "Fehler bei Rehash-Prüfung: " . $e->getMessage()); // Im Zweifelsfall rehash durchführen
         }
+    }
+
+    /**
+     * Argon2id-Tuning-Parameter aus den Optionen auflösen (mit sicheren
+     * Defaults). Ersetzt die frühere, für Argon2id wirkungslose (und daher
+     * irreführende) 'cost'-Validierung; hashPassword und needsRehash nutzen
+     * dieselben Parameter, damit needsRehash Tuning-Änderungen widerspiegelt.
+     *
+     * @param array<string, mixed> $options
+     * @return array{memory_cost: int, time_cost: int, threads: int}
+     */
+    private static function argon2idOptions(array $options): array {
+        return [
+            'memory_cost' => isset($options['memory_cost']) && is_int($options['memory_cost']) ? $options['memory_cost'] : 65536,
+            'time_cost' => isset($options['time_cost']) && is_int($options['time_cost']) ? $options['time_cost'] : 4,
+            'threads' => isset($options['threads']) && is_int($options['threads']) ? $options['threads'] : 3,
+        ];
     }
 
     /**
@@ -146,14 +157,70 @@ class SecurityHelper extends HelperAbstract {
      */
     public static function generateCsrfToken(string $sessionId, string $action = 'default'): string {
         try {
-            $data = $sessionId . '|' . $action . '|' . time();
-            $key = hash('sha256', 'csrf_key_' . $sessionId, true);
-            $token = hash_hmac('sha256', $data, $key);
+            // Token = base64(nonce|timestamp|hmac). Die Session-ID ist NICHT
+            // im Token enthalten (keine Klartext-Preisgabe) und der HMAC nutzt
+            // ein serverseitiges Geheimnis (nicht die Session-ID) — dadurch ist
+            // das Token ohne Kenntnis des Server-Secrets nicht fälschbar.
+            $nonce = bin2hex(random_bytes(16));
+            $timestamp = time();
+            $signature = hash_hmac('sha256', $nonce . '|' . $sessionId . '|' . $action . '|' . $timestamp, self::csrfSecret());
 
-            return self::logDebugAndReturn(base64_encode($data . '|' . $token), "CSRF-Token für Aktion '{$action}' generiert");
+            return self::logDebugAndReturn(base64_encode($nonce . '|' . $timestamp . '|' . $signature), "CSRF-Token für Aktion '{$action}' generiert");
         } catch (Exception $e) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'CSRF-Token-Generierung fehlgeschlagen: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Setzt das serverseitige Geheimnis für die CSRF-HMAC.
+     *
+     * In verteilten/Multi-Server-Setups MUSS dasselbe Geheimnis auf allen
+     * Instanzen gesetzt werden (z. B. aus dem App-Key/Secret-Store). Ist nichts
+     * gesetzt, wird die Umgebungsvariable CSRF_SECRET genutzt bzw. als letzter
+     * Fallback ein per-Host persistiertes Zufallsgeheimnis (0600) erzeugt.
+     */
+    public static function setCsrfSecret(string $secret): void {
+        if (strlen($secret) < 16) {
+            self::logErrorAndThrow(InvalidArgumentException::class, 'CSRF-Secret muss mindestens 16 Zeichen lang sein');
+        }
+        self::$csrfSecret = $secret;
+    }
+
+    private static ?string $csrfSecret = null;
+
+    private static function csrfSecret(): string {
+        if (self::$csrfSecret !== null) {
+            return self::$csrfSecret;
+        }
+
+        $env = getenv('CSRF_SECRET');
+        if (is_string($env) && strlen($env) >= 16) {
+            self::$csrfSecret = $env;
+
+            return $env;
+        }
+
+        // Fallback: per-Host persistiertes Zufallsgeheimnis, damit Tokens ohne
+        // explizite Konfiguration über Requests hinweg gültig bleiben.
+        $path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'csrf-secret-' . hash('sha256', __DIR__) . '.key';
+        if (is_file($path) && !is_link($path)) {
+            $existing = @file_get_contents($path);
+            if (is_string($existing) && strlen($existing) >= 16) {
+                self::$csrfSecret = $existing;
+
+                return $existing;
+            }
+        }
+
+        $secret = bin2hex(random_bytes(32));
+        if (!is_link($path)) {
+            if (@file_put_contents($path, $secret, LOCK_EX) !== false) {
+                @chmod($path, 0600);
+            }
+        }
+        self::$csrfSecret = $secret;
+
+        return $secret;
     }
 
     /**
@@ -173,29 +240,27 @@ class SecurityHelper extends HelperAbstract {
             }
 
             $parts = explode('|', $decoded);
-            if (count($parts) !== 4) {
+            if (count($parts) !== 3) {
                 return false;
             }
 
-            [$tokenSessionId, $tokenAction, $timestamp, $signature] = $parts;
+            [$nonce, $timestamp, $signature] = $parts;
+
+            if (!ctype_digit($timestamp)) {
+                return false;
+            }
 
             // Zeitvalidierung
             if (time() - (int) $timestamp > $maxAge) {
                 return self::logWarningAndReturn(false, "CSRF-Token abgelaufen");
             }
 
-            // Session- und Aktion-Validierung
-            if ($tokenSessionId !== $sessionId || $tokenAction !== $action) {
-                return self::logWarningAndReturn(false, "CSRF-Token Session/Aktion mismatch");
-            }
-
-            // Signatur-Validierung
-            $expectedData = $tokenSessionId . '|' . $tokenAction . '|' . $timestamp;
-            $key = hash('sha256', 'csrf_key_' . $sessionId, true);
-            $expectedSignature = hash_hmac('sha256', $expectedData, $key);
+            // Signatur-Validierung: bindet Session-ID und Aktion über das
+            // serverseitige Geheimnis, ohne die Session-ID im Token zu führen.
+            $expectedSignature = hash_hmac('sha256', $nonce . '|' . $sessionId . '|' . $action . '|' . $timestamp, self::csrfSecret());
 
             if (!hash_equals($expectedSignature, $signature)) {
-                return self::logWarningAndReturn(false, "CSRF-Token Signatur ungültig");
+                return self::logWarningAndReturn(false, "CSRF-Token Session/Aktion/Signatur ungültig");
             }
 
             return self::logDebugAndReturn(true, "CSRF-Token erfolgreich validiert");
@@ -374,9 +439,15 @@ class SecurityHelper extends HelperAbstract {
                 }
             }
 
+            // Korrupter/unerwarteter State-Inhalt darf nicht zum Fail-Open
+            // führen (array_filter auf Nicht-Array wäre ein TypeError).
+            if (!is_array($attempts)) {
+                $attempts = [];
+            }
+
             // Alte Versuche bereinigen
             $attempts = array_filter($attempts, function ($timestamp) use ($currentTime, $timeWindow) {
-                return ($currentTime - $timestamp) < $timeWindow;
+                return is_numeric($timestamp) && ($currentTime - $timestamp) < $timeWindow;
             });
 
             // Prüfen ob Limit überschritten
@@ -390,7 +461,9 @@ class SecurityHelper extends HelperAbstract {
 
             return self::logDebugAndReturn(true, "Rate-Limit geprüft: {$identifier}, Versuche: " . count($attempts) . "/{$maxAttempts}");
         } catch (Exception $e) {
-            return self::logErrorAndReturn(true, "Fehler bei Rate-Limiting: " . $e->getMessage()); // Im Fehlerfall erlauben
+            // Fail-closed: eine Sicherheitsschranke darf im Fehlerfall nicht
+            // durchlassen, sonst ist sie durch Provozieren von Fehlern umgehbar.
+            return self::logErrorAndReturn(false, "Fehler bei Rate-Limiting (verweigert): " . $e->getMessage());
         }
     }
 

@@ -708,7 +708,11 @@ final class StringHelper extends BaseStringHelper {
      *                                     (Standard '\\' wie bei fputcsv; '' = kein Escape).
      * @return string                      Das encodierte Feld.
      */
-    public static function encodeField(string $value, string $delimiter = ',', string $enclosure = '"', bool|QuotingStyle $quoting = QuotingStyle::MINIMAL, string $escape = '\\'): string {
+    public static function encodeField(string $value, string $delimiter = ',', string $enclosure = '"', bool|QuotingStyle $quoting = QuotingStyle::MINIMAL, string $escape = '\\', bool $guardFormulaInjection = false): string {
+        if ($guardFormulaInjection) {
+            $value = self::neutralizeFormulaInjection($value);
+        }
+
         if ($enclosure === '') {
             return $value;
         }
@@ -730,6 +734,22 @@ final class StringHelper extends BaseStringHelper {
         }
 
         return $enclosure . str_replace($enclosure, $enclosure . $enclosure, $value) . $enclosure;
+    }
+
+    /**
+     * Entschärft Spreadsheet-Formel-Injection (CWE-1236): Werte, die mit
+     * = + - @ oder Tab/CR beginnen, werden mit einem führenden Apostroph
+     * versehen, damit Excel/LibreOffice sie als Text und nicht als Formel
+     * interpretieren. Opt-in über den Parameter $guardFormulaInjection von
+     * {@see encodeField()}; für Exporte aus nicht vertrauenswürdigen Daten
+     * empfohlen.
+     */
+    public static function neutralizeFormulaInjection(string $value): string {
+        if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'" . $value;
+        }
+
+        return $value;
     }
 
     /**

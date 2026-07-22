@@ -39,7 +39,8 @@ class WebLinkHelper {
         'ftps',
         'mailto',
         'tel',
-        'file',
+        // 'file' bewusst entfernt: file://-URLs erlauben lokalen Datei-Zugriff
+        // und haben in einer URL-Validierung für Web-Links nichts zu suchen.
     ];
 
     /**
@@ -621,15 +622,58 @@ class WebLinkHelper {
      * @param int $timeout Timeout in Sekunden.
      * @return bool True, wenn die URL erreichbar ist.
      */
+    /**
+     * SSRF-Schutz: Prüft, ob das Ziel einer URL auf eine private, loopback-,
+     * link-local- oder reservierte IP zeigt (z. B. 127.0.0.1, 10.0.0.0/8,
+     * 169.254.169.254, ::1). Nicht auflösbare oder nicht eindeutig öffentliche
+     * Ziele werden als blockiert behandelt (fail-safe). Bei mehreren
+     * aufgelösten IPs blockiert bereits eine nicht-öffentliche (DNS-Rebinding).
+     */
+    private static function isBlockedRequestTarget(?string $url): bool {
+        $host = self::getHost($url);
+        if ($host === null || $host === '') {
+            return true;
+        }
+
+        $host = trim($host, '[]'); // IPv6-Literale entklammern
+
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return !IPHelper::isPublicIP($host);
+        }
+
+        $ips = gethostbynamel($host);
+        if ($ips === false || $ips === []) {
+            return true; // nicht auflösbar → blockieren
+        }
+
+        foreach ($ips as $ip) {
+            if (!IPHelper::isPublicIP($ip)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function isReachable(string $url, int $timeout = 5): bool {
         if (!self::isHttpUrl($url)) {
             return false;
+        }
+
+        // SSRF-Schutz: keine Anfragen an private/loopback/link-local/reservierte
+        // Ziele (z. B. 127.0.0.1, 169.254.169.254). Redirects werden nicht
+        // gefolgt, damit ein öffentliches Ziel nicht auf ein internes umleiten
+        // und die Prüfung umgehen kann.
+        if (self::isBlockedRequestTarget($url)) {
+            return self::logWarningAndReturn(false, "isReachable: Ziel blockiert (SSRF-Schutz): {$url}");
         }
 
         $headers = @get_headers($url, context: stream_context_create([
             'http' => [
                 'method' => 'HEAD',
                 'timeout' => $timeout,
+                'follow_location' => 0,
+                'max_redirects' => 0,
             ],
         ]));
 
@@ -662,6 +706,11 @@ class WebLinkHelper {
         $host = self::getHost($url);
         if ($host === null || $host === '') {
             return false;
+        }
+
+        // SSRF-Schutz: private/loopback/link-local/reservierte Ziele blockieren.
+        if (self::isBlockedRequestTarget($url)) {
+            return self::logWarningAndReturn(false, "isOnline: Ziel blockiert (SSRF-Schutz): {$host}");
         }
 
         // DNS-Lookup prüfen

@@ -94,7 +94,11 @@ class CreditCardHelper extends HelperAbstract {
         for ($i = $length - 1; $i >= 0; $i--) {
             $digit = (int) $number[$i];
 
-            if (($i % 2) !== $parity) {
+            // Luhn doubles every second digit starting from the second-to-last;
+            // those are the positions whose index parity equals the length
+            // parity. (A previous "!==" doubled the complementary set, which
+            // rejected valid cards and accepted ~9% of invalid ones.)
+            if (($i % 2) === $parity) {
                 $digit *= 2;
                 if ($digit > 9) {
                     $digit -= 9;
