@@ -1473,4 +1473,64 @@ class DateHelper {
     public static function isGermanDate(string $value): bool {
         return self::isValidDate($value, ['d.m.Y']);
     }
+
+    /**
+     * Parst eine Dauer-Kurzform in Minuten: „1h", „1,5h", „30min", „90m",
+     * „2std", auch kombiniert („1h 30min", „1h30"). Dezimaltrennzeichen
+     * Komma oder Punkt.
+     *
+     * @param string $value Die zu parsende Kurzform.
+     * @return int|null Gesamtminuten (gerundet) oder null, wenn keine Dauer erkennbar ist.
+     */
+    public static function parseDurationToMinutes(string $value): ?int {
+        $value = trim(mb_strtolower($value));
+        if ($value === '') {
+            return null;
+        }
+
+        $minutes = 0.0;
+        $found = false;
+
+        // Zahl+Einheit-Paare: 1h / 1,5h / 2std / 30min / 90m — kombinierbar.
+        // Kein \b nach der Einheit: in „1h30" folgt eine Ziffer direkt auf „h".
+        if (preg_match_all('/(\d+(?:[.,]\d+)?)\s*(h|std|stunden?|min|m)(?![a-zäöüß])/iu', $value, $matches, PREG_SET_ORDER) > 0) {
+            foreach ($matches as $match) {
+                $number = (float) str_replace(',', '.', $match[1]);
+                $isHours = in_array($match[2], ['h', 'std', 'stunde', 'stunden'], true);
+                $minutes += $isHours ? $number * 60 : $number;
+                $found = true;
+            }
+        }
+
+        // Nachgestellte Minuten ohne Einheit („1h30") — nur wenn den Ziffern
+        // keine eigene Einheit folgt (sonst zählte „1h 30min" doppelt).
+        if (preg_match('/(?:h|std)\s*(\d{1,2})\b(?!\s*(?:[.,]\d|h|std|min|m))/iu', $value, $match) === 1) {
+            $minutes += (float) $match[1];
+            $found = true;
+        }
+
+        return $found ? (int) round($minutes) : null;
+    }
+
+    /**
+     * Parst eine Uhrzeit-Kurzform: „8h", „8 uhr", „8:30", „08.15", „17:05".
+     * Der gesamte Wert muss die Uhrzeit sein (kein Suchen im Fließtext).
+     *
+     * @param string $value Die zu parsende Kurzform.
+     * @return array{0: int, 1: int}|null [Stunde, Minute] oder null bei ungültiger Angabe.
+     */
+    public static function parseClockTimeShorthand(string $value): ?array {
+        $value = trim(mb_strtolower($value));
+        if (preg_match('/^(\d{1,2})(?:[:.](\d{2}))?\s*(?:h|uhr)?$/u', $value, $match) !== 1) {
+            return null;
+        }
+
+        $hour = (int) $match[1];
+        $minute = isset($match[2]) ? (int) $match[2] : 0;
+        if ($hour > 23 || $minute > 59) {
+            return null;
+        }
+
+        return [$hour, $minute];
+    }
 }

@@ -312,4 +312,40 @@ class DateHelperTest extends BaseTestCase {
         $this->assertEquals('01.01.2026', DateHelper::expandShortYear('1.1.26'));
         $this->assertEquals('05.03.2024', DateHelper::expandShortYear('5.3.24'));
     }
+
+    public function test_parse_duration_to_minutes(): void {
+        $this->assertSame(60, DateHelper::parseDurationToMinutes('1h'));
+        $this->assertSame(90, DateHelper::parseDurationToMinutes('1,5h'));
+        $this->assertSame(90, DateHelper::parseDurationToMinutes('1.5h'));
+        $this->assertSame(30, DateHelper::parseDurationToMinutes('30min'));
+        $this->assertSame(90, DateHelper::parseDurationToMinutes('90m'));
+        $this->assertSame(120, DateHelper::parseDurationToMinutes('2std'));
+        $this->assertSame(120, DateHelper::parseDurationToMinutes('2 Std'));
+        $this->assertSame(90, DateHelper::parseDurationToMinutes('1h 30min'));
+        $this->assertSame(90, DateHelper::parseDurationToMinutes('1h30'));
+        $this->assertSame(45, DateHelper::parseDurationToMinutes('  45 min '));
+    }
+
+    public function test_parse_duration_to_minutes_rejects_invalid(): void {
+        $this->assertNull(DateHelper::parseDurationToMinutes(''));
+        $this->assertNull(DateHelper::parseDurationToMinutes('keine Dauer'));
+        $this->assertNull(DateHelper::parseDurationToMinutes('12345'));
+    }
+
+    public function test_parse_clock_time_shorthand(): void {
+        $this->assertSame([8, 0], DateHelper::parseClockTimeShorthand('8h'));
+        $this->assertSame([8, 0], DateHelper::parseClockTimeShorthand('8 Uhr'));
+        $this->assertSame([8, 30], DateHelper::parseClockTimeShorthand('8:30'));
+        $this->assertSame([8, 15], DateHelper::parseClockTimeShorthand('08.15'));
+        $this->assertSame([17, 5], DateHelper::parseClockTimeShorthand('17:05'));
+        $this->assertSame([17, 5], DateHelper::parseClockTimeShorthand('17:05h'));
+    }
+
+    public function test_parse_clock_time_shorthand_rejects_invalid(): void {
+        $this->assertNull(DateHelper::parseClockTimeShorthand(''));
+        $this->assertNull(DateHelper::parseClockTimeShorthand('25h'));
+        $this->assertNull(DateHelper::parseClockTimeShorthand('8:75'));
+        $this->assertNull(DateHelper::parseClockTimeShorthand('seit 8h'));
+        $this->assertNull(DateHelper::parseClockTimeShorthand('830'));
+    }
 }
