@@ -84,7 +84,7 @@ class Java extends ConfiguredHelperAbstract {
     /**
      * Gibt die konfigurierten Java-Executables zurück.
      *
-     * @return array<array-key, object> Ein Array mit den konfigurierten Java-Executables.
+     * @return array<array-key, JavaExecutable> Ein Array mit den konfigurierten Java-Executables.
      */
     public static function getConfiguredExecutables(): array {
         return self::getExecutableInstances('javaExecutables', JavaExecutable::class);

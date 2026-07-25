@@ -46,7 +46,7 @@ class CSVDocumentParserTest extends BaseTestCase {
     }
 
     public function test_parse_comma_separated_csv(): void {
-        $csv = file_get_contents($this->testFileComma);
+        $csv = $this->readFile($this->testFileComma);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
         $this->assertInstanceOf(HeaderLine::class, $doc->getHeader());
@@ -80,19 +80,19 @@ class CSVDocumentParserTest extends BaseTestCase {
     }
 
     public function test_parse_semicolon_separated_csv(): void {
-        $csv = file_get_contents($this->testFileSemicolon);
+        $csv = $this->readFile($this->testFileSemicolon);
         $doc = CSVDocumentParser::fromString($csv, ';', '"');
         $this->assertGreaterThan(0, $doc->countRows());
     }
 
     public function test_parse_tab_separated_csv(): void {
-        $csv = file_get_contents($this->testFileTab);
+        $csv = $this->readFile($this->testFileTab);
         $doc = CSVDocumentParser::fromString($csv, "\t", '"');
         $this->assertGreaterThan(0, $doc->countRows());
     }
 
     public function test_parse_quoted_csv(): void {
-        $csv = file_get_contents($this->testFileQuoted);
+        $csv = $this->readFile($this->testFileQuoted);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
         $row = $doc->getRow(0);
@@ -101,15 +101,19 @@ class CSVDocumentParserTest extends BaseTestCase {
     }
 
     public function test_parse_double_quoted_csv(): void {
-        $csv = file_get_contents($this->testFileDoubleQuoted);
+        $csv = $this->readFile($this->testFileDoubleQuoted);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
-        [$strict, $nonStrict] = $doc->getHeader()->getEnclosureRepeatRange();
+        $header = $doc->getHeader();
+        if ($header === null) {
+            self::fail('CSV sollte einen Header haben');
+        }
+        [$strict, $nonStrict] = $header->getEnclosureRepeatRange();
         $this->assertGreaterThanOrEqual(2, $nonStrict);
     }
 
     public function test_detect_multi_line_csv(): void {
-        $csv = file_get_contents($this->testFileMultiLine);
+        $csv = $this->readFile($this->testFileMultiLine);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
 
         $this->assertGreaterThan(1, $doc->countRows());
@@ -118,25 +122,25 @@ class CSVDocumentParserTest extends BaseTestCase {
     }
 
     public function test_empty_csv_should_throw(): void {
-        $csv = file_get_contents($this->testFileEmpty);
+        $csv = $this->readFile($this->testFileEmpty);
         $this->expectException(RuntimeException::class);
         CSVDocumentParser::fromString($csv);
     }
 
     public function test_malformed_csv_should_throw(): void {
-        $csv = file_get_contents($this->testFileMalformed);
+        $csv = $this->readFile($this->testFileMalformed);
         $this->expectException(RuntimeException::class);
         CSVDocumentParser::fromString($csv);
     }
 
     public function test_inconsistent_quoted_csv_should_throw(): void {
-        $csv = file_get_contents($this->testFileInconsistentQuoted);
+        $csv = $this->readFile($this->testFileInconsistentQuoted);
         $this->expectException(RuntimeException::class);
         CSVDocumentParser::fromString($csv);
     }
 
     public function test_round_trip_integrity(): void {
-        $csv = file_get_contents($this->testFileComma);
+        $csv = $this->readFile($this->testFileComma);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');
         $rebuilt = $doc->toString(',', '"');
 
@@ -151,9 +155,16 @@ class CSVDocumentParserTest extends BaseTestCase {
         $this->assertEquals(1, $doc->countRows());
 
         $row = $doc->getRow(0);
-        $this->assertNotNull($row);
-        $this->assertEquals('Alice', $row->getField(0)->getValue());
-        $this->assertEquals('alice@example.com', $row->getField(1)->getValue());
+        if ($row === null) {
+            self::fail('Zeile 0 sollte existieren');
+        }
+        $field0 = $row->getField(0);
+        $field1 = $row->getField(1);
+        if ($field0 === null || $field1 === null) {
+            self::fail('Felder 0 und 1 sollten existieren');
+        }
+        $this->assertEquals('Alice', $field0->getValue());
+        $this->assertEquals('alice@example.com', $field1->getValue());
     }
 
     public function test_from_file_method(): void {

@@ -116,7 +116,7 @@ class CryptoHelper extends HelperAbstract {
     /**
      * Entschlüsselt mit AES verschlüsselte Daten.
      *
-     * @param array{ciphertext: string, iv: string, tag: string, algorithm: string} $encryptedData Die verschlüsselten Daten
+     * @param array<string, string> $encryptedData Die verschlüsselten Daten (werden zur Laufzeit auf Vollständigkeit geprüft)
      * @param string $key Der Entschlüsselungsschlüssel
      * @return string Der entschlüsselte Text
      * @throws InvalidArgumentException Bei ungültigen Daten oder Fehlern
@@ -351,7 +351,7 @@ class CryptoHelper extends HelperAbstract {
      * Verifiziert einen Hash gegen Daten.
      *
      * @param string $data Die ursprünglichen Daten
-     * @param array{hash: string, salt: string, algorithm: string} $hashData Die Hash-Daten
+     * @param array<string, string> $hashData Die Hash-Daten (werden zur Laufzeit auf Vollständigkeit geprüft)
      * @return bool True wenn Hash korrekt ist
      */
     public static function verifyHash(string $data, array $hashData): bool {

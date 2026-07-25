@@ -118,9 +118,10 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
     /**
      * Holt alle Instanzen eines bestimmten Typs aus der Konfiguration.
      *
+     * @template T of object
      * @param string $configKey Der Schlüssel in der Konfiguration.
-     * @param class-string $class Der Klassentyp, den die Instanzen haben sollen.
-     * @return array<array-key, object> Ein Array von Instanzen des angegebenen Typs.
+     * @param class-string<T> $class Der Klassentyp, den die Instanzen haben sollen.
+     * @return array<array-key, T> Ein Array von Instanzen des angegebenen Typs.
      */
     protected static function getExecutableInstances(string $configKey, string $class): array {
         $configLoader = self::getConfigLoader();

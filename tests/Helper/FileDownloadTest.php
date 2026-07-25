@@ -39,6 +39,9 @@ class FileDownloadTest extends BaseTestCase {
         @rmdir($this->tmpDir);
     }
 
+    /**
+     * @return list<string>
+     */
     private function listDir(): array {
         $entries = scandir($this->tmpDir) ?: [];
         return array_values(array_filter($entries, fn ($e) => $e !== '.' && $e !== '..'));
@@ -167,7 +170,7 @@ class InMemoryHttpStreamWrapper {
         return true;
     }
 
-    public function stream_read(int $count) {
+    public function stream_read(int $count): string|false {
         if (self::$failAfter !== null && $this->reads >= self::$failAfter) {
             return false; // simuliert abbrechende Quelle
         }
@@ -181,7 +184,10 @@ class InMemoryHttpStreamWrapper {
         return $this->position >= strlen(self::$payload);
     }
 
-    public function stream_stat() {
+    /**
+     * @return array<mixed>
+     */
+    public function stream_stat(): array {
         return [];
     }
 

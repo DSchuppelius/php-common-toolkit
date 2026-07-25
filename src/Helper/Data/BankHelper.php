@@ -70,9 +70,6 @@ class BankHelper {
      * @param string|null $value Die IBAN.
      * @return bool True, wenn die IBAN gültig ist, andernfalls false.
      */
-    /**
-     * @phpstan-assert-if-true non-empty-string $value
-     */
     public static function isIBAN(?string $value): bool {
         // Anonymisierte/maskierte IBANs ablehnen. Der frühere X{5,}-Guard traf
         // das eigene Maskenformat (…XXXX…, max. 4 X am Stück) nie; jetzt wird
@@ -173,7 +170,7 @@ class BankHelper {
      * @return bool True, wenn die IBAN gültig ist.
      */
     public static function validateIBAN(?string $value, bool $strict = false): bool {
-        if (!self::isIBAN($value)) {
+        if ($value === null || !self::isIBAN($value)) {
             return false;
         }
         return $strict ? self::checkIBAN($value) : true;

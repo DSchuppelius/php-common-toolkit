@@ -72,7 +72,11 @@ class DocumentTest extends TestCase {
         $dom = $doc->toDomDocument();
 
         $this->assertInstanceOf(\DOMDocument::class, $dom);
-        $this->assertSame('root', $dom->documentElement->tagName);
+        $root = $dom->documentElement;
+        if ($root === null) {
+            self::fail('documentElement fehlt');
+        }
+        $this->assertSame('root', $root->tagName);
     }
 
     public function test_is_well_formed(): void {

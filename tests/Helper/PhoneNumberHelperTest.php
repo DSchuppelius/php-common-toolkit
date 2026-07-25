@@ -174,7 +174,6 @@ class PhoneNumberHelperTest extends BaseTestCase {
     public function test_get_supported_countries(): void {
         $countries = PhoneNumberHelper::getSupportedCountries();
 
-        $this->assertIsArray($countries);
         $this->assertArrayHasKey('DE', $countries);
         $this->assertArrayHasKey('AT', $countries);
         $this->assertArrayHasKey('CH', $countries);

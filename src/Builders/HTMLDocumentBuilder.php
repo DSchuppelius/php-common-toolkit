@@ -208,7 +208,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt ein beliebiges Element hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function element(string $tag, ?string $content = null, array $attributes = []): self {
         $this->addElement(new Element($tag, $content, $attributes));
@@ -227,7 +227,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Überschrift H1 hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function h1(string $text, array $attributes = []): self {
         return $this->element('h1', $text, $attributes);
@@ -235,7 +235,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Überschrift H2 hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function h2(string $text, array $attributes = []): self {
         return $this->element('h2', $text, $attributes);
@@ -243,7 +243,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Überschrift H3 hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function h3(string $text, array $attributes = []): self {
         return $this->element('h3', $text, $attributes);
@@ -251,7 +251,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Überschrift H4 hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function h4(string $text, array $attributes = []): self {
         return $this->element('h4', $text, $attributes);
@@ -259,7 +259,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Überschrift H5 hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function h5(string $text, array $attributes = []): self {
         return $this->element('h5', $text, $attributes);
@@ -267,7 +267,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Überschrift H6 hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function h6(string $text, array $attributes = []): self {
         return $this->element('h6', $text, $attributes);
@@ -275,7 +275,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt einen Absatz hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function p(string $text, array $attributes = []): self {
         return $this->element('p', $text, $attributes);
@@ -290,7 +290,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine horizontale Linie hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function hr(array $attributes = []): self {
         return $this->element('hr', null, $attributes);
@@ -298,7 +298,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt einen Div-Container hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function div(?string $content = null, array $attributes = []): self {
         return $this->element('div', $content, $attributes);
@@ -306,7 +306,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt ein Span-Element hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function span(string $text, array $attributes = []): self {
         return $this->element('span', $text, $attributes);
@@ -314,7 +314,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt ein Bild hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function img(string $src, string $alt = '', array $attributes = []): self {
         $attrs = array_merge(['src' => $src, 'alt' => $alt], $attributes);
@@ -323,7 +323,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt einen Link hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function a(string $href, string $text, array $attributes = []): self {
         $attrs = array_merge(['href' => $href], $attributes);
@@ -332,7 +332,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt fett formatierten Text hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function strong(string $text, array $attributes = []): self {
         return $this->element('strong', $text, $attributes);
@@ -340,7 +340,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt kursiv formatierten Text hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function em(string $text, array $attributes = []): self {
         return $this->element('em', $text, $attributes);
@@ -348,7 +348,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt Code-Text hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function code(string $text, array $attributes = []): self {
         return $this->element('code', $text, $attributes);
@@ -356,7 +356,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt vorformatierten Text hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function pre(string $text, array $attributes = []): self {
         return $this->element('pre', $text, $attributes);
@@ -364,7 +364,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt ein Blockquote hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function blockquote(string $text, array $attributes = []): self {
         return $this->element('blockquote', $text, $attributes);
@@ -374,7 +374,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet einen Div-Container (verschachtelt).
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startDiv(array $attributes = []): self {
         return $this->startElement('div', $attributes);
@@ -389,7 +389,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet ein Section-Element.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startSection(array $attributes = []): self {
         return $this->startElement('section', $attributes);
@@ -404,7 +404,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet ein Article-Element.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startArticle(array $attributes = []): self {
         return $this->startElement('article', $attributes);
@@ -419,7 +419,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet ein Header-Element.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startHeader(array $attributes = []): self {
         return $this->startElement('header', $attributes);
@@ -434,7 +434,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet ein Footer-Element.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startFooter(array $attributes = []): self {
         return $this->startElement('footer', $attributes);
@@ -449,7 +449,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet ein Nav-Element.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startNav(array $attributes = []): self {
         return $this->startElement('nav', $attributes);
@@ -464,7 +464,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet ein Main-Element.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startMain(array $attributes = []): self {
         return $this->startElement('main', $attributes);
@@ -481,7 +481,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet eine ungeordnete Liste.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startUl(array $attributes = []): self {
         return $this->startElement('ul', $attributes);
@@ -496,7 +496,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet eine geordnete Liste.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startOl(array $attributes = []): self {
         return $this->startElement('ol', $attributes);
@@ -511,7 +511,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt ein Listen-Element hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function li(string $text, array $attributes = []): self {
         return $this->element('li', $text, $attributes);
@@ -521,7 +521,7 @@ class HTMLDocumentBuilder {
      * Erstellt eine komplette ungeordnete Liste.
      *
      * @param string[] $items
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function ul(array $items, array $attributes = []): self {
         $children = array_map(fn ($item) => Element::create('li', $item), $items);
@@ -533,7 +533,7 @@ class HTMLDocumentBuilder {
      * Erstellt eine komplette geordnete Liste.
      *
      * @param string[] $items
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function ol(array $items, array $attributes = []): self {
         $children = array_map(fn ($item) => Element::create('li', $item), $items);
@@ -545,7 +545,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet eine Tabelle.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startTable(array $attributes = []): self {
         return $this->startElement('table', $attributes);
@@ -560,7 +560,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet einen Tabellenkopf.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startThead(array $attributes = []): self {
         return $this->startElement('thead', $attributes);
@@ -575,7 +575,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet einen Tabellenkörper.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startTbody(array $attributes = []): self {
         return $this->startElement('tbody', $attributes);
@@ -590,7 +590,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet einen Tabellenfuß.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startTfoot(array $attributes = []): self {
         return $this->startElement('tfoot', $attributes);
@@ -605,7 +605,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet eine Tabellenzeile.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startTr(array $attributes = []): self {
         return $this->startElement('tr', $attributes);
@@ -620,7 +620,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Tabellenkopfzelle hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function th(string $text, array $attributes = []): self {
         return $this->element('th', $text, $attributes);
@@ -628,7 +628,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Tabellenzelle hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function td(string $text, array $attributes = []): self {
         return $this->element('td', $text, $attributes);
@@ -639,7 +639,7 @@ class HTMLDocumentBuilder {
      *
      * @param string[] $headers Kopfzeilen
      * @param string[][] $rows Datenzeilen
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function table(array $headers, array $rows, array $attributes = []): self {
         $this->startTable($attributes);
@@ -673,7 +673,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Startet ein Formular.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function startForm(string $action = '', string $method = 'post', array $attributes = []): self {
         $attrs = array_merge(['action' => $action, 'method' => $method], $attributes);
@@ -689,7 +689,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt ein Label hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function label(string $for, string $text, array $attributes = []): self {
         $attrs = array_merge(['for' => $for], $attributes);
@@ -698,7 +698,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt ein Input-Feld hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function input(string $type, string $name, ?string $value = null, array $attributes = []): self {
         $attrs = array_merge(['type' => $type, 'name' => $name], $attributes);
@@ -710,7 +710,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt ein Textfeld hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function textInput(string $name, ?string $value = null, array $attributes = []): self {
         return $this->input('text', $name, $value, $attributes);
@@ -718,7 +718,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt eine Textarea hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function textarea(string $name, ?string $content = null, array $attributes = []): self {
         $attrs = array_merge(['name' => $name], $attributes);
@@ -727,7 +727,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt einen Button hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function button(string $text, string $type = 'button', array $attributes = []): self {
         $attrs = array_merge(['type' => $type], $attributes);
@@ -736,7 +736,7 @@ class HTMLDocumentBuilder {
 
     /**
      * Fügt einen Submit-Button hinzu.
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     public function submit(string $text = 'Absenden', array $attributes = []): self {
         return $this->button($text, 'submit', $attributes);
@@ -761,7 +761,7 @@ class HTMLDocumentBuilder {
     /**
      * Startet ein verschachteltes Element.
      *
-     * @param array<string, string> $attributes
+     * @param array<string, string|bool> $attributes
      */
     private function startElement(string $tag, array $attributes = []): self {
         $element = new Element($tag, null, $attributes);

@@ -125,7 +125,6 @@ class CompanyIdHelper {
      *
      * @param string|null $lei Der zu prüfende LEI.
      * @return bool True, wenn das Format gültig ist.
-     * @phpstan-assert-if-true non-empty-string $lei
      */
     public static function isLEI(?string $lei): bool {
         if ($lei === null || $lei === '') {
@@ -155,7 +154,7 @@ class CompanyIdHelper {
      * @return bool True, wenn der LEI gültig ist.
      */
     public static function validateLEI(?string $lei): bool {
-        if (!self::isLEI($lei)) {
+        if ($lei === null || !self::isLEI($lei)) {
             return false;
         }
 
@@ -248,7 +247,6 @@ class CompanyIdHelper {
      *
      * @param string|null $gln Die zu prüfende GLN.
      * @return bool True, wenn das Format gültig ist.
-     * @phpstan-assert-if-true non-empty-string $gln
      */
     public static function isGLN(?string $gln): bool {
         if ($gln === null || $gln === '') {
@@ -268,7 +266,7 @@ class CompanyIdHelper {
      * @return bool True, wenn die GLN gültig ist.
      */
     public static function validateGLN(?string $gln): bool {
-        if (!self::isGLN($gln)) {
+        if ($gln === null || !self::isGLN($gln)) {
             return false;
         }
 

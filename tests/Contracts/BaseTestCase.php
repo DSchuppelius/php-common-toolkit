@@ -23,4 +23,16 @@ abstract class BaseTestCase extends TestCase {
 
         LoggerRegistry::setLogger(ConsoleLoggerFactory::getLogger());
     }
+
+    /**
+     * Liest eine Datei als String und schlägt fehl, wenn sie nicht lesbar ist.
+     * Vermeidet `string|false`-Verkettungen in den Tests.
+     */
+    protected function readFile(string $path): string {
+        $content = file_get_contents($path);
+        if ($content === false) {
+            self::fail("Datei nicht lesbar: $path");
+        }
+        return $content;
+    }
 }

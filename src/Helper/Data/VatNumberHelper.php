@@ -74,7 +74,6 @@ class VatNumberHelper {
      *
      * @param string|null $vatId Die zu prüfende USt-ID.
      * @return bool True, wenn das Format gültig ist.
-     * @phpstan-assert-if-true non-empty-string $vatId
      */
     public static function isVatId(?string $vatId): bool {
         if ($vatId === null || $vatId === '') {
@@ -99,7 +98,7 @@ class VatNumberHelper {
      * @return bool True, wenn die USt-ID gültig ist.
      */
     public static function validateVatId(?string $vatId, bool $strict = false): bool {
-        if (!self::isVatId($vatId)) {
+        if ($vatId === null || !self::isVatId($vatId)) {
             return false;
         }
 

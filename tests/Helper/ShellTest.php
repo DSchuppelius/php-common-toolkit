@@ -15,7 +15,7 @@ use Exception;
 use Tests\Contracts\BaseTestCase;
 
 class ShellTest extends BaseTestCase {
-    public function test_execute_shell_command_success() {
+    public function test_execute_shell_command_success(): void {
         $unixCommand = 'echo "Hello World"';
         $windowsCommand = 'echo Hello World';
 
@@ -28,7 +28,7 @@ class ShellTest extends BaseTestCase {
         $this->assertNotEmpty($output, "The output should not be empty.");
     }
 
-    public function test_execute_shell_command_failure() {
+    public function test_execute_shell_command_failure(): void {
         $command = "invalidcommand 2>&1";
 
         $output = [];

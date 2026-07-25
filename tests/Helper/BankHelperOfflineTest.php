@@ -32,10 +32,17 @@ class BankHelperOfflineTest extends BaseTestCase {
         parent::tearDown();
     }
 
+    /**
+     * @return array<mixed>
+     */
     private function callLoadDataFile(string $path, ?string $url, int $expiry, bool $networkEnabled): array {
         $method = new ReflectionMethod(BankHelper::class, 'loadDataFile');
         $method->setAccessible(true);
-        return $method->invoke(null, $path, $url, $expiry, $networkEnabled);
+        $result = $method->invoke(null, $path, $url, $expiry, $networkEnabled);
+        if (!is_array($result)) {
+            self::fail('loadDataFile sollte ein Array liefern');
+        }
+        return $result;
     }
 
     public function test_missing_file_returns_empty_list_without_throwing(): void {
@@ -71,9 +78,10 @@ class BankHelperOfflineTest extends BaseTestCase {
 
     public function test_bic_from_iban_does_not_throw(): void {
         // Mit mitgelieferter Datendatei ist das Ergebnis ein String; ohne wäre es null.
-        // Wichtig ist: es fliegt keine Exception (auch bei leerem Index -> null).
-        $bic = BankHelper::bicFromIBAN('DE44500105175407324931');
-        $this->assertTrue($bic === null || is_string($bic));
+        // Der Rückgabetyp (?string) ist typseitig garantiert; hier zählt nur, dass
+        // keine Exception fliegt (auch bei leerem Index -> null).
+        $this->expectNotToPerformAssertions();
+        BankHelper::bicFromIBAN('DE44500105175407324931');
     }
 
     /**

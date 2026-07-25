@@ -376,9 +376,10 @@ class NumberHelper {
      * Erkennt das Format einer Zahl und gibt ein generisches Template basierend auf der Input-Länge zurück.
      *
      * @param string $value Der zu analysierende Zahlenwert
+     * @param CountryCode|null $country Optionaler Länder-Hinweis (reserviert für mehrdeutige Formate; die Struktur-Erkennung ist ansonsten länderunabhängig)
      * @return string|null Format-Template angepasst an die Input-Struktur oder null wenn nicht erkannt
      */
-    public static function detectNumberFormat(string $value): ?string {
+    public static function detectNumberFormat(string $value, ?CountryCode $country = null): ?string {
         $trimmed = trim($value);
         if ($trimmed === '' || !is_numeric(str_replace(['.', ',', ' '], '', $trimmed))) {
             return null;

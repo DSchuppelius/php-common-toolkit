@@ -52,7 +52,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertNull($format);
     }
 
-    public function test_is_valid_date() {
+    public function test_is_valid_date(): void {
         $this->assertTrue(DateHelper::isValidDate('2024-02-29')); // Schaltjahr
         $this->assertFalse(DateHelper::isValidDate('2024-02-31')); // Ungültiger Tag
     }
@@ -151,13 +151,13 @@ class DateHelperTest extends BaseTestCase {
         $this->assertFalse(DateHelper::isBetween(new DateTimeImmutable('2023-12-31'), $start, $end));
     }
 
-    public function test_get_month_and_weekday_enums() {
+    public function test_get_month_and_weekday_enums(): void {
         $date = new DateTime('2024-04-16');
         $this->assertEquals(Month::APRIL, DateHelper::getMonth($date));
         $this->assertEquals(Weekday::TUESDAY, DateHelper::getWeekday($date));
     }
 
-    public function test_get_localized_month_name() {
+    public function test_get_localized_month_name(): void {
         $date = new DateTime('2024-04-16');
         $this->assertEquals('April', DateHelper::getLocalizedMonthName($date, 'de'));
     }

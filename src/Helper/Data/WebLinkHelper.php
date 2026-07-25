@@ -48,7 +48,6 @@ class WebLinkHelper {
      *
      * @param string|null $url Die zu prüfende URL.
      * @return bool True, wenn das Format gültig ist.
-     * @phpstan-assert-if-true non-empty-string $url
      */
     public static function isUrl(?string $url): bool {
         if ($url === null || $url === '') {
@@ -139,7 +138,7 @@ class WebLinkHelper {
      * @return string|null Die normalisierte URL oder null bei ungültiger URL.
      */
     public static function normalize(?string $url): ?string {
-        if (!self::isUrl($url)) {
+        if ($url === null || $url === '' || !self::isUrl($url)) {
             return null;
         }
 
@@ -375,7 +374,7 @@ class WebLinkHelper {
      * @return string|null Die URL mit den neuen Parametern oder null bei ungültiger URL.
      */
     public static function addQueryParams(string $url, array $params, bool $replace = true): ?string {
-        if (!self::isUrl($url)) {
+        if ($url === '' || !self::isUrl($url)) {
             return null;
         }
 
@@ -416,7 +415,7 @@ class WebLinkHelper {
      * @return string|null Die URL ohne die angegebenen Parameter oder null bei ungültiger URL.
      */
     public static function removeQueryParams(string $url, array $keys): ?string {
-        if (!self::isUrl($url)) {
+        if ($url === '' || !self::isUrl($url)) {
             return null;
         }
 

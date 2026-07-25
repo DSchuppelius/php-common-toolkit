@@ -111,7 +111,7 @@ class Shell extends ConfiguredHelperAbstract {
     /**
      * Gibt die konfigurierten Shell-Executables zurück.
      *
-     * @return array<array-key, object>
+     * @return array<array-key, ShellExecutable>
      */
     public static function getConfiguredExecutables(): array {
         return self::getExecutableInstances('shellExecutables', ShellExecutable::class);

@@ -21,7 +21,6 @@ class StringHelperTest extends BaseTestCase {
         $utf8 = "Grüße";
         $iso = StringHelper::utf8ToIso8859_1($utf8);
         $this->assertNotSame($utf8, $iso);
-        $this->assertIsString($iso);
     }
 
     public function test_convert_encoding(): void {

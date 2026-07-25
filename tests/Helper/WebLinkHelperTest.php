@@ -27,6 +27,9 @@ class WebLinkHelperTest extends BaseTestCase {
         $this->assertFalse(WebLinkHelper::isUrl($url));
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
     public static function validUrlProvider(): array {
         return [
             'https url' => ['https://example.com'],
@@ -42,6 +45,9 @@ class WebLinkHelperTest extends BaseTestCase {
         ];
     }
 
+    /**
+     * @return array<string, array{string|null}>
+     */
     public static function invalidUrlProvider(): array {
         return [
             'null' => [null],
@@ -195,6 +201,9 @@ class WebLinkHelperTest extends BaseTestCase {
 
         // Fragment beibehalten
         $result = WebLinkHelper::addQueryParams('https://example.com#section', ['param' => 'value']);
+        if ($result === null) {
+            self::fail('addQueryParams sollte eine URL liefern');
+        }
         $this->assertStringContainsString('param=value', $result);
         $this->assertStringContainsString('#section', $result);
     }
@@ -291,6 +300,9 @@ class WebLinkHelperTest extends BaseTestCase {
     public function test_encode(): void {
         $url = 'https://example.com/path with spaces/file name.html';
         $encoded = WebLinkHelper::encode($url);
+        if ($encoded === null) {
+            self::fail('encode sollte eine URL liefern');
+        }
         $this->assertStringContainsString('path%20with%20spaces', $encoded);
         $this->assertStringContainsString('file%20name.html', $encoded);
     }

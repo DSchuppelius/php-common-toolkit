@@ -139,7 +139,6 @@ class TaxNumberHelperTest extends BaseTestCase {
     public function test_get_federal_states(): void {
         $states = TaxNumberHelper::getFederalStates();
 
-        $this->assertIsArray($states);
         $this->assertArrayHasKey('BY', $states);
         $this->assertArrayHasKey('NW', $states);
         $this->assertArrayHasKey('BE', $states);

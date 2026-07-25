@@ -95,8 +95,9 @@ class DataLineTest extends BaseTestCase {
                 $rebuilt = $line->toString(',', '"');
             } catch (RuntimeException $e) {
                 $this->assertStringContainsString('ungültig', strtolower($e->getMessage()));
-            } catch (Throwable $e) {
-                $this->assertTrue(true);
+            } catch (Throwable) {
+                // Andere Throwables sind für ungültige Zeilen ebenfalls akzeptabel;
+                // die eigentliche Prüfung erfolgt über assertNotSame unten.
             }
             $this->assertNotSame($t, $rebuilt, sprintf("Ungültige Zeile wurde fälschlich akzeptiert: %s", $t));
         }

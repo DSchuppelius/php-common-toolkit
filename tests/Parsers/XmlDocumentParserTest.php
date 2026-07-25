@@ -55,7 +55,6 @@ class XmlDocumentParserTest extends TestCase {
         );
 
         $this->assertCount(2, $elements);
-        $this->assertContainsOnlyInstancesOf(Element::class, $elements);
     }
 
     public function test_xpath_with_namespace(): void {
@@ -165,7 +164,6 @@ class XmlDocumentParserTest extends TestCase {
         $simpleDoc = Document::fromString('<root><name>Test</name><value>123</value></root>');
         $array = XmlDocumentParser::toArray($simpleDoc);
 
-        $this->assertIsArray($array);
         $this->assertArrayHasKey('name', $array);
         $this->assertArrayHasKey('value', $array);
     }

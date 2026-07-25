@@ -114,7 +114,7 @@ class LineTest extends BaseTestCase {
 
         foreach ($tests as $line) {
             $this->assertTrue(
-                StringHelper::canParseCompleteCSVDataLine($line['line'], $line['delimiter'], $line['enclosure'], $line['started'] ?? null, $line['closed'] ?? null),
+                StringHelper::canParseCompleteCSVDataLine($line['line'], $line['delimiter'], $line['enclosure'], $line['started'] ?? null, $line['closed']),
                 sprintf("Zeile sollte gültig sein, war aber ungültig: %s", $line['line'])
             );
         }
@@ -203,10 +203,8 @@ class LineTest extends BaseTestCase {
         $result = StringHelper::extractFields($csv, ',', '"', null, null, "\n");
         $result1 = StringHelper::extractFields($csv1, ',', '"');
 
-        $this->assertIsArray($result);
         $this->assertCount(4, $result);
 
-        $this->assertIsArray($result1);
         $this->assertCount(4, $result1);
 
         $this->assertSame($result, $result1);

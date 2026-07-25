@@ -39,7 +39,7 @@ class XLSXDocumentTest extends BaseTestCase {
         parent::tearDown();
         // Temp-Dateien aufräumen
         if (is_dir($this->tempDir)) {
-            $files = glob($this->tempDir . '/*');
+            $files = glob($this->tempDir . '/*') ?: [];
             foreach ($files as $file) {
                 if (is_file($file)) {
                     unlink($file);
@@ -311,6 +311,9 @@ class XLSXDocumentTest extends BaseTestCase {
 
         $parsed = XLSXDocumentParser::fromFile($outputPath);
         $sheet = $parsed->getFirstSheet();
+        if ($sheet === null) {
+            self::fail('XLSX sollte ein Sheet enthalten');
+        }
 
         $names = $sheet->getColumnByName('Name');
         $this->assertEquals(['Müller', 'O\'Brien', '<Script>'], $names);

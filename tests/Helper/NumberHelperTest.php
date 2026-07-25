@@ -174,7 +174,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertSame('7', NumberHelper::divideOrDefault('5', '-3', 2, '7'));
 
         // Byte-gleich zum gekapselten Muster: bccomp($b,'0',$s) > 0 ? bcdiv : $default
-        foreach ([['10', '4', 2, '0'], ['10', '0', 2, 'x'], ['9', '-2', 0, 'fb']] as [$a, $b, $s, $d]) {
+        foreach ([['10', '4', 2, '0'], ['10', '0', 2, '99'], ['9', '-2', 0, '88']] as [$a, $b, $s, $d]) {
             $expected = bccomp($b, '0', $s) > 0 ? bcdiv($a, $b, $s) : $d;
             $this->assertSame($expected, NumberHelper::divideOrDefault($a, $b, $s, $d));
         }

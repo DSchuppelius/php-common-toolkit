@@ -52,8 +52,6 @@ class IPHelper extends HelperAbstract {
      *
      * @param string|null $value Die zu prüfende IP-Adresse.
      * @return bool True, wenn es eine gültige IP-Adresse ist.
-     *
-     * @phpstan-assert-if-true non-empty-string $value
      */
     public static function isValidIP(?string $value): bool {
         if ($value === null || $value === '') {
@@ -73,7 +71,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine private IP-Adresse ist.
      */
     public static function isPrivateIP(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
         return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE) === false;
@@ -86,7 +84,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine reservierte IP-Adresse ist.
      */
     public static function isReservedIP(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
         return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_NO_RES_RANGE) === false;
@@ -103,7 +101,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine Loopback-Adresse ist.
      */
     public static function isLoopback(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
 
@@ -127,7 +125,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine Link-Local-Adresse ist.
      */
     public static function isLinkLocal(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
 
@@ -152,7 +150,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine Multicast-Adresse ist.
      */
     public static function isMulticast(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
 
@@ -172,7 +170,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine öffentliche IP-Adresse ist.
      */
     public static function isPublicIP(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
         return filter_var(
@@ -483,7 +481,7 @@ class IPHelper extends HelperAbstract {
      * Berechnet die Start- und End-IP einer CIDR-Range.
      *
      * @param string $cidr Der CIDR-Bereich (z.B. "192.168.1.0/24").
-     * @return array{start: string, end: string, network: string, prefix: int, count: string}
+     * @return array{start: string, end: string, network: string, broadcast?: string, prefix: int, count: string}
      * @throws InvalidArgumentException Bei ungültigem CIDR-Format.
      */
     public static function getCIDRRange(string $cidr): array {

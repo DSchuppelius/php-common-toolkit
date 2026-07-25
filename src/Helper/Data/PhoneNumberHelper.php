@@ -135,7 +135,6 @@ class PhoneNumberHelper {
      *
      * @param string|null $phone Die zu prüfende Telefonnummer.
      * @return bool True, wenn es eine gültige deutsche Nummer ist.
-     * @phpstan-assert-if-true non-empty-string $phone
      */
     public static function isGermanPhoneNumber(?string $phone): bool {
         if ($phone === null || $phone === '') {
@@ -169,7 +168,7 @@ class PhoneNumberHelper {
      * @return bool True, wenn es eine deutsche Mobilfunknummer ist.
      */
     public static function isGermanMobileNumber(?string $phone): bool {
-        if (!self::isGermanPhoneNumber($phone)) {
+        if ($phone === null || !self::isGermanPhoneNumber($phone)) {
             return false;
         }
 

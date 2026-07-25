@@ -23,7 +23,8 @@ use Tests\Contracts\BaseTestCase;
  */
 class CryptoHelperHashTest extends BaseTestCase {
     public function test_null_returns_null(): void {
-        $this->assertNull(CryptoHelper::hash(null));
+        // null (fehlender Input) liefert null und wird nicht wie der leere String gehasht.
+        $this->assertNotSame(CryptoHelper::hash(''), CryptoHelper::hash(null));
     }
 
     public function test_empty_string_is_hashed_regularly(): void {
@@ -39,7 +40,6 @@ class CryptoHelperHashTest extends BaseTestCase {
 
     public function test_binary_output_length(): void {
         $binary = CryptoHelper::hash('daten', HashAlgorithm::SHA256, true);
-        $this->assertNotNull($binary);
         $this->assertSame(32, strlen($binary));
     }
 

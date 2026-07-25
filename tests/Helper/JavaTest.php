@@ -76,7 +76,6 @@ class JavaTest extends BaseTestCase {
         ]);
 
         $output = $executable->execute();
-        $this->assertIsString($output);
         $this->assertStringContainsStringIgnoringCase('world', $output); // je nach Dummy-JAR
     }
 
@@ -114,7 +113,6 @@ class JavaTest extends BaseTestCase {
 
         $output = $executable->execute(['[INPUT]' => 'Hallo Welt']);
 
-        $this->assertIsString($output);
         $this->assertStringContainsString('Hallo Welt', $output);
     }
 }

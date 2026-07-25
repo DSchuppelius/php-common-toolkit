@@ -126,6 +126,9 @@ class FolderTest extends BaseTestCase {
         $newest = Folder::getNewest($this->testDir);
         $oldest = Folder::getOldest($this->testDir);
 
+        if ($newest === null || $oldest === null) {
+            self::fail('getNewest/getOldest sollten Dateien liefern');
+        }
         $this->assertStringContainsString('new.txt', $newest);
         $this->assertStringContainsString('old.txt', $oldest);
     }
@@ -135,6 +138,9 @@ class FolderTest extends BaseTestCase {
         file_put_contents($this->testDir . '/large.txt', str_repeat('b', 1000));
 
         $largest = Folder::getLargest($this->testDir);
+        if ($largest === null) {
+            self::fail('getLargest sollte eine Datei liefern');
+        }
         $this->assertStringContainsString('large.txt', $largest);
     }
 

@@ -123,7 +123,11 @@ class ElementTest extends TestCase {
         $doc = new \DOMDocument;
         $doc->loadXML('<root attr="value"><child>text</child></root>');
 
-        $element = Element::fromDomElement($doc->documentElement);
+        $root = $doc->documentElement;
+        if ($root === null) {
+            self::fail('documentElement fehlt');
+        }
+        $element = Element::fromDomElement($root);
 
         $this->assertSame('root', $element->getName());
         $this->assertCount(1, $element->getAttributes());
