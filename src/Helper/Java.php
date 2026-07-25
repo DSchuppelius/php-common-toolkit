@@ -24,7 +24,7 @@ class Java extends ConfiguredHelperAbstract {
      * Führt eine JAR-Datei aus.
      *
      * @param string $path Der Pfad zur JAR-Datei.
-     * @param array $args Zusätzliche Argumente für die Ausführung.
+     * @param array<int|string, string> $args Zusätzliche Argumente für die Ausführung.
      * @return string Die Ausgabe der Ausführung.
      * @throws Exception Wenn ein Fehler auftritt.
      */
@@ -48,7 +48,7 @@ class Java extends ConfiguredHelperAbstract {
      * @param string $classPath Der Pfad zur Klasse.
      * @param string $mainClass Der Hauptklasse-Pfad.
      * @param string $runClass Der Klassenname, der ausgeführt werden soll.
-     * @param array $args Zusätzliche Argumente für die Ausführung.
+     * @param array<int|string, string> $args Zusätzliche Argumente für die Ausführung.
      * @return string Die Ausgabe der Ausführung.
      * @throws Exception Wenn ein Fehler auftritt.
      */
@@ -84,7 +84,7 @@ class Java extends ConfiguredHelperAbstract {
     /**
      * Gibt die konfigurierten Java-Executables zurück.
      *
-     * @return array Ein Array mit den konfigurierten Java-Executables.
+     * @return array<array-key, object> Ein Array mit den konfigurierten Java-Executables.
      */
     public static function getConfiguredExecutables(): array {
         return self::getExecutableInstances('javaExecutables', JavaExecutable::class);

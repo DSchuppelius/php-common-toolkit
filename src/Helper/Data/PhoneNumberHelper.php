@@ -135,6 +135,7 @@ class PhoneNumberHelper {
      *
      * @param string|null $phone Die zu prüfende Telefonnummer.
      * @return bool True, wenn es eine gültige deutsche Nummer ist.
+     * @phpstan-assert-if-true non-empty-string $phone
      */
     public static function isGermanPhoneNumber(?string $phone): bool {
         if ($phone === null || $phone === '') {
@@ -197,7 +198,7 @@ class PhoneNumberHelper {
      */
     public static function normalize(string $phone): string {
         // Entferne alles außer Ziffern
-        $normalized = preg_replace('/[^0-9]/', '', $phone);
+        $normalized = preg_replace('/[^0-9]/', '', $phone) ?? '';
 
         // Wenn mit 00 beginnend, ersetze durch nichts (Ländervorwahl folgt)
         if (str_starts_with($normalized, '00')) {

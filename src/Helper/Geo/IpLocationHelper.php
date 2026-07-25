@@ -34,10 +34,18 @@ use Throwable;
 final class IpLocationHelper {
     use ErrorLog;
 
-    /** Aufgelöste Konfiguration (Defaults + Overrides), lazy. */
+    /**
+     * Aufgelöste Konfiguration (Defaults + Overrides), lazy.
+     *
+     * @var array{database: string|null, locale: string}|null
+     */
     private static ?array $config = null;
 
-    /** Laufzeit-Overrides via configure(). */
+    /**
+     * Laufzeit-Overrides via configure().
+     *
+     * @var array<string, mixed>
+     */
     private static array $overrides = [];
 
     /** Geöffneter Reader je Datenbankpfad (Wiederverwendung pro Prozess). */
@@ -46,7 +54,11 @@ final class IpLocationHelper {
     /** Pfad, für den {@see $reader} geöffnet wurde. */
     private static ?string $readerPath = null;
 
-    /** Ergebnis-Cache je IP innerhalb des Prozesses. */
+    /**
+     * Ergebnis-Cache je IP innerhalb des Prozesses.
+     *
+     * @var array<string, mixed>
+     */
     private static array $cache = [];
 
     private const DEFAULTS = [

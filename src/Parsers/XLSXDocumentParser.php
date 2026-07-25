@@ -125,6 +125,9 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         foreach ($siNodes as $si) {
+            if (!$si instanceof DOMNode) {
+                continue;
+            }
             $text = '';
             // Entweder <t> direkt oder <r><t> für Rich Text
             $tNodes = $xpath->query('.//s:t', $si);
@@ -446,8 +449,9 @@ class XLSXDocumentParser extends HelperAbstract {
                 break;
 
             case 'inlineStr': // Inline String
-                $tNode = $xpath->query('.//s:t', $cellNode)->item(0);
-                $value = $tNode->textContent ?? '';
+                $tNodes = $xpath->query('.//s:t', $cellNode);
+                $tNode = $tNodes === false ? null : $tNodes->item(0);
+                $value = $tNode instanceof DOMNode ? ($tNode->textContent ?? '') : '';
                 break;
 
             case 'b': // Boolean

@@ -61,6 +61,7 @@ class EmailHelper {
      *
      * @param string|null $email Die zu prüfende E-Mail-Adresse.
      * @return bool True, wenn das Format gültig ist.
+     * @phpstan-assert-if-true non-empty-string $email
      */
     public static function isEmail(?string $email): bool {
         if ($email === null || $email === '') {

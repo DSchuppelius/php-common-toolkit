@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Tests\Helper;
 
-use CommonToolkit\Enums\{CountryCode, CurrencyCode, TemperatureUnit};
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, TemperatureUnit};
 use CommonToolkit\Helper\Data\NumberHelper;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -35,6 +35,15 @@ final class NumberHelperTest extends TestCase {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Uneinheitliche Basiseinheit: g zu m");
         NumberHelper::convertMetric(1, 'kg', 'm');
+    }
+
+    public function test_metric_prefix_map_covers_all_si_prefixes(): void {
+        $prefixMap = MetricPrefix::prefixMap();
+
+        $this->assertCount(25, $prefixMap);
+        $this->assertSame(-30, $prefixMap[MetricPrefix::QUECTO->value]);
+        $this->assertSame(0, $prefixMap[MetricPrefix::NONE->value]);
+        $this->assertSame(30, $prefixMap[MetricPrefix::QUETTA->value]);
     }
 
     public function test_convert_temperature(): void {

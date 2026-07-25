@@ -61,6 +61,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      * @param array $output Referenz: Shell-Ausgabe (stdout+stderr)
      * @param bool $stripVideo true entfernt den Videostream (-vn, Audio-Konvertierung);
      *                         false behält ihn (Video-Konvertierung)
+     * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr).
      * @return bool true bei Erfolg (Exit 0 und Ausgabedatei vorhanden)
      */
     public static function convert(string $input, string $outputFile, array $codecArgs, array &$output = [], int &$returnCode = 0, bool $stripVideo = true): bool {
@@ -253,6 +254,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      * Synthetisiert Sprache mit Piper (Neural TTS).
      *
      * @param string $modelPath Vollständiger Pfad zur .onnx-Stimmdatei (deployment-spezifisch)
+     * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr).
      * @return bool true bei Erfolg (Ausgabedatei vorhanden)
      */
     public static function synthesizePiper(string $text, string $outputWav, string $modelPath, array &$output = [], int &$returnCode = 0): bool {
@@ -281,6 +283,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      * Synthetisiert Sprache mit eSpeak-NG (Fallback-TTS).
      *
      * @param string $textPath Pfad zur Textdatei mit dem zu sprechenden Inhalt
+     * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr).
      * @return bool true bei Erfolg (Ausgabedatei vorhanden)
      */
     public static function synthesizeEspeak(string $textPath, string $outputWav, string $voice = 'de', string $speed = '150', array &$output = [], int &$returnCode = 0): bool {

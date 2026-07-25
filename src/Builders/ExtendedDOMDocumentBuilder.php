@@ -100,7 +100,7 @@ class ExtendedDOMDocumentBuilder {
         // Root-Element mit Namespace aktualisieren
         $newRoot = $this->doc->createElementNS(
             $this->namespaceUri,
-            $this->prefix ? "{$this->prefix}:{$this->root->localName}" : $this->root->localName
+            $this->prefix ? "{$this->prefix}:{$this->root->localName}" : ($this->root->localName ?? '')
         );
 
         // Kinder übertragen
@@ -110,7 +110,7 @@ class ExtendedDOMDocumentBuilder {
 
         // Attribute übertragen
         foreach ($this->root->attributes as $attr) {
-            $newRoot->setAttribute($attr->nodeName, $attr->nodeValue);
+            $newRoot->setAttribute($attr->nodeName, $attr->nodeValue ?? '');
         }
 
         $this->doc->replaceChild($newRoot, $this->root);

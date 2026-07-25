@@ -252,7 +252,7 @@ class CryptoHelper extends HelperAbstract {
 
             $algorithm = self::resolveCryptographicAlgorithm($algorithm);
 
-            $derivedKey = hash_pbkdf2($algorithm, $password, $salt, $iterations, $length, true);
+            $derivedKey = hash_pbkdf2($algorithm, $password, $salt, $iterations, max(0, $length), true);
             $result = base64_encode($derivedKey);
 
             return self::logDebugAndReturn($result, "Schlüssel erfolgreich abgeleitet mit PBKDF2 ({$iterations} Iterationen)");
@@ -268,6 +268,7 @@ class CryptoHelper extends HelperAbstract {
      * geprüft (lehnt MD5/SHA1/CRC/XXH ab), String-Eingaben weiterhin über die
      * ALLOWED_HASHES-Liste (BC).
      *
+     * @return non-falsy-string
      * @throws InvalidArgumentException Bei ungeeignetem Algorithmus
      */
     private static function resolveCryptographicAlgorithm(HashAlgorithm|string $algorithm): string {
@@ -279,11 +280,13 @@ class CryptoHelper extends HelperAbstract {
             return $algorithm->value;
         }
 
-        if (!in_array($algorithm, self::ALLOWED_HASHES)) {
-            self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
+        foreach (self::ALLOWED_HASHES as $allowed) {
+            if ($algorithm === $allowed) {
+                return $allowed;
+            }
         }
 
-        return $algorithm;
+        self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
     }
 
     /**

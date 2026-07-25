@@ -1348,10 +1348,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         while (!feof($handle)) {
             $line = fgets($handle);
-            if ($line === false) {
-                break;
-            }
-            if ($skipEmpty && trim($line) === '') {
+            if ($skipEmpty && trim($line === false ? '' : $line) === '') {
                 continue;
             }
             $lines++;

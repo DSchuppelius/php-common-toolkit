@@ -81,10 +81,8 @@ final class Money implements JsonSerializable, Stringable {
             self::logErrorAndThrow(InvalidArgumentException::class, "Scale darf nicht negativ sein: $scale");
         }
 
+        // normalizeDecimalString liefert per Vertrag stets einen numeric-string.
         $canonical = NumberHelper::normalizeDecimalString((string) $amount);
-        if (!is_numeric($canonical)) {
-            $canonical = '0'; // Normalisierung liefert stets numerisch; defensiver Fallback.
-        }
         $rounded = NumberHelper::roundPrecise($canonical, $scale, $mode);
 
         return new self($rounded, $currency, $scale);

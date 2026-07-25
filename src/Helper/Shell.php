@@ -23,7 +23,7 @@ class Shell extends ConfiguredHelperAbstract {
      * Führt einen Shell-Befehl aus und gibt den Exit-Code zurück.
      *
      * @param string $command Der auszuführende Befehl.
-     * @param array $output Referenz auf ein Array, in dem die Ausgabe des Befehls gespeichert wird.
+     * @param list<string> $output Referenz auf ein Array, in dem die Ausgabe des Befehls gespeichert wird.
      * @param int $resultCode Referenz auf eine Variable, in der der Exit-Code gespeichert wird.
      * @param bool $throwException Ob eine Exception geworfen werden soll, wenn der Befehl fehlschlägt.
      * @param int $expectedResultCode Der erwartete Exit-Code des Befehls.
@@ -110,6 +110,8 @@ class Shell extends ConfiguredHelperAbstract {
 
     /**
      * Gibt die konfigurierten Shell-Executables zurück.
+     *
+     * @return array<array-key, object>
      */
     public static function getConfiguredExecutables(): array {
         return self::getExecutableInstances('shellExecutables', ShellExecutable::class);

@@ -35,6 +35,7 @@ use Throwable;
  * @see \CommonToolkit\Helper\Data\CSV\StringHelper Für String-Operationen
  */
 class CsvFile extends HelperAbstract {
+    /** @var list<string> */
     protected static array $commonDelimiters = [',', ';', "\t", '|'];
     protected static string $defaultEnclosure = '"';
 
@@ -131,6 +132,7 @@ class CsvFile extends HelperAbstract {
      *
      * @param string $file            Der Pfad zur CSV-Datei.
      * @param string|null $delimiter  Das Trennzeichen (optional).
+     * @return array<string, mixed>
      */
     public static function getMetaData(string $file, ?string $delimiter = null): array {
         [$file, $delimiter] = self::resolveAndDetect($file, $delimiter);
@@ -187,7 +189,7 @@ class CsvFile extends HelperAbstract {
      * Überprüft, ob die CSV-Datei ein gültiges Header-Muster hat.
      *
      * @param string $file            Der Pfad zur CSV-Datei.
-     * @param array $headerPattern    Das erwartete Header-Muster.
+     * @param array<array-key, string> $headerPattern    Das erwartete Header-Muster.
      * @param string|null $delimiter  Das Trennzeichen (optional).
      * @param bool $wellFormed       Überprüfen, ob die Datei gut geformt ist (Standard: false).
      */
@@ -265,10 +267,10 @@ class CsvFile extends HelperAbstract {
      * Die Zeilen-Prüfung übernimmt {@see StringHelper::matchColumns()}.
      *
      * @param string $file            Der Pfad zur CSV-Datei.
-     * @param array $columnPatterns   Die Muster für die Spalten.
+     * @param array<array-key, string> $columnPatterns   Die Muster für die Spalten.
      * @param string|null $delimiter  Das Trennzeichen (optional).
      * @param string $encoding       Die Zeichenkodierung (Standard: 'UTF-8').
-     * @param array|null $matchingRow Referenz auf das gefundene Array (optional).
+     * @param array<array-key, string>|null $matchingRow Referenz auf das gefundene Array (optional).
      * @param bool $strict           Strikte Übereinstimmung (Standard: true).
      */
     public static function matchRow(string $file, array $columnPatterns, ?string $delimiter = null, string $encoding = 'UTF-8', ?array &$matchingRow = null, bool $strict = true): bool {

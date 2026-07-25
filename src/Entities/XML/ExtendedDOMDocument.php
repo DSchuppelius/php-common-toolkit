@@ -17,6 +17,7 @@ use CommonToolkit\Helper\Data\XmlHelper;
 use DateTimeImmutable;
 use DOMDocument;
 use DOMElement;
+use DOMNameSpaceNode;
 use DOMNode;
 use DOMNodeList;
 use DOMXPath;
@@ -242,7 +243,12 @@ class ExtendedDOMDocument extends DOMDocument {
             ? $this->xpath->query($expression, $context)
             : $this->xpath->query($expression);
 
-        return ($result && $result->length > 0) ? $result->item(0) : null;
+        if ($result === false || $result->length === 0) {
+            return null;
+        }
+
+        $node = $result->item(0);
+        return $node instanceof DOMNode ? $node : null;
     }
 
     /**
@@ -267,12 +273,18 @@ class ExtendedDOMDocument extends DOMDocument {
      *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
-     * @return DOMNodeList<DOMNode> Die gefundenen Nodes
+     * @return DOMNodeList<DOMNode|DOMNameSpaceNode> Die gefundenen Nodes
      */
     public function findNodes(string $expression, ?DOMNode $context = null): DOMNodeList {
-        return $context !== null
+        $result = $context !== null
             ? $this->xpath->query($expression, $context)
             : $this->xpath->query($expression);
+
+        if ($result === false) {
+            self::logErrorAndThrow(RuntimeException::class, "Ungültiger XPath-Ausdruck: $expression");
+        }
+
+        return $result;
     }
 
     // =========================================================================
@@ -332,7 +344,7 @@ class ExtendedDOMDocument extends DOMDocument {
         CurrencyCode $default = CurrencyCode::Euro
     ): array {
         $amount = $this->parseAmount($element->getValue());
-        $currencyStr = $element->getAttributeValue('Ccy', 'EUR');
+        $currencyStr = $element->getAttributeValue('Ccy', 'EUR') ?? 'EUR';
         $currency = CurrencyCode::tryFrom($currencyStr) ?? $default;
 
         return ['amount' => $amount, 'currency' => $currency];

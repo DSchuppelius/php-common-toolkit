@@ -202,6 +202,7 @@ class XmlDocumentParser extends HelperAbstract {
      *
      * @param bool $includeAttributes Attribute einbeziehen
      * @param bool $includeNamespaces Namespaces einbeziehen
+     * @return array<string, mixed>
      */
     public static function toArray(
         Document $document,
@@ -213,6 +214,8 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Konvertiert ein Element rekursiv zu einem Array.
+     *
+     * @return array<string, mixed>
      */
     private static function elementToArray(
         XmlElementInterface $element,

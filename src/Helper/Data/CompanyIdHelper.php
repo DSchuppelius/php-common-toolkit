@@ -88,7 +88,7 @@ class CompanyIdHelper {
      */
     public static function normalizeHRNumber(string $hrNumber): string {
         // Entferne überflüssige Leerzeichen
-        $hrNumber = preg_replace('/\s+/', ' ', trim($hrNumber));
+        $hrNumber = preg_replace('/\s+/', ' ', trim($hrNumber)) ?? '';
         // Entferne Punkte
         $hrNumber = str_replace('.', '', $hrNumber);
 
@@ -125,6 +125,7 @@ class CompanyIdHelper {
      *
      * @param string|null $lei Der zu prüfende LEI.
      * @return bool True, wenn das Format gültig ist.
+     * @phpstan-assert-if-true non-empty-string $lei
      */
     public static function isLEI(?string $lei): bool {
         if ($lei === null || $lei === '') {
@@ -247,6 +248,7 @@ class CompanyIdHelper {
      *
      * @param string|null $gln Die zu prüfende GLN.
      * @return bool True, wenn das Format gültig ist.
+     * @phpstan-assert-if-true non-empty-string $gln
      */
     public static function isGLN(?string $gln): bool {
         if ($gln === null || $gln === '') {

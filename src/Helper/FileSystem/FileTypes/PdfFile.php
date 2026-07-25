@@ -26,7 +26,7 @@ class PdfFile extends ConfiguredHelperAbstract {
      * Gibt die Metadaten einer PDF-Datei zurück.
      *
      * @param string $file Der Pfad zur PDF-Datei.
-     * @return array Ein Array mit den Metadaten der PDF-Datei.
+     * @return array<string, mixed> Ein Array mit den Metadaten der PDF-Datei.
      * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
      * @throws Exception Wenn ein Fehler beim Abrufen der Metadaten auftritt.
      */

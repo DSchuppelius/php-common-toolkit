@@ -78,7 +78,7 @@ class Attribute implements XmlAttributeInterface {
      */
     public static function fromDomAttr(\DOMAttr $attr): self {
         return new self(
-            $attr->localName,
+            $attr->localName ?? '',
             $attr->value,
             $attr->namespaceURI ?: null,
             $attr->prefix ?: null

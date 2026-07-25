@@ -232,7 +232,7 @@ class Platform {
     /**
      * Gibt detaillierte System-Informationen zurück.
      *
-     * @return array Umfassende System-Informationen.
+     * @return array<string, mixed> Umfassende System-Informationen.
      */
     public static function getSystemInfo(): array {
         return OsHelper::getSystemInfo();

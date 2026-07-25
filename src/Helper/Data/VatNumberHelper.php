@@ -74,6 +74,7 @@ class VatNumberHelper {
      *
      * @param string|null $vatId Die zu prüfende USt-ID.
      * @return bool True, wenn das Format gültig ist.
+     * @phpstan-assert-if-true non-empty-string $vatId
      */
     public static function isVatId(?string $vatId): bool {
         if ($vatId === null || $vatId === '') {
@@ -136,7 +137,7 @@ class VatNumberHelper {
      */
     public static function normalize(string $vatId): string {
         // Entferne Leerzeichen, Punkte und Bindestriche
-        $vatId = preg_replace('/[\s.\-]/', '', $vatId);
+        $vatId = preg_replace('/[\s.\-]/', '', $vatId) ?? '';
         // Konvertiere zu Großbuchstaben
         return strtoupper($vatId);
     }

@@ -51,6 +51,6 @@ abstract class HelperAbstract implements HelperInterface {
      */
     public static function sanitize(string $filename): string {
         // Escape problematische Zeichen für Shell-Befehle (Windows & Linux)
-        return preg_replace('/([ \'"()\[\]{}!$`])/', '\\\$1', $filename);
+        return preg_replace('/([ \'"()\[\]{}!$`])/', '\\\$1', $filename) ?? $filename;
     }
 }

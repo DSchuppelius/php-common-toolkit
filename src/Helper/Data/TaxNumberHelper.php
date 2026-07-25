@@ -58,6 +58,7 @@ class TaxNumberHelper {
      *
      * @param string|null $idNr Die zu prüfende IdNr.
      * @return bool True, wenn das Format gültig ist.
+     * @phpstan-assert-if-true non-empty-string $idNr
      */
     public static function isIdNr(?string $idNr): bool {
         if ($idNr === null || $idNr === '') {

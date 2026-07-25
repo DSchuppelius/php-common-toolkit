@@ -49,6 +49,7 @@ class CreditorIdHelper {
      *
      * @param string|null $creditorId Die zu prüfende Gläubiger-ID.
      * @return bool True, wenn das Format korrekt ist.
+     * @phpstan-assert-if-true non-empty-string $creditorId
      */
     public static function isCreditorId(?string $creditorId): bool {
         if ($creditorId === null || $creditorId === '') {

@@ -20,6 +20,9 @@ use RuntimeException;
  * Alle Header-bezogenen Operationen werden über Document abgewickelt.
  */
 class DataLine extends LineAbstract {
+    /**
+     * @param array<mixed> $fields
+     */
     public function __construct(
         array $fields,
         string $delimiter = self::DEFAULT_DELIMITER,
