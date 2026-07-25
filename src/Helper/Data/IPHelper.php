@@ -325,7 +325,14 @@ class IPHelper extends HelperAbstract {
             self::logErrorAndThrow(InvalidArgumentException::class, "Wert außerhalb des IPv4-Bereichs: $long");
         }
 
-        return long2ip($long);
+        // long2ip() ist je nach PHP-Version als string|false typisiert; für einen
+        // bereits auf den 32-Bit-Bereich geprüften Wert ist das Ergebnis stets gültig.
+        $ip = long2ip($long);
+        if ($ip === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiger Long-Wert für IPv4: $long");
+        }
+
+        return $ip;
     }
 
     /**
@@ -411,7 +418,7 @@ class IPHelper extends HelperAbstract {
 
         $long = ip2long($ip);
         $mask = $prefix === 0 ? 0 : (-1 << (32 - $prefix));
-        return long2ip($long & $mask);
+        return self::longToIp($long & $mask);
     }
 
     /**
@@ -474,7 +481,7 @@ class IPHelper extends HelperAbstract {
         $mask = $prefix === 0 ? 0 : (-1 << (32 - $prefix));
         $hostMask = ~$mask;
 
-        return long2ip(($long & $mask) | ($hostMask & 0xFFFFFFFF));
+        return self::longToIp(($long & $mask) | ($hostMask & 0xFFFFFFFF));
     }
 
     /**
@@ -631,7 +638,7 @@ class IPHelper extends HelperAbstract {
         }
 
         $mask = (-1 << (32 - $prefix)) & 0xFFFFFFFF;
-        return long2ip($mask);
+        return self::longToIp($mask);
     }
 
     /**
@@ -675,7 +682,7 @@ class IPHelper extends HelperAbstract {
 
         if (self::isIPv4($ip)) {
             $long = ip2long($ip);
-            return $long === false ? $ip : long2ip($long);
+            return $long === false ? $ip : self::longToIp($long);
         }
 
         if (self::isIPv6($ip)) {

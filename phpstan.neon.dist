@@ -1,5 +1,11 @@
 parameters:
     level: 8
+    # Gegen die gesamte unterstützte PHP-Spanne (composer: >=8.1 <8.6) analysieren,
+    # damit versionsabhängige Signaturen (z. B. long2ip: string|false vor 8.3)
+    # unabhängig von der lokal laufenden PHP-Version erkannt werden.
+    phpVersion:
+        min: 80100
+        max: 80599
     paths:
         - src
         - tests
