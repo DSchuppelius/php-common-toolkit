@@ -262,14 +262,37 @@ class NumberHelper {
      * Beispiele: "1.234,56" → "1234.56", "1,234.56" → "1234.56",
      * "1234,56" → "1234.56", "1234.56" → "1234.56", "2.000" (DE) → "2000".
      *
+     * Nicht interpretierbare Eingaben ergeben "0". Wer zwischen einer echten
+     * Null und nicht deutbarem Input unterscheiden muss (Importe: "nicht
+     * angegeben" vs. "0"), nutzt {@see normalizeDecimalStringOrNull()}.
+     *
      * @param string $value Der zu normalisierende Wert.
      * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
      * @return numeric-string Kanonischer Punkt-Dezimal-String.
      */
     public static function normalizeDecimalString(string $value, ?CountryCode $country = null): string {
+        return self::normalizeDecimalStringOrNull($value, $country) ?? '0';
+    }
+
+    /**
+     * Wie {@see normalizeDecimalString()}, unterscheidet aber nicht deutbare
+     * Eingaben von einer echten Null: liefert null statt "0".
+     *
+     * Gedacht für Importe und Parser, bei denen "nicht angegeben" fachlich
+     * etwas anderes bedeutet als der Betrag 0 — etwa ein Gesamtpreis in einem
+     * Leistungsverzeichnis oder eine Menge in einem Katalog.
+     *
+     * Beispiele: "1.234,56" → "1234.56", "" → null, "abc" → null,
+     * "n/a" → null, "0" → "0" (echte Null).
+     *
+     * @param string $value Der zu normalisierende Wert.
+     * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
+     * @return numeric-string|null Kanonischer Punkt-Dezimal-String oder null.
+     */
+    public static function normalizeDecimalStringOrNull(string $value, ?CountryCode $country = null): ?string {
         $value = trim($value);
         if ($value === '') {
-            return '0';
+            return null;
         }
 
         // Anhaftende Währungssymbole (€ £ $) früh entfernen – VOR der Vorzeichen-
@@ -277,7 +300,7 @@ class NumberHelper {
         // (z.B. "1.234,56- €"). Sonst bräche ein Symbol zudem den bcmath-Pfad.
         $value = trim(str_replace(['€', '£', '$'], '', $value));
         if ($value === '') {
-            return '0';
+            return null;
         }
 
         // --- Vorzeichen-/Kennungs-Erkennung VOR dem Entfernen der Trennzeichen ---
@@ -309,7 +332,7 @@ class NumberHelper {
         // (Währungssymbole werden bereits oben vor der Vorzeichenerkennung entfernt.)
         $value = str_replace([' ', "\u{00A0}", "\u{202F}", "'", "\u{2019}", '+', '-'], '', $value);
         if ($value === '') {
-            return '0';
+            return null;
         }
 
         $normalized = self::normalizeUnsignedDecimalString($value, $country);
@@ -318,7 +341,9 @@ class NumberHelper {
             $normalized = '-' . $normalized;
         }
 
-        return self::asNumericString($normalized);
+        // Nicht deutbarer Rest ⇒ null. normalizeDecimalString() macht daraus '0'
+        // und bleibt damit unverändert in seinem Verhalten.
+        return is_numeric($normalized) ? $normalized : null;
     }
 
     /**

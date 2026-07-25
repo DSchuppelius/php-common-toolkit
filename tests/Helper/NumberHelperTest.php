@@ -121,6 +121,42 @@ final class NumberHelperTest extends TestCase {
         $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('1.234,56- €'));
     }
 
+    /**
+     * Nicht deutbare Eingaben ergeben null statt "0" — für Importe, bei denen
+     * "nicht angegeben" fachlich etwas anderes ist als der Betrag 0.
+     */
+    public function test_normalize_decimal_string_or_null_separates_garbage_from_zero(): void {
+        // Echte Null bleibt erhalten und ist von null unterscheidbar.
+        $this->assertSame('0', NumberHelper::normalizeDecimalStringOrNull('0'));
+        $this->assertSame('0.00', NumberHelper::normalizeDecimalStringOrNull('0,00'));
+
+        // Nicht deutbar ⇒ null.
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('abc'));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('n/a'));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('12abc'));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull(''));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('   '));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('-'));
+
+        // Reguläre Formate verhalten sich wie die nicht-nullable Variante.
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalStringOrNull('1.234,56'));
+        $this->assertSame('1234.56', NumberHelper::normalizeDecimalStringOrNull('1,234.56'));
+        $this->assertSame('-1234.56', NumberHelper::normalizeDecimalStringOrNull('(1.234,56)'));
+        $this->assertSame('-123.45', NumberHelper::normalizeDecimalStringOrNull('123,45 S'));
+        $this->assertSame('99.90', NumberHelper::normalizeDecimalStringOrNull('€ 99,90'));
+        $this->assertSame('2000.50', NumberHelper::normalizeDecimalStringOrNull('2.000,50', CountryCode::Germany));
+    }
+
+    /**
+     * Sicherungsnetz: normalizeDecimalString() setzt auf der OrNull-Variante auf
+     * und muss sein bisheriges Verhalten unverändert beibehalten ("0" bei Müll).
+     */
+    public function test_normalize_decimal_string_keeps_zero_fallback(): void {
+        foreach (['abc', 'n/a', '12abc', '', '   ', '-'] as $garbage) {
+            $this->assertSame('0', NumberHelper::normalizeDecimalString($garbage), "Eingabe: '$garbage'");
+        }
+    }
+
     public function test_normalize_decimal_string_is_consistent_with_float_variant(): void {
         // Invariante: (float) normalizeDecimalString(x) === normalizeDecimal(x)
         $cases = ['1.234,56', '1,234.56', '1,5', '1.5', '123,456', '1,234', '1234', '', '-2.000,50', '+7 890,12'];
