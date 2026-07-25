@@ -35,6 +35,8 @@ class StringHelper {
      *
      * @param string|null $value Der zu prüfende Wert.
      * @return bool True wenn null oder leerer String.
+     *
+     * @phpstan-assert-if-false non-empty-string $value
      */
     public static function isNullOrEmpty(?string $value): bool {
         return $value === null || $value === '';
@@ -938,7 +940,7 @@ class StringHelper {
      * Überprüft, ob ein String ein bestimmtes Schlüsselwort enthält.
      *
      * @param string $haystack Der zu durchsuchende String.
-     * @param array|string $keywords Ein Array oder ein einzelner String mit den Schlüsselwörtern.
+     * @param array<string>|string $keywords Ein Array oder ein einzelner String mit den Schlüsselwörtern.
      * @param SearchMode $mode Der Suchmodus (EXACT, CONTAINS, STARTS_WITH, ENDS_WITH, REGEX).
      * @param bool $caseSensitive Optional: Groß-/Kleinschreibung beachten (Standard: false).
      * @return bool True, wenn eines der Schlüsselwörter gefunden wurde, sonst false.
@@ -1291,10 +1293,10 @@ class StringHelper {
         $text = strtr($text, $replacements);
 
         // Nicht-alphanumerische Zeichen durch Separator ersetzen
-        $text = preg_replace('/[^a-zA-Z0-9]+/', $separator, $text);
+        $text = preg_replace('/[^a-zA-Z0-9]+/', $separator, $text) ?? '';
 
         // Mehrfache Separatoren entfernen
-        $text = preg_replace('/' . preg_quote($separator, '/') . '+/', $separator, $text);
+        $text = preg_replace('/' . preg_quote($separator, '/') . '+/', $separator, $text) ?? '';
 
         // Separator am Anfang und Ende entfernen
         $text = trim($text, $separator);
@@ -1312,7 +1314,7 @@ class StringHelper {
         if (self::isNullOrEmpty($text)) {
             return '';
         }
-        $result = preg_replace('/([a-z])([A-Z])/', '$1_$2', $text);
+        $result = preg_replace('/([a-z])([A-Z])/', '$1_$2', $text) ?? $text;
         return strtolower($result);
     }
 
@@ -1356,7 +1358,7 @@ class StringHelper {
         if (self::isNullOrEmpty($text)) {
             return '';
         }
-        $result = preg_replace('/([a-z])([A-Z])/', '$1-$2', $text);
+        $result = preg_replace('/([a-z])([A-Z])/', '$1-$2', $text) ?? $text;
         return strtolower($result);
     }
 
@@ -1460,7 +1462,7 @@ class StringHelper {
         }
 
         // Einfache Wortanzahl basierend auf Leerzeichen
-        return count(preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY));
+        return count(preg_split('/\s+/', (string) $text, -1, PREG_SPLIT_NO_EMPTY) ?: []);
     }
 
     /**
@@ -1514,7 +1516,7 @@ class StringHelper {
         $excerpt = mb_substr($text, $start, $length);
 
         // Whitespace normalisieren
-        $excerpt = preg_replace('/\s+/', ' ', $excerpt);
+        $excerpt = preg_replace('/\s+/', ' ', $excerpt) ?? $excerpt;
 
         // Ellipsis hinzufügen
         $prefix = $start > 0 ? $ellipsis : '';
@@ -1551,7 +1553,7 @@ class StringHelper {
         if (self::isNullOrEmpty($text)) {
             return '';
         }
-        return preg_replace('/\s+/', ' ', $text);
+        return preg_replace('/\s+/', ' ', $text) ?? '';
     }
 
     /**
@@ -1673,7 +1675,7 @@ class StringHelper {
         if (self::isNullOrEmpty($text)) {
             return '';
         }
-        return preg_replace('/\d/', '', $text);
+        return preg_replace('/\d/', '', $text) ?? '';
     }
 
     /**
@@ -1686,7 +1688,7 @@ class StringHelper {
         if (self::isNullOrEmpty($text)) {
             return '';
         }
-        return preg_replace('/[^\d]/', '', $text);
+        return preg_replace('/[^\d]/', '', $text) ?? '';
     }
 
     /**
@@ -1725,7 +1727,7 @@ class StringHelper {
         }
 
         $lines = [];
-        $words = preg_split('/(\s+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $words = preg_split('/(\s+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [];
         $currentLine = '';
 
         foreach ($words as $word) {

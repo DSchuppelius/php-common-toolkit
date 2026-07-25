@@ -15,30 +15,52 @@ use CommonToolkit\Helper\Data\BankHelper;
 use Tests\Contracts\BaseTestCase;
 
 class BankHelperTest extends BaseTestCase {
-    public function test_is_blz() {
+    /**
+     * @return array{BLZ: string, KTO: string}
+     */
+    private function splitIbanOrFail(string $iban): array {
+        $parts = BankHelper::splitIBAN($iban);
+        if ($parts === false) {
+            self::fail("splitIBAN($iban) sollte ein Array liefern");
+        }
+        return $parts;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function splitComponentsOrFail(string $iban): array {
+        $components = BankHelper::splitIBANComponents($iban);
+        if ($components === false) {
+            self::fail("splitIBANComponents($iban) sollte ein Array liefern");
+        }
+        return $components;
+    }
+
+    public function test_is_blz(): void {
         $this->assertTrue(BankHelper::isBLZ("10000000"));
         $this->assertFalse(BankHelper::isBLZ("123"));
     }
 
-    public function test_is_konto() {
+    public function test_is_konto(): void {
         $this->assertTrue(BankHelper::isKTO("1234567890"));
         $this->assertFalse(BankHelper::isKTO("abc"));
     }
 
-    public function test_is_iban() {
+    public function test_is_iban(): void {
         $this->assertTrue(BankHelper::isIBAN("DE44500105175407324931"));
         $this->assertFalse(BankHelper::isIBAN("INVALID_IBAN"));
     }
 
-    public function test_check_iban_valid() {
+    public function test_check_iban_valid(): void {
         $this->assertTrue(BankHelper::checkIBAN("DE89370400440532013000"));
     }
 
-    public function test_check_iban_invalid() {
+    public function test_check_iban_invalid(): void {
         $this->assertFalse(BankHelper::checkIBAN("DE00500105175407324931"));
     }
 
-    public function test_generate_iban() {
+    public function test_generate_iban(): void {
         $iban = BankHelper::generateIBAN("DE", "100500001234567890");
         $this->assertEquals("DE46100500001234567890", $iban);
         $ibanGermany = BankHelper::generateGermanIBAN("10050000", "1234567890");
@@ -47,36 +69,39 @@ class BankHelperTest extends BaseTestCase {
         $this->assertTrue(BankHelper::checkIBAN($ibanGermany));
     }
 
-    public function test_split_iban() {
-        $parts = BankHelper::splitIBAN("DE44500105175407324931");
+    public function test_split_iban(): void {
+        $parts = $this->splitIbanOrFail("DE44500105175407324931");
         $this->assertEquals("50010517", $parts['BLZ']);
         $this->assertEquals("5407324931", $parts['KTO']);
     }
 
-    public function test_bic_from_iban_loads_file() {
+    public function test_bic_from_iban_loads_file(): void {
         $iban = "DE44500105175407324931";
         $bic = BankHelper::bicFromIban($iban);
         $this->assertIsString($bic);
     }
 
-    public function test_check_bic_returns_bankname() {
+    public function test_check_bic_returns_bankname(): void {
         $bic = BankHelper::checkBIC("COBADEFF");
+        if ($bic === false) {
+            self::fail("checkBIC sollte einen Banknamen liefern");
+        }
         $this->assertStringContainsString("COMMERZBANK", $bic);
     }
 
-    public function test_is_bic() {
+    public function test_is_bic(): void {
         $this->assertTrue(BankHelper::isBIC("COBADEFFXXX"));
         $this->assertFalse(BankHelper::isBIC("INVALID"));
     }
 
-    public function test_is_iban_anon() {
+    public function test_is_iban_anon(): void {
         $this->assertTrue(BankHelper::isIBANAnon("DEXX30020900532XXXX486"));
         $this->assertFalse(BankHelper::isIBANAnon("DE44500105175407324931"));
     }
 
     // ========== Internationale IBAN-Tests ==========
 
-    public function test_check_iban_international() {
+    public function test_check_iban_international(): void {
         // Österreich
         $this->assertTrue(BankHelper::checkIBAN("AT611904300234573201"));
         // Schweiz
@@ -106,16 +131,15 @@ class BankHelperTest extends BaseTestCase {
         $this->assertTrue(BankHelper::checkIBAN("IL620108000000099999999"));  // Israel
     }
 
-    public function test_check_iban_international_invalid() {
+    public function test_check_iban_international_invalid(): void {
         // Falsche Prüfziffer
         $this->assertFalse(BankHelper::checkIBAN("AT001904300234573201"));
         // Falsche Länge
         $this->assertFalse(BankHelper::checkIBAN("CH93007620116238529"));
     }
 
-    public function test_split_iban_components_german() {
-        $components = BankHelper::splitIBANComponents("DE44500105175407324931");
-        $this->assertIsArray($components);
+    public function test_split_iban_components_german(): void {
+        $components = $this->splitComponentsOrFail("DE44500105175407324931");
         $this->assertEquals("DE", $components['countryCode']);
         $this->assertEquals("44", $components['checkDigits']);
         $this->assertEquals("500105175407324931", $components['bban']);
@@ -123,26 +147,23 @@ class BankHelperTest extends BaseTestCase {
         $this->assertEquals("5407324931", $components['accountNumber']);
     }
 
-    public function test_split_iban_components_austrian() {
-        $components = BankHelper::splitIBANComponents("AT611904300234573201");
-        $this->assertIsArray($components);
+    public function test_split_iban_components_austrian(): void {
+        $components = $this->splitComponentsOrFail("AT611904300234573201");
         $this->assertEquals("AT", $components['countryCode']);
         $this->assertEquals("61", $components['checkDigits']);
         $this->assertEquals("19043", $components['bankCode']);
         $this->assertEquals("00234573201", $components['accountNumber']);
     }
 
-    public function test_split_iban_components_swiss() {
-        $components = BankHelper::splitIBANComponents("CH9300762011623852957");
-        $this->assertIsArray($components);
+    public function test_split_iban_components_swiss(): void {
+        $components = $this->splitComponentsOrFail("CH9300762011623852957");
         $this->assertEquals("CH", $components['countryCode']);
         $this->assertEquals("00762", $components['bankCode']);
         $this->assertEquals("011623852957", $components['accountNumber']);
     }
 
-    public function test_split_iban_components_french() {
-        $components = BankHelper::splitIBANComponents("FR1420041010050500013M02606");
-        $this->assertIsArray($components);
+    public function test_split_iban_components_french(): void {
+        $components = $this->splitComponentsOrFail("FR1420041010050500013M02606");
         $this->assertEquals("FR", $components['countryCode']);
         $this->assertEquals("20041", $components['bankCode']);
         $this->assertEquals("01005", $components['branchCode']);
@@ -150,9 +171,8 @@ class BankHelperTest extends BaseTestCase {
         $this->assertEquals("06", $components['nationalCheckDigits']);
     }
 
-    public function test_split_iban_components_spanish() {
-        $components = BankHelper::splitIBANComponents("ES9121000418450200051332");
-        $this->assertIsArray($components);
+    public function test_split_iban_components_spanish(): void {
+        $components = $this->splitComponentsOrFail("ES9121000418450200051332");
         $this->assertEquals("ES", $components['countryCode']);
         $this->assertEquals("2100", $components['bankCode']);
         $this->assertEquals("0418", $components['branchCode']);
@@ -160,22 +180,21 @@ class BankHelperTest extends BaseTestCase {
         $this->assertEquals("0200051332", $components['accountNumber']);
     }
 
-    public function test_split_iban_components_british() {
-        $components = BankHelper::splitIBANComponents("GB29NWBK60161331926819");
-        $this->assertIsArray($components);
+    public function test_split_iban_components_british(): void {
+        $components = $this->splitComponentsOrFail("GB29NWBK60161331926819");
         $this->assertEquals("GB", $components['countryCode']);
         $this->assertEquals("NWBK", $components['bankCode']);
         $this->assertEquals("601613", $components['branchCode']);
         $this->assertEquals("31926819", $components['accountNumber']);
     }
 
-    public function test_split_iban_components_invalid() {
+    public function test_split_iban_components_invalid(): void {
         $this->assertFalse(BankHelper::splitIBANComponents(null));
         $this->assertFalse(BankHelper::splitIBANComponents("INVALID"));
         $this->assertFalse(BankHelper::splitIBANComponents("XX123456789012345678"));
     }
 
-    public function test_get_country_code_from_iban() {
+    public function test_get_country_code_from_iban(): void {
         $this->assertEquals(CountryCode::Germany, BankHelper::getCountryCodeFromIBAN("DE44500105175407324931"));
         $this->assertEquals(CountryCode::Austria, BankHelper::getCountryCodeFromIBAN("AT611904300234573201"));
         $this->assertEquals(CountryCode::Switzerland, BankHelper::getCountryCodeFromIBAN("CH9300762011623852957"));
@@ -185,14 +204,14 @@ class BankHelperTest extends BaseTestCase {
         $this->assertNull(BankHelper::getCountryCodeFromIBAN("XX"));
     }
 
-    public function test_is_iban_from_country() {
+    public function test_is_iban_from_country(): void {
         $this->assertTrue(BankHelper::isIBANFromCountry("DE44500105175407324931", "DE"));
         $this->assertTrue(BankHelper::isIBANFromCountry("AT611904300234573201", "AT"));
         $this->assertFalse(BankHelper::isIBANFromCountry("DE44500105175407324931", "AT"));
         $this->assertFalse(BankHelper::isIBANFromCountry(null, "DE"));
     }
 
-    public function test_is_sepa_iban() {
+    public function test_is_sepa_iban(): void {
         // SEPA-Länder
         $this->assertTrue(BankHelper::isSepaIBAN("DE44500105175407324931")); // Deutschland
         $this->assertTrue(BankHelper::isSepaIBAN("AT611904300234573201"));   // Österreich
@@ -205,7 +224,7 @@ class BankHelperTest extends BaseTestCase {
         $this->assertFalse(BankHelper::isSepaIBAN("INVALID"));
     }
 
-    public function test_get_bank_code_from_iban() {
+    public function test_get_bank_code_from_iban(): void {
         $this->assertEquals("50010517", BankHelper::getBankCodeFromIBAN("DE44500105175407324931"));
         $this->assertEquals("19043", BankHelper::getBankCodeFromIBAN("AT611904300234573201"));
         $this->assertEquals("00762", BankHelper::getBankCodeFromIBAN("CH9300762011623852957"));
@@ -213,7 +232,7 @@ class BankHelperTest extends BaseTestCase {
         $this->assertNull(BankHelper::getBankCodeFromIBAN(null));
     }
 
-    public function test_get_account_number_from_iban() {
+    public function test_get_account_number_from_iban(): void {
         $this->assertEquals("5407324931", BankHelper::getAccountNumberFromIBAN("DE44500105175407324931"));
         $this->assertEquals("00234573201", BankHelper::getAccountNumberFromIBAN("AT611904300234573201"));
         $this->assertEquals("011623852957", BankHelper::getAccountNumberFromIBAN("CH9300762011623852957"));
@@ -221,60 +240,60 @@ class BankHelperTest extends BaseTestCase {
         $this->assertNull(BankHelper::getAccountNumberFromIBAN(null));
     }
 
-    public function test_split_iban_only_works_for_german() {
+    public function test_split_iban_only_works_for_german(): void {
         // splitIBAN ist deprecated und funktioniert nur für deutsche IBANs
         $this->assertIsArray(BankHelper::splitIBAN("DE44500105175407324931"));
         $this->assertFalse(BankHelper::splitIBAN("AT611904300234573201"));
         $this->assertFalse(BankHelper::splitIBAN("CH9300762011623852957"));
     }
 
-    public function test_split_iban_components_additional_countries() {
+    public function test_split_iban_components_additional_countries(): void {
         // Andorra
-        $components = BankHelper::splitIBANComponents("AD1200012030200359100100");
+        $components = $this->splitComponentsOrFail("AD1200012030200359100100");
         $this->assertEquals("AD", $components['countryCode']);
         $this->assertEquals("0001", $components['bankCode']);
         $this->assertEquals("2030", $components['branchCode']);
         $this->assertEquals("200359100100", $components['accountNumber']);
 
         // VAE
-        $components = BankHelper::splitIBANComponents("AE070331234567890123456");
+        $components = $this->splitComponentsOrFail("AE070331234567890123456");
         $this->assertEquals("AE", $components['countryCode']);
         $this->assertEquals("033", $components['bankCode']);
         $this->assertEquals("1234567890123456", $components['accountNumber']);
 
         // Albanien
-        $components = BankHelper::splitIBANComponents("AL47212110090000000235698741");
+        $components = $this->splitComponentsOrFail("AL47212110090000000235698741");
         $this->assertEquals("AL", $components['countryCode']);
         $this->assertEquals("21211009", $components['bankCode']);
         $this->assertEquals("0000000235698741", $components['accountNumber']);
 
         // Bosnien
-        $components = BankHelper::splitIBANComponents("BA391290079401028494");
+        $components = $this->splitComponentsOrFail("BA391290079401028494");
         $this->assertEquals("BA", $components['countryCode']);
         $this->assertEquals("129", $components['bankCode']);
         $this->assertEquals("007", $components['branchCode']);
         $this->assertEquals("9401028494", $components['accountNumber']);
 
         // Serbien
-        $components = BankHelper::splitIBANComponents("RS35260005601001611379");
+        $components = $this->splitComponentsOrFail("RS35260005601001611379");
         $this->assertEquals("RS", $components['countryCode']);
         $this->assertEquals("260", $components['bankCode']);
         $this->assertEquals("005601001611379", $components['accountNumber']);
 
         // Montenegro
-        $components = BankHelper::splitIBANComponents("ME25505000012345678951");
+        $components = $this->splitComponentsOrFail("ME25505000012345678951");
         $this->assertEquals("ME", $components['countryCode']);
         $this->assertEquals("505", $components['bankCode']);
         $this->assertEquals("000012345678951", $components['accountNumber']);
 
         // Saudi-Arabien
-        $components = BankHelper::splitIBANComponents("SA0380000000608010167519");
+        $components = $this->splitComponentsOrFail("SA0380000000608010167519");
         $this->assertEquals("SA", $components['countryCode']);
         $this->assertEquals("80", $components['bankCode']);
         $this->assertEquals("000000608010167519", $components['accountNumber']);
 
         // Israel
-        $components = BankHelper::splitIBANComponents("IL620108000000099999999");
+        $components = $this->splitComponentsOrFail("IL620108000000099999999");
         $this->assertEquals("IL", $components['countryCode']);
         $this->assertEquals("010", $components['bankCode']);
         $this->assertEquals("800", $components['branchCode']);

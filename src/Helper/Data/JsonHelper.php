@@ -56,7 +56,7 @@ class JsonHelper extends HelperAbstract {
      */
     public static function decode(string $json, bool $associative = true, int $depth = 512): mixed {
         try {
-            return json_decode($json, $associative, $depth, JSON_THROW_ON_ERROR);
+            return json_decode($json, $associative, max(1, $depth), JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             self::logErrorAndThrow(InvalidArgumentException::class, "JSON-Dekodierung fehlgeschlagen: " . $e->getMessage());
         }
@@ -73,7 +73,7 @@ class JsonHelper extends HelperAbstract {
      */
     public static function encode(mixed $data, int $flags = 0, int $depth = 512): string {
         try {
-            return json_encode($data, JSON_THROW_ON_ERROR | $flags, $depth);
+            return json_encode($data, JSON_THROW_ON_ERROR | $flags, max(1, $depth));
         } catch (JsonException $e) {
             self::logErrorAndThrow(InvalidArgumentException::class, "JSON-Kodierung fehlgeschlagen: " . $e->getMessage());
         }
@@ -106,7 +106,7 @@ class JsonHelper extends HelperAbstract {
     /**
      * Extrahiert einen Wert aus JSON anhand eines Pfades (vereinfachtes JSONPath).
      *
-     * @param string|array $json JSON-String oder bereits dekodierte Daten
+     * @param string|array<array-key, mixed> $json JSON-String oder bereits dekodierte Daten
      * @param string $path Pfad im Format 'data.transactions[0].amount'
      * @return mixed Der extrahierte Wert oder null wenn nicht gefunden
      */
@@ -147,7 +147,7 @@ class JsonHelper extends HelperAbstract {
      * Parst einen JSONPath-ähnlichen Pfad in einzelne Komponenten.
      *
      * @param string $path Der zu parsende Pfad
-     * @return array<array{type: string, key?: string, index?: int}> Array von Pfad-Komponenten
+     * @return list<array{type: 'property', key: string}|array{type: 'index', index: int}> Array von Pfad-Komponenten
      */
     private static function parsePath(string $path): array {
         $parts = [];
@@ -173,8 +173,8 @@ class JsonHelper extends HelperAbstract {
      * Validiert JSON gegen ein JSON Schema (vereinfachte Implementierung).
      *
      * @param string $json Der zu validierende JSON-String
-     * @param array $schema Das JSON Schema als Array
-     * @return array{valid: bool, errors: string[]} Validierungsergebnis
+     * @param array<string, mixed> $schema Das JSON Schema als Array
+     * @return array{valid: bool, errors: list<string>} Validierungsergebnis
      */
     public static function validateSchema(string $json, array $schema): array {
         try {
@@ -199,9 +199,9 @@ class JsonHelper extends HelperAbstract {
      * Validiert einen Wert rekursiv gegen ein Schema.
      *
      * @param mixed $value Der zu validierende Wert
-     * @param array $schema Das Schema
+     * @param array<string, mixed> $schema Das Schema
      * @param string $path Der aktuelle Pfad für Fehlermeldungen
-     * @param array &$errors Array für gesammelte Fehler
+     * @param list<string> &$errors Array für gesammelte Fehler
      */
     private static function validateValue(mixed $value, array $schema, string $path, array &$errors): void {
         // Type-Validierung
@@ -286,7 +286,7 @@ class JsonHelper extends HelperAbstract {
      * Filtert sensible Daten aus JSON für Logging/Debug-Zwecke.
      *
      * @param string $json Der JSON-String
-     * @param array $sensitiveFields Array von Feldnamen die maskiert werden sollen
+     * @param list<string> $sensitiveFields Array von Feldnamen die maskiert werden sollen
      * @param string $mask Der Maskierungsstring
      * @return string JSON mit maskierten sensitiven Feldern
      */
@@ -304,7 +304,7 @@ class JsonHelper extends HelperAbstract {
      * Maskiert sensitive Felder rekursiv.
      *
      * @param mixed &$data Die Daten (by reference)
-     * @param array $sensitiveFields Array von Feldnamen
+     * @param list<string> $sensitiveFields Array von Feldnamen
      * @param string $mask Der Maskierungsstring
      */
     private static function maskRecursive(mixed &$data, array $sensitiveFields, string $mask): void {

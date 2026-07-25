@@ -223,7 +223,6 @@ class VatNumberHelperTest extends BaseTestCase {
     public function test_get_supported_countries(): void {
         $countries = VatNumberHelper::getSupportedCountries();
 
-        $this->assertIsArray($countries);
         $this->assertContains('DE', $countries);
         $this->assertContains('AT', $countries);
         $this->assertContains('FR', $countries);

@@ -237,7 +237,7 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
         if ($textNodes !== false) {
             $toRemove = [];
             foreach ($textNodes as $node) {
-                if (trim($node->nodeValue) === '') {
+                if ($node instanceof \DOMNode && trim($node->nodeValue ?? '') === '') {
                     $toRemove[] = $node;
                 }
             }
@@ -259,7 +259,9 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
         if ($comments !== false) {
             $toRemove = [];
             foreach ($comments as $comment) {
-                $toRemove[] = $comment;
+                if ($comment instanceof \DOMNode) {
+                    $toRemove[] = $comment;
+                }
             }
             foreach ($toRemove as $comment) {
                 $comment->parentNode?->removeChild($comment);
@@ -308,9 +310,9 @@ class ExtendedDOMDocumentGenerator extends HelperAbstract {
         // Attribute kopieren
         foreach ($element->attributes as $attr) {
             if ($attr->namespaceURI !== null) {
-                $newElement->setAttributeNS($attr->namespaceURI, $attr->nodeName, $attr->nodeValue);
+                $newElement->setAttributeNS($attr->namespaceURI, $attr->nodeName, $attr->nodeValue ?? '');
             } else {
-                $newElement->setAttribute($attr->nodeName, $attr->nodeValue);
+                $newElement->setAttribute($attr->nodeName, $attr->nodeValue ?? '');
             }
         }
 

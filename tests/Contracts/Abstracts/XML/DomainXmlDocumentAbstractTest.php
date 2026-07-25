@@ -81,7 +81,11 @@ class DomainXmlDocumentAbstractTest extends TestCase {
     public function test_to_dom_document(): void {
         $dom = $this->document->toDomDocument();
         $this->assertInstanceOf(DOMDocument::class, $dom);
-        $this->assertSame('root', $dom->documentElement->nodeName);
+        $root = $dom->documentElement;
+        if ($root === null) {
+            self::fail('documentElement fehlt');
+        }
+        $this->assertSame('root', $root->nodeName);
     }
 
     public function test_to_dom_node(): void {
@@ -137,7 +141,6 @@ XSD;
             $errors = $this->document->validateAgainstXsd($xsdFile);
             // Validierung wird durchgeführt - Ergebnis kann Fehler enthalten
             // wenn das XML nicht exakt dem Schema entspricht
-            $this->assertIsArray($errors);
         } finally {
             unlink($xsdFile);
         }
@@ -151,6 +154,9 @@ XSD;
 
             $this->assertFileExists($tempFile);
             $content = file_get_contents($tempFile);
+            if ($content === false) {
+                self::fail("Datei nicht lesbar: $tempFile");
+            }
             $this->assertStringContainsString('<root>', $content);
         } finally {
             if (file_exists($tempFile)) {

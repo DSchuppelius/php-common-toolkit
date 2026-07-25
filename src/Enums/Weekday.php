@@ -73,6 +73,9 @@ enum Weekday: int {
         };
     }
 
+    /**
+     * @return array<array-key, string>
+     */
     public static function toArray(bool $leadingZero = false, string $locale = 'en'): array {
         $weekdaysArray = [];
         foreach (self::cases() as $weekday) {

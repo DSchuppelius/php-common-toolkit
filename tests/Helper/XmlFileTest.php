@@ -23,15 +23,14 @@ class XmlFileTest extends BaseTestCase {
     private string $testXsd = __DIR__ . '/../../.samples/schema.xsd';
     private string $testEmptyXml = __DIR__ . '/../../.samples/empty.xml';
 
-    public function test_is_well_formed() {
+    public function test_is_well_formed(): void {
         $this->assertTrue(XmlFile::isWellFormed($this->testValidXml));
         $this->assertFalse(XmlFile::isWellFormed($this->testInvalidXml));
     }
 
-    public function test_get_meta_data() {
+    public function test_get_meta_data(): void {
         $meta = XmlFile::getMetaData($this->testValidXml);
 
-        $this->assertIsArray($meta);
         $this->assertArrayHasKey('RootElement', $meta);
         $this->assertArrayHasKey('Encoding', $meta);
         $this->assertArrayHasKey('Version', $meta);
@@ -39,27 +38,27 @@ class XmlFileTest extends BaseTestCase {
         $this->assertEquals('kunden', $meta['RootElement']); // Beispiel-Root
     }
 
-    public function test_is_valid_with_schema() {
+    public function test_is_valid_with_schema(): void {
         $this->assertTrue(XmlFile::isValid($this->testValidXml, $this->testXsd));
         $this->assertFalse(XmlFile::isValid($this->testInvalidXml, $this->testXsd));
     }
 
-    public function test_count_records_without_element_name() {
+    public function test_count_records_without_element_name(): void {
         $count = XmlFile::countRecords($this->testValidXml);
         $this->assertEquals(2, $count); // z. B. <kunde> … </kunde> ×2 unter <kunden>
     }
 
-    public function test_count_records_with_element_name() {
+    public function test_count_records_with_element_name(): void {
         $count = XmlFile::countRecords($this->testValidXml, 'kunde');
         $this->assertEquals(2, $count); // explizit <kunde>
     }
 
-    public function test_count_records_empty_file() {
+    public function test_count_records_empty_file(): void {
         $this->expectException(Exception::class);
         XmlFile::countRecords($this->testEmptyXml);
     }
 
-    public function test_file_not_found() {
+    public function test_file_not_found(): void {
         $this->expectException(FileNotFoundException::class);
         XmlFile::isWellFormed(__DIR__ . '/not/existing.xml');
     }

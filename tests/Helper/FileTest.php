@@ -14,7 +14,7 @@ use CommonToolkit\Helper\FileSystem\File;
 use Tests\Contracts\BaseTestCase;
 
 class FileTest extends BaseTestCase {
-    private $testFile;
+    private string $testFile;
 
     protected function setUp(): void {
         $this->testFile = tempnam(sys_get_temp_dir(), 'testfile');
@@ -27,82 +27,82 @@ class FileTest extends BaseTestCase {
         }
     }
 
-    public function test_mime_type() {
+    public function test_mime_type(): void {
         $mimeType = File::mimeType($this->testFile);
         $this->assertEquals('text/plain', $mimeType);
     }
 
-    public function test_mime_encoding() {
+    public function test_mime_encoding(): void {
         $encoding = File::mimeEncoding($this->testFile);
         $this->assertIsString($encoding);
         $this->assertNotEmpty($encoding);
     }
 
-    public function test_chardet() {
+    public function test_chardet(): void {
         $encoding = File::chardet($this->testFile);
         $this->assertIsString($encoding);
         $this->assertNotEmpty($encoding);
     }
 
-    public function test_mime_type_failure() {
+    public function test_mime_type_failure(): void {
         $invalidFile = '/path/to/nonexistent/file';
         $this->assertFalse(File::mimeType($invalidFile));
     }
 
-    public function test_mime_encoding_failure() {
+    public function test_mime_encoding_failure(): void {
         $invalidFile = '/path/to/nonexistent/file';
         $this->assertFalse(File::mimeEncoding($invalidFile));
     }
 
-    public function test_chardet_failure() {
+    public function test_chardet_failure(): void {
         $invalidFile = '/path/to/nonexistent/file';
         $this->assertFalse(File::chardet($invalidFile));
     }
 
-    public function test_file_exists_returns_true_for_existing_file() {
+    public function test_file_exists_returns_true_for_existing_file(): void {
         $testFile = tempnam(sys_get_temp_dir(), 'test');
         $this->assertTrue(File::exists($testFile));
         unlink($testFile);
     }
 
-    public function test_file_exists_returns_false_for_non_existing_file() {
+    public function test_file_exists_returns_false_for_non_existing_file(): void {
         $nonExistingFile = '/path/to/non/existing/file.txt';
         $this->assertFalse(File::exists($nonExistingFile));
     }
 
-    public function test_read_returns_content() {
+    public function test_read_returns_content(): void {
         $content = File::read($this->testFile);
         $this->assertEquals('This is a test file.', $content);
     }
 
-    public function test_write_overwrites_file() {
+    public function test_write_overwrites_file(): void {
         File::write($this->testFile, 'Updated content');
         $this->assertEquals('Updated content', file_get_contents($this->testFile));
     }
 
-    public function test_delete_removes_file() {
+    public function test_delete_removes_file(): void {
         File::delete($this->testFile);
         $this->assertFileDoesNotExist($this->testFile);
     }
 
-    public function test_size_returns_correct_file_size() {
+    public function test_size_returns_correct_file_size(): void {
         $size = File::size($this->testFile);
         $this->assertEquals(strlen('This is a test file.'), $size);
     }
 
-    public function test_is_readable_returns_true() {
+    public function test_is_readable_returns_true(): void {
         $this->assertTrue(File::isReadable($this->testFile));
     }
 
-    public function test_is_ready_returns_true() {
+    public function test_is_ready_returns_true(): void {
         $this->assertTrue(File::isReady($this->testFile));
     }
 
-    public function test_wait4_ready_returns_true_immediately() {
+    public function test_wait4_ready_returns_true_immediately(): void {
         $this->assertTrue(File::wait4Ready($this->testFile));
     }
 
-    public function test_create_new_file() {
+    public function test_create_new_file(): void {
         $newFile = sys_get_temp_dir() . '/created_test_file.txt';
         File::create($newFile, 0644, 'Hello world');
         $this->assertFileExists($newFile);
@@ -110,7 +110,7 @@ class FileTest extends BaseTestCase {
         unlink($newFile);
     }
 
-    public function test_rename_file() {
+    public function test_rename_file(): void {
         $newName = $this->testFile . '_renamed';
         File::rename($this->testFile, $newName);
         $this->assertFileExists($newName);
@@ -118,7 +118,7 @@ class FileTest extends BaseTestCase {
         unlink($newName);
     }
 
-    public function test_copy_file() {
+    public function test_copy_file(): void {
         $copyTarget = $this->testFile . '_copy';
         File::copy($this->testFile, $copyTarget);
         $this->assertFileExists($copyTarget);
@@ -126,7 +126,7 @@ class FileTest extends BaseTestCase {
         unlink($copyTarget);
     }
 
-    public function test_move_file() {
+    public function test_move_file(): void {
         $moveTarget = $this->testFile . '_moved';
         File::move($this->testFile, sys_get_temp_dir(), basename($moveTarget));
         $this->assertFileExists($moveTarget);
@@ -134,64 +134,64 @@ class FileTest extends BaseTestCase {
         unlink($moveTarget);
     }
 
-    public function test_contains_keyword_finds_match() {
+    public function test_contains_keyword_finds_match(): void {
         $this->assertTrue(File::containsKeyword($this->testFile, 'test'));
     }
 
-    public function test_contains_keyword_returns_false_on_no_match() {
+    public function test_contains_keyword_returns_false_on_no_match(): void {
         $this->assertFalse(File::containsKeyword($this->testFile, 'xyz123'));
     }
 
-    public function test_line_count() {
+    public function test_line_count(): void {
         file_put_contents($this->testFile, "line1\nline2\nline3\n");
         $this->assertEquals(4, File::lineCount($this->testFile));
     }
 
-    public function test_char_count() {
+    public function test_char_count(): void {
         file_put_contents($this->testFile, "abc123");
         $this->assertEquals(6, File::charCount($this->testFile));
     }
 
-    public function test_is_windows_reserved_name_detects_nul() {
+    public function test_is_windows_reserved_name_detects_nul(): void {
         $this->assertTrue(File::isWindowsReservedName('/path/to/NUL'));
         $this->assertTrue(File::isWindowsReservedName('/path/to/nul'));
         $this->assertTrue(File::isWindowsReservedName('/path/to/NUL.txt'));
         $this->assertTrue(File::isWindowsReservedName('NUL'));
     }
 
-    public function test_is_windows_reserved_name_detects_all_reserved_names() {
+    public function test_is_windows_reserved_name_detects_all_reserved_names(): void {
         foreach (File::WINDOWS_RESERVED_NAMES as $name) {
             $this->assertTrue(File::isWindowsReservedName("/path/to/$name"), "Failed for $name");
             $this->assertTrue(File::isWindowsReservedName("/path/to/$name.txt"), "Failed for $name.txt");
         }
     }
 
-    public function test_is_windows_reserved_name_returns_false_for_normal_files() {
+    public function test_is_windows_reserved_name_returns_false_for_normal_files(): void {
         $this->assertFalse(File::isWindowsReservedName('/path/to/normal.txt'));
         $this->assertFalse(File::isWindowsReservedName('/path/to/file'));
         $this->assertFalse(File::isWindowsReservedName('/path/to/NULLABLE.txt'));
         $this->assertFalse(File::isWindowsReservedName('/path/to/connect.log'));
     }
 
-    public function test_exists_returns_false_for_windows_reserved_names() {
+    public function test_exists_returns_false_for_windows_reserved_names(): void {
         $this->assertFalse(File::exists('/tmp/NUL'));
         $this->assertFalse(File::exists('/tmp/CON'));
         $this->assertFalse(File::exists('/tmp/PRN'));
     }
 
-    public function test_write_throws_exception_for_windows_reserved_name() {
+    public function test_write_throws_exception_for_windows_reserved_name(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Windows-reservierter Gerätename');
         File::write('/tmp/NUL', 'test');
     }
 
-    public function test_create_throws_exception_for_windows_reserved_name() {
+    public function test_create_throws_exception_for_windows_reserved_name(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Windows-reservierter Gerätename');
         File::create('/tmp/NUL.txt');
     }
 
-    public function test_rename_throws_exception_for_windows_reserved_name() {
+    public function test_rename_throws_exception_for_windows_reserved_name(): void {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Windows-reservierter Gerätename');
         File::rename($this->testFile, '/tmp/NUL');
@@ -280,7 +280,6 @@ class FileTest extends BaseTestCase {
 
         $lines = File::readLinesAsArrayUtf8($ansiFile);
 
-        $this->assertIsArray($lines);
         $this->assertGreaterThan(0, count($lines));
 
         // Alle Zeilen müssen gültiges UTF-8 sein
@@ -394,7 +393,6 @@ class FileTest extends BaseTestCase {
 
         $lines = File::tailAsUtf8($ansiFile, 5);
 
-        $this->assertIsArray($lines);
         $this->assertLessThanOrEqual(5, count($lines));
 
         // Alle Zeilen müssen gültiges UTF-8 sein

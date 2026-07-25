@@ -159,6 +159,9 @@ HTML;
     public function test_nested_elements(): void {
         $html = '<div><ul><li>Item 1</li><li>Item 2</li></ul></div>';
         $element = HTMLDocumentParser::parseElement($html);
+        if ($element === null) {
+            self::fail('parseElement sollte ein Element liefern');
+        }
 
         $this->assertEquals('div', $element->getTag());
         $this->assertCount(1, $element->getChildren());
@@ -171,6 +174,9 @@ HTML;
     public function test_parse_and_render_roundtrip(): void {
         $html = '<div class="test"><p>Content</p></div>';
         $element = HTMLDocumentParser::parseElement($html);
+        if ($element === null) {
+            self::fail('parseElement sollte ein Element liefern');
+        }
         $rendered = $element->render();
 
         $this->assertStringContainsString('class="test"', $rendered);
@@ -224,7 +230,6 @@ HTML;
     public function test_empty_fragment(): void {
         $elements = HTMLDocumentParser::parseFragment('');
 
-        $this->assertIsArray($elements);
         $this->assertEmpty($elements);
     }
 
@@ -233,6 +238,6 @@ HTML;
         $elements = HTMLDocumentParser::parseFragment('Just plain text');
 
         // Text-Nodes werden nicht als Elemente zurückgegeben
-        $this->assertIsArray($elements);
+        $this->assertEmpty($elements);
     }
 }

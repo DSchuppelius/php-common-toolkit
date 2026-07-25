@@ -23,6 +23,9 @@ abstract class LineAbstract implements LineInterface {
     protected string $delimiter;
     protected string $enclosure;
 
+    /**
+     * @param array<mixed> $fields
+     */
     public function __construct(array $fields, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE) {
         $this->fields = [];
         foreach ($fields as $field) {
@@ -98,7 +101,7 @@ abstract class LineAbstract implements LineInterface {
      * Liefert den Bereich der Einschluss-Wiederholungen in den Feldern dieser Zeile.
      *
      * @param bool $includeUnquoted Ob unquoted Felder berücksichtigt werden sollen.
-     * @return array [min, max]
+     * @return array{int, int} [min, max]
      */
     public function getEnclosureRepeatRange(bool $includeUnquoted = false): array {
         $repeats = array_map(fn ($f) => $f->getEnclosureRepeat(), $this->fields);

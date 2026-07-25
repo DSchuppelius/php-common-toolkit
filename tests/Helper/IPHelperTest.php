@@ -251,7 +251,7 @@ class IPHelperTest extends BaseTestCase {
         $this->assertEquals('192.168.1.0', $range['start']);
         $this->assertEquals('192.168.1.255', $range['end']);
         $this->assertEquals('192.168.1.0', $range['network']);
-        $this->assertEquals('192.168.1.255', $range['broadcast']);
+        $this->assertEquals('192.168.1.255', $range['broadcast'] ?? '');
         $this->assertEquals(24, $range['prefix']);
         $this->assertEquals('256', $range['count']);
     }

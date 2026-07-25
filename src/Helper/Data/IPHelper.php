@@ -71,7 +71,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine private IP-Adresse ist.
      */
     public static function isPrivateIP(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
         return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE) === false;
@@ -84,7 +84,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine reservierte IP-Adresse ist.
      */
     public static function isReservedIP(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
         return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_NO_RES_RANGE) === false;
@@ -101,7 +101,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine Loopback-Adresse ist.
      */
     public static function isLoopback(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
 
@@ -125,7 +125,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine Link-Local-Adresse ist.
      */
     public static function isLinkLocal(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
 
@@ -150,7 +150,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine Multicast-Adresse ist.
      */
     public static function isMulticast(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
 
@@ -170,7 +170,7 @@ class IPHelper extends HelperAbstract {
      * @return bool True, wenn es eine öffentliche IP-Adresse ist.
      */
     public static function isPublicIP(?string $value): bool {
-        if (!self::isValidIP($value)) {
+        if ($value === null || !self::isValidIP($value)) {
             return false;
         }
         return filter_var(
@@ -301,6 +301,9 @@ class IPHelper extends HelperAbstract {
         }
 
         $long = ip2long($ip);
+        if ($long === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige IPv4-Adresse: $ip");
+        }
 
         // Auf 64-Bit-Systemen können negative Werte entstehen
         if ($long < 0) {
@@ -322,7 +325,14 @@ class IPHelper extends HelperAbstract {
             self::logErrorAndThrow(InvalidArgumentException::class, "Wert außerhalb des IPv4-Bereichs: $long");
         }
 
-        return long2ip($long);
+        // long2ip() ist je nach PHP-Version als string|false typisiert; für einen
+        // bereits auf den 32-Bit-Bereich geprüften Wert ist das Ergebnis stets gültig.
+        $ip = long2ip($long);
+        if ($ip === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiger Long-Wert für IPv4: $long");
+        }
+
+        return $ip;
     }
 
     /**
@@ -367,7 +377,11 @@ class IPHelper extends HelperAbstract {
             self::logErrorAndThrow(InvalidArgumentException::class, "IPv6-Adresse konnte nicht konvertiert werden: $ip");
         }
 
-        return inet_ntop($packed);
+        $compressed = inet_ntop($packed);
+        if ($compressed === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "IPv6-Adresse konnte nicht komprimiert werden: $ip");
+        }
+        return $compressed;
     }
 
     /**
@@ -404,7 +418,7 @@ class IPHelper extends HelperAbstract {
 
         $long = ip2long($ip);
         $mask = $prefix === 0 ? 0 : (-1 << (32 - $prefix));
-        return long2ip($long & $mask);
+        return self::longToIp($long & $mask);
     }
 
     /**
@@ -420,6 +434,9 @@ class IPHelper extends HelperAbstract {
         }
 
         $packed = inet_pton($ip);
+        if ($packed === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige IPv6-Adresse: $ip");
+        }
         $result = str_repeat("\x00", 16);
 
         $fullBytes = intdiv($prefix, 8);
@@ -434,7 +451,11 @@ class IPHelper extends HelperAbstract {
             $result[$fullBytes] = chr(ord($packed[$fullBytes]) & $mask);
         }
 
-        return inet_ntop($result);
+        $network = inet_ntop($result);
+        if ($network === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "IPv6-Netzwerkadresse konnte nicht bestimmt werden: $ip");
+        }
+        return $network;
     }
 
     /**
@@ -460,14 +481,14 @@ class IPHelper extends HelperAbstract {
         $mask = $prefix === 0 ? 0 : (-1 << (32 - $prefix));
         $hostMask = ~$mask;
 
-        return long2ip(($long & $mask) | ($hostMask & 0xFFFFFFFF));
+        return self::longToIp(($long & $mask) | ($hostMask & 0xFFFFFFFF));
     }
 
     /**
      * Berechnet die Start- und End-IP einer CIDR-Range.
      *
      * @param string $cidr Der CIDR-Bereich (z.B. "192.168.1.0/24").
-     * @return array{start: string, end: string, network: string, prefix: int, count: string}
+     * @return array{start: string, end: string, network: string, broadcast?: string, prefix: int, count: string}
      * @throws InvalidArgumentException Bei ungültigem CIDR-Format.
      */
     public static function getCIDRRange(string $cidr): array {
@@ -531,6 +552,9 @@ class IPHelper extends HelperAbstract {
 
         // End-Adresse berechnen
         $packed = inet_pton($network);
+        if ($packed === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige IPv6-Netzwerkadresse: $network");
+        }
         $result = $packed;
 
         $hostBits = 128 - $prefix;
@@ -549,6 +573,9 @@ class IPHelper extends HelperAbstract {
         }
 
         $end = inet_ntop($result);
+        if ($end === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "IPv6-Endadresse konnte nicht bestimmt werden: $ip");
+        }
         $count = bcpow('2', (string) (128 - $prefix));
 
         return [
@@ -575,6 +602,9 @@ class IPHelper extends HelperAbstract {
         }
 
         $long = ip2long($mask);
+        if ($long === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige Subnetzmaske: $mask");
+        }
         if ($long < 0) {
             $long += 4294967296;
         }
@@ -608,7 +638,7 @@ class IPHelper extends HelperAbstract {
         }
 
         $mask = (-1 << (32 - $prefix)) & 0xFFFFFFFF;
-        return long2ip($mask);
+        return self::longToIp($mask);
     }
 
     /**
@@ -651,7 +681,8 @@ class IPHelper extends HelperAbstract {
         }
 
         if (self::isIPv4($ip)) {
-            return long2ip(ip2long($ip));
+            $long = ip2long($ip);
+            return $long === false ? $ip : self::longToIp($long);
         }
 
         if (self::isIPv6($ip)) {
@@ -679,6 +710,9 @@ class IPHelper extends HelperAbstract {
 
         $packed1 = inet_pton($ip1);
         $packed2 = inet_pton($ip2);
+        if ($packed1 === false || $packed2 === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "IP-Adresse konnte nicht konvertiert werden.");
+        }
 
         // Unterschiedliche IP-Versionen
         if (strlen($packed1) !== strlen($packed2)) {

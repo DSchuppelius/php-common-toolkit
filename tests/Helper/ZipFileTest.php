@@ -17,6 +17,7 @@ use Tests\Contracts\BaseTestCase;
 
 class ZipFileTest extends BaseTestCase {
     private string $tempDir;
+    /** @var list<string> */
     private array $tempFiles = [];
     private static bool $zipAvailable;
 

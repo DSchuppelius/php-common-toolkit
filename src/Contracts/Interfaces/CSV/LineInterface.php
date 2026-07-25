@@ -19,6 +19,9 @@ interface LineInterface {
     public function countFields(): int;
     public function getDelimiter(): string;
     public function getEnclosure(): string;
+    /**
+     * @return array{int, int}
+     */
     public function getEnclosureRepeatRange(bool $includeUnquoted = false): array;
     public function toString(?string $delimiter = null, ?string $enclosure = null): string;
     public function equals(LineInterface $other): bool;

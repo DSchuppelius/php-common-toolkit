@@ -61,6 +61,9 @@ enum Month: int {
         };
     }
 
+    /**
+     * @return array<array-key, string>
+     */
     public static function toArray(bool $leadingZero = false, string $locale = 'en'): array {
         $monthsArray = [];
         foreach (self::cases() as $month) {

@@ -98,7 +98,7 @@ class VatNumberHelper {
      * @return bool True, wenn die USt-ID gültig ist.
      */
     public static function validateVatId(?string $vatId, bool $strict = false): bool {
-        if (!self::isVatId($vatId)) {
+        if ($vatId === null || !self::isVatId($vatId)) {
             return false;
         }
 
@@ -136,7 +136,7 @@ class VatNumberHelper {
      */
     public static function normalize(string $vatId): string {
         // Entferne Leerzeichen, Punkte und Bindestriche
-        $vatId = preg_replace('/[\s.\-]/', '', $vatId);
+        $vatId = preg_replace('/[\s.\-]/', '', $vatId) ?? '';
         // Konvertiere zu Großbuchstaben
         return strtoupper($vatId);
     }

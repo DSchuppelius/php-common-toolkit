@@ -80,7 +80,9 @@ class JsonFileTest extends BaseTestCase {
     public function test_decode_as_object(): void {
         $result = JsonFile::decode($this->testJsonFile, false);
 
-        $this->assertIsObject($result);
+        if (!$result instanceof \stdClass) {
+            self::fail('decode(false) sollte ein stdClass-Objekt liefern');
+        }
         $this->assertEquals('John Doe', $result->name);
         $this->assertEquals('john@example.com', $result->email);
         $this->assertEquals(30, $result->age);
@@ -95,7 +97,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertTrue($result);
         $this->assertFileExists($newFile);
 
-        $content = file_get_contents($newFile);
+        $content = $this->readFile($newFile);
         $decoded = json_decode($content, true);
         $this->assertEquals($data, $decoded);
     }
@@ -109,7 +111,7 @@ class JsonFileTest extends BaseTestCase {
         $this->assertTrue($result);
         $this->assertFileExists($newFile);
 
-        $content = file_get_contents($newFile);
+        $content = $this->readFile($newFile);
         $this->assertStringContainsString("    ", $content); // Should contain indentation
         $this->assertStringContainsString("\n", $content);   // Should contain newlines
     }
@@ -122,7 +124,7 @@ class JsonFileTest extends BaseTestCase {
 
         $this->assertTrue($result);
 
-        $content = file_get_contents($uglyFile);
+        $content = $this->readFile($uglyFile);
         $this->assertStringContainsString("    ", $content);
         $this->assertStringContainsString("\n", $content);
     }
@@ -132,21 +134,18 @@ class JsonFileTest extends BaseTestCase {
 
         $this->assertTrue($result);
 
-        $content = file_get_contents($this->testJsonFile);
+        $content = $this->readFile($this->testJsonFile);
         $this->assertStringNotContainsString("    ", $content);
         $this->assertStringNotContainsString("\n", $content);
     }
 
     public function test_validate_schema(): void {
         $result = JsonFile::validateSchema($this->testJsonFile, $this->schemaFile);
-        $this->assertIsArray($result);
         $this->assertArrayHasKey('valid', $result);
         $this->assertArrayHasKey('errors', $result);
 
         // Schema validation might fail due to simplified implementation
         // Just test that we get a proper response structure
-        $this->assertIsBool($result['valid']);
-        $this->assertIsArray($result['errors']);
     }
 
     public function test_extract_path(): void {
@@ -200,7 +199,6 @@ class JsonFileTest extends BaseTestCase {
     public function test_get_metadata(): void {
         $metadata = JsonFile::getMetaData($this->testJsonFile);
 
-        $this->assertIsArray($metadata);
         $this->assertArrayHasKey('fileSize', $metadata);
         $this->assertArrayHasKey('isValid', $metadata);
         $this->assertArrayHasKey('elementCount', $metadata);
@@ -213,15 +211,15 @@ class JsonFileTest extends BaseTestCase {
     }
 
     public function test_backup(): void {
-        $result = JsonFile::backup($this->testJsonFile);
-        $this->assertIsString($result);
-
-        $backupFile = $result;
+        $backupFile = JsonFile::backup($this->testJsonFile);
+        if ($backupFile === false) {
+            self::fail('backup sollte den Backup-Pfad liefern');
+        }
         $this->assertFileExists($backupFile);
 
         // Compare content
-        $original = file_get_contents($this->testJsonFile);
-        $backup = file_get_contents($backupFile);
+        $original = $this->readFile($this->testJsonFile);
+        $backup = $this->readFile($backupFile);
         $this->assertEquals($original, $backup);
 
         // Clean up
@@ -231,6 +229,9 @@ class JsonFileTest extends BaseTestCase {
     public function test_restore(): void {
         // Create backup first
         $backupFile = JsonFile::backup($this->testJsonFile);
+        if ($backupFile === false) {
+            self::fail('backup sollte den Backup-Pfad liefern');
+        }
 
         // Modify original
         file_put_contents($this->testJsonFile, '{"modified": true}');

@@ -118,6 +118,10 @@ final class StringHelper extends BaseStringHelper {
             $repeats[] = $field->getEnclosureRepeat();
         }
 
+        if ($repeats === []) {
+            return 0;
+        }
+
         return $strict ? min($repeats) : max($repeats);
     }
 
@@ -343,7 +347,7 @@ final class StringHelper extends BaseStringHelper {
      */
     public static function hasMultilineFields(string $csv, string $delimiter = ',', string $enclosure = '"', bool $allowWithoutQuotes = false): bool {
         // Prüfe auf Multiline innerhalb von Enclosures durch Zählung statt Regex
-        $escaped = preg_replace('/' . preg_quote($enclosure, '/') . '{2}/', '', $csv);
+        $escaped = preg_replace('/' . preg_quote($enclosure, '/') . '{2}/', '', $csv) ?? $csv;
         $quoteCount = substr_count($escaped, $enclosure);
 
         // ungerade Quote-Anzahl ⇒ unvollständig ⇒ Multiline
@@ -365,7 +369,7 @@ final class StringHelper extends BaseStringHelper {
      * @return array<string>    Array der logischen CSV-Zeilen
      */
     public static function splitCsvByLogicalLine(string $csv, string $delimiter = ',', string $enclosure = '"'): array {
-        $lines = preg_split('/\r\n|\r|\n/', $csv);
+        $lines = preg_split('/\r\n|\r|\n/', $csv) ?: [];
         $result = [];
         $buffer = '';
 
@@ -391,7 +395,7 @@ final class StringHelper extends BaseStringHelper {
      * @param string $line          Eingabezeile (z. B. aus einer CSV-Datei)
      * @param string $delimiter     Das Trennzeichen.
      * @param string $enclosure     Das Einschlusszeichen.
-     * @return array                Der Array der Felder.
+     * @return list<string>         Der Array der Felder.
      * @throws RuntimeException     Wenn die CSV-Zeile ungültig ist.
      */
     public static function parseLineToFields(string $line, string $delimiter, string $enclosure): array {
@@ -461,7 +465,7 @@ final class StringHelper extends BaseStringHelper {
      * Extrahiert Felder aus einer CSV-ähnlichen Zeile, die mit wiederholten Enclosures
      * und einem Delimiter strukturiert ist.
      *
-     * @param array|string $lines                Eingabezeile (z. B. aus einer CSV-Datei)
+     * @param array<string>|string $lines         Eingabezeile (z. B. aus einer CSV-Datei)
      * @param string       $delimiter            Spaltentrennzeichen (z. B. "," oder ";")
      * @param string       $enclosure            Enclosure-Zeichen (z. B. '"')
      * @param ?string      $started              Optionales Startzeichen der Zeile
@@ -632,6 +636,9 @@ final class StringHelper extends BaseStringHelper {
             $cell = $fields[$index] ?? '';
             // Encoding berücksichtigen
             $cellUtf8 = mb_convert_encoding($cell, 'UTF-8', $encoding);
+            if ($cellUtf8 === false) {
+                $cellUtf8 = $cell;
+            }
             $patternQuoted = preg_quote($pattern, '/');
 
             if (!preg_match("/^$patternQuoted/", $cell) && !preg_match("/^$patternQuoted/", $cellUtf8)) {

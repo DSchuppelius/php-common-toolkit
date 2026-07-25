@@ -69,7 +69,7 @@ class ZipFile extends HelperAbstract {
     /**
      * Erstellt eine ZIP-Datei aus mehreren Dateien.
      *
-     * @param array $files Dateien als Array von Strings (Dateipfade) oder Arrays mit 'path' und optionalem 'archiveName'.
+     * @param array<array-key, string|array<string, string>> $files Dateien als Array von Strings (Dateipfade) oder Arrays mit 'path' und optionalem 'archiveName'.
      * @param string $destination Zielpfad für das ZIP-Archiv.
      * @return bool Erfolg oder Misserfolg.
      * @throws Exception Falls das Archiv nicht erstellt werden kann.
@@ -106,7 +106,7 @@ class ZipFile extends HelperAbstract {
                 continue;
             }
 
-            if (!$zip->addFile($filePath, $archiveName)) {
+            if (!$zip->addFile($filePath, $archiveName ?? basename($filePath))) {
                 self::logErrorAndThrow(Exception::class, "Fehler beim Hinzufügen der Datei zum ZIP-Archiv: $filePath");
             }
             $addedCount++;
@@ -252,7 +252,7 @@ class ZipFile extends HelperAbstract {
         $path = str_replace('\\', '/', $path);
 
         // Doppelte Slashes entfernen
-        $path = preg_replace('#/+#', '/', $path);
+        $path = preg_replace('#/+#', '/', $path) ?? $path;
 
         // Pfadteile verarbeiten
         $parts = explode('/', $path);

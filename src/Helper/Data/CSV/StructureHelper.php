@@ -119,11 +119,11 @@ final class StructureHelper {
     /**
      * Prüft ob zwei CSV-Strukturen kompatibel sind.
      *
-     * @param array $structureA Ergebnis von analyze() für Datei A
-     * @param array $structureB Ergebnis von analyze() für Datei B
+     * @param array<string, mixed> $structureA Ergebnis von analyze() für Datei A
+     * @param array<string, mixed> $structureB Ergebnis von analyze() für Datei B
      * @return array{
      *     compatible: bool,
-     *     reasons: string[],
+     *     reasons: list<string>,
      *     columnCountMatch: bool,
      *     delimiterMatch: bool,
      *     headerMatch: bool,
@@ -196,8 +196,8 @@ final class StructureHelper {
      * @param int $headerRows Anzahl der Header-Zeilen
      * @return array{
      *     compatible: bool,
-     *     reasons: string[],
-     *     structures: array[]
+     *     reasons: list<string>,
+     *     structures: array<array-key, array<string, mixed>>
      * }
      */
     public static function validateMultiple(array $contents, int $headerRows = 1): array {

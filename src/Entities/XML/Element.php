@@ -317,7 +317,7 @@ class Element implements XmlElementInterface {
         }
 
         return new self(
-            $domElement->localName,
+            $domElement->localName ?? '',
             $textContent,
             $domElement->namespaceURI ?: null,
             $domElement->prefix ?: null,

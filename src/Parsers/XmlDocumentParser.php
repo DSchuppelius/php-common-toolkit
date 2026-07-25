@@ -17,6 +17,7 @@ use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
 use CommonToolkit\Entities\XML\{Document, Element};
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use InvalidArgumentException;
 use RuntimeException;
@@ -135,7 +136,9 @@ class XmlDocumentParser extends HelperAbstract {
 
         $values = [];
         foreach ($result as $node) {
-            $values[] = $node->textContent;
+            if ($node instanceof DOMNode) {
+                $values[] = $node->textContent;
+            }
         }
 
         return $values;
@@ -199,6 +202,7 @@ class XmlDocumentParser extends HelperAbstract {
      *
      * @param bool $includeAttributes Attribute einbeziehen
      * @param bool $includeNamespaces Namespaces einbeziehen
+     * @return array<string, mixed>
      */
     public static function toArray(
         Document $document,
@@ -210,6 +214,8 @@ class XmlDocumentParser extends HelperAbstract {
 
     /**
      * Konvertiert ein Element rekursiv zu einem Array.
+     *
+     * @return array<string, mixed>
      */
     private static function elementToArray(
         XmlElementInterface $element,

@@ -13,6 +13,12 @@ declare(strict_types=1);
 namespace CommonToolkit\Enums;
 
 enum MetricPrefix: string {
+    case QUECTO = 'q';
+    case RONTO = 'r';
+    case YOCTO = 'y';
+    case ZEPTO = 'z';
+    case ATTO = 'a';
+    case FEMTO = 'f';
     case PICO = 'p';
     case NANO = 'n';
     case MICRO = 'µ';
@@ -26,9 +32,24 @@ enum MetricPrefix: string {
     case MEGA = 'M';
     case GIGA = 'G';
     case TERA = 'T';
+    case PETA = 'P';
+    case EXA = 'E';
+    case ZETTA = 'Z';
+    case YOTTA = 'Y';
+    case RONNA = 'R';
+    case QUETTA = 'Q';
 
+    /**
+     * @return array<string, int>
+     */
     public static function prefixMap(): array {
         return [
+            self::QUECTO->value => -30,
+            self::RONTO->value => -27,
+            self::YOCTO->value => -24,
+            self::ZEPTO->value => -21,
+            self::ATTO->value => -18,
+            self::FEMTO->value => -15,
             self::PICO->value => -12,
             self::NANO->value => -9,
             self::MICRO->value => -6,
@@ -42,6 +63,12 @@ enum MetricPrefix: string {
             self::MEGA->value => 6,
             self::GIGA->value => 9,
             self::TERA->value => 12,
+            self::PETA->value => 15,
+            self::EXA->value => 18,
+            self::ZETTA->value => 21,
+            self::YOTTA->value => 24,
+            self::RONNA->value => 27,
+            self::QUETTA->value => 30,
         ];
     }
 }

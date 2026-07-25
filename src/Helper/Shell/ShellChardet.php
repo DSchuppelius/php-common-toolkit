@@ -8,9 +8,13 @@ use RuntimeException;
 class ShellChardet {
     use ErrorLog;
 
+    /** @var resource|null */
     private static $process = null;
+    /** @var resource|null */
     private static $stdin = null;
+    /** @var resource|null */
     private static $stdout = null;
+    /** @var resource|null */
     private static $stderr = null;
 
     /**
@@ -45,9 +49,15 @@ class ShellChardet {
      */
     public static function stop(): void {
         if (self::$process !== null) {
-            @fclose(self::$stdin);
-            @fclose(self::$stdout);
-            @fclose(self::$stderr);
+            if (is_resource(self::$stdin)) {
+                @fclose(self::$stdin);
+            }
+            if (is_resource(self::$stdout)) {
+                @fclose(self::$stdout);
+            }
+            if (is_resource(self::$stderr)) {
+                @fclose(self::$stderr);
+            }
             @proc_terminate(self::$process);
             @proc_close(self::$process);
             self::$stdin = null;

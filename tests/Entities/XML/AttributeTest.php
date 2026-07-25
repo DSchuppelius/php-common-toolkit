@@ -52,9 +52,14 @@ class AttributeTest extends TestCase {
         $doc = new \DOMDocument;
         $doc->loadXML('<root xmlns:ex="http://example.com" ex:id="123" name="test"/>');
 
-        // Normales Attribut
-        $nameAttr = $doc->documentElement->getAttributeNode('name');
-        if ($nameAttr !== null) {
+        $root = $doc->documentElement;
+        if ($root === null) {
+            self::fail('documentElement fehlt');
+        }
+
+        // Normales Attribut (getAttributeNode liefert DOMAttr|false)
+        $nameAttr = $root->getAttributeNode('name');
+        if ($nameAttr !== false) {
             $attr = Attribute::fromDomAttr($nameAttr);
             $this->assertSame('name', $attr->getName());
             $this->assertSame('test', $attr->getValue());

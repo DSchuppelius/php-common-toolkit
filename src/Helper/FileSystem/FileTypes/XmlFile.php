@@ -190,7 +190,7 @@ class XmlFile extends HelperAbstract {
      * Extrahiert alle Namespaces aus einer XML-Datei.
      *
      * @param string $file Der Dateipfad
-     * @return array<string, string> Namespace-Mappings (prefix => uri)
+     * @return array<string, string|null> Namespace-Mappings (prefix => uri)
      * @throws FileNotFoundException Wenn die Datei nicht existiert
      */
     public static function extractNamespaces(string $file): array {
@@ -208,7 +208,7 @@ class XmlFile extends HelperAbstract {
      *
      * @param string $file Der Dateipfad
      * @param bool $preserveAttributes Ob Attribute beibehalten werden sollen
-     * @return array Das konvertierte Array
+     * @return array<string, mixed> Das konvertierte Array
      * @throws FileNotFoundException Wenn die Datei nicht existiert
      */
     public static function toArray(string $file, bool $preserveAttributes = true): array {
@@ -227,7 +227,7 @@ class XmlFile extends HelperAbstract {
      * @param string $file Der Dateipfad
      * @param string $xpath Der XPath-Ausdruck
      * @param array<string, string> $namespaces Namespace-Registrierungen
-     * @return array Array von gefundenen Werten
+     * @return list<string|null> Array von gefundenen Werten
      * @throws FileNotFoundException Wenn die Datei nicht existiert
      */
     public static function xpath(string $file, string $xpath, array $namespaces = []): array {

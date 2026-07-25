@@ -39,7 +39,6 @@ class CryptoHelperTest extends BaseTestCase {
     public function test_encrypt_decrypt(): void {
         $encrypted = CryptoHelper::encrypt($this->testData, $this->testKey);
 
-        $this->assertIsArray($encrypted);
         $this->assertArrayHasKey('ciphertext', $encrypted);
         $this->assertArrayHasKey('iv', $encrypted);
         $this->assertArrayHasKey('tag', $encrypted);
@@ -119,6 +118,9 @@ class CryptoHelperTest extends BaseTestCase {
         // Flip a byte in the ciphertext — Encrypt-then-MAC must reject it
         // instead of running the CBC decrypt (padding-oracle surface).
         $raw = base64_decode($encrypted['ciphertext'], true);
+        if ($raw === false) {
+            self::fail('ciphertext ist kein gültiges Base64');
+        }
         $raw[0] = $raw[0] ^ "\x01";
         $encrypted['ciphertext'] = base64_encode($raw);
 
@@ -141,6 +143,9 @@ class CryptoHelperTest extends BaseTestCase {
         $encrypted = CryptoHelper::encrypt($this->testData, $this->testKey, 'aes-256-gcm');
 
         $tag = base64_decode($encrypted['tag'], true);
+        if ($tag === false) {
+            self::fail('tag ist kein gültiges Base64');
+        }
         $encrypted['tag'] = base64_encode(substr($tag, 0, 4)); // truncate 16 -> 4 bytes
 
         $this->expectException(\InvalidArgumentException::class);
@@ -180,7 +185,6 @@ class CryptoHelperTest extends BaseTestCase {
     public function test_secure_hash_and_verify(): void {
         $hashData = CryptoHelper::secureHash($this->testData);
 
-        $this->assertIsArray($hashData);
         $this->assertArrayHasKey('hash', $hashData);
         $this->assertArrayHasKey('salt', $hashData);
         $this->assertArrayHasKey('algorithm', $hashData);
@@ -244,7 +248,6 @@ class CryptoHelperTest extends BaseTestCase {
     public function test_generate_rsa_key_pair(): void {
         $keyPair = CryptoHelper::generateRsaKeyPair(2048);
 
-        $this->assertIsArray($keyPair);
         $this->assertArrayHasKey('private_key', $keyPair);
         $this->assertArrayHasKey('public_key', $keyPair);
         $this->assertStringContainsString('BEGIN PRIVATE KEY', $keyPair['private_key']);
@@ -355,7 +358,6 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertLessThanOrEqual(100, $random);
 
         $random2 = CryptoHelper::secureRandomInt(1, 100);
-        $this->assertIsInt($random2);
 
         // Very unlikely to be the same (but theoretically possible)
         // Just test that we get integers in range
@@ -376,15 +378,10 @@ class CryptoHelperTest extends BaseTestCase {
     public function test_get_open_ssl_status(): void {
         $status = CryptoHelper::getOpenSslStatus();
 
-        $this->assertIsArray($status);
         $this->assertArrayHasKey('available', $status);
         $this->assertArrayHasKey('version', $status);
         $this->assertArrayHasKey('ciphers', $status);
         $this->assertArrayHasKey('hashes', $status);
-
-        $this->assertIsBool($status['available']);
-        $this->assertIsArray($status['ciphers']);
-        $this->assertIsArray($status['hashes']);
 
         if ($status['available']) {
             $this->assertNotEmpty($status['version']);

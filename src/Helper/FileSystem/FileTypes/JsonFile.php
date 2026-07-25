@@ -161,8 +161,8 @@ class JsonFile extends HelperAbstract {
      * Validiert eine JSON-Datei gegen ein JSON Schema.
      *
      * @param string $file Der Dateipfad
-     * @param array|string $schema Das JSON Schema als Array oder Pfad zu Schema-Datei
-     * @return array{valid: bool, errors: string[]} Validierungsergebnis
+     * @param array<string, mixed>|string $schema Das JSON Schema als Array oder Pfad zu Schema-Datei
+     * @return array{valid: bool, errors: list<string>} Validierungsergebnis
      * @throws FileNotFoundException Wenn eine der Dateien nicht existiert
      */
     public static function validateSchema(string $file, array|string $schema): array {
@@ -215,7 +215,7 @@ class JsonFile extends HelperAbstract {
      *
      * @param string $file Der Dateipfad
      * @param string|null $outputFile Optional: Pfad für die maskierte Ausgabe (überschreibt Originaldatei wenn null)
-     * @param array $sensitiveFields Array von Feldnamen die maskiert werden sollen
+     * @param list<string> $sensitiveFields Array von Feldnamen die maskiert werden sollen
      * @param string $mask Der Maskierungsstring
      * @return bool True bei Erfolg, false bei Fehler
      * @throws FileNotFoundException Wenn die Datei nicht existiert
@@ -298,7 +298,7 @@ class JsonFile extends HelperAbstract {
             return $count;
         } elseif (is_object($data)) {
             $count = count((array) $data);
-            foreach ($data as $value) {
+            foreach ((array) $data as $value) {
                 if (is_array($value) || is_object($value)) {
                     $count += self::countElements($value);
                 }
@@ -338,7 +338,7 @@ class JsonFile extends HelperAbstract {
      * Konvertiert eine JSON-Datei zu einem assoziativen Array.
      *
      * @param string $file Der Dateipfad
-     * @return array Das konvertierte Array
+     * @return array<string, mixed> Das konvertierte Array
      * @throws FileNotFoundException Wenn die Datei nicht existiert
      */
     public static function toArray(string $file): array {

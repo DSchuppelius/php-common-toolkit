@@ -42,7 +42,6 @@ class SecurityHelperTest extends BaseTestCase {
         $newHash = SecurityHelper::hashPassword($this->testPassword);
 
         // Old hash might need rehash depending on system defaults
-        $this->assertIsBool(SecurityHelper::needsRehash($oldHash));
         // New Argon2ID hash should not need rehash
         $this->assertFalse(SecurityHelper::needsRehash($newHash));
     }
@@ -136,7 +135,6 @@ class SecurityHelperTest extends BaseTestCase {
     public function test_set_security_headers(): void {
         $headers = SecurityHelper::setSecurityHeaders();
 
-        $this->assertIsArray($headers);
         $this->assertArrayHasKey('X-Content-Type-Options', $headers);
         $this->assertArrayHasKey('X-Frame-Options', $headers);
         $this->assertArrayHasKey('Strict-Transport-Security', $headers);
@@ -226,7 +224,7 @@ class SecurityHelperTest extends BaseTestCase {
     protected function tearDown(): void {
         // Clean up rate limit files
         $tempDir = sys_get_temp_dir();
-        $files = glob($tempDir . DIRECTORY_SEPARATOR . 'rate_limit_*.tmp');
+        $files = glob($tempDir . DIRECTORY_SEPARATOR . 'rate_limit_*.tmp') ?: [];
         foreach ($files as $file) {
             if (is_file($file)) {
                 unlink($file);

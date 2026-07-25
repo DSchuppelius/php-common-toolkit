@@ -158,7 +158,7 @@ class PostalCodeHelper {
         $country = strtoupper($country);
 
         // Entferne alle Leerzeichen für die Neuformatierung
-        $clean = preg_replace('/\s+/', '', $postalCode);
+        $clean = preg_replace('/\s+/', '', $postalCode) ?? '';
 
         return match ($country) {
             'NL' => strlen($clean) === 6
@@ -249,7 +249,7 @@ class PostalCodeHelper {
      * @return string Die formatierte Postleitzahl.
      */
     private static function formatUKPostalCode(string $postalCode): string {
-        $postalCode = strtoupper(preg_replace('/\s+/', '', $postalCode));
+        $postalCode = strtoupper(preg_replace('/\s+/', '', $postalCode) ?? '');
         $length = strlen($postalCode);
 
         if ($length < 5 || $length > 7) {

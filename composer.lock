@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "36a1bc8d87b18419e05601e309bc35ea",
+    "content-hash": "f65fa09d229962d96c14fe93ce0fcafe",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.4.5.1",
+            "version": "v0.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "27ee677e483b2ee4353c36deb27989f22e75080a"
+                "reference": "eeeb4ad1defb2fdfb3ea00214d9604178f7ca8b0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/27ee677e483b2ee4353c36deb27989f22e75080a",
-                "reference": "27ee677e483b2ee4353c36deb27989f22e75080a",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/eeeb4ad1defb2fdfb3ea00214d9604178f7ca8b0",
+                "reference": "eeeb4ad1defb2fdfb3ea00214d9604178f7ca8b0",
                 "shasum": ""
             },
             "require": {
@@ -25,6 +25,8 @@
                 "php": ">=8.0 <8.6"
             },
             "require-dev": {
+                "laravel/pint": "^1.27",
+                "phpstan/phpstan": "^2.1",
                 "phpunit/phpunit": "^11.3@dev"
             },
             "type": "library",
@@ -46,22 +48,22 @@
             "description": "Ein Toolkit für JSON-basierte Konfigurationsverwaltung",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.4.5.1"
+                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.5"
             },
-            "time": "2026-03-20T09:31:12+00:00"
+            "time": "2026-07-25T11:52:51+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.5.5",
+            "version": "v2.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "04d8a9d3560044adf556c6373ca00cfe02ce926a"
+                "reference": "c80b10a99d6f29f81758c165b2de8a80def7a3d8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/04d8a9d3560044adf556c6373ca00cfe02ce926a",
-                "reference": "04d8a9d3560044adf556c6373ca00cfe02ce926a",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/c80b10a99d6f29f81758c165b2de8a80def7a3d8",
+                "reference": "c80b10a99d6f29f81758c165b2de8a80def7a3d8",
                 "shasum": ""
             },
             "require": {
@@ -69,6 +71,7 @@
                 "psr/log": "^3.0"
             },
             "require-dev": {
+                "illuminate/container": "^10.0|^11.0|^12.0",
                 "illuminate/support": "^10.0|^11.0|^12.0",
                 "laravel/pint": "^1.27",
                 "phpstan/phpstan": "^2.1",
@@ -104,9 +107,9 @@
             "description": "Logging and error handling foundation for the Schuppelius PHP toolkits (PSR-3 loggers, global error handler, LoggerRegistry, Laravel bridge)",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.5.5"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.7"
             },
-            "time": "2026-07-04T07:52:05+00:00"
+            "time": "2026-07-25T12:39:00+00:00"
         },
         {
             "name": "maxmind-db/reader",
@@ -2134,5 +2137,5 @@
         "ext-zip": "*"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }

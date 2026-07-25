@@ -190,7 +190,7 @@ class XmlHelper extends HelperAbstract {
      * Extrahiert alle Namespaces aus einem XML-Dokument.
      *
      * @param string $xml Der XML-String
-     * @return array<string, string> Array von Namespace-Prefix zu URI Mappings
+     * @return array<string, string|null> Array von Namespace-Prefix zu URI Mappings
      */
     public static function extractNamespaces(string $xml): array {
         $doc = new DOMDocument;
@@ -203,8 +203,9 @@ class XmlHelper extends HelperAbstract {
 
         // Root-Element Namespaces
         $root = $doc->documentElement;
-        if ($root !== null) {
-            foreach ($xpath->query('namespace::*', $root) as $namespace) {
+        $rootNamespaces = $root !== null ? $xpath->query('namespace::*', $root) : false;
+        if ($rootNamespaces !== false) {
+            foreach ($rootNamespaces as $namespace) {
                 $prefix = $namespace->localName === 'xmlns' ? '' : $namespace->localName;
                 $namespaces[$prefix] = $namespace->nodeValue;
             }
@@ -218,7 +219,7 @@ class XmlHelper extends HelperAbstract {
      *
      * @param string $xml Der XML-String
      * @param bool $preserveAttributes Ob Attribute beibehalten werden sollen
-     * @return array Das konvertierte Array
+     * @return array<string, mixed> Das konvertierte Array
      * @throws InvalidArgumentException Bei ungültigem XML
      */
     public static function xmlToArray(string $xml, bool $preserveAttributes = true): array {
@@ -280,7 +281,7 @@ class XmlHelper extends HelperAbstract {
      * @param string $xml Der XML-String
      * @param string $xpath Der XPath-Ausdruck
      * @param array<string, string> $namespaces Namespace-Registrierungen (prefix => uri)
-     * @return array Array von gefundenen Werten
+     * @return list<string|null> Array von gefundenen Werten
      * @throws InvalidArgumentException Bei ungültigem XML oder XPath
      */
     public static function xpath(string $xml, string $xpath, array $namespaces = []): array {
@@ -363,7 +364,7 @@ class XmlHelper extends HelperAbstract {
         }
 
         foreach ($namespaces as $prefix => $uri) {
-            if ($prefix !== '' && $prefix !== 'xml') {
+            if ($prefix !== '' && $prefix !== 'xml' && $uri !== null) {
                 $nsMapping[$prefix] = $uri;
             }
         }
@@ -392,7 +393,7 @@ class XmlHelper extends HelperAbstract {
      *
      * @param string $xml Der XML-String
      * @param string $xpath Der XPath-Ausdruck (mit 'ns:' Prefix für Namespace-Elemente)
-     * @return array Array von gefundenen Werten
+     * @return list<string|null> Array von gefundenen Werten
      * @throws InvalidArgumentException Bei ungültigem XML oder XPath
      */
     public static function xpathAuto(string $xml, string $xpath): array {
@@ -406,7 +407,7 @@ class XmlHelper extends HelperAbstract {
 
         // Alle anderen Namespaces auch registrieren
         foreach ($namespaces as $prefix => $uri) {
-            if ($prefix !== '' && $prefix !== 'xml') {
+            if ($prefix !== '' && $prefix !== 'xml' && $uri !== null) {
                 $nsMapping[$prefix] = $uri;
             }
         }
@@ -561,7 +562,7 @@ class XmlHelper extends HelperAbstract {
     /**
      * Konvertiert ein Array zu XML.
      *
-     * @param array $array Das zu konvertierende Array
+     * @param array<string, mixed> $array Das zu konvertierende Array
      * @param string $rootElement Name des Root-Elements
      * @param string $encoding XML-Encoding
      * @param string|null $namespaceUri Optionale Namespace-URI für das Root-Element
@@ -606,7 +607,7 @@ class XmlHelper extends HelperAbstract {
      * Beispiel: ['element' => ['@id' => '123', '_value' => 'text']]
      *        => <element id="123">text</element>
      *
-     * @param array $array Das Array
+     * @param array<array-key, mixed> $array Das Array
      * @param DOMDocument $doc Das DOM-Dokument
      * @param DOMElement $parent Das Parent-Element
      */

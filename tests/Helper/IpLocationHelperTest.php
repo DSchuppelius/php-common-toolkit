@@ -67,6 +67,9 @@ class IpLocationHelperTest extends BaseTestCase {
         $record = ['country' => ['iso_code' => 'DE', 'names' => ['en' => 'Germany', 'de' => 'Deutschland']]];
 
         $mapped = IpLocationHelper::mapRecord($record, 'de');
+        if ($mapped === null) {
+            self::fail('mapRecord sollte einen Datensatz liefern');
+        }
         $this->assertSame('Deutschland', $mapped['country']);
         $this->assertNull($mapped['city']);
     }
@@ -91,6 +94,9 @@ class IpLocationHelperTest extends BaseTestCase {
         $record = ['city' => ['names' => ['fr' => 'Genève']]];
 
         $mapped = IpLocationHelper::mapRecord($record, 'de');
+        if ($mapped === null) {
+            self::fail('mapRecord sollte einen Datensatz liefern');
+        }
         $this->assertSame('Genève', $mapped['city']);
         $this->assertNull($mapped['country']);
         $this->assertNull($mapped['country_iso']);

@@ -88,7 +88,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         $path = str_replace('\\', '/', $path);
 
         // Doppelte Slashes entfernen
-        $path = preg_replace('#/+#', '/', $path);
+        $path = preg_replace('#/+#', '/', $path) ?? $path;
 
         // Pfadteile verarbeiten
         $parts = explode('/', $path);
@@ -301,7 +301,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      *
      * @param string $directory Das Verzeichnis, in dem nach Unterverzeichnissen gesucht werden soll.
      * @param bool $recursive Ob rekursiv in Unterverzeichnissen gesucht werden soll.
-     * @return array Ein Array mit den gefundenen Unterverzeichnissen.
+     * @return list<string> Ein Array mit den gefundenen Unterverzeichnissen.
      */
     public static function get(string $directory, bool $recursive = false): array {
         $directory = self::getRealPath($directory);
@@ -425,7 +425,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      *
      * @param string $directory Der Pfad des Verzeichnisses.
      * @param bool $recursive Unterverzeichnisse einbeziehen (Standard: false).
-     * @param array $extensions Nur bestimmte Dateierweiterungen zählen (leer = alle).
+     * @param list<string> $extensions Nur bestimmte Dateierweiterungen zählen (leer = alle).
      * @return int Anzahl der Dateien.
      * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
      */
@@ -530,7 +530,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      *
      * @param string $directory Der Pfad des Verzeichnisses.
      * @param bool $recursive Unterverzeichnisse einbeziehen (Standard: false).
-     * @param array $extensions Nur bestimmte Dateierweiterungen (leer = alle).
+     * @param list<string> $extensions Nur bestimmte Dateierweiterungen (leer = alle).
      * @return string|null Pfad zur neuesten Datei oder null wenn leer.
      * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
      */
@@ -574,7 +574,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      *
      * @param string $directory Der Pfad des Verzeichnisses.
      * @param bool $recursive Unterverzeichnisse einbeziehen (Standard: false).
-     * @param array $extensions Nur bestimmte Dateierweiterungen (leer = alle).
+     * @param list<string> $extensions Nur bestimmte Dateierweiterungen (leer = alle).
      * @return string|null Pfad zur ältesten Datei oder null wenn leer.
      * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
      */

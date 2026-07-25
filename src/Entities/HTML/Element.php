@@ -184,6 +184,9 @@ class Element {
      */
     public function withStyle(string $style): self {
         $existingStyle = $this->attributes['style'] ?? '';
+        if (!is_string($existingStyle)) {
+            $existingStyle = '';
+        }
         $newStyle = rtrim($existingStyle, '; ') . ($existingStyle ? '; ' : '') . $style;
         return $this->withAttribute('style', $newStyle);
     }

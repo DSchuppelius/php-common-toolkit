@@ -18,6 +18,7 @@ use CommonToolkit\Helper\FileSystem\File;
 use DateTimeImmutable;
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use RuntimeException;
 use ZipArchive;
@@ -113,7 +114,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
@@ -124,12 +125,17 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         foreach ($siNodes as $si) {
+            if (!$si instanceof DOMNode) {
+                continue;
+            }
             $text = '';
             // Entweder <t> direkt oder <r><t> für Rich Text
             $tNodes = $xpath->query('.//s:t', $si);
             if ($tNodes !== false) {
                 foreach ($tNodes as $t) {
-                    $text .= $t->textContent;
+                    if ($t instanceof DOMNode) {
+                        $text .= $t->textContent;
+                    }
                 }
             }
             $this->sharedStrings[] = $text;
@@ -166,7 +172,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
@@ -215,7 +221,7 @@ class XLSXDocumentParser extends HelperAbstract {
         $content = $zip->getFromName('docProps/core.xml');
         if ($content !== false) {
             $dom = new DOMDocument;
-            $dom->loadXML($content);
+            $dom->loadXML($content, LIBXML_NONET);
 
             $xpath = new DOMXPath($dom);
             $xpath->registerNamespace('dc', 'http://purl.org/dc/elements/1.1/');
@@ -262,7 +268,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
@@ -310,7 +316,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('r', 'http://schemas.openxmlformats.org/package/2006/relationships');
@@ -340,7 +346,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
@@ -422,8 +428,9 @@ class XLSXDocumentParser extends HelperAbstract {
         $format = null;
 
         // Wert extrahieren
-        $valueNode = $xpath->query('s:v', $cellNode)->item(0);
-        $value = $valueNode?->textContent;
+        $valueNodes = $xpath->query('s:v', $cellNode);
+        $valueNode = $valueNodes === false ? null : $valueNodes->item(0);
+        $value = $valueNode instanceof DOMNode ? $valueNode->textContent : null;
 
         // Format bestimmen
         if ($style !== '') {
@@ -442,8 +449,9 @@ class XLSXDocumentParser extends HelperAbstract {
                 break;
 
             case 'inlineStr': // Inline String
-                $tNode = $xpath->query('.//s:t', $cellNode)->item(0);
-                $value = $tNode->textContent ?? '';
+                $tNodes = $xpath->query('.//s:t', $cellNode);
+                $tNode = $tNodes === false ? null : $tNodes->item(0);
+                $value = $tNode instanceof DOMNode ? ($tNode->textContent ?? '') : '';
                 break;
 
             case 'b': // Boolean
@@ -555,7 +563,8 @@ class XLSXDocumentParser extends HelperAbstract {
      * Hilfsmethode: Wert aus XPath-Query extrahieren.
      */
     protected function getXPathValue(DOMXPath $xpath, string $query): ?string {
-        $node = $xpath->query($query)->item(0);
-        return $node?->textContent;
+        $nodes = $xpath->query($query);
+        $node = $nodes === false ? null : $nodes->item(0);
+        return $node instanceof DOMNode ? $node->textContent : null;
     }
 }

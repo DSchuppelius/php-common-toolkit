@@ -118,7 +118,7 @@ class CreditCardHelper extends HelperAbstract {
      * @return string|null Der Kartentyp oder null wenn unbekannt
      */
     public static function getCardType(string $cardNumber): ?string {
-        $cardNumber = preg_replace('/\D/', '', $cardNumber);
+        $cardNumber = preg_replace('/\D/', '', $cardNumber) ?? '';
         $length = strlen($cardNumber);
 
         foreach (self::CARD_PATTERNS as $type => $config) {
@@ -138,7 +138,7 @@ class CreditCardHelper extends HelperAbstract {
      * @return string Die formatierte Kartennummer
      */
     public static function formatCardNumber(string $cardNumber, bool $maskMiddle = true): string {
-        $cardNumber = preg_replace('/\D/', '', $cardNumber);
+        $cardNumber = preg_replace('/\D/', '', $cardNumber) ?? '';
 
         if (strlen($cardNumber) < 8) {
             return $cardNumber;

@@ -114,7 +114,7 @@ class TaxNumberHelper {
      * @return bool True, wenn die IdNr gültig ist (inkl. Prüfziffer).
      */
     public static function validateIdNr(?string $idNr): bool {
-        if (!self::isIdNr($idNr)) {
+        if ($idNr === null || !self::isIdNr($idNr)) {
             return false;
         }
 
@@ -193,7 +193,7 @@ class TaxNumberHelper {
      * @return string Die normalisierte Nummer.
      */
     public static function normalize(string $number): string {
-        return preg_replace('/[^0-9]/', '', $number);
+        return preg_replace('/[^0-9]/', '', $number) ?? '';
     }
 
     /**

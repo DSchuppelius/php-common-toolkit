@@ -92,7 +92,7 @@ class HTMLDocumentParser {
         $titles = $dom->getElementsByTagName('title');
 
         if ($titles->length > 0) {
-            return $titles->item(0)->textContent;
+            return $titles->item(0)->textContent ?? '';
         }
 
         return null;
@@ -283,7 +283,7 @@ class HTMLDocumentParser {
         $heads = $dom->getElementsByTagName('head');
         if ($heads->length > 0) {
             $head = $heads->item(0);
-            foreach ($head->childNodes as $node) {
+            foreach (($head->childNodes ?? []) as $node) {
                 if (!($node instanceof DOMElement)) {
                     continue;
                 }

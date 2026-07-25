@@ -36,7 +36,7 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
      * Gibt den vollständigen Befehl zurück, der in der Konfiguration definiert ist und fügt die Parameter hinzu.
      *
      * @param string $commandName Der Name des Kommandos.
-     * @param array $params Die Parameter, die in der Konfiguration ersetzt werden sollen.
+     * @param array<string, string> $params Die Parameter, die in der Konfiguration ersetzt werden sollen.
      * @param string $type Der Typ der Konfiguration (z.B. 'shellExecutables').
      * @return string|null Der vollständige Befehl oder null bei Fehler.
      */
@@ -55,7 +55,7 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
      * Gibt den vollständigen Java-Befehl zurück (java -jar ...).
      *
      * @param string $commandName Der Name des Java-Executables.
-     * @param array $params Die Parameter, die in der Konfiguration ersetzt werden sollen.
+     * @param array<string, string> $params Die Parameter, die in der Konfiguration ersetzt werden sollen.
      * @param string $javaSection Die Sektion für Java-Executables.
      * @return string|null Der vollständige Befehl oder null bei Fehler.
      */
@@ -98,9 +98,9 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
      * Holt die Konfiguration für ein bestimmtes Kommando und ersetzt Platzhalter.
      *
      * @param string $commandName Der Name des Kommandos.
-     * @param array $params Die Parameter, die in der Konfiguration ersetzt werden sollen.
+     * @param array<string, string> $params Die Parameter, die in der Konfiguration ersetzt werden sollen.
      * @param string $type Der Typ der Konfiguration (z.B. 'shellExecutables').
-     * @return array|null Die Konfiguration des Executables oder null bei Fehler.
+     * @return array<string, mixed>|null Die Konfiguration des Executables oder null bei Fehler.
      */
     protected static function getResolvedExecutableConfig(string $commandName, array $params = [], string $type = 'shellExecutables'): ?array {
         $configLoader = self::getConfigLoader();
@@ -118,9 +118,10 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
     /**
      * Holt alle Instanzen eines bestimmten Typs aus der Konfiguration.
      *
+     * @template T of object
      * @param string $configKey Der Schlüssel in der Konfiguration.
-     * @param string $class Der Klassentyp, den die Instanzen haben sollen.
-     * @return array Ein Array von Instanzen des angegebenen Typs.
+     * @param class-string<T> $class Der Klassentyp, den die Instanzen haben sollen.
+     * @return array<array-key, T> Ein Array von Instanzen des angegebenen Typs.
      */
     protected static function getExecutableInstances(string $configKey, string $class): array {
         $configLoader = self::getConfigLoader();

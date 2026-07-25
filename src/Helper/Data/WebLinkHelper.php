@@ -138,7 +138,7 @@ class WebLinkHelper {
      * @return string|null Die normalisierte URL oder null bei ungültiger URL.
      */
     public static function normalize(?string $url): ?string {
-        if (!self::isUrl($url)) {
+        if ($url === null || $url === '' || !self::isUrl($url)) {
             return null;
         }
 
@@ -326,7 +326,7 @@ class WebLinkHelper {
      * Extrahiert die Query-Parameter als Array.
      *
      * @param string|null $url Die URL.
-     * @return array<string, string|array<string>> Die Query-Parameter.
+     * @return array<array-key, string|array<mixed>> Die Query-Parameter.
      */
     public static function getQueryParams(?string $url): array {
         $query = self::getQueryString($url);
@@ -374,7 +374,7 @@ class WebLinkHelper {
      * @return string|null Die URL mit den neuen Parametern oder null bei ungültiger URL.
      */
     public static function addQueryParams(string $url, array $params, bool $replace = true): ?string {
-        if (!self::isUrl($url)) {
+        if ($url === '' || !self::isUrl($url)) {
             return null;
         }
 
@@ -415,7 +415,7 @@ class WebLinkHelper {
      * @return string|null Die URL ohne die angegebenen Parameter oder null bei ungültiger URL.
      */
     public static function removeQueryParams(string $url, array $keys): ?string {
-        if (!self::isUrl($url)) {
+        if ($url === '' || !self::isUrl($url)) {
             return null;
         }
 
@@ -808,8 +808,8 @@ class WebLinkHelper {
 
         $text = strtr($text, $transliterations);
         $text = strtolower($text);
-        $text = preg_replace('/[^a-z0-9\s-]/', '', $text);
-        $text = preg_replace('/[\s-]+/', $separator, $text);
+        $text = preg_replace('/[^a-z0-9\s-]/', '', $text) ?? '';
+        $text = preg_replace('/[\s-]+/', $separator, $text) ?? '';
         $text = trim($text, $separator);
 
         return $text;

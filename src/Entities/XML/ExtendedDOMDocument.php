@@ -17,6 +17,7 @@ use CommonToolkit\Helper\Data\XmlHelper;
 use DateTimeImmutable;
 use DOMDocument;
 use DOMElement;
+use DOMNameSpaceNode;
 use DOMNode;
 use DOMNodeList;
 use DOMXPath;
@@ -68,7 +69,7 @@ class ExtendedDOMDocument extends DOMDocument {
         libxml_use_internal_errors(true);
         libxml_clear_errors();
 
-        if (!$this->loadXML($xmlContent)) {
+        if (!$this->loadXML($xmlContent, LIBXML_NONET)) {
             $errors = XmlHelper::getLibXmlErrors();
             $errorMessage = "Ungültiges XML-Dokument: " . ($errors[0] ?? 'Unbekannter Fehler');
             self::logErrorAndThrow(RuntimeException::class, $errorMessage);
@@ -242,7 +243,12 @@ class ExtendedDOMDocument extends DOMDocument {
             ? $this->xpath->query($expression, $context)
             : $this->xpath->query($expression);
 
-        return ($result && $result->length > 0) ? $result->item(0) : null;
+        if ($result === false || $result->length === 0) {
+            return null;
+        }
+
+        $node = $result->item(0);
+        return $node instanceof DOMNode ? $node : null;
     }
 
     /**
@@ -267,12 +273,18 @@ class ExtendedDOMDocument extends DOMDocument {
      *
      * @param string $expression XPath-Ausdruck
      * @param DOMNode|null $context Kontext-Node (optional)
-     * @return DOMNodeList<DOMNode> Die gefundenen Nodes
+     * @return DOMNodeList<DOMNode|DOMNameSpaceNode> Die gefundenen Nodes
      */
     public function findNodes(string $expression, ?DOMNode $context = null): DOMNodeList {
-        return $context !== null
+        $result = $context !== null
             ? $this->xpath->query($expression, $context)
             : $this->xpath->query($expression);
+
+        if ($result === false) {
+            self::logErrorAndThrow(RuntimeException::class, "Ungültiger XPath-Ausdruck: $expression");
+        }
+
+        return $result;
     }
 
     // =========================================================================
@@ -305,7 +317,8 @@ class ExtendedDOMDocument extends DOMDocument {
         DOMNode $context,
         CurrencyCode $default = CurrencyCode::Euro
     ): array {
-        $amtNode = $this->xpath->query($amountPath, $context)->item(0);
+        $amtNodes = $this->xpath->query($amountPath, $context);
+        $amtNode = $amtNodes === false ? null : $amtNodes->item(0);
 
         $amount = 0.0;
         $currency = $default;
@@ -331,7 +344,7 @@ class ExtendedDOMDocument extends DOMDocument {
         CurrencyCode $default = CurrencyCode::Euro
     ): array {
         $amount = $this->parseAmount($element->getValue());
-        $currencyStr = $element->getAttributeValue('Ccy', 'EUR');
+        $currencyStr = $element->getAttributeValue('Ccy', 'EUR') ?? 'EUR';
         $currency = CurrencyCode::tryFrom($currencyStr) ?? $default;
 
         return ['amount' => $amount, 'currency' => $currency];

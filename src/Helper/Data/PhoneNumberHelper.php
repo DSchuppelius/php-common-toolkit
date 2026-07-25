@@ -168,7 +168,7 @@ class PhoneNumberHelper {
      * @return bool True, wenn es eine deutsche Mobilfunknummer ist.
      */
     public static function isGermanMobileNumber(?string $phone): bool {
-        if (!self::isGermanPhoneNumber($phone)) {
+        if ($phone === null || !self::isGermanPhoneNumber($phone)) {
             return false;
         }
 
@@ -197,7 +197,7 @@ class PhoneNumberHelper {
      */
     public static function normalize(string $phone): string {
         // Entferne alles außer Ziffern
-        $normalized = preg_replace('/[^0-9]/', '', $phone);
+        $normalized = preg_replace('/[^0-9]/', '', $phone) ?? '';
 
         // Wenn mit 00 beginnend, ersetze durch nichts (Ländervorwahl folgt)
         if (str_starts_with($normalized, '00')) {

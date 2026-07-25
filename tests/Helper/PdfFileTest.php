@@ -34,7 +34,6 @@ final class PdfFileTest extends BaseTestCase {
 
     public function test_get_meta_data(): void {
         $meta = PdfFile::getMetaData($this->testFile);
-        $this->assertIsArray($meta);
         $this->assertArrayHasKey('Pages', $meta);
         $this->assertArrayHasKey('Producer', $meta);
     }
@@ -68,17 +67,14 @@ final class PdfFileTest extends BaseTestCase {
         try {
             $meta = PdfFile::getMetaData($outputEnc, '1234');
             // Wenn keine Exception geworfen wird, prüfen wir, dass Metadaten lesbar sind
-            $this->assertIsArray($meta);
         } catch (InvalidPasswordException $e) {
             // Exception ist bei älteren qpdf Versionen erwartet
             $this->addToAssertionCount(1);
         }
 
         $meta = PdfFile::getMetaData($outputEnc, '');
-        $this->assertIsArray($meta);
 
         $meta = PdfFile::getMetaData($outputEnc);
-        $this->assertIsArray($meta);
 
         $this->assertTrue(PdfFile::decrypt($outputEnc, $outputDec));
         $this->assertFileExists($outputDec);
@@ -100,7 +96,6 @@ final class PdfFileTest extends BaseTestCase {
         $this->assertTrue($result);
         $this->assertTrue(PdfFile::isEncrypted($outputEnc));
         $meta = PdfFile::getMetaData($outputEnc, '1234');
-        $this->assertIsArray($meta);
 
         $this->expectException(InvalidPasswordException::class);
         $meta = PdfFile::getMetaData($outputEnc);
@@ -116,7 +111,7 @@ final class PdfFileTest extends BaseTestCase {
     }
 
     protected function tearDown(): void {
-        foreach (glob($this->outputDir . '/*.pdf') as $f) {
+        foreach (glob($this->outputDir . '/*.pdf') ?: [] as $f) {
             @unlink($f);
         }
         @rmdir($this->outputDir);

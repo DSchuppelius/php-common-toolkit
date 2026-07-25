@@ -39,7 +39,7 @@ final class OfficeHelper extends ConfiguredHelperAbstract {
      * @param string $inputFile    Pfad zur Eingabedatei
      * @param string $targetFormat LibreOffice-Zielformat (z.B. 'docx', 'odt', 'pdf')
      * @param string $outputDir    Ausgabeverzeichnis
-     * @param array $output        Referenz: Shell-Ausgabe (stdout+stderr)
+     * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr)
      * @return bool true bei Erfolg (Exit 0)
      */
     public static function convert(string $inputFile, string $targetFormat, string $outputDir, array &$output = [], int &$returnCode = 0): bool {

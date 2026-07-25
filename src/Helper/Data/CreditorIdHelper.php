@@ -77,7 +77,7 @@ class CreditorIdHelper {
      * @return bool True, wenn die Gläubiger-ID gültig ist.
      */
     public static function validateCreditorId(?string $creditorId): bool {
-        if (!self::isCreditorId($creditorId)) {
+        if ($creditorId === null || !self::isCreditorId($creditorId)) {
             return false;
         }
 

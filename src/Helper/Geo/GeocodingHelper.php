@@ -34,16 +34,28 @@ use ERRORToolkit\Traits\ErrorLog;
 final class GeocodingHelper {
     use ErrorLog;
 
-    /** Cache für bereits aufgelöste Koordinaten */
+    /**
+     * Cache für bereits aufgelöste Koordinaten
+     *
+     * @var array<string, mixed>
+     */
     private static array $cache = [];
 
     /** Zeitpunkt des letzten Requests (Rate-Limiting) */
     private static float $lastRequestTime = 0;
 
-    /** Aufgelöste Konfiguration (Defaults + Overrides), lazy */
+    /**
+     * Aufgelöste Konfiguration (Defaults + Overrides), lazy
+     *
+     * @var array<string, mixed>|null
+     */
     private static ?array $config = null;
 
-    /** Laufzeit-Overrides via configure() */
+    /**
+     * Laufzeit-Overrides via configure()
+     *
+     * @var array<string, mixed>
+     */
     private static array $overrides = [];
 
     /** Cache-Datei (persistenter Cache) */
@@ -82,6 +94,8 @@ final class GeocodingHelper {
 
     /**
      * Liefert die aktuelle Konfiguration (Defaults überschrieben durch configure()).
+     *
+     * @return array<string, mixed>
      */
     private static function loadConfig(): array {
         if (self::$config !== null) {
@@ -189,6 +203,8 @@ final class GeocodingHelper {
 
     /**
      * Formatiert Adress-Daten als lesbaren String.
+     *
+     * @param array<string, string> $address
      */
     private static function formatPlace(array $address, bool $shortFormat): string {
         if ($shortFormat) {

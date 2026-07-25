@@ -116,7 +116,7 @@ class CryptoHelper extends HelperAbstract {
     /**
      * Entschlüsselt mit AES verschlüsselte Daten.
      *
-     * @param array{ciphertext: string, iv: string, tag: string, algorithm: string} $encryptedData Die verschlüsselten Daten
+     * @param array<string, string> $encryptedData Die verschlüsselten Daten (werden zur Laufzeit auf Vollständigkeit geprüft)
      * @param string $key Der Entschlüsselungsschlüssel
      * @return string Der entschlüsselte Text
      * @throws InvalidArgumentException Bei ungültigen Daten oder Fehlern
@@ -252,7 +252,7 @@ class CryptoHelper extends HelperAbstract {
 
             $algorithm = self::resolveCryptographicAlgorithm($algorithm);
 
-            $derivedKey = hash_pbkdf2($algorithm, $password, $salt, $iterations, $length, true);
+            $derivedKey = hash_pbkdf2($algorithm, $password, $salt, $iterations, max(0, $length), true);
             $result = base64_encode($derivedKey);
 
             return self::logDebugAndReturn($result, "Schlüssel erfolgreich abgeleitet mit PBKDF2 ({$iterations} Iterationen)");
@@ -268,6 +268,7 @@ class CryptoHelper extends HelperAbstract {
      * geprüft (lehnt MD5/SHA1/CRC/XXH ab), String-Eingaben weiterhin über die
      * ALLOWED_HASHES-Liste (BC).
      *
+     * @return non-falsy-string
      * @throws InvalidArgumentException Bei ungeeignetem Algorithmus
      */
     private static function resolveCryptographicAlgorithm(HashAlgorithm|string $algorithm): string {
@@ -279,11 +280,13 @@ class CryptoHelper extends HelperAbstract {
             return $algorithm->value;
         }
 
-        if (!in_array($algorithm, self::ALLOWED_HASHES)) {
-            self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
+        foreach (self::ALLOWED_HASHES as $allowed) {
+            if ($algorithm === $allowed) {
+                return $allowed;
+            }
         }
 
-        return $algorithm;
+        self::logErrorAndThrow(InvalidArgumentException::class, 'Nicht unterstützter Hash-Algorithmus: ' . $algorithm);
     }
 
     /**
@@ -348,7 +351,7 @@ class CryptoHelper extends HelperAbstract {
      * Verifiziert einen Hash gegen Daten.
      *
      * @param string $data Die ursprünglichen Daten
-     * @param array{hash: string, salt: string, algorithm: string} $hashData Die Hash-Daten
+     * @param array<string, string> $hashData Die Hash-Daten (werden zur Laufzeit auf Vollständigkeit geprüft)
      * @return bool True wenn Hash korrekt ist
      */
     public static function verifyHash(string $data, array $hashData): bool {

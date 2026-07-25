@@ -21,7 +21,11 @@ class TiffFileTest extends BaseTestCase {
 
     protected function setUp(): void {
         // Absolute Pfade verwenden
-        $this->samplesDir = realpath(__DIR__ . '/../../.samples');
+        $samplesDir = realpath(__DIR__ . '/../../.samples');
+        if ($samplesDir === false) {
+            self::fail('.samples-Verzeichnis nicht gefunden');
+        }
+        $this->samplesDir = $samplesDir;
         $this->testFileBak = $this->samplesDir . '/fakejpg.tiff.bak';
         $this->testFile = $this->samplesDir . '/fakejpg.tiff';
 
