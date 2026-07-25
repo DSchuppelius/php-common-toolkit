@@ -17,7 +17,7 @@ use RuntimeException;
 
 class HeaderLine extends LineAbstract {
     /**
-     * @param FieldInterface[] $fields
+     * @param array<mixed> $fields
      */
     public function __construct(array $fields, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE) {
         // HeaderLine erbt direkt von LineAbstract
