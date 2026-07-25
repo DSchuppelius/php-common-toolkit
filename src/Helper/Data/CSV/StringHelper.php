@@ -365,7 +365,7 @@ final class StringHelper extends BaseStringHelper {
      * @return array<string>    Array der logischen CSV-Zeilen
      */
     public static function splitCsvByLogicalLine(string $csv, string $delimiter = ',', string $enclosure = '"'): array {
-        $lines = preg_split('/\r\n|\r|\n/', $csv);
+        $lines = preg_split('/\r\n|\r|\n/', $csv) ?: [];
         $result = [];
         $buffer = '';
 

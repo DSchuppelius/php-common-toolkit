@@ -30,6 +30,8 @@ class DateHelper {
      *
      * @param DateTime|false $date Das zu überprüfende Datum.
      * @return bool True, wenn das Datum gültig ist, andernfalls false.
+     *
+     * @phpstan-assert-if-true DateTime $date
      */
     private static function isCleanDateParse(DateTime|false $date): bool {
         $errors = DateTime::getLastErrors();
@@ -203,7 +205,7 @@ class DateHelper {
 
             // Zeit prüfen
             if ($hasTime) {
-                $detected .= substr_count($m[4], ':') === 2 ? ' H:i:s' : ' H:i';
+                $detected .= substr_count($m[4] ?? '', ':') === 2 ? ' H:i:s' : ' H:i';
             }
 
             if ($detected && self::isCleanDateParse(DateTime::createFromFormat($detected, $sepNormalized))) {

@@ -147,7 +147,7 @@ class JsonHelper extends HelperAbstract {
      * Parst einen JSONPath-ähnlichen Pfad in einzelne Komponenten.
      *
      * @param string $path Der zu parsende Pfad
-     * @return array<array{type: string, key?: string, index?: int}> Array von Pfad-Komponenten
+     * @return list<array{type: 'property', key: string}|array{type: 'index', index: int}> Array von Pfad-Komponenten
      */
     private static function parsePath(string $path): array {
         $parts = [];

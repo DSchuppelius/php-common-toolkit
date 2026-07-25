@@ -17,6 +17,7 @@ use CommonToolkit\Contracts\Interfaces\XML\XmlElementInterface;
 use CommonToolkit\Entities\XML\{Document, Element};
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use InvalidArgumentException;
 use RuntimeException;
@@ -135,7 +136,9 @@ class XmlDocumentParser extends HelperAbstract {
 
         $values = [];
         foreach ($result as $node) {
-            $values[] = $node->textContent;
+            if ($node instanceof DOMNode) {
+                $values[] = $node->textContent;
+            }
         }
 
         return $values;

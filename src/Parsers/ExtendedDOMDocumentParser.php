@@ -173,7 +173,7 @@ class ExtendedDOMDocumentParser extends HelperAbstract {
             'namespace' => $document->getNamespace(),
             'encoding' => $document->encoding,
             'version' => $document->xmlVersion,
-            'childCount' => $root->childNodes->length,
+            'childCount' => $root?->childNodes->length ?? 0,
         ];
     }
 

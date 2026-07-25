@@ -298,7 +298,7 @@ class JsonFile extends HelperAbstract {
             return $count;
         } elseif (is_object($data)) {
             $count = count((array) $data);
-            foreach ($data as $value) {
+            foreach ((array) $data as $value) {
                 if (is_array($value) || is_object($value)) {
                     $count += self::countElements($value);
                 }

@@ -420,6 +420,9 @@ class IPHelper extends HelperAbstract {
         }
 
         $packed = inet_pton($ip);
+        if ($packed === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige IPv6-Adresse: $ip");
+        }
         $result = str_repeat("\x00", 16);
 
         $fullBytes = intdiv($prefix, 8);
@@ -531,6 +534,9 @@ class IPHelper extends HelperAbstract {
 
         // End-Adresse berechnen
         $packed = inet_pton($network);
+        if ($packed === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige IPv6-Netzwerkadresse: $network");
+        }
         $result = $packed;
 
         $hostBits = 128 - $prefix;
@@ -575,6 +581,9 @@ class IPHelper extends HelperAbstract {
         }
 
         $long = ip2long($mask);
+        if ($long === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige Subnetzmaske: $mask");
+        }
         if ($long < 0) {
             $long += 4294967296;
         }

@@ -1725,7 +1725,7 @@ class StringHelper {
         }
 
         $lines = [];
-        $words = preg_split('/(\s+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $words = preg_split('/(\s+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [];
         $currentLine = '';
 
         foreach ($words as $word) {

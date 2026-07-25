@@ -203,8 +203,9 @@ class XmlHelper extends HelperAbstract {
 
         // Root-Element Namespaces
         $root = $doc->documentElement;
-        if ($root !== null) {
-            foreach ($xpath->query('namespace::*', $root) as $namespace) {
+        $rootNamespaces = $root !== null ? $xpath->query('namespace::*', $root) : false;
+        if ($rootNamespaces !== false) {
+            foreach ($rootNamespaces as $namespace) {
                 $prefix = $namespace->localName === 'xmlns' ? '' : $namespace->localName;
                 $namespaces[$prefix] = $namespace->nodeValue;
             }

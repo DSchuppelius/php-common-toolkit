@@ -305,7 +305,8 @@ class ExtendedDOMDocument extends DOMDocument {
         DOMNode $context,
         CurrencyCode $default = CurrencyCode::Euro
     ): array {
-        $amtNode = $this->xpath->query($amountPath, $context)->item(0);
+        $amtNodes = $this->xpath->query($amountPath, $context);
+        $amtNode = $amtNodes === false ? null : $amtNodes->item(0);
 
         $amount = 0.0;
         $currency = $default;

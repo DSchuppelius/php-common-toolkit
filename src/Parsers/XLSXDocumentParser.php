@@ -18,6 +18,7 @@ use CommonToolkit\Helper\FileSystem\File;
 use DateTimeImmutable;
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use RuntimeException;
 use ZipArchive;
@@ -129,7 +130,9 @@ class XLSXDocumentParser extends HelperAbstract {
             $tNodes = $xpath->query('.//s:t', $si);
             if ($tNodes !== false) {
                 foreach ($tNodes as $t) {
-                    $text .= $t->textContent;
+                    if ($t instanceof DOMNode) {
+                        $text .= $t->textContent;
+                    }
                 }
             }
             $this->sharedStrings[] = $text;
@@ -422,8 +425,9 @@ class XLSXDocumentParser extends HelperAbstract {
         $format = null;
 
         // Wert extrahieren
-        $valueNode = $xpath->query('s:v', $cellNode)->item(0);
-        $value = $valueNode?->textContent;
+        $valueNodes = $xpath->query('s:v', $cellNode);
+        $valueNode = $valueNodes === false ? null : $valueNodes->item(0);
+        $value = $valueNode instanceof DOMNode ? $valueNode->textContent : null;
 
         // Format bestimmen
         if ($style !== '') {
@@ -555,7 +559,8 @@ class XLSXDocumentParser extends HelperAbstract {
      * Hilfsmethode: Wert aus XPath-Query extrahieren.
      */
     protected function getXPathValue(DOMXPath $xpath, string $query): ?string {
-        $node = $xpath->query($query)->item(0);
-        return $node?->textContent;
+        $nodes = $xpath->query($query);
+        $node = $nodes === false ? null : $nodes->item(0);
+        return $node instanceof DOMNode ? $node->textContent : null;
     }
 }
