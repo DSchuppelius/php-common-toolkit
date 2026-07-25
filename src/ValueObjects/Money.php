@@ -51,6 +51,9 @@ final class Money implements JsonSerializable, Stringable {
 
     private readonly int $scale;
 
+    /**
+     * @param numeric-string $amount
+     */
     private function __construct(string $amount, CurrencyCode $currency, int $scale) {
         $this->amount = $amount;
         $this->currency = $currency;
@@ -79,6 +82,9 @@ final class Money implements JsonSerializable, Stringable {
         }
 
         $canonical = NumberHelper::normalizeDecimalString((string) $amount);
+        if (!is_numeric($canonical)) {
+            $canonical = '0'; // Normalisierung liefert stets numerisch; defensiver Fallback.
+        }
         $rounded = NumberHelper::roundPrecise($canonical, $scale, $mode);
 
         return new self($rounded, $currency, $scale);
@@ -96,7 +102,7 @@ final class Money implements JsonSerializable, Stringable {
             self::logErrorAndThrow(InvalidArgumentException::class, "Scale darf nicht negativ sein: $scale");
         }
 
-        $factor = '1' . str_repeat('0', $scale); // 10^scale ohne Überlaufrisiko
+        $factor = bcpow('10', (string) $scale); // 10^scale als numeric-string, ohne Überlauf
         $amount = NumberHelper::dividePrecise((string) $minorUnits, $factor, $scale, RoundingMode::Truncate);
 
         return new self($amount, $currency, $scale);
@@ -137,7 +143,7 @@ final class Money implements JsonSerializable, Stringable {
      * Multipliziert mit einem Faktor (Skalar). Das Ergebnis wird auf die
      * Betragsskala gerundet.
      *
-     * @param string|int $factor Multiplikator (z.B. Stückzahl oder Faktor "1.19").
+     * @param numeric-string|int $factor Multiplikator (z.B. Stückzahl oder Faktor "1.19").
      */
     public function times(string|int $factor, RoundingMode $mode = RoundingMode::HalfUp): self {
         return new self(NumberHelper::multiplyPrecise($this->amount, (string) $factor, $this->scale, $mode), $this->currency, $this->scale);
@@ -147,7 +153,7 @@ final class Money implements JsonSerializable, Stringable {
      * Teilt durch einen Divisor (Skalar). Das Ergebnis wird auf die Betragsskala
      * gerundet. Für verlustfreie Aufteilung siehe {@see allocate()}.
      *
-     * @param string|int $divisor Divisor (!= 0).
+     * @param numeric-string|int $divisor Divisor (!= 0).
      */
     public function dividedBy(string|int $divisor, RoundingMode $mode = RoundingMode::HalfUp): self {
         return new self(NumberHelper::dividePrecise($this->amount, (string) $divisor, $this->scale, $mode), $this->currency, $this->scale);
@@ -204,7 +210,7 @@ final class Money implements JsonSerializable, Stringable {
             $shares[$i] += 1;
         }
 
-        return array_map(fn (int $minor): self => self::ofMinor($sign * $minor, $this->currency, $this->scale), $shares);
+        return array_values(array_map(fn (int $minor): self => self::ofMinor($sign * $minor, $this->currency, $this->scale), $shares));
     }
 
     // ========================================================================
@@ -275,7 +281,7 @@ final class Money implements JsonSerializable, Stringable {
      * Betrag in Minor Units (Cent). Exakt, da der Betrag genau $scale Stellen hat.
      */
     public function getMinorAmount(): int {
-        $factor = '1' . str_repeat('0', $this->scale); // 10^scale
+        $factor = bcpow('10', (string) $this->scale); // 10^scale als numeric-string
         return (int) NumberHelper::multiplyPrecise($this->amount, $factor, 0, RoundingMode::Truncate);
     }
 

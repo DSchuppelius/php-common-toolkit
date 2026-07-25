@@ -264,7 +264,7 @@ class NumberHelper {
      *
      * @param string $value Der zu normalisierende Wert.
      * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
-     * @return string Kanonischer Punkt-Dezimal-String.
+     * @return numeric-string Kanonischer Punkt-Dezimal-String.
      */
     public static function normalizeDecimalString(string $value, ?CountryCode $country = null): string {
         $value = trim($value);
@@ -318,7 +318,7 @@ class NumberHelper {
             $normalized = '-' . $normalized;
         }
 
-        return $normalized;
+        return self::asNumericString($normalized);
     }
 
     /**
@@ -812,7 +812,7 @@ class NumberHelper {
     /**
      * Berechnet den Durchschnitt einer Zahlenliste.
      *
-     * @param array $numbers Array von Zahlen.
+     * @param array<array-key, int|float> $numbers Array von Zahlen.
      * @return float Der Durchschnitt oder 0 wenn leer.
      */
     public static function average(array $numbers): float {
@@ -825,7 +825,7 @@ class NumberHelper {
     /**
      * Berechnet den Median einer Zahlenliste.
      *
-     * @param array $numbers Array von Zahlen.
+     * @param array<array-key, int|float> $numbers Array von Zahlen.
      * @return float Der Median oder 0 wenn leer.
      */
     public static function median(array $numbers): float {
@@ -1082,7 +1082,7 @@ class NumberHelper {
      * Mit `$mode` wird exakt akkumuliert und erst das Endergebnis gerundet –
      * keine wiederholte Zwischentrunkierung. Standard bleibt Truncate.
      *
-     * @param array<array-key,string|int|float> $numbers Array von Zahlen als Strings.
+     * @param array<array-key, numeric-string|int|float> $numbers Array von Zahlen als Strings.
      * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
      * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
      * @return numeric-string Die Summe.
@@ -1112,7 +1112,7 @@ class NumberHelper {
      *
      * Zum Rundungsverhalten siehe {@see sumPrecise()}.
      *
-     * @param array<array-key,string|int|float> $numbers Array von Zahlen als Strings.
+     * @param array<array-key, numeric-string|int|float> $numbers Array von Zahlen als Strings.
      * @param int          $scale Anzahl Dezimalstellen (Standard: 0).
      * @param RoundingMode $mode Rundungsverfahren (Standard: Truncate).
      * @return numeric-string Die Differenz.
@@ -1204,6 +1204,17 @@ class NumberHelper {
     // ==================== Präzise Rundung / Vorzeichen / Verteilung ====================
 
     /**
+     * Bekräftigt den numeric-string-Typ nach String-Operationen (trim/substr/ltrim/
+     * Konkatenation), die den Typ für die statische Analyse auf `string` verbreitern.
+     * Der Wert ist in allen Aufrufkontexten bereits numerisch; der Fallback greift nie.
+     *
+     * @return numeric-string
+     */
+    private static function asNumericString(string $value): string {
+        return is_numeric($value) ? $value : '0';
+    }
+
+    /**
      * Ermittelt die Anzahl der Nachkommastellen eines kanonischen Zahl-Strings.
      * Interner Helfer für skalen-erhaltende Precise-Operationen.
      */
@@ -1232,12 +1243,12 @@ class NumberHelper {
 
         $value = trim($value);
         $negative = str_starts_with($value, '-');
-        $abs = $negative ? substr($value, 1) : ltrim($value, '+');
+        $abs = self::asNumericString($negative ? substr($value, 1) : ltrim($value, '+'));
 
         $work = max(self::decimalScale($abs), $scale + 1);
         $truncated = bcadd($abs, '0', $scale);          // Betrag Richtung Null gekürzt
         $rest = bcsub($abs, $truncated, $work);         // exakter Rest jenseits der Zielskala
-        $half = '0.' . str_repeat('0', $scale) . '5';   // 0,5 · 10^-scale
+        $half = self::asNumericString('0.' . str_repeat('0', $scale) . '5');   // 0,5 · 10^-scale
 
         $roundUp = match ($mode) {
             RoundingMode::Truncate => false,
@@ -1249,7 +1260,7 @@ class NumberHelper {
         };
 
         if ($roundUp) {
-            $ulp = $scale === 0 ? '1' : '0.' . str_repeat('0', $scale - 1) . '1';
+            $ulp = self::asNumericString($scale === 0 ? '1' : '0.' . str_repeat('0', $scale - 1) . '1');
             $truncated = bcadd($truncated, $ulp, $scale);
         }
 
@@ -1260,6 +1271,10 @@ class NumberHelper {
 
     /**
      * HalfEven-Entscheidung: bei exakter Hälfte zur geraden Endziffer runden.
+     */
+    /**
+     * @param numeric-string $rest
+     * @param numeric-string $half
      */
     private static function halfEvenRoundsUp(string $rest, string $half, string $truncated, int $work): bool {
         $cmp = bccomp($rest, $half, $work);
@@ -1280,7 +1295,7 @@ class NumberHelper {
      */
     public static function absPrecise(string $value): string {
         $value = trim($value);
-        return str_starts_with($value, '-') ? substr($value, 1) : ltrim($value, '+');
+        return self::asNumericString(str_starts_with($value, '-') ? substr($value, 1) : ltrim($value, '+'));
     }
 
     /**
@@ -1290,7 +1305,7 @@ class NumberHelper {
      * @return numeric-string Das Negative von `$value`.
      */
     public static function negatePrecise(string $value): string {
-        $value = trim($value);
+        $value = self::asNumericString(trim($value));
         return bcmul($value, '-1', self::decimalScale($value));
     }
 
@@ -1301,7 +1316,7 @@ class NumberHelper {
      * @return int -1, 0 oder 1.
      */
     public static function signPrecise(string $value): int {
-        return bccomp(trim($value), '0', self::decimalScale(trim($value)));
+        return bccomp(self::asNumericString(trim($value)), '0', self::decimalScale(trim($value)));
     }
 
     /**
@@ -1311,7 +1326,7 @@ class NumberHelper {
      * @param int|null       $scale Vergleichsskala; null = volle Präzision des Werts.
      */
     public static function isZeroPrecise(string $value, ?int $scale = null): bool {
-        $value = trim($value);
+        $value = self::asNumericString(trim($value));
         return bccomp($value, '0', $scale ?? self::decimalScale($value)) === 0;
     }
 
@@ -1322,7 +1337,7 @@ class NumberHelper {
      * @param int|null       $scale Vergleichsskala; null = volle Präzision des Werts.
      */
     public static function isPositivePrecise(string $value, ?int $scale = null): bool {
-        $value = trim($value);
+        $value = self::asNumericString(trim($value));
         return bccomp($value, '0', $scale ?? self::decimalScale($value)) > 0;
     }
 
@@ -1333,7 +1348,7 @@ class NumberHelper {
      * @param int|null       $scale Vergleichsskala; null = volle Präzision des Werts.
      */
     public static function isNegativePrecise(string $value, ?int $scale = null): bool {
-        $value = trim($value);
+        $value = self::asNumericString(trim($value));
         return bccomp($value, '0', $scale ?? self::decimalScale($value)) < 0;
     }
 
@@ -1447,7 +1462,7 @@ class NumberHelper {
      * und das Vorzeichen zurückgegeben.
      *
      * @param numeric-string                    $total   Zu verteilender Gesamtbetrag.
-     * @param array<array-key,string|int|float> $weights Gewichte/Verhältnisse je Position.
+     * @param array<array-key, numeric-string|int|float> $weights Gewichte/Verhältnisse je Position.
      * @param int                               $scale   Nachkommastellen (Standard: 2).
      * @return array<array-key,numeric-string> Verteilte Beträge (gleiche Schlüssel wie `$weights`).
      */
@@ -1459,7 +1474,7 @@ class NumberHelper {
         }
 
         $negative = self::isNegativePrecise($total);
-        $absTotal = self::absPrecise(trim($total));
+        $absTotal = self::absPrecise(self::asNumericString(trim($total)));
         $work = $scale + 8;
 
         $weightStrings = array_map(static fn ($w): string => (string) $w, array_values($weights));
@@ -1480,7 +1495,7 @@ class NumberHelper {
             $allocated = bcadd($allocated, $floor, $scale);
         }
 
-        $ulp = $scale === 0 ? '1' : '0.' . str_repeat('0', $scale - 1) . '1';
+        $ulp = self::asNumericString($scale === 0 ? '1' : '0.' . str_repeat('0', $scale - 1) . '1');
         $remainder = bcsub($absTotal, $allocated, $scale);
         $steps = (int) bcdiv($remainder, $ulp, 0);
 
@@ -1524,7 +1539,7 @@ class NumberHelper {
     /**
      * Berechnet den arithmetischen Durchschnitt einer Liste numerischer Strings – präzise.
      *
-     * @param array<array-key,string|int|float> $numbers Zahlenliste. Leer → "0".
+     * @param array<array-key, numeric-string|int|float> $numbers Zahlenliste. Leer → "0".
      * @param int                               $scale Nachkommastellen (Standard: 2).
      * @param RoundingMode                      $mode  Rundungsverfahren (Standard: HalfUp).
      * @return numeric-string
@@ -1541,7 +1556,7 @@ class NumberHelper {
     /**
      * Berechnet den Median einer Liste numerischer Strings – präzise.
      *
-     * @param array<array-key,string|int|float> $numbers Zahlenliste. Leer → "0".
+     * @param array<array-key, numeric-string|int|float> $numbers Zahlenliste. Leer → "0".
      * @param int                               $scale Nachkommastellen (Standard: 2).
      * @param RoundingMode                      $mode  Rundungsverfahren für den Mittelwert bei gerader Anzahl.
      * @return numeric-string
@@ -1565,7 +1580,7 @@ class NumberHelper {
     /**
      * Gibt den kleinsten Wert einer Liste numerischer Strings zurück (Original unverändert).
      *
-     * @param array<array-key,string|int|float> $numbers Zahlenliste.
+     * @param array<array-key, numeric-string|int|float> $numbers Zahlenliste.
      * @param int|null                          $scale Vergleichsskala; null = maximale Präzision aller Werte.
      * @return numeric-string|null Kleinster Wert oder null bei leerer Liste.
      */
@@ -1587,7 +1602,7 @@ class NumberHelper {
     /**
      * Gibt den größten Wert einer Liste numerischer Strings zurück (Original unverändert).
      *
-     * @param array<array-key,string|int|float> $numbers Zahlenliste.
+     * @param array<array-key, numeric-string|int|float> $numbers Zahlenliste.
      * @param int|null                          $scale Vergleichsskala; null = maximale Präzision aller Werte.
      * @return numeric-string|null Größter Wert oder null bei leerer Liste.
      */
