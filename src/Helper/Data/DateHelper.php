@@ -39,6 +39,21 @@ class DateHelper {
     }
 
     /**
+     * Erzeugt ein DateTimeImmutable aus einem KONTROLLIERTEN Format/Wert, bei dem
+     * ein Parsefehler ausgeschlossen ist (z.B. selbst formatierte Datumsstrings).
+     * Wirft im theoretischen Fehlerfall, statt DateTimeImmutable|false zu liefern.
+     *
+     * @throws InvalidArgumentException
+     */
+    private static function immutableFromFormat(string $format, string $datetime): DateTimeImmutable {
+        $result = DateTimeImmutable::createFromFormat($format, $datetime);
+        if ($result === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Datum konnte nicht erzeugt werden: '$datetime' (Format '$format')");
+        }
+        return $result;
+    }
+
+    /**
      * Gibt den letzten Tag eines Monats zurück.
      *
      * @param int $year Das Jahr.
@@ -166,7 +181,7 @@ class DateHelper {
         }
 
         // ISO ohne oder mit Uhrzeit
-        $cleaned = preg_replace('#[^0-9]#', '', $value);
+        $cleaned = preg_replace('#[^0-9]#', '', $value) ?? '';
         $formatMap = [
             8 => ['Ymd', DateTimeFormat::ISO],
             12 => ['YmdHi', DateTimeFormat::ISO],
@@ -220,7 +235,7 @@ class DateHelper {
      * Überprüft, ob ein Datum gültig ist.
      *
      * @param string $value Der zu überprüfende Datumswert.
-     * @param array $acceptedFormats Eine Liste akzeptierter Formate.
+     * @param list<string> $acceptedFormats Eine Liste akzeptierter Formate.
      * @return bool True, wenn das Datum gültig ist, andernfalls false.
      */
     public static function isValidDate(string $value, array $acceptedFormats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y', 'dmY']): bool {
@@ -231,7 +246,7 @@ class DateHelper {
      * Gibt das erste gültige Datumsformat zurück, das dem gegebenen Wert entspricht.
      *
      * @param string $value Der zu überprüfende Datumswert.
-     * @param array $acceptedFormats Eine Liste akzeptierter Formate.
+     * @param list<string> $acceptedFormats Eine Liste akzeptierter Formate.
      * @return string|null Das erste gültige Format oder null, wenn keines gefunden wurde.
      */
     public static function getValidDateFormat(string $value, array $acceptedFormats = ['Y-m-d', 'Ymd', 'd.m.Y', 'd.m.y', 'd-m-Y', 'd/m/Y', 'dmY']): ?string {
@@ -377,7 +392,9 @@ class DateHelper {
         $format = self::getValidDateFormat($dateString);
         if ($format !== null) {
             $dt = DateTime::createFromFormat($format, $dateString);
-            return DateTimeImmutable::createFromMutable($dt);
+            if ($dt !== false) {
+                return DateTimeImmutable::createFromMutable($dt);
+            }
         }
 
         return self::logWarningAndReturn(null, "Kein gültiges Format gefunden für: $dateString");
@@ -466,7 +483,7 @@ class DateHelper {
      * @return bool True, wenn es ein Schaltjahr ist, andernfalls false.
      */
     public static function isLeapYear(int $year): bool {
-        return (bool) date('L', mktime(0, 0, 0, 1, 1, $year));
+        return (bool) date('L', (int) mktime(0, 0, 0, 1, 1, $year));
     }
 
     /**
@@ -690,7 +707,7 @@ class DateHelper {
         }
 
         // ISO direkt zurückgeben (ggf. mit Zeit)
-        $cleaned = preg_replace('#[^0-9]#', '', $value);
+        $cleaned = preg_replace('#[^0-9]#', '', $value) ?? '';
         if ($detectedFormat === DateTimeFormat::ISO && strlen($cleaned) >= 8) {
             $format = match (strlen($cleaned)) {
                 14 => 'YmdHis',
@@ -734,7 +751,10 @@ class DateHelper {
      */
     public static function addToDate(string $date, int $days = 0, int $months = 0, int $years = 0): string {
         $timestamp = strtotime($date);
-        $newDate = date('Y-m-d H:i:s', mktime(
+        if ($timestamp === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültiges Datum: $date");
+        }
+        $newDate = date('Y-m-d H:i:s', (int) mktime(
             (int) date('H', $timestamp),
             (int) date('i', $timestamp),
             (int) date('s', $timestamp),
@@ -750,7 +770,7 @@ class DateHelper {
      *
      * @param DateTimeInterface $start Das Startdatum.
      * @param DateTimeInterface $end Das Enddatum.
-     * @return array Ein Array mit den Differenzen in Jahren, Monaten, Tagen und Gesamtanzahl der Tage.
+     * @return array<string, int> Differenzen in Jahren, Monaten, Tagen und Gesamtanzahl der Tage.
      */
     public static function diffDetailed(DateTimeInterface $start, DateTimeInterface $end): array {
         $diff = $start->diff($end);
@@ -983,7 +1003,7 @@ class DateHelper {
      * @return DateTimeImmutable Der erste Tag des Monats.
      */
     public static function startOfMonth(DateTimeInterface $date): DateTimeImmutable {
-        return DateTimeImmutable::createFromFormat(
+        return self::immutableFromFormat(
             'Y-m-d H:i:s',
             $date->format('Y-m-01 00:00:00')
         );
@@ -996,7 +1016,7 @@ class DateHelper {
      * @return DateTimeImmutable Der letzte Tag des Monats.
      */
     public static function endOfMonth(DateTimeInterface $date): DateTimeImmutable {
-        return DateTimeImmutable::createFromFormat(
+        return self::immutableFromFormat(
             'Y-m-d H:i:s',
             $date->format('Y-m-t 23:59:59')
         );
@@ -1037,7 +1057,7 @@ class DateHelper {
      * @return DateTimeImmutable Der erste Tag des Jahres.
      */
     public static function startOfYear(DateTimeInterface $date): DateTimeImmutable {
-        return DateTimeImmutable::createFromFormat(
+        return self::immutableFromFormat(
             'Y-m-d H:i:s',
             $date->format('Y-01-01 00:00:00')
         );
@@ -1050,7 +1070,7 @@ class DateHelper {
      * @return DateTimeImmutable Der letzte Tag des Jahres.
      */
     public static function endOfYear(DateTimeInterface $date): DateTimeImmutable {
-        return DateTimeImmutable::createFromFormat(
+        return self::immutableFromFormat(
             'Y-m-d H:i:s',
             $date->format('Y-12-31 23:59:59')
         );
@@ -1065,7 +1085,7 @@ class DateHelper {
     public static function startOfQuarter(DateTimeInterface $date): DateTimeImmutable {
         $quarter = self::getQuarter($date);
         $month = ($quarter - 1) * 3 + 1;
-        return DateTimeImmutable::createFromFormat(
+        return self::immutableFromFormat(
             'Y-m-d H:i:s',
             $date->format('Y') . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT) . '-01 00:00:00'
         );
@@ -1081,7 +1101,7 @@ class DateHelper {
         $quarter = self::getQuarter($date);
         $month = $quarter * 3;
         $lastDay = self::getLastDay((int) $date->format('Y'), $month);
-        return DateTimeImmutable::createFromFormat(
+        return self::immutableFromFormat(
             'Y-m-d H:i:s',
             $date->format('Y') . '-' . str_pad((string) $month, 2, '0', STR_PAD_LEFT) . '-' . str_pad((string) $lastDay, 2, '0', STR_PAD_LEFT) . ' 23:59:59'
         );
@@ -1093,7 +1113,7 @@ class DateHelper {
      *
      * @param DateTimeInterface $start Startdatum.
      * @param DateTimeInterface $end Enddatum.
-     * @param array $holidays Array von Feiertagen (DateTimeInterface oder 'Y-m-d' Strings).
+     * @param array<array-key, DateTimeInterface|string> $holidays Array von Feiertagen (DateTimeInterface oder 'Y-m-d' Strings).
      * @return int Anzahl der Arbeitstage.
      */
     public static function getWorkingDays(DateTimeInterface $start, DateTimeInterface $end, array $holidays = []): int {
@@ -1154,7 +1174,7 @@ class DateHelper {
         $month = (int) floor(($h + $l - 7 * $m + 114) / 31);
         $day = (($h + $l - 7 * $m + 114) % 31) + 1;
 
-        return DateTimeImmutable::createFromFormat('Y-m-d', "$year-$month-$day");
+        return self::immutableFromFormat('Y-m-d', "$year-$month-$day");
     }
 
     /**
@@ -1186,11 +1206,11 @@ class DateHelper {
      */
     public static function getGermanFixedHolidays(int $year): array {
         return [
-            'Neujahr' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-01-01"),
-            'Tag der Arbeit' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-05-01"),
-            'Tag der Deutschen Einheit' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-10-03"),
-            'Erster Weihnachtstag' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-12-25"),
-            'Zweiter Weihnachtstag' => DateTimeImmutable::createFromFormat('Y-m-d', "$year-12-26"),
+            'Neujahr' => self::immutableFromFormat('Y-m-d', "$year-01-01"),
+            'Tag der Arbeit' => self::immutableFromFormat('Y-m-d', "$year-05-01"),
+            'Tag der Deutschen Einheit' => self::immutableFromFormat('Y-m-d', "$year-10-03"),
+            'Erster Weihnachtstag' => self::immutableFromFormat('Y-m-d', "$year-12-25"),
+            'Zweiter Weihnachtstag' => self::immutableFromFormat('Y-m-d', "$year-12-26"),
         ];
     }
 
@@ -1273,7 +1293,7 @@ class DateHelper {
      *
      * @param DateTimeInterface $date Das Startdatum.
      * @param int $workingDays Anzahl der Arbeitstage.
-     * @param array $holidays Array von Feiertagen.
+     * @param array<array-key, DateTimeInterface|string> $holidays Array von Feiertagen.
      * @return DateTimeImmutable Das Enddatum.
      */
     public static function addWorkingDays(DateTimeInterface $date, int $workingDays, array $holidays = []): DateTimeImmutable {
@@ -1309,7 +1329,7 @@ class DateHelper {
      * Prüft ob ein Datum ein Arbeitstag ist.
      *
      * @param DateTimeInterface $date Das zu prüfende Datum.
-     * @param array $holidays Array von Feiertagen.
+     * @param array<array-key, DateTimeInterface|string> $holidays Array von Feiertagen.
      * @return bool True wenn es ein Arbeitstag ist.
      */
     public static function isWorkingDay(DateTimeInterface $date, array $holidays = []): bool {
@@ -1337,7 +1357,7 @@ class DateHelper {
      * Gibt das Datum des nächsten Arbeitstages zurück.
      *
      * @param DateTimeInterface $date Das Startdatum.
-     * @param array $holidays Array von Feiertagen.
+     * @param array<array-key, DateTimeInterface|string> $holidays Array von Feiertagen.
      * @return DateTimeImmutable Der nächste Arbeitstag.
      */
     public static function getNextWorkingDay(DateTimeInterface $date, array $holidays = []): DateTimeImmutable {
@@ -1354,7 +1374,7 @@ class DateHelper {
      * Gibt das Datum des vorherigen Arbeitstages zurück.
      *
      * @param DateTimeInterface $date Das Startdatum.
-     * @param array $holidays Array von Feiertagen.
+     * @param array<array-key, DateTimeInterface|string> $holidays Array von Feiertagen.
      * @return DateTimeImmutable Der vorherige Arbeitstag.
      */
     public static function getPreviousWorkingDay(DateTimeInterface $date, array $holidays = []): DateTimeImmutable {

@@ -52,6 +52,8 @@ class IPHelper extends HelperAbstract {
      *
      * @param string|null $value Die zu prüfende IP-Adresse.
      * @return bool True, wenn es eine gültige IP-Adresse ist.
+     *
+     * @phpstan-assert-if-true non-empty-string $value
      */
     public static function isValidIP(?string $value): bool {
         if ($value === null || $value === '') {
@@ -301,6 +303,9 @@ class IPHelper extends HelperAbstract {
         }
 
         $long = ip2long($ip);
+        if ($long === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Ungültige IPv4-Adresse: $ip");
+        }
 
         // Auf 64-Bit-Systemen können negative Werte entstehen
         if ($long < 0) {
@@ -367,7 +372,11 @@ class IPHelper extends HelperAbstract {
             self::logErrorAndThrow(InvalidArgumentException::class, "IPv6-Adresse konnte nicht konvertiert werden: $ip");
         }
 
-        return inet_ntop($packed);
+        $compressed = inet_ntop($packed);
+        if ($compressed === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "IPv6-Adresse konnte nicht komprimiert werden: $ip");
+        }
+        return $compressed;
     }
 
     /**
@@ -437,7 +446,11 @@ class IPHelper extends HelperAbstract {
             $result[$fullBytes] = chr(ord($packed[$fullBytes]) & $mask);
         }
 
-        return inet_ntop($result);
+        $network = inet_ntop($result);
+        if ($network === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "IPv6-Netzwerkadresse konnte nicht bestimmt werden: $ip");
+        }
+        return $network;
     }
 
     /**
@@ -555,6 +568,9 @@ class IPHelper extends HelperAbstract {
         }
 
         $end = inet_ntop($result);
+        if ($end === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "IPv6-Endadresse konnte nicht bestimmt werden: $ip");
+        }
         $count = bcpow('2', (string) (128 - $prefix));
 
         return [
@@ -660,7 +676,8 @@ class IPHelper extends HelperAbstract {
         }
 
         if (self::isIPv4($ip)) {
-            return long2ip(ip2long($ip));
+            $long = ip2long($ip);
+            return $long === false ? $ip : long2ip($long);
         }
 
         if (self::isIPv6($ip)) {
@@ -688,6 +705,9 @@ class IPHelper extends HelperAbstract {
 
         $packed1 = inet_pton($ip1);
         $packed2 = inet_pton($ip2);
+        if ($packed1 === false || $packed2 === false) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "IP-Adresse konnte nicht konvertiert werden.");
+        }
 
         // Unterschiedliche IP-Versionen
         if (strlen($packed1) !== strlen($packed2)) {

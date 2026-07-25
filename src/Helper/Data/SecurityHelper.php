@@ -280,18 +280,18 @@ class SecurityHelper extends HelperAbstract {
         try {
             // Trim und Normalisierung
             $input = trim($input);
-            $input = preg_replace('/\s+/', ' ', $input);
+            $input = preg_replace('/\s+/', ' ', $input) ?? '';
 
             if (!$allowHtml) {
                 // HTML-Tags entfernen
                 $input = strip_tags($input);
 
                 // Gefährliche Zeichen und Wörter aggressiv neutralisieren
-                $input = preg_replace('/\balert\b/i', '', $input);
-                $input = preg_replace('/\bscript\b/i', '', $input);
-                $input = preg_replace('/javascript:/i', '', $input);
-                $input = preg_replace('/vbscript:/i', '', $input);
-                $input = preg_replace('/on\w+\s*=/i', '', $input);
+                $input = preg_replace('/\balert\b/i', '', $input) ?? '';
+                $input = preg_replace('/\bscript\b/i', '', $input) ?? '';
+                $input = preg_replace('/javascript:/i', '', $input) ?? '';
+                $input = preg_replace('/vbscript:/i', '', $input) ?? '';
+                $input = preg_replace('/on\w+\s*=/i', '', $input) ?? '';
 
                 // Einzelne gefährliche Zeichen entfernen
                 foreach (self::DANGEROUS_CHARS as $char) {
@@ -301,10 +301,10 @@ class SecurityHelper extends HelperAbstract {
                 }
             } else {
                 // Nur Script-Tags und JavaScript entfernen
-                $input = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $input);
-                $input = preg_replace('/javascript:/i', '', $input);
-                $input = preg_replace('/vbscript:/i', '', $input);
-                $input = preg_replace('/on\w+\s*=/i', '', $input);
+                $input = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $input) ?? '';
+                $input = preg_replace('/javascript:/i', '', $input) ?? '';
+                $input = preg_replace('/vbscript:/i', '', $input) ?? '';
+                $input = preg_replace('/on\w+\s*=/i', '', $input) ?? '';
             }
 
             // HTML-Entities encoding
@@ -331,7 +331,7 @@ class SecurityHelper extends HelperAbstract {
             switch (strtolower($type)) {
                 case 'iban':
                     // Nur Alphanumerisch, max 34 Zeichen
-                    $data = preg_replace('/[^A-Z0-9]/', '', strtoupper($data));
+                    $data = preg_replace('/[^A-Z0-9]/', '', strtoupper($data)) ?? '';
                     if (strlen($data) > 34) {
                         self::logErrorAndThrow(InvalidArgumentException::class, 'IBAN zu lang');
                     }
@@ -339,7 +339,7 @@ class SecurityHelper extends HelperAbstract {
 
                 case 'bic':
                     // Nur Alphanumerisch, 8 oder 11 Zeichen
-                    $data = preg_replace('/[^A-Z0-9]/', '', strtoupper($data));
+                    $data = preg_replace('/[^A-Z0-9]/', '', strtoupper($data)) ?? '';
                     if (!in_array(strlen($data), [8, 11])) {
                         self::logErrorAndThrow(InvalidArgumentException::class, 'BIC muss 8 oder 11 Zeichen haben');
                     }
@@ -347,23 +347,23 @@ class SecurityHelper extends HelperAbstract {
 
                 case 'account':
                     // Nur Zahlen und Bindestriche
-                    $data = preg_replace('/[^0-9\-]/', '', $data);
+                    $data = preg_replace('/[^0-9\-]/', '', $data) ?? '';
                     break;
 
                 case 'amount':
                     // Nur Zahlen, Punkt und Komma
-                    $data = preg_replace('/[^0-9\.,\-]/', '', $data);
+                    $data = preg_replace('/[^0-9\.,\-]/', '', $data) ?? '';
                     // Komma durch Punkt ersetzen
                     $data = str_replace(',', '.', $data);
                     break;
 
                 case 'name':
                     // Alphanumerisch, Leerzeichen, Bindestriche, Punkte
-                    $data = preg_replace('/[^a-zA-Z0-9\s\-\.\säöüÄÖÜß]/', '', $data);
+                    $data = preg_replace('/[^a-zA-Z0-9\s\-\.\säöüÄÖÜß]/', '', $data) ?? '';
                     // Gefährliche Javascript-Keywords entfernen
-                    $data = preg_replace('/\b(script|alert|javascript|eval|onerror|onload|onclick)\b/i', '', $data);
+                    $data = preg_replace('/\b(script|alert|javascript|eval|onerror|onload|onclick)\b/i', '', $data) ?? '';
                     // Mehrfache Leerzeichen normalisieren
-                    $data = preg_replace('/\s+/', ' ', $data);
+                    $data = preg_replace('/\s+/', ' ', $data) ?? '';
                     $data = trim($data);
                     break;
 
