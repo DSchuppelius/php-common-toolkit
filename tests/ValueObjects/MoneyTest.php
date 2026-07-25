@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Tests\ValueObjects;
 
-use CommonToolkit\Enums\{CurrencyCode, RoundingMode};
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, RoundingMode};
 use CommonToolkit\ValueObjects\Money;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -180,5 +180,135 @@ class MoneyTest extends BaseTestCase {
         $this->assertSame('1235', $money->getAmount());
         $this->assertSame(0, $money->getScale());
         $this->assertSame('1.235 ¥', $money->format());
+    }
+
+    // ==================== ofNullable / fromArray ====================
+
+    public function test_of_nullable_separates_missing_from_zero(): void {
+        $this->assertNull(Money::ofNullable(null, $this->eur));
+        $this->assertNull(Money::ofNullable('', $this->eur));
+        $this->assertNull(Money::ofNullable('n/a', $this->eur));
+        $this->assertSame('0.00', Money::ofNullable('0', $this->eur)?->getAmount());
+        $this->assertSame('12.34', Money::ofNullable('12,34', $this->eur)?->getAmount());
+    }
+
+    public function test_of_with_country_resolves_german_thousands(): void {
+        $this->assertSame('2000.00', Money::of('2.000', $this->eur, null, RoundingMode::HalfUp, CountryCode::Germany)->getAmount());
+    }
+
+    public function test_from_array_round_trips_json(): void {
+        $money = Money::of('1234.56', $this->eur);
+        /** @var array{amount: string, currency: string} $data */
+        $data = json_decode((string) json_encode($money), true);
+
+        $this->assertTrue(Money::fromArray($data)->equals($money));
+        $this->assertTrue(Money::fromArray(['amount' => '5.00'], $this->eur)->equals(Money::of(5, $this->eur)));
+    }
+
+    public function test_from_array_without_currency_throws(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Money::fromArray(['amount' => '5.00']);
+    }
+
+    // ==================== sum / min / max ====================
+
+    public function test_sum_is_exact_and_avoids_intermediate_rounding(): void {
+        $monies = [Money::of('0.1', $this->eur), Money::of('0.2', $this->eur), Money::of('0.3', $this->eur)];
+        $this->assertSame('0.60', Money::sum($monies)->getAmount());
+        $this->assertSame('0.00', Money::sum([], $this->eur)->getAmount());
+    }
+
+    public function test_sum_uses_largest_scale(): void {
+        $sum = Money::sum([Money::of('1.005', $this->eur, 3), Money::of('1.00', $this->eur)]);
+        $this->assertSame(3, $sum->getScale());
+        $this->assertSame('2.005', $sum->getAmount());
+    }
+
+    public function test_sum_rejects_mixed_currencies(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Money::sum([Money::of('1.00', $this->eur), Money::of('1.00', CurrencyCode::from('USD'))]);
+    }
+
+    public function test_sum_on_empty_list_without_currency_throws(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Money::sum([]);
+    }
+
+    public function test_min_and_max(): void {
+        $a = Money::of('10.00', $this->eur);
+        $b = Money::of('-2.50', $this->eur);
+        $c = Money::of('99.99', $this->eur);
+
+        $this->assertSame('-2.50', Money::min($a, $b, $c)->getAmount());
+        $this->assertSame('99.99', Money::max($a, $b, $c)->getAmount());
+        $this->assertSame('10.00', Money::min($a)->getAmount());
+    }
+
+    // ==================== Prozentrechnung ====================
+
+    public function test_percentage_matches_tax_expectations(): void {
+        $net = Money::of('100.00', $this->eur);
+        $this->assertSame('19.00', $net->percentage('19')->getAmount());
+        $this->assertSame('119.00', $net->plusPercentage(19)->getAmount());
+        $this->assertSame('97.00', $net->minusPercentage(3.0)->getAmount());
+        // 8,15 € * 19 % = 1,5485 -> kaufmännisch 1,55 (float ergäbe 1,54)
+        $this->assertSame('1.55', Money::of('8.15', $this->eur)->percentage('19')->getAmount());
+    }
+
+    // ==================== allocateByWeights / split ====================
+
+    public function test_allocate_by_weights_preserves_total_and_keys(): void {
+        $discount = Money::of('10.00', $this->eur);
+        $parts = $discount->allocateByWeights(['19.00' => '84.03', '7.00' => '15.97']);
+
+        $this->assertSame(['19.00', '7.00'], array_keys($parts));
+        $this->assertTrue(Money::sum($parts)->equals($discount));
+    }
+
+    public function test_allocate_by_weights_handles_zero_weights_and_empty(): void {
+        $parts = Money::of('1.00', $this->eur)->allocateByWeights([0, 0, 0]);
+        $this->assertTrue(Money::sum($parts)->equals(Money::of('1.00', $this->eur)));
+        $this->assertSame([], Money::of('1.00', $this->eur)->allocateByWeights([]));
+    }
+
+    public function test_split_preserves_total(): void {
+        $parts = Money::of('10.00', $this->eur)->split(3);
+        $this->assertCount(3, $parts);
+        $this->assertTrue(Money::sum($parts)->equals(Money::of('10.00', $this->eur)));
+    }
+
+    public function test_split_rejects_zero_parts(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Money::of('10.00', $this->eur)->split(0);
+    }
+
+    // ==================== Skala / Währungsumrechnung / Austritt ====================
+
+    public function test_with_scale(): void {
+        $money = Money::of('1.005', $this->eur, 3);
+        $this->assertSame('1.01', $money->withScale(2)->getAmount());
+        $this->assertSame('1.00', $money->withScale(2, RoundingMode::Floor)->getAmount());
+        $this->assertSame($money, $money->withScale(3), 'Gleiche Skala darf keine neue Instanz erzwingen.');
+    }
+
+    public function test_convert_to_uses_target_currency_scale(): void {
+        $chf = CurrencyCode::from('CHF');
+        $converted = Money::of('100.00', $this->eur)->convertTo($chf, '0.9385');
+        $this->assertSame('93.85', $converted->getAmount());
+        $this->assertSame($chf, $converted->getCurrency());
+
+        $jpy = CurrencyCode::from('JPY');
+        $this->assertSame('16234', Money::of('100.00', $this->eur)->convertTo($jpy, '162.3421')->getAmount());
+    }
+
+    public function test_convert_to_rejects_non_positive_rate(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Money::of('100.00', $this->eur)->convertTo(CurrencyCode::from('CHF'), '0');
+    }
+
+    public function test_to_float_and_same_currency(): void {
+        $this->assertSame(12.34, Money::of('12.34', $this->eur)->toFloat());
+        $this->assertTrue(Money::of('1.00', $this->eur)->isSameCurrency(Money::of('2.00', $this->eur)));
+        $this->assertFalse(Money::of('1.00', $this->eur)->isSameCurrency(Money::of('1.00', CurrencyCode::from('USD'))));
     }
 }
