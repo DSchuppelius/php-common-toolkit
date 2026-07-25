@@ -170,7 +170,7 @@ class CompanyIdHelper {
      * @return string Der normalisierte LEI.
      */
     public static function normalizeLEI(string $lei): string {
-        return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $lei));
+        return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $lei) ?? '');
     }
 
     /**
@@ -219,7 +219,7 @@ class CompanyIdHelper {
      * @return string Die normalisierte Nummer.
      */
     public static function normalizeDUNS(string $duns): string {
-        return preg_replace('/[^0-9]/', '', $duns);
+        return preg_replace('/[^0-9]/', '', $duns) ?? '';
     }
 
     /**
@@ -282,7 +282,7 @@ class CompanyIdHelper {
      * @return string Die normalisierte GLN.
      */
     public static function normalizeGLN(string $gln): string {
-        return preg_replace('/[^0-9]/', '', $gln);
+        return preg_replace('/[^0-9]/', '', $gln) ?? '';
     }
 
     /**
@@ -319,7 +319,7 @@ class CompanyIdHelper {
             return false;
         }
 
-        $wIdNr = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $wIdNr));
+        $wIdNr = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $wIdNr) ?? '');
 
         // W-IdNr: DE + 9 Ziffern
         return preg_match('/^DE[0-9]{9}$/', $wIdNr) === 1;
@@ -337,7 +337,7 @@ class CompanyIdHelper {
             return false;
         }
 
-        $ean = preg_replace('/[^0-9]/', '', $ean);
+        $ean = preg_replace('/[^0-9]/', '', $ean) ?? '';
 
         if (!in_array($length, [8, 12, 13, 14], true)) {
             return false;
@@ -357,7 +357,7 @@ class CompanyIdHelper {
             return false;
         }
 
-        $ean = preg_replace('/[^0-9]/', '', $ean);
+        $ean = preg_replace('/[^0-9]/', '', $ean) ?? '';
 
         if (!in_array(strlen($ean), [8, 12, 13, 14], true)) {
             return false;
@@ -412,8 +412,11 @@ class CompanyIdHelper {
         $sum = 0;
         for ($i = 0; $i < $length - 1; $i++) {
             $digit = (int) $ean[$i];
-            // GS1 Standard: Position 0,2,4... = Gewicht 1; Position 1,3,5... = Gewicht 3
-            $weight = ($i % 2 === 0) ? 1 : 3;
+            // GS1 Standard: Gewichte sind RECHTS (an der Prüfziffer) verankert –
+            // die Datenziffer direkt links der Prüfziffer hat Gewicht 3, dann
+            // alternierend nach links. Rechts-Verankerung ist unabhängig von der
+            // Gesamtlänge korrekt (EAN-8/UPC-A/EAN-13/GTIN-14).
+            $weight = (($length - $i) % 2 === 0) ? 3 : 1;
             $sum += $digit * $weight;
         }
 

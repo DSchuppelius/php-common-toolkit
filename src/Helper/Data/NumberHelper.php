@@ -29,7 +29,9 @@ class NumberHelper {
         $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
         $bytes = max($bytes, 0);
         $pow = $bytes > 0 ? floor(log($bytes, 1024)) : 0;
-        $pow = min($pow, count($units) - 1);
+        // Bei 0 < bytes < 1 wird log negativ -> auf 0 begrenzen, sonst negativer
+        // Array-Index in $units.
+        $pow = (int) max(min($pow, count($units) - 1), 0);
 
         $normalized = $bytes / (1024 ** $pow);
         return round($normalized, $precision) . ' ' . $units[$pow];
@@ -127,6 +129,9 @@ class NumberHelper {
      * @return float Der gerundete Wert.
      */
     public static function roundToNearest(float $value, int $nearest): float {
+        if ($nearest === 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Der Rundungsschritt darf nicht 0 sein.");
+        }
         return round($value / $nearest) * $nearest;
     }
 

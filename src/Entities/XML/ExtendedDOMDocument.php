@@ -68,7 +68,7 @@ class ExtendedDOMDocument extends DOMDocument {
         libxml_use_internal_errors(true);
         libxml_clear_errors();
 
-        if (!$this->loadXML($xmlContent)) {
+        if (!$this->loadXML($xmlContent, LIBXML_NONET)) {
             $errors = XmlHelper::getLibXmlErrors();
             $errorMessage = "Ungültiges XML-Dokument: " . ($errors[0] ?? 'Unbekannter Fehler');
             self::logErrorAndThrow(RuntimeException::class, $errorMessage);

@@ -188,9 +188,23 @@ class CompanyIdHelperTest extends BaseTestCase {
         $this->assertTrue(CompanyIdHelper::validateEAN('96385074')); // EAN-8
     }
 
+    /**
+     * Regression: Die GS1-Prüfziffer muss RECHTS verankert sein. Für Längen ≠ 13
+     * (EAN-8, UPC-A/GTIN-12, GTIN-14) ergab die zuvor links-verankerte Gewichtung
+     * falsche Prüfziffern und wies gültige Codes ab.
+     */
+    public function test_validate_ean_checksum_all_lengths(): void {
+        $this->assertTrue(CompanyIdHelper::validateEAN('40170725'), 'EAN-8');
+        $this->assertTrue(CompanyIdHelper::validateEAN('036000291452'), 'UPC-A/GTIN-12');
+        $this->assertTrue(CompanyIdHelper::validateEAN('4006381333931'), 'EAN-13');
+        $this->assertTrue(CompanyIdHelper::validateEAN('00012345600012'), 'GTIN-14');
+    }
+
     public function test_validate_ean_with_invalid_checksum(): void {
         $this->assertFalse(CompanyIdHelper::validateEAN('4006381333932'));
         $this->assertFalse(CompanyIdHelper::validateEAN('96385075'));
+        $this->assertFalse(CompanyIdHelper::validateEAN('40170720')); // EAN-8, falsche Prüfziffer
+        $this->assertFalse(CompanyIdHelper::validateEAN('036000291453')); // UPC-A, falsche Prüfziffer
     }
 
     // ========================================

@@ -188,7 +188,7 @@ class Document implements XmlDocumentInterface {
         $doc = new DOMDocument;
 
         libxml_use_internal_errors(true);
-        $result = $doc->loadXML($xml);
+        $result = $doc->loadXML($xml, LIBXML_NONET);
         $errors = libxml_get_errors();
         libxml_clear_errors();
 

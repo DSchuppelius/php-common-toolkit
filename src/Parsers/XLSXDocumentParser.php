@@ -113,7 +113,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
@@ -166,7 +166,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
@@ -215,7 +215,7 @@ class XLSXDocumentParser extends HelperAbstract {
         $content = $zip->getFromName('docProps/core.xml');
         if ($content !== false) {
             $dom = new DOMDocument;
-            $dom->loadXML($content);
+            $dom->loadXML($content, LIBXML_NONET);
 
             $xpath = new DOMXPath($dom);
             $xpath->registerNamespace('dc', 'http://purl.org/dc/elements/1.1/');
@@ -262,7 +262,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
@@ -310,7 +310,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('r', 'http://schemas.openxmlformats.org/package/2006/relationships');
@@ -340,7 +340,7 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         $dom = new DOMDocument;
-        $dom->loadXML($content);
+        $dom->loadXML($content, LIBXML_NONET);
 
         $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
