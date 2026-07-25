@@ -36,7 +36,7 @@ class TifFile extends ConfiguredHelperAbstract {
         $mimeType = File::mimeType($file);
 
         if ($mimeType === 'image/jpeg' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
-            $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".jpg", $file);
+            $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".jpg", $file) ?? $file;
 
             $command = self::getConfiguredCommand("tiffconvert", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
             if (empty($command)) {
@@ -55,14 +55,14 @@ class TifFile extends ConfiguredHelperAbstract {
 
             return $file;
         } elseif ($mimeType === 'image/tiff' && !preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
-            $newFilename = preg_replace("/\.[^.]+$/", ".tif", $file);
+            $newFilename = preg_replace("/\.[^.]+$/", ".tif", $file) ?? $file;
             File::rename($file, $newFilename);
             return self::repair($newFilename);
         } elseif ($mimeType === 'image/tiff' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
             self::logDebug("Die Datei ist bereits im TIFF-Format: $file");
             if ($forceRepair) {
                 self::logNotice("Erzwinge Reparatur der TIFF-Datei: $file");
-                $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".original.tif", $file);
+                $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".original.tif", $file) ?? $file;
 
                 $command = self::getConfiguredCommand("tiffconvert-monochrome", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
                 if (empty($command)) {
@@ -115,7 +115,7 @@ class TifFile extends ConfiguredHelperAbstract {
         }
 
         if (is_null($pdfFile)) {
-            $pdfFile = preg_replace(self::FILE_EXTENSION_PATTERN, ".pdf", $tiffFile);
+            $pdfFile = preg_replace(self::FILE_EXTENSION_PATTERN, ".pdf", $tiffFile) ?? $tiffFile;
         }
 
         if (File::exists($pdfFile)) {
@@ -160,7 +160,7 @@ class TifFile extends ConfiguredHelperAbstract {
     /**
      * Führt mehrere TIFF-Dateien zu einer einzigen zusammen.
      *
-     * @param array $tiffFiles Die Pfade zu den TIFF-Dateien, die zusammengeführt werden sollen.
+     * @param list<string> $tiffFiles Die Pfade zu den TIFF-Dateien, die zusammengeführt werden sollen.
      * @param string $mergedFile Der Pfad zur Ausgabedatei.
      * @param bool $deleteSourceFiles Gibt an, ob die Quell-TIFF-Dateien nach dem Zusammenführen gelöscht werden sollen.
      * @throws FileExistsException Wenn die Ausgabedatei bereits existiert.

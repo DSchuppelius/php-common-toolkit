@@ -40,6 +40,9 @@ class Document extends TextDocumentAbstract {
      */
     protected bool $exportWithHeader = true;
 
+    /**
+     * @param DataLine[] $rows
+     */
     public function __construct(?HeaderLine $header = null, array $rows = [], string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null, string $encoding = self::DEFAULT_ENCODING) {
         $this->delimiter = $delimiter;
         $this->enclosure = $enclosure;
@@ -310,6 +313,8 @@ class Document extends TextDocumentAbstract {
 
     /**
      * Wandelt das CSV-Dokument in ein assoziatives Array um.
+     *
+     * @return list<array<string, string>>
      */
     public function toAssoc(): array {
         if (!$this->header) {
@@ -358,7 +363,7 @@ class Document extends TextDocumentAbstract {
      * Liefert alle Werte einer Spalte anhand des Header-Namens.
      *
      * @param string $columnName Name der Spalte
-     * @return array Array mit allen Werten der Spalte
+     * @return list<string> Array mit allen Werten der Spalte
      * @throws RuntimeException Wenn die Spalte nicht gefunden wird
      */
     public function getColumnByName(string $columnName): array {
@@ -395,7 +400,7 @@ class Document extends TextDocumentAbstract {
      * Liefert alle Werte einer Spalte anhand des Index.
      *
      * @param int $index Index der Spalte
-     * @return array Array mit allen Werten der Spalte
+     * @return list<string> Array mit allen Werten der Spalte
      * @throws RuntimeException Wenn der Index ungültig ist
      */
     public function getColumnByIndex(int $index): array {
@@ -407,7 +412,7 @@ class Document extends TextDocumentAbstract {
      * Liefert eindeutige Werte einer Spalte anhand des Header-Namens.
      *
      * @param string $columnName Name der Spalte
-     * @return array Array mit eindeutigen Werten (Reihenfolge des ersten Vorkommens)
+     * @return list<string> Array mit eindeutigen Werten (Reihenfolge des ersten Vorkommens)
      * @throws RuntimeException Wenn die Spalte nicht gefunden wird
      */
     public function uniqueColumnByName(string $columnName): array {
@@ -425,7 +430,7 @@ class Document extends TextDocumentAbstract {
      * Liefert eindeutige Werte einer Spalte anhand des Index.
      *
      * @param int $index Index der Spalte
-     * @return array Array mit eindeutigen Werten (Reihenfolge des ersten Vorkommens)
+     * @return list<string> Array mit eindeutigen Werten (Reihenfolge des ersten Vorkommens)
      * @throws RuntimeException Wenn der Index ungültig ist
      */
     public function uniqueColumnByIndex(int $index): array {
@@ -459,7 +464,7 @@ class Document extends TextDocumentAbstract {
      * @param int $scale Anzahl Dezimalstellen für die Berechnung (Standard: 2)
      * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung (Standard: null)
      * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler (Standard: true)
-     * @return string Die Summe als String (im US-Format für BC Math Kompatibilität)
+     * @return numeric-string Die Summe als String (im US-Format für BC Math Kompatibilität)
      * @throws RuntimeException Wenn der Index ungültig ist oder nicht-numerische Werte gefunden werden
      */
     public function sumColumnByIndex(int $index, int $scale = 2, ?CountryCode $country = null, bool $skipNonNumeric = true): string {
@@ -643,7 +648,7 @@ class Document extends TextDocumentAbstract {
     /**
      * Liefert alle Header-Namen als Array.
      *
-     * @return array Array mit allen Spalten-Namen
+     * @return array<string> Array mit allen Spalten-Namen
      */
     public function getColumnNames(): array {
         return $this->header?->getColumnNames() ?? [];
@@ -664,7 +669,7 @@ class Document extends TextDocumentAbstract {
         if (($this->header === null) !== ($other->header === null)) {
             return false;
         }
-        if ($this->header !== null) {
+        if ($this->header !== null && $other->header !== null) {
             if (!$this->header->equals($other->header)) {
                 return false;
             }
@@ -707,7 +712,7 @@ class Document extends TextDocumentAbstract {
      * @param int $scale Anzahl Dezimalstellen
      * @param CountryCode|null $country Länder-Code für Zahlenformat-Erkennung
      * @param bool $skipNonNumeric Nicht-numerische Werte überspringen statt Fehler
-     * @return string[] Normalisierte Zahlenwerte als Strings (US-Format)
+     * @return list<numeric-string> Normalisierte Zahlenwerte als Strings (US-Format)
      * @throws RuntimeException Bei ungültigem Index oder nicht-numerischen Werten (wenn skipNonNumeric=false)
      */
     protected function extractNumericValues(int $index, int $scale, ?CountryCode $country, bool $skipNonNumeric): array {

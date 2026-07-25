@@ -16,6 +16,9 @@ use CommonToolkit\Enums\CountryCode;
 use RuntimeException;
 
 class HeaderLine extends LineAbstract {
+    /**
+     * @param FieldInterface[] $fields
+     */
     public function __construct(array $fields, string $delimiter = self::DEFAULT_DELIMITER, string $enclosure = FieldInterface::DEFAULT_ENCLOSURE) {
         // HeaderLine erbt direkt von LineAbstract
         parent::__construct($fields, $delimiter, $enclosure);
@@ -55,7 +58,7 @@ class HeaderLine extends LineAbstract {
      */
     public function getColumnIndex(string $columnName): ?int {
         $index = array_search($columnName, $this->getColumnNames(), true);
-        return $index !== false ? $index : null;
+        return is_int($index) ? $index : null;
     }
 
     /**

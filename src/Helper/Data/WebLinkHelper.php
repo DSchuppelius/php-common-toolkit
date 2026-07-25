@@ -48,6 +48,7 @@ class WebLinkHelper {
      *
      * @param string|null $url Die zu prüfende URL.
      * @return bool True, wenn das Format gültig ist.
+     * @phpstan-assert-if-true non-empty-string $url
      */
     public static function isUrl(?string $url): bool {
         if ($url === null || $url === '') {
@@ -326,7 +327,7 @@ class WebLinkHelper {
      * Extrahiert die Query-Parameter als Array.
      *
      * @param string|null $url Die URL.
-     * @return array<string, string|array<string>> Die Query-Parameter.
+     * @return array<array-key, string|array<mixed>> Die Query-Parameter.
      */
     public static function getQueryParams(?string $url): array {
         $query = self::getQueryString($url);
@@ -808,8 +809,8 @@ class WebLinkHelper {
 
         $text = strtr($text, $transliterations);
         $text = strtolower($text);
-        $text = preg_replace('/[^a-z0-9\s-]/', '', $text);
-        $text = preg_replace('/[\s-]+/', $separator, $text);
+        $text = preg_replace('/[^a-z0-9\s-]/', '', $text) ?? '';
+        $text = preg_replace('/[\s-]+/', $separator, $text) ?? '';
         $text = trim($text, $separator);
 
         return $text;

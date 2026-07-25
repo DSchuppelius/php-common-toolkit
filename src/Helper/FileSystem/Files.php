@@ -18,7 +18,7 @@ class Files extends HelperAbstract {
     /**
      * Prüft, ob mindestens ein Pfad durch die open_basedir-Einschränkung blockiert wird.
      *
-     * @param array $paths Ein Array mit Pfaden.
+     * @param list<string> $paths Ein Array mit Pfaden.
      * @return bool True, wenn mindestens ein Pfad blockiert ist, andernfalls false.
      */
     public static function isBlockedByOpenBasedir(array $paths): bool {
@@ -33,8 +33,8 @@ class Files extends HelperAbstract {
     /**
      * Gibt alle Pfade zurück, die durch open_basedir blockiert werden.
      *
-     * @param array $paths Ein Array mit Pfaden.
-     * @return array Ein Array mit den blockierten Pfaden.
+     * @param list<string> $paths Ein Array mit Pfaden.
+     * @return list<string> Ein Array mit den blockierten Pfaden.
      */
     public static function getBlockedByOpenBasedir(array $paths): array {
         $blocked = [];
@@ -49,8 +49,8 @@ class Files extends HelperAbstract {
     /**
      * Gibt den absoluten Pfad zu mehreren Dateien zurück.
      *
-     * @param array $files Ein Array mit Dateipfaden.
-     * @return array Ein Array mit den absoluten Pfaden der Dateien.
+     * @param list<string> $files Ein Array mit Dateipfaden.
+     * @return list<string> Ein Array mit den absoluten Pfaden der Dateien.
      */
     public static function getRealpath(array $files): array {
         $realPaths = [];
@@ -63,7 +63,7 @@ class Files extends HelperAbstract {
     /**
      * Überprüft, ob alle angegebenen Dateien existieren.
      *
-     * @param array $files Ein Array mit Dateipfaden.
+     * @param list<string> $files Ein Array mit Dateipfaden.
      * @return bool True, wenn alle Dateien existieren, sonst false.
      */
     public static function exists(array $files): bool {
@@ -78,7 +78,7 @@ class Files extends HelperAbstract {
     /**
      * Kopiert mehrere Dateien.
      *
-     * @param array $filePairs Ein Array mit Quell- und Ziel-Dateipaaren.
+     * @param array<string, string> $filePairs Ein Array mit Quell- und Ziel-Dateipaaren.
      * @param bool $overwrite Ob vorhandene Dateien überschrieben werden sollen.
      */
     public static function copy(array $filePairs, bool $overwrite = true): void {
@@ -90,7 +90,7 @@ class Files extends HelperAbstract {
     /**
      * Verschiebt mehrere Dateien.
      *
-     * @param array $filePairs Ein Array mit alten und neuen Dateinamen.
+     * @param array<string, string> $filePairs Ein Array mit alten und neuen Dateinamen.
      * @param bool $overwrite Ob vorhandene Dateien überschrieben werden sollen.
      */
     public static function move(array $filePairs, bool $overwrite = true): void {
@@ -102,7 +102,7 @@ class Files extends HelperAbstract {
     /**
      * Benennt mehrere Dateien um.
      *
-     * @param array $filePairs Ein Array mit alten und neuen Dateinamen.
+     * @param array<string, string> $filePairs Ein Array mit alten und neuen Dateinamen.
      */
     public static function rename(array $filePairs): void {
         foreach ($filePairs as $oldName => $newName) {
@@ -113,7 +113,7 @@ class Files extends HelperAbstract {
     /**
      * Löscht mehrere Dateien.
      *
-     * @param array $files Ein Array mit Dateipfaden.
+     * @param list<string> $files Ein Array mit Dateipfaden.
      */
     public static function delete(array $files): void {
         foreach ($files as $file) {
@@ -124,8 +124,8 @@ class Files extends HelperAbstract {
     /**
      * Liest Daten aus mehreren Dateien.
      *
-     * @param array $files Ein Array mit Dateipfaden.
-     * @return array Ein Array mit den Dateipfaden als Schlüsseln und den gelesenen Daten als Werten.
+     * @param list<string> $files Ein Array mit Dateipfaden.
+     * @return array<string, string> Ein Array mit den Dateipfaden als Schlüsseln und den gelesenen Daten als Werten.
      */
     public static function read(array $files): array {
         $fileContents = [];
@@ -138,7 +138,7 @@ class Files extends HelperAbstract {
     /**
      * Schreibt Daten in mehrere Dateien.
      *
-     * @param array $fileData Ein Array mit Dateipfaden als Schlüsseln und den zu schreibenden Daten als Werten.
+     * @param array<string, string> $fileData Ein Array mit Dateipfaden als Schlüsseln und den zu schreibenden Daten als Werten.
      */
     public static function write(array $fileData): void {
         foreach ($fileData as $file => $data) {
@@ -151,10 +151,10 @@ class Files extends HelperAbstract {
      *
      * @param string $directory Das Verzeichnis, in dem nach Dateien gesucht werden soll.
      * @param bool $recursive Ob rekursiv in Unterverzeichnissen gesucht werden soll.
-     * @param array $fileTypes Ein Array von Dateitypen (z.B. ['txt', 'jpg']), die berücksichtigt werden sollen.
+     * @param list<string> $fileTypes Ein Array von Dateitypen (z.B. ['txt', 'jpg']), die berücksichtigt werden sollen.
      * @param string|null $regexPattern Ein regulärer Ausdruck, der auf den Dateinamen angewendet wird.
      * @param string|null $contains Ein String, der im Dateinamen enthalten sein muss.
-     * @return array Ein Array mit den gefundenen Dateipfaden.
+     * @return list<string> Ein Array mit den gefundenen Dateipfaden.
      */
     public static function get(string $directory, bool $recursive = false, array $fileTypes = [], ?string $regexPattern = null, ?string $contains = null): array {
         // open_basedir-Prüfung (Logging erfolgt bereits in Folder::isBlockedByOpenBasedir)

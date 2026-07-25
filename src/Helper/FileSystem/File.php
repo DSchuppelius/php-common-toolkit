@@ -391,7 +391,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return false;
         }
 
-        $content = file_get_contents($file, false, null, $offset, $length);
+        $content = file_get_contents($file, false, null, $offset, max(0, $length));
         if ($content === false) {
             return self::logErrorAndReturn(false, "Fehler beim partiellen Lesen der Datei: $file");
         }
@@ -521,7 +521,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         try {
             while (!feof($handle)) {
-                $chunk = fread($handle, $chunkSize);
+                $chunk = fread($handle, max(1, $chunkSize));
                 if ($chunk === false) {
                     break;
                 }
@@ -582,7 +582,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $success = false;
         try {
             while (!feof($sourceHandle)) {
-                $chunk = fread($sourceHandle, $chunkSize);
+                $chunk = fread($sourceHandle, max(1, $chunkSize));
                 if ($chunk === false) {
                     return self::logErrorAndReturn(false, "Fehler beim Lesen von $url");
                 }
@@ -668,7 +668,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         try {
             while (!feof($sourceHandle)) {
-                $chunk = fread($sourceHandle, $chunkSize);
+                $chunk = fread($sourceHandle, max(1, $chunkSize));
                 if ($chunk === false) {
                     return self::logErrorAndReturn(false, "Fehler beim Lesen von $source");
                 }
@@ -1044,7 +1044,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if (!self::exists($file)) {
             self::logErrorAndThrow(FileNotFoundException::class, "Datei existiert nicht: $file");
         }
-        return filesize($file);
+        $size = filesize($file);
+        if ($size === false) {
+            self::logErrorAndThrow(FileNotWrittenException::class, "Dateigröße konnte nicht ermittelt werden: $file");
+        }
+        return $size;
     }
 
     /**
@@ -1293,7 +1297,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Überprüft, ob die Datei ein bestimmtes Schlüsselwort bzw. eine Liste von Schlüsselwörtern enthält.
      *
      * @param string $file Der Pfad zur Datei.
-     * @param array|string $keywords Die Schlüsselwörter, nach denen gesucht werden soll.
+     * @param array<string>|string $keywords Die Schlüsselwörter, nach denen gesucht werden soll.
      * @param string|null $matchingLine Die Zeile, die das Schlüsselwort enthält (optional).
      * @param SearchMode $mode Der Suchmodus (Standard: CONTAINS).
      * @param bool $caseSensitive Ob die Suche Groß-/Kleinschreibung beachten soll (Standard: false).
@@ -1344,6 +1348,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         while (!feof($handle)) {
             $line = fgets($handle);
+            if ($line === false) {
+                break;
+            }
             if ($skipEmpty && trim($line) === '') {
                 continue;
             }
@@ -1399,7 +1406,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     /**
      * Überprüft, ob die Datei eine bestimmte Erweiterung hat.
      *
-     * @param array|string $extensions  Endung(en), optional mit führendem Punkt
+     * @param array<string>|string $extensions  Endung(en), optional mit führendem Punkt
      */
     public static function isExtension(string $file, array|string $extensions, bool $caseSensitive = false): bool {
         // aktuelle Endung der Datei ermitteln
@@ -1454,6 +1461,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Überprüft, ob die Datei einen bestimmten MIME-Typ hat.
+     *
+     * @param array<string>|string $mimeTypes
      */
     public static function isMimeType(string $file, array|string $mimeTypes, bool $caseSensitive = false): bool {
         $fileMimeType = self::mimeType($file);
@@ -1588,10 +1597,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $ext = pathinfo($base, PATHINFO_EXTENSION);
 
         // Nur alphanumerisch, Bindestrich, Unterstrich und Punkt erlauben
-        $name = preg_replace('/[^a-zA-Z0-9\-_.]/', '_', $name);
+        $name = preg_replace('/[^a-zA-Z0-9\-_.]/', '_', $name) ?? $name;
 
         // Mehrfache Unterstriche/Bindestriche zusammenfassen
-        $name = preg_replace('/[_\-]{2,}/', '_', $name);
+        $name = preg_replace('/[_\-]{2,}/', '_', $name) ?? $name;
 
         // Trim und Längenbegrenzung
         $name = substr(trim($name, '_-.'), 0, $maxLength);

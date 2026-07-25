@@ -70,6 +70,9 @@ class BankHelper {
      * @param string|null $value Die IBAN.
      * @return bool True, wenn die IBAN gültig ist, andernfalls false.
      */
+    /**
+     * @phpstan-assert-if-true non-empty-string $value
+     */
     public static function isIBAN(?string $value): bool {
         // Anonymisierte/maskierte IBANs ablehnen. Der frühere X{5,}-Guard traf
         // das eigene Maskenformat (…XXXX…, max. 4 X am Stück) nie; jetzt wird
@@ -352,8 +355,8 @@ class BankHelper {
      */
     public static function generateGermanIBAN(string $blz, string $kto): string {
         // Entferne nicht-numerische Zeichen und normalisiere
-        $blzClean = preg_replace('/[^0-9]/', '', $blz);
-        $ktoClean = preg_replace('/[^0-9]/', '', $kto);
+        $blzClean = preg_replace('/[^0-9]/', '', $blz) ?? '';
+        $ktoClean = preg_replace('/[^0-9]/', '', $kto) ?? '';
 
         // Padding auf Standardlängen
         $blzPadded = str_pad($blzClean, 8, '0', STR_PAD_LEFT);
@@ -566,7 +569,7 @@ class BankHelper {
      * Gibt die BLZ und KTO aus einer deutschen IBAN zurück.
      *
      * @param string|null $iban Die deutsche IBAN.
-     * @return false|array Ein Array mit 'BLZ' und 'KTO' oder false bei ungültiger IBAN.
+     * @return false|array{BLZ: string, KTO: string} Ein Array mit 'BLZ' und 'KTO' oder false bei ungültiger IBAN.
      * @deprecated Verwende splitIBANComponents() für internationale Unterstützung.
      */
     public static function splitIBAN(?string $iban): array|false {
@@ -1092,6 +1095,8 @@ class BankHelper {
 
     /**
      * Lädt die aktuelle BLZ-Liste von der Deutschen Bundesbank.
+     *
+     * @return string[]
      */
     private static function loadBundesbankBLZData(): array {
         $configLoader = ConfigLoader::getInstance(self::$logger);
@@ -1106,6 +1111,8 @@ class BankHelper {
 
     /**
      * Lädt die aktuelle BIC-Liste von der Deutschen Bundesbank.
+     *
+     * @return string[]
      */
     private static function loadBundesbankBICData(): array {
         $configLoader = ConfigLoader::getInstance(self::$logger);
@@ -1125,7 +1132,7 @@ class BankHelper {
      * @param string|null $url Die URL, von der die Datei geladen werden soll.
      * @param int $expiry Die Anzahl der Tage, nach denen die Datei als abgelaufen betrachtet wird.
      * @param bool $networkEnabled Ob ein Netzabruf erlaubt ist (Default true = bisheriges Verhalten).
-     * @return array Der Inhalt der Datei als Array von Zeilen.
+     * @return string[] Der Inhalt der Datei als Array von Zeilen.
      */
     private static function loadDataFile(string $path, ?string $url = null, int $expiry = 365, bool $networkEnabled = true): array {
         if (!File::isAbsolutePath($path)) {

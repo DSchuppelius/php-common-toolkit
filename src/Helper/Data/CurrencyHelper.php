@@ -189,7 +189,7 @@ class CurrencyHelper {
 
         $amount = trim(str_replace([" ", "+"], '', $amount));
         $amount = trim($amount, "'");
-        $amount = preg_replace("/[A-Z ]/", '', $amount);
+        $amount = preg_replace("/[A-Z ]/", '', $amount) ?? '';
 
         if (preg_match("/^[\-0-9,]*\.[0-9]{0,2}\$/", $amount)) {
             return str_replace(',', '', $amount);
