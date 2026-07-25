@@ -69,17 +69,45 @@ class CurrencyHelper {
     }
 
     /**
-     * Rundet einen Betrag auf die angegebene Anzahl von Dezimalstellen
+     * Rundet einen Betrag auf die angegebene Anzahl von Dezimalstellen.
+     *
+     * @deprecated Float-basiert und daher unpräzise für Geldbeträge. Für exakte
+     *             Rundung {@see \CommonToolkit\Helper\Data\NumberHelper::roundPrecise()}
+     *             oder das Value-Object {@see \CommonToolkit\ValueObjects\Money} nutzen.
      */
     public static function round(float $amount, int $precision = 2): float {
         return round($amount, $precision);
     }
 
     /**
-     * Vergleicht zwei Beträge mit einer Toleranz
+     * Vergleicht zwei Beträge mit einer Toleranz.
+     *
+     * @deprecated Toleranzvergleich auf float ist für Geld fehleranfällig
+     *             (z.B. gälten 12,34 und 12,35 bei tolerance=0.01 als gleich).
+     *             Für exakte Gleichheit {@see equalsExact()} oder
+     *             {@see \CommonToolkit\ValueObjects\Money::equals()} nutzen.
      */
     public static function equals(float $a, float $b, float $tolerance = 0.01): bool {
         return round(abs($a - $b), 10) <= $tolerance;
+    }
+
+    /**
+     * Vergleicht zwei Beträge exakt auf einer festen Nachkommastellen-Skala.
+     *
+     * Präzise (bcmath-basierte) Alternative zu {@see equals()}. Akzeptiert
+     * deutsche/US-Formate; beide Werte werden vor dem Vergleich kanonisiert.
+     *
+     * @param string|int $a     Erster Betrag (Dezimal-String oder Ganzzahl).
+     * @param string|int $b     Zweiter Betrag.
+     * @param int        $scale Vergleichs-Nachkommastellen (Standard: 2).
+     * @return bool True, wenn beide Beträge auf $scale Stellen exakt gleich sind.
+     */
+    public static function equalsExact(string|int $a, string|int $b, int $scale = 2): bool {
+        return bccomp(
+            NumberHelper::normalizeDecimalString((string) $a),
+            NumberHelper::normalizeDecimalString((string) $b),
+            $scale
+        ) === 0;
     }
 
     /**

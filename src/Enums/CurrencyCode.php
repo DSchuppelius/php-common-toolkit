@@ -604,6 +604,24 @@ enum CurrencyCode: string {
     }
 
     /**
+     * Anzahl der Nachkommastellen (Minor Units) gemäß ISO 4217.
+     *
+     * Die meisten Währungen nutzen 2 Nachkommastellen; abweichend sind
+     * nulldezimale (z.B. JPY, KRW) und dreidezimale (z.B. KWD, BHD) Währungen.
+     * Grundlage u.a. für das {@see \CommonToolkit\ValueObjects\Money}-Value-Object.
+     */
+    public function getDefaultFractionDigits(): int {
+        return match ($this->value) {
+            // Nulldezimale Währungen (ISO-4217-Exponent 0)
+            'BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW',
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF' => 0,
+            // Dreidezimale Währungen (ISO-4217-Exponent 3)
+            'BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND' => 3,
+            default => 2,
+        };
+    }
+
+    /**
      * Prüft ob der übergebene Wert diesem Währungscode entspricht.
      * Akzeptiert CurrencyCode-Enum oder String (case-insensitive, trimmed).
      */
