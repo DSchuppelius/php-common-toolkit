@@ -126,9 +126,35 @@ class CSVColumnWidthTest extends BaseTestCase {
         $lines = explode("\n", $csvString);
 
         $this->assertEquals('Col1,Col2,Col3', $lines[0]);
-        $this->assertStringContainsString('Long con', $lines[1]); // Spalte 0 auf 8 gekürzt (truncate)
-        $this->assertStringContainsString('Another long', $lines[1]); // Spalte 1 auf 12 gekürzt (truncate)
-        $this->assertStringContainsString('Short', $lines[1]); // Spalte 2 unverändert
+        // Index-basierte Breiten müssen auch bei vorhandenem Header greifen
+        $this->assertEquals('Long con,Another long,Short', $lines[1]); // 8 / 12 / unbegrenzt
+    }
+
+    public function test_name_based_width_takes_precedence_over_index(): void {
+        $header = new HeaderLine([
+            new HeaderField('Col1'),
+            new HeaderField('Col2'),
+        ]);
+
+        $row = new DataLine([
+            new DataField('First column content'),
+            new DataField('Second column content'),
+        ]);
+
+        $widthConfig = new ColumnWidthConfig;
+        $widthConfig->setColumnWidth('Col1', 5); // Name gewinnt ...
+        $widthConfig->setColumnWidth(0, 15);     // ... über den Index derselben Spalte
+        $widthConfig->setColumnWidth(1, 6);      // Nur Index konfiguriert
+
+        $builder = new CSVDocumentBuilder(',', '"', $widthConfig);
+        $document = $builder
+            ->setHeader($header)
+            ->addRow($row)
+            ->build();
+
+        $lines = explode("\n", $document->toString());
+
+        $this->assertEquals('First,Second', $lines[1]);
     }
 
     public function test_csv_document_builder_fluent_column_width_setup(): void {

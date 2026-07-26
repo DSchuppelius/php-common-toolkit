@@ -22,6 +22,10 @@ class CompanyIdHelperTest extends BaseTestCase {
         $this->assertTrue(CompanyIdHelper::isHRNumber('HRB 12345'));
         $this->assertTrue(CompanyIdHelper::isHRNumber('HRA 1234'));
         $this->assertTrue(CompanyIdHelper::isHRNumber('HRB12345'));
+        // Roundtrip: die eigene formatHRNumber()-Ausgabe ("HRB 12345 B",
+        // Leerzeichen vor dem Suffix) muss wieder erkannt werden.
+        $this->assertTrue(CompanyIdHelper::isHRNumber('HRB 12345 B'));
+        $this->assertTrue(CompanyIdHelper::isHRNumber(CompanyIdHelper::formatHRNumber('hrb12345b')));
         $this->assertTrue(CompanyIdHelper::isHRNumber('GnR 123'));
         $this->assertTrue(CompanyIdHelper::isHRNumber('PR 12345'));
         $this->assertTrue(CompanyIdHelper::isHRNumber('VR 1234'));

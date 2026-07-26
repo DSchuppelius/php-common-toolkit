@@ -64,7 +64,11 @@ final class NumberHelperTest extends TestCase {
 
     public function test_percentage(): void {
         $this->assertEquals(50.0, NumberHelper::percentage(1, 2));
-        $this->assertEquals(0.0, NumberHelper::percentage(1, 0));
+    }
+
+    public function test_percentage_with_zero_total_throws(): void {
+        $this->expectException(RuntimeException::class);
+        NumberHelper::percentage(1, 0);
     }
 
     public function test_normalize_decimal(): void {
