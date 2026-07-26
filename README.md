@@ -104,6 +104,83 @@ composer require dschuppelius/php-common-toolkit
 
 ## Usage Examples
 
+### Value Objects
+
+Immutable, exakt rechnende Value Objects unter `CommonToolkit\ValueObjects` —
+Konstruktion über benannte Factories (`of()` wirft bei ungültiger Eingabe,
+`tryFrom()`/`ofNullable()` liefern `null`). Sensible Identifikatoren (`Iban`,
+`EmailAddress`, `PhoneNumber`, `VatNumber`, `CreditorIdentifier`,
+`GermanTaxId`, `GermanTaxNumber`) implementieren bewusst weder `Stringable`
+noch `JsonSerializable` — Klarwert nur über `getValue()`, Anzeige über
+`masked()`.
+
+```php
+use CommonToolkit\Enums\CurrencyCode;
+use CommonToolkit\ValueObjects\{Decimal, ExchangeRate, Money, Percentage, Quantity};
+
+// Decimal: exakte bcmath-Arithmetik, kein float
+Decimal::of('0.1')->plus(Decimal::of('0.2'))->getValue();   // "0.3"
+Decimal::of('1.234,56')->getValue();                        // "1234.56" (DE-Format)
+Decimal::of('10')->dividedBy(Decimal::of('3'), 2)->getValue(); // "3.33"
+
+// Percentage: delegiert Geldrechnung an Money
+$vat = Percentage::of(19);
+$vat->amountOf(Money::of('8.15', CurrencyCode::Euro))->getAmount(); // "1.55"
+$vat->addTo(Money::of('100.00', CurrencyCode::Euro))->getAmount();  // "119.00"
+
+// Quantity: Menge + Einheit, Arithmetik nur bei gleicher Einheit
+$hours = Quantity::of('2,5', 'h')->plus(Quantity::of('0.25', 'h'));
+$hours->format(); // "2,75 h"
+
+// ExchangeRate: eindeutige Kursrichtung, ISO-Zielskala
+$rate = ExchangeRate::of(CurrencyCode::Euro, CurrencyCode::SwissFranc, '0.9385');
+$rate->convert(Money::of('100.00', CurrencyCode::Euro))->getAmount(); // "93.85"
+```
+
+```php
+use CommonToolkit\ValueObjects\{DateRange, DateTimeRange, EmailAddress, Iban, PhoneNumber};
+
+// DateRange: Kalendertage, beidseitig inklusiv
+$july = DateRange::fromStrings('2026-07-01', '2026-07-31');
+$july->calendarDays();                                    // 31
+$july->contains(new DateTimeImmutable('2026-07-31'));     // true
+
+// DateTimeRange: halboffen [start, end) — Folgebuchungen überlappen nicht
+$morning = DateTimeRange::between(new DateTimeImmutable('08:00'), new DateTimeImmutable('12:00'));
+
+// Sensible Identifikatoren: validiert, maskierbar, kein implizites Leaken
+$iban = Iban::of('de89 3704 0044 0532 0130 00');
+$iban->formatted(); // "DE89 3704 0044 0532 0130 00"
+$iban->masked();    // "DE89XXXXXXXXXXXXXX3000"
+
+EmailAddress::of('Max@EXAMPLE.com')->masked();  // "m**@example.com"
+PhoneNumber::of('089 / 12 34 56 78')->getValue(); // "+498912345678" (E.164)
+```
+
+```php
+use CommonToolkit\ValueObjects\{ByteSize, Duration, Gtin, IpAddress};
+
+// Gtin: EAN/UPC mit Prüfziffer (Längen 8/12/13/14)
+$gtin = Gtin::of('4006381-333931');
+$gtin->getValue();    // "4006381333931"
+$gtin->toGtin14();    // "04006381333931" (Prüfziffer bleibt gültig)
+
+// IpAddress: sensibel — kein implizites Leaken, DSGVO-Anonymisierung
+$ip = IpAddress::of('192.168.2.77');
+$ip->isPrivate();                  // true
+$ip->anonymized()->getValue();     // "192.168.2.0" (/24; IPv6: /48)
+
+// ByteSize: exakte Bytes statt float-Umrechnung
+ByteSize::parse('1,5 GB')->getBytes();     // 1610612736
+ByteSize::ofBytes(1572864)->format();      // "1.5 MB"
+
+// Duration: exakte Sekunden für Zeiterfassung und Salden
+$work = Duration::of(8, 30);
+$work->toClock();                          // "8:30"
+$work->minus(Duration::ofHours(9))->toClock(); // "-0:30"
+Duration::fromIso8601('PT8H30M')->equals($work); // true
+```
+
 ### CSV Processing
 
 ```php

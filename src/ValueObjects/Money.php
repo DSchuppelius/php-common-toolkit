@@ -23,14 +23,21 @@ use Stringable;
  * Immutables Geldbetrag-Value-Object mit exakter (bcmath-basierter) Arithmetik.
  *
  * Löst das klassische „Geld als float"-Problem: Der Betrag wird intern als
- * kanonischer numeric-string mit genau {@see getScale()} Nachkommastellen
- * gehalten; alle Rechenoperationen laufen präzise über die
+ * {@see Decimal} mit genau {@see getScale()} Nachkommastellen gehalten; alle
+ * Rechenoperationen laufen präzise über Decimal bzw. die
  * {@see NumberHelper}-Precise-Suite (bcmath, echte Rundung). Jede Operation
  * liefert eine NEUE Instanz — bestehende bleiben unverändert.
  *
  * Konstruktion bewusst OHNE float (Präzision an der Grenze erzwingen):
  * {@see of()} für Dezimal-Strings/Ganzzahlen, {@see ofMinor()} für Minor Units
  * (Cent). {@see ofFloat()} ist der explizite, dokumentierte Ausweg für Floats.
+ *
+ * Verhaltensgarantien (Abwärtskompatibilität zur string-basierten Fassung):
+ * - {@see of()} bleibt nachsichtig: nicht deutbare Eingaben werden wie bisher
+ *   über {@see NumberHelper::normalizeDecimalString()} zu 0 — wer streng
+ *   scheitern oder null erhalten will, nutzt {@see ofNullable()}.
+ * - {@see plus()}/{@see minus()}/{@see compareTo()} arbeiten wie bisher auf
+ *   der Skala des linken Operanden (nicht auf der größeren Skala).
  *
  * @example
  * ```php
@@ -44,20 +51,14 @@ use Stringable;
 final class Money implements JsonSerializable, Stringable {
     use ErrorLog;
 
-    /** @var numeric-string Kanonischer Betrag mit genau Nachkommastellen. */
-    private readonly string $amount;
+    /** Betrag als exaktes Decimal mit genau {@see getScale()} Nachkommastellen. */
+    private readonly Decimal $amount;
 
     private readonly CurrencyCode $currency;
 
-    private readonly int $scale;
-
-    /**
-     * @param numeric-string $amount
-     */
-    private function __construct(string $amount, CurrencyCode $currency, int $scale) {
+    private function __construct(Decimal $amount, CurrencyCode $currency) {
         $this->amount = $amount;
         $this->currency = $currency;
-        $this->scale = $scale;
     }
 
     // ========================================================================
@@ -79,11 +80,11 @@ final class Money implements JsonSerializable, Stringable {
     public static function of(string|int $amount, CurrencyCode $currency, ?int $scale = null, RoundingMode $mode = RoundingMode::HalfUp, ?CountryCode $country = null): self {
         $scale = self::assertScale($scale, $currency);
 
-        // normalizeDecimalString liefert per Vertrag stets einen numeric-string.
+        // normalizeDecimalString liefert per Vertrag stets einen numeric-string
+        // (nicht deutbare Eingaben werden zu "0" — bewusst nachsichtig).
         $canonical = NumberHelper::normalizeDecimalString((string) $amount, $country);
-        $rounded = NumberHelper::roundPrecise($canonical, $scale, $mode);
 
-        return new self($rounded, $currency, $scale);
+        return new self(Decimal::of($canonical, $scale, $mode), $currency);
     }
 
     /**
@@ -97,14 +98,9 @@ final class Money implements JsonSerializable, Stringable {
             return null;
         }
 
-        $canonical = NumberHelper::normalizeDecimalStringOrNull((string) $amount, $country);
-        if ($canonical === null) {
-            return null;
-        }
+        $decimal = Decimal::ofNullable((string) $amount, self::assertScale($scale, $currency), $mode, $country);
 
-        $scale = self::assertScale($scale, $currency);
-
-        return new self(NumberHelper::roundPrecise($canonical, $scale, $mode), $currency, $scale);
+        return $decimal === null ? null : new self($decimal, $currency);
     }
 
     /**
@@ -117,9 +113,9 @@ final class Money implements JsonSerializable, Stringable {
         $scale = self::assertScale($scale, $currency);
 
         $factor = bcpow('10', (string) $scale); // 10^scale als numeric-string, ohne Überlauf
-        $amount = NumberHelper::dividePrecise((string) $minorUnits, $factor, $scale, RoundingMode::Truncate);
+        $amount = Decimal::of($minorUnits)->dividedBy(Decimal::of($factor), $scale, RoundingMode::Truncate);
 
-        return new self($amount, $currency, $scale);
+        return new self($amount, $currency);
     }
 
     /**
@@ -177,7 +173,7 @@ final class Money implements JsonSerializable, Stringable {
             if ($money->currency !== $currency) {
                 self::logErrorAndThrow(InvalidArgumentException::class, "Währungen unterscheiden sich: {$currency->value} vs. {$money->currency->value}");
             }
-            $itemScale = $itemScale === null ? $money->scale : max($itemScale, $money->scale);
+            $itemScale = $itemScale === null ? $money->getScale() : max($itemScale, $money->getScale());
             $amounts[] = $money->amount;
         }
 
@@ -187,7 +183,7 @@ final class Money implements JsonSerializable, Stringable {
 
         $scale = self::assertScale($scale ?? $itemScale, $currency);
 
-        return new self(NumberHelper::sumPrecise($amounts, $scale, RoundingMode::HalfUp), $currency, $scale);
+        return new self(Decimal::sum($amounts, $scale), $currency);
     }
 
     /**
@@ -224,12 +220,16 @@ final class Money implements JsonSerializable, Stringable {
 
     public function plus(self $other): self {
         $this->assertSameCurrency($other);
-        return new self(NumberHelper::addPrecise($this->amount, $other->amount, $this->scale), $this->currency, $this->scale);
+
+        // Wie bisher: Ergebnis auf der Skala DIESES Betrags (exakte Summe,
+        // überzählige Stellen des anderen Operanden werden abgeschnitten).
+        return new self($this->amount->plus($other->amount)->withScale($this->getScale(), RoundingMode::Truncate), $this->currency);
     }
 
     public function minus(self $other): self {
         $this->assertSameCurrency($other);
-        return new self(NumberHelper::subtractPrecise($this->amount, $other->amount, $this->scale), $this->currency, $this->scale);
+
+        return new self($this->amount->minus($other->amount)->withScale($this->getScale(), RoundingMode::Truncate), $this->currency);
     }
 
     /**
@@ -239,7 +239,7 @@ final class Money implements JsonSerializable, Stringable {
      * @param numeric-string|int|float $factor Multiplikator (z.B. Stückzahl oder Faktor "1.19").
      */
     public function times(string|int|float $factor, RoundingMode $mode = RoundingMode::HalfUp): self {
-        return new self(NumberHelper::multiplyPrecise($this->amount, self::numericString($factor), $this->scale, $mode), $this->currency, $this->scale);
+        return new self($this->amount->times(Decimal::of(self::numericString($factor)), $this->getScale(), $mode), $this->currency);
     }
 
     /**
@@ -249,17 +249,22 @@ final class Money implements JsonSerializable, Stringable {
      * @param numeric-string|int|float $divisor Divisor (!= 0).
      */
     public function dividedBy(string|int|float $divisor, RoundingMode $mode = RoundingMode::HalfUp): self {
-        return new self(NumberHelper::dividePrecise($this->amount, self::numericString($divisor), $this->scale, $mode), $this->currency, $this->scale);
+        return new self($this->amount->dividedBy(Decimal::of(self::numericString($divisor)), $this->getScale(), $mode), $this->currency);
     }
 
     /**
      * Prozentualer Anteil des Betrags — der Standardweg für Steuer-, Rabatt- und
      * Skonto-Rechnungen: `$net->percentage('19')` ergibt den Steuerbetrag.
      *
+     * Delegiert an {@see NumberHelper::percentOfPrecise()} (Single Source of
+     * Truth für die Arbeitsskala der Prozentrechnung).
+     *
      * @param numeric-string|int|float $percent Prozentsatz (19 = 19 %).
      */
     public function percentage(string|int|float $percent, RoundingMode $mode = RoundingMode::HalfUp): self {
-        return new self(NumberHelper::percentOfPrecise($this->amount, self::numericString($percent), $this->scale, $mode), $this->currency, $this->scale);
+        $scale = $this->getScale();
+
+        return new self(Decimal::of(NumberHelper::percentOfPrecise($this->amount->getValue(), self::numericString($percent), $scale, $mode), $scale), $this->currency);
     }
 
     /**
@@ -281,7 +286,7 @@ final class Money implements JsonSerializable, Stringable {
     }
 
     public function negated(): self {
-        return new self(NumberHelper::multiplyPrecise($this->amount, '-1', $this->scale, RoundingMode::Truncate), $this->currency, $this->scale);
+        return new self($this->amount->negated(), $this->currency);
     }
 
     public function abs(): self {
@@ -331,7 +336,7 @@ final class Money implements JsonSerializable, Stringable {
             $shares[$i] += 1;
         }
 
-        return array_values(array_map(fn (int $minor): self => self::ofMinor($sign * $minor, $this->currency, $this->scale), $shares));
+        return array_values(array_map(fn (int $minor): self => self::ofMinor($sign * $minor, $this->currency, $this->getScale()), $shares));
     }
 
     /**
@@ -351,9 +356,11 @@ final class Money implements JsonSerializable, Stringable {
             return [];
         }
 
+        $scale = $this->getScale();
+
         return array_map(
-            fn (string $part): self => new self($part, $this->currency, $this->scale),
-            NumberHelper::allocate($this->amount, $weights, $this->scale)
+            fn (string $part): self => new self(Decimal::of($part, $scale), $this->currency),
+            NumberHelper::allocate($this->amount->getValue(), $weights, $scale)
         );
     }
 
@@ -368,9 +375,11 @@ final class Money implements JsonSerializable, Stringable {
             self::logErrorAndThrow(InvalidArgumentException::class, "Anzahl Teile muss größer als 0 sein: $parts");
         }
 
+        $scale = $this->getScale();
+
         return array_values(array_map(
-            fn (string $part): self => new self($part, $this->currency, $this->scale),
-            NumberHelper::allocateEvenly($this->amount, $parts, $this->scale)
+            fn (string $part): self => new self(Decimal::of($part, $scale), $this->currency),
+            NumberHelper::allocateEvenly($this->amount->getValue(), $parts, $scale)
         ));
     }
 
@@ -379,13 +388,15 @@ final class Money implements JsonSerializable, Stringable {
     // ========================================================================
 
     /**
-     * Vergleicht zwei Beträge derselben Währung.
+     * Vergleicht zwei Beträge derselben Währung (wie bisher auf der Skala
+     * DIESES Betrags).
      *
      * @return int -1, 0 oder 1.
      */
     public function compareTo(self $other): int {
         $this->assertSameCurrency($other);
-        return NumberHelper::comparePrecise($this->amount, $other->amount, $this->scale);
+
+        return NumberHelper::comparePrecise($this->amount->getValue(), $other->amount->getValue(), $this->getScale());
     }
 
     /**
@@ -393,8 +404,7 @@ final class Money implements JsonSerializable, Stringable {
      * nie gleich (kein Fehler).
      */
     public function equals(self $other): bool {
-        return $this->currency === $other->currency
-            && NumberHelper::comparePrecise($this->amount, $other->amount, max($this->scale, $other->scale)) === 0;
+        return $this->currency === $other->currency && $this->amount->equals($other->amount);
     }
 
     public function greaterThan(self $other): bool {
@@ -414,15 +424,15 @@ final class Money implements JsonSerializable, Stringable {
     }
 
     public function isZero(): bool {
-        return NumberHelper::comparePrecise($this->amount, '0', $this->scale) === 0;
+        return $this->amount->isZero();
     }
 
     public function isPositive(): bool {
-        return NumberHelper::comparePrecise($this->amount, '0', $this->scale) > 0;
+        return $this->amount->isPositive();
     }
 
     public function isNegative(): bool {
-        return NumberHelper::comparePrecise($this->amount, '0', $this->scale) < 0;
+        return $this->amount->isNegative();
     }
 
     /**
@@ -442,6 +452,14 @@ final class Money implements JsonSerializable, Stringable {
      * @return numeric-string
      */
     public function getAmount(): string {
+        return $this->amount->getValue();
+    }
+
+    /**
+     * Betrag als exaktes {@see Decimal} — für Rechenketten außerhalb von Money
+     * (z.B. Mengen- oder Faktorrechnung) ohne Umweg über Strings.
+     */
+    public function getDecimal(): Decimal {
         return $this->amount;
     }
 
@@ -449,8 +467,8 @@ final class Money implements JsonSerializable, Stringable {
      * Betrag in Minor Units (Cent). Exakt, da der Betrag genau $scale Stellen hat.
      */
     public function getMinorAmount(): int {
-        $factor = bcpow('10', (string) $this->scale); // 10^scale als numeric-string
-        return (int) NumberHelper::multiplyPrecise($this->amount, $factor, 0, RoundingMode::Truncate);
+        $factor = bcpow('10', (string) $this->getScale()); // 10^scale als numeric-string
+        return (int) NumberHelper::multiplyPrecise($this->amount->getValue(), $factor, 0, RoundingMode::Truncate);
     }
 
     public function getCurrency(): CurrencyCode {
@@ -458,7 +476,7 @@ final class Money implements JsonSerializable, Stringable {
     }
 
     public function getScale(): int {
-        return $this->scale;
+        return $this->amount->getScale();
     }
 
     /**
@@ -467,7 +485,7 @@ final class Money implements JsonSerializable, Stringable {
      * Innerhalb einer Rechenkette NIE verwenden: ab hier ist die Präzision weg.
      */
     public function toFloat(): float {
-        return (float) $this->amount;
+        return $this->amount->toFloat();
     }
 
     /**
@@ -476,11 +494,11 @@ final class Money implements JsonSerializable, Stringable {
      */
     public function withScale(int $scale, RoundingMode $mode = RoundingMode::HalfUp): self {
         $scale = self::assertScale($scale, $this->currency);
-        if ($scale === $this->scale) {
+        if ($scale === $this->getScale()) {
             return $this;
         }
 
-        return new self(NumberHelper::roundPrecise($this->amount, $scale, $mode), $this->currency, $scale);
+        return new self($this->amount->withScale($scale, $mode), $this->currency);
     }
 
     /**
@@ -499,9 +517,9 @@ final class Money implements JsonSerializable, Stringable {
         $scale = self::assertScale($scale, $target);
 
         // Mit Reserve rechnen und erst am Ende auf die Zielskala runden.
-        $work = NumberHelper::multiplyPrecise($this->amount, $rateString, $scale + 6, RoundingMode::Truncate);
+        $work = NumberHelper::multiplyPrecise($this->amount->getValue(), $rateString, $scale + 6, RoundingMode::Truncate);
 
-        return new self(NumberHelper::roundPrecise($work, $scale, $mode), $target, $scale);
+        return new self(Decimal::of(NumberHelper::roundPrecise($work, $scale, $mode), $scale), $target);
     }
 
     // ========================================================================
@@ -509,7 +527,8 @@ final class Money implements JsonSerializable, Stringable {
     // ========================================================================
 
     /**
-     * Formatiert den Betrag präzise (ohne float-Zwischenschritt).
+     * Formatiert den Betrag präzise (ohne float-Zwischenschritt), delegiert an
+     * {@see Decimal::format()}.
      *
      * @param bool $withSymbol             Währungssymbol anhängen (Standard: true).
      * @param bool $withThousandsSeparator Tausendertrenner (Standard: true).
@@ -517,7 +536,7 @@ final class Money implements JsonSerializable, Stringable {
      * @param string $thousandsSeparator   Tausendertrenner-Zeichen (Standard: '.').
      */
     public function format(bool $withSymbol = true, bool $withThousandsSeparator = true, string $decimalSeparator = ',', string $thousandsSeparator = '.'): string {
-        $formatted = $this->formatAmount($decimalSeparator, $withThousandsSeparator ? $thousandsSeparator : '');
+        $formatted = $this->amount->format($decimalSeparator, $withThousandsSeparator ? $thousandsSeparator : '');
 
         if (!$withSymbol) {
             return $formatted;
@@ -532,33 +551,10 @@ final class Money implements JsonSerializable, Stringable {
     }
 
     /**
-     * Präzise Gruppierung des kanonischen Betrags-Strings (kein float).
-     */
-    private function formatAmount(string $decimalSeparator, string $thousandsSeparator): string {
-        $negative = str_starts_with($this->amount, '-');
-        $abs = ltrim($this->amount, '-');
-
-        $parts = explode('.', $abs);
-        $integer = $parts[0];
-        $fraction = $parts[1] ?? '';
-
-        if ($thousandsSeparator !== '') {
-            $integer = strrev(implode($thousandsSeparator, str_split(strrev($integer), 3)));
-        }
-
-        $result = $integer;
-        if ($this->scale > 0) {
-            $result .= $decimalSeparator . str_pad($fraction, $this->scale, '0');
-        }
-
-        return ($negative ? '-' : '') . $result;
-    }
-
-    /**
      * Maschinenlesbare Darstellung: "12.34 EUR".
      */
     public function __toString(): string {
-        return $this->amount . ' ' . $this->currency->value;
+        return $this->amount->getValue() . ' ' . $this->currency->value;
     }
 
     /**
@@ -566,7 +562,7 @@ final class Money implements JsonSerializable, Stringable {
      */
     public function jsonSerialize(): array {
         return [
-            'amount' => $this->amount,
+            'amount' => $this->amount->getValue(),
             'currency' => $this->currency->value,
         ];
     }

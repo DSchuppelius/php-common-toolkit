@@ -144,7 +144,7 @@ class CSVGenerator extends HelperAbstract {
         foreach ($line->getFields() as $index => $field) {
             $value = $field->getValue();
             if ($config !== null) {
-                $columnKey = $this->getColumnKey($header, $index);
+                $columnKey = $this->getColumnKey($header, $index, $config);
                 if ($config->hasWidthConfig($columnKey)) {
                     $value = $config->truncateValue($value, $columnKey);
                 }
@@ -175,7 +175,7 @@ class CSVGenerator extends HelperAbstract {
         $parts = [];
 
         foreach ($row->getFields() as $index => $field) {
-            $columnKey = $this->getColumnKey($header, $index);
+            $columnKey = $this->getColumnKey($header, $index, $config);
             $value = $field->getValue();
 
             // ColumnWidthConfig kümmert sich um Kürzung UND Padding
@@ -201,19 +201,33 @@ class CSVGenerator extends HelperAbstract {
     /**
      * Bestimmt den Spalten-Key für einen Field-Index.
      *
+     * Bei vorhandenem Header hat der Spaltenname Vorrang; ist für ihn keine
+     * explizite Breite konfiguriert, wohl aber für den Index, wird der Index
+     * verwendet (Config erlaubt beides, siehe docs/CSV-Spaltenbreiten.md).
+     *
      * @param HeaderLine|null $header Der Header
      * @param int $index Field-Index
+     * @param ColumnWidthConfig|null $config Optionale Breiten-Konfiguration für den Namen/Index-Fallback
      * @return string|int Spaltenname (falls Header vorhanden) oder Index
      */
-    protected function getColumnKey(?HeaderLine $header, int $index): string|int {
+    protected function getColumnKey(?HeaderLine $header, int $index, ?ColumnWidthConfig $config = null): string|int {
+        $name = null;
         if ($header !== null) {
             $headerField = $header->getField($index);
             if ($headerField !== null) {
-                return $headerField->getValue();
+                $name = $headerField->getValue();
             }
         }
 
-        return $index;
+        if ($name === null) {
+            return $index;
+        }
+
+        if ($config !== null && !$config->hasExplicitWidth($name) && $config->hasExplicitWidth($index)) {
+            return $index;
+        }
+
+        return $name;
     }
 
     /**

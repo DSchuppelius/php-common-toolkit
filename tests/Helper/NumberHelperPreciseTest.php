@@ -13,6 +13,7 @@ namespace Tests\Helper;
 use CommonToolkit\Enums\RoundingMode;
 use CommonToolkit\Helper\Data\NumberHelper;
 use InvalidArgumentException;
+use RuntimeException;
 use Tests\Contracts\BaseTestCase;
 
 class NumberHelperPreciseTest extends BaseTestCase {
@@ -121,7 +122,12 @@ class NumberHelperPreciseTest extends BaseTestCase {
     public function test_percentage_precise(): void {
         $this->assertEquals('25.00', NumberHelper::percentagePrecise('50', '200'));
         $this->assertEquals('33.33', NumberHelper::percentagePrecise('1', '3'));
-        $this->assertEquals('0.00', NumberHelper::percentagePrecise('5', '0')); // skaliert auf Zielskala
+    }
+
+    public function test_percentage_precise_with_zero_total_throws(): void {
+        // Konsistent zu dividePrecise(): kein stiller 0-Fallback bei Gesamt = 0.
+        $this->expectException(RuntimeException::class);
+        NumberHelper::percentagePrecise('5', '0');
     }
 
     public function test_percent_of_precise(): void {

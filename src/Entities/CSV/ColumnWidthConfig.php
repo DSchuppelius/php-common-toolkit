@@ -203,6 +203,16 @@ class ColumnWidthConfig {
     }
 
     /**
+     * Prüft, ob für die gegebene Spalte eine explizite Breite gesetzt ist
+     * (Standardbreite zählt nicht mit).
+     *
+     * @param string|int $column Spaltenname oder Index
+     */
+    public function hasExplicitWidth(string|int $column): bool {
+        return isset($this->columnWidths[$column]);
+    }
+
+    /**
      * Gibt alle konfigurierten Spaltenbreiten zurück.
      *
      * @return array<string|int, int>

@@ -389,12 +389,19 @@ class NumberHelper {
 
     /**
      * Berechnet den Prozentsatz eines Teils im Verhältnis zu einem Gesamtwert.
+     * Gesamt = 0 wirft wie die Precise-Suite (kein stiller 0-Fallback).
+     *
      * @param float $part Der Teilwert.
-     * @param float $total Der Gesamtwert.
+     * @param float $total Der Gesamtwert (!= 0).
      * @return float Der Prozentsatz des Teils im Verhältnis zum Gesamtwert.
+     * @throws RuntimeException Bei $total = 0 (Division durch Null).
      */
     public static function percentage(float $part, float $total): float {
-        return $total !== 0.0 ? ($part / $total) * 100 : 0.0;
+        if ($total === 0.0) {
+            self::logErrorAndThrow(RuntimeException::class, 'Division durch Null nicht erlaubt');
+        }
+
+        return ($part / $total) * 100;
     }
 
     /**
@@ -1446,16 +1453,19 @@ class NumberHelper {
 
     /**
      * Berechnet den prozentualen Anteil von `$part` an `$total` (Teil/Gesamt·100).
-     * Präzise Entsprechung zu {@see percentage()}; Gesamt = 0 → "0".
+     * Präzise Entsprechung zu {@see percentage()}. Gesamt = 0 wirft wie
+     * {@see dividePrecise()} — wer einen Fallback will, prüft vorher selbst
+     * oder nutzt {@see divideOrDefault()}.
      *
      * @param numeric-string $part  Teilwert.
-     * @param numeric-string $total Gesamtwert.
+     * @param numeric-string $total Gesamtwert (!= 0).
      * @param int            $scale Nachkommastellen des Ergebnisses (Standard: 2).
      * @return numeric-string
+     * @throws RuntimeException Bei $total = 0 (Division durch Null).
      */
     public static function percentagePrecise(string $part, string $total, int $scale = 2, RoundingMode $mode = RoundingMode::HalfUp): string {
         if (self::isZeroPrecise($total)) {
-            return bcadd('0', '0', $scale);
+            self::logErrorAndThrow(RuntimeException::class, 'Division durch Null nicht erlaubt');
         }
         $work = $scale + 6;
         return self::roundPrecise(bcdiv(bcmul($part, '100', $work), $total, $work), $scale, $mode);
