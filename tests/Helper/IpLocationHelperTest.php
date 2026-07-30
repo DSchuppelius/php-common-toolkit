@@ -49,6 +49,17 @@ class IpLocationHelperTest extends BaseTestCase {
         $this->assertNull(IpLocationHelper::lookup(null));
     }
 
+    public function test_coordinates_returns_null_when_unavailable(): void {
+        $this->assertNull(IpLocationHelper::coordinates('8.8.8.8'));
+    }
+
+    public function test_coordinates_returns_null_for_private_or_invalid_ip(): void {
+        $this->assertNull(IpLocationHelper::coordinates('192.168.1.10'));
+        $this->assertNull(IpLocationHelper::coordinates('127.0.0.1'));
+        $this->assertNull(IpLocationHelper::coordinates('not-an-ip'));
+        $this->assertNull(IpLocationHelper::coordinates(null));
+    }
+
     // ===== Record-Mapping (GeoLite2-/DB-IP-Struktur) =====
 
     public function test_map_record_full(): void {
@@ -100,5 +111,38 @@ class IpLocationHelperTest extends BaseTestCase {
         $this->assertSame('Genève', $mapped['city']);
         $this->assertNull($mapped['country']);
         $this->assertNull($mapped['country_iso']);
+    }
+
+    // ===== Koordinaten-Mapping (location.latitude/longitude) =====
+
+    public function test_map_coordinates_full(): void {
+        $record = [
+            'city' => ['names' => ['en' => 'Berlin']],
+            'location' => ['latitude' => 52.5244, 'longitude' => 13.4105],
+        ];
+
+        $this->assertSame(
+            ['lat' => 52.5244, 'lon' => 13.4105],
+            IpLocationHelper::mapCoordinates($record),
+        );
+    }
+
+    public function test_map_coordinates_casts_numeric_strings(): void {
+        $record = ['location' => ['latitude' => '48.1374', 'longitude' => '11.5755']];
+
+        $this->assertSame(
+            ['lat' => 48.1374, 'lon' => 11.5755],
+            IpLocationHelper::mapCoordinates($record),
+        );
+    }
+
+    public function test_map_coordinates_null_without_location(): void {
+        // Country-Level-DBs führen kein location-Objekt.
+        $this->assertNull(IpLocationHelper::mapCoordinates(null));
+        $this->assertNull(IpLocationHelper::mapCoordinates('nope'));
+        $this->assertNull(IpLocationHelper::mapCoordinates([]));
+        $this->assertNull(IpLocationHelper::mapCoordinates(['country' => ['iso_code' => 'DE']]));
+        $this->assertNull(IpLocationHelper::mapCoordinates(['location' => ['latitude' => 52.5]]));
+        $this->assertNull(IpLocationHelper::mapCoordinates(['location' => ['latitude' => 'abc', 'longitude' => 'def']]));
     }
 }

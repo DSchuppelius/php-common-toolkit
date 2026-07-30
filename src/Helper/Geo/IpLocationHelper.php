@@ -61,6 +61,13 @@ final class IpLocationHelper {
      */
     private static array $cache = [];
 
+    /**
+     * Koordinaten-Cache je IP innerhalb des Prozesses.
+     *
+     * @var array<string, array{lat: float, lon: float}|null>
+     */
+    private static array $coordinateCache = [];
+
     private const DEFAULTS = [
         'database' => null,   // absoluter Pfad zur .mmdb
         'locale' => 'en',     // bevorzugte Namenssprache
@@ -130,6 +137,54 @@ final class IpLocationHelper {
     }
 
     /**
+     * Löst eine IP in grobe Koordinaten (Breite/Länge) auf — z. B. für
+     * Distanz-/Plausibilitätsprüfungen mit {@see GeoHelper::haversineKm()}.
+     * Verhalten wie {@see lookup()}: `null` bei fehlender DB, nicht-öffentlicher
+     * IP oder Datensatz ohne Koordinaten; Fehler werden geschluckt (nur geloggt).
+     *
+     * @return array{lat: float, lon: float}|null
+     */
+    public static function coordinates(?string $ip): ?array {
+        if ($ip === null || !IPHelper::isPublicIP($ip)) {
+            return null;
+        }
+        if (array_key_exists($ip, self::$coordinateCache)) {
+            return self::$coordinateCache[$ip];
+        }
+        if (!self::isAvailable()) {
+            return null;
+        }
+
+        try {
+            $record = self::reader()?->get($ip);
+            $result = self::mapCoordinates($record);
+        } catch (Throwable $e) {
+            self::logWarning('IP-Koordinatenauflösung fehlgeschlagen', ['ip' => $ip, 'error' => $e->getMessage()]);
+            $result = null;
+        }
+
+        return self::$coordinateCache[$ip] = $result;
+    }
+
+    /**
+     * Liest `location.latitude/longitude` aus einem rohen MaxMind-/DB-IP-
+     * Datensatz. `null`, wenn keine numerischen Koordinaten enthalten sind —
+     * Country-Level-Datenbanken führen das `location`-Objekt nicht.
+     *
+     * @param  mixed  $record  Rohdatensatz aus Reader::get()
+     * @return array{lat: float, lon: float}|null
+     */
+    public static function mapCoordinates(mixed $record): ?array {
+        $lat = is_array($record) ? ($record['location']['latitude'] ?? null) : null;
+        $lon = is_array($record) ? ($record['location']['longitude'] ?? null) : null;
+        if (!is_numeric($lat) || !is_numeric($lon)) {
+            return null;
+        }
+
+        return ['lat' => (float) $lat, 'lon' => (float) $lon];
+    }
+
+    /**
      * Bildet einen rohen MaxMind-/DB-IP-Datensatz auf die normierte Struktur ab.
      * Defensiv, da Country-Level-DBs kein `city` liefern und einzelne Felder
      * fehlen können. Rückgabe `null`, wenn gar nichts Brauchbares enthalten ist.
@@ -162,16 +217,18 @@ final class IpLocationHelper {
         return ['country' => $country, 'country_iso' => $countryIso, 'city' => $city];
     }
 
-    /** Leert den prozessinternen Ergebnis-Cache. */
+    /** Leert die prozessinternen Ergebnis-Caches. */
     public static function clearCache(): void {
         self::$cache = [];
+        self::$coordinateCache = [];
     }
 
-    /** Setzt Konfiguration, Cache und Reader zurück (v. a. für Tests). */
+    /** Setzt Konfiguration, Caches und Reader zurück (v. a. für Tests). */
     public static function resetConfig(): void {
         self::$overrides = [];
         self::$config = null;
         self::$cache = [];
+        self::$coordinateCache = [];
         self::closeReader();
     }
 
