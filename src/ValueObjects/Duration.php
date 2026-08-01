@@ -209,6 +209,14 @@ final class Duration implements JsonSerializable, Stringable {
     }
 
     /**
+     * Dezimalstunden ohne Rundung (90 min → 1.5, -15 min → -0.25) —
+     * für Faktura-Mengen und Industriestunden-Anzeigen.
+     */
+    public function toDecimalHours(): float {
+        return $this->seconds / 3600;
+    }
+
+    /**
      * Zerlegung in Stunden/Minuten/Sekunden — bei negativen Dauern tragen
      * alle Teile einheitlich das negative Vorzeichen.
      *

@@ -148,6 +148,13 @@ class DurationTest extends BaseTestCase {
         $this->assertSame(['hours' => -1, 'minutes' => -1, 'seconds' => -1], Duration::ofSeconds(-3661)->toParts());
     }
 
+    public function test_to_decimal_hours(): void {
+        $this->assertSame(1.5, Duration::ofMinutes(90)->toDecimalHours());
+        $this->assertSame(-0.25, Duration::ofMinutes(-15)->toDecimalHours());
+        $this->assertSame(0.0, Duration::zero()->toDecimalHours());
+        $this->assertEqualsWithDelta(0.0002777, Duration::ofSeconds(1)->toDecimalHours(), 1e-7, 'Sekundengenau, keine Rundung.');
+    }
+
     public function test_to_clock(): void {
         $this->assertSame('8:30', Duration::of(8, 30)->toClock());
         $this->assertSame('8:30:15', Duration::of(8, 30, 15)->toClock(true));
