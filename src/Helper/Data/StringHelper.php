@@ -991,6 +991,95 @@ class StringHelper {
     }
 
     /**
+     * Ersetzt ganze Wörter oder Phrasen anhand einer Ersetzungs-Map (falsch => richtig).
+     *
+     * Wortgrenzen werden über Unicode-Lookarounds bestimmt ((?<![\p{L}\p{N}]) … (?![\p{L}\p{N}])),
+     * da PCRE-\b ASCII-basiert arbeitet und an Umlauten falsche Grenzen setzt. Satzzeichen und
+     * Bindestriche gelten als Wortgrenze, Teilwörter werden nie ersetzt. Mehrwort-Schlüssel
+     * matchen flexibel über beliebigen Whitespace; längere Schlüssel gewinnen gegen kürzere
+     * (Phrase vor Teilwort). strtr()/str_replace() sind hierfür bewusst ungeeignet: keine
+     * Wortgrenzen, kein Case-Erhalt.
+     *
+     * @param string $text Der Ausgangstext.
+     * @param array<string, string> $map Ersetzungen (Schlüssel = zu ersetzendes Wort bzw. Phrase).
+     * @param bool $caseSensitive Optional: Groß-/Kleinschreibung beim Matching beachten (Standard: false).
+     * @param bool $preserveCase Optional: Case-Muster des Treffers auf die Ersetzung übertragen; nur bei case-insensitivem Matching wirksam (Standard: true).
+     * @return string Der Text mit ersetzten Wörtern.
+     * @see matchCase() Für die Case-Übertragung.
+     */
+    public static function replaceWords(string $text, array $map, bool $caseSensitive = false, bool $preserveCase = true): string {
+        if ($text === '' || $map === []) {
+            return $text;
+        }
+
+        $lookup = [];
+        $keys = [];
+        foreach ($map as $wrong => $correct) {
+            $wrong = self::normalizeWhitespace((string) $wrong);
+            if ($wrong === '') {
+                continue;
+            }
+            $lookup[$caseSensitive ? $wrong : self::toLower($wrong)] = $correct;
+            $keys[] = $wrong;
+        }
+        if ($keys === []) {
+            return $text;
+        }
+
+        usort($keys, fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+
+        $flags = $caseSensitive ? 'u' : 'iu';
+        // Chunking schützt sehr große Maps vor PCRE-Pattern-Limits.
+        foreach (array_chunk($keys, 500) as $chunk) {
+            $alternatives = array_map(
+                fn (string $key): string => str_replace(' ', '\s+', preg_quote($key, '/')),
+                $chunk
+            );
+            $pattern = '/(?<![\p{L}\p{N}])(?:' . implode('|', $alternatives) . ')(?![\p{L}\p{N}])/' . $flags;
+
+            $text = preg_replace_callback($pattern, function (array $match) use ($lookup, $caseSensitive, $preserveCase): string {
+                $found = self::normalizeWhitespace($match[0]);
+                $replacement = $lookup[$caseSensitive ? $found : self::toLower($found)] ?? null;
+                if ($replacement === null) {
+                    return $match[0];
+                }
+
+                return (!$caseSensitive && $preserveCase) ? self::matchCase($match[0], $replacement) : $replacement;
+            }, $text) ?? $text;
+        }
+
+        return $text;
+    }
+
+    /**
+     * Überträgt das Case-Muster eines Quellworts auf einen Ersetzungstext (Autokorrektur-Semantik).
+     *
+     * Die Schreibweise der Ersetzung gilt als kuratiert und wird nie abgesenkt — sie wird nur
+     * eskaliert: Quelle komplett groß (ab 2 Zeichen) => Ersetzung groß; Quelle in Title-Case =>
+     * Ersetzung in Title-Case, aber nur wenn die Ersetzung komplett klein ist (Schreibweisen wie
+     * "E-Mail" bleiben erhalten). Kleingeschriebene oder gemischte Quellen lassen die Ersetzung
+     * unverändert.
+     *
+     * @param string $source Das Quellwort, dessen Case-Muster übernommen wird.
+     * @param string $replacement Der zu formende Ersetzungstext.
+     * @return string Die dem Quellmuster angepasste Ersetzung.
+     */
+    public static function matchCase(string $source, string $replacement): string {
+        if ($source === '' || $replacement === '' || $source === self::toLower($source)) {
+            return $replacement;
+        }
+
+        if (mb_strlen($source) > 1 && $source === self::toUpper($source)) {
+            return self::toUpper($replacement);
+        }
+        if ($source === self::titleCase(self::toLower($source)) && $replacement === self::toLower($replacement)) {
+            return self::titleCase($replacement);
+        }
+
+        return $replacement;
+    }
+
+    /**
      * Zerlegt einen Text in gleichmäßige Blöcke, z. B. für SEPA-Verwendungszwecke.
      *
      * @param string|null $text        Der zu zerlegende Text.
