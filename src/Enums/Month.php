@@ -129,11 +129,12 @@ enum Month: int {
     }
 
     /**
-     * Parst einen Monatsnamen (DE/EN) in verschiedenen Formaten.
+     * Parst einen Monatsnamen (DE/EN/NL) in verschiedenen Formaten.
      *
      * Unterstützte Formate:
      * - Englisch: January, Jan, Feb, March, etc.
      * - Deutsch: Januar, Jan, Feb, Mär, März, etc.
+     * - Niederländisch: januari, mrt, maart, mei, augustus, etc.
      *
      * @param string $name Monatsname (Case-insensitive, mit/ohne Punkt).
      * @return self|null Der entsprechende Monat oder null wenn nicht erkannt.
@@ -143,21 +144,21 @@ enum Month: int {
 
         return match ($name) {
             // Januar
-            'jan', 'januar', 'january' => self::JANUARY,
+            'jan', 'januar', 'january', 'januari' => self::JANUARY,
             // Februar
-            'feb', 'februar', 'february' => self::FEBRUARY,
+            'feb', 'februar', 'february', 'februari' => self::FEBRUARY,
             // März
-            'mär', 'mar', 'märz', 'maerz', 'march' => self::MARCH,
+            'mär', 'mar', 'märz', 'maerz', 'march', 'mrt', 'maart' => self::MARCH,
             // April
             'apr', 'april' => self::APRIL,
             // Mai
-            'mai', 'may' => self::MAY,
+            'mai', 'may', 'mei' => self::MAY,
             // Juni
             'jun', 'juni', 'june' => self::JUNE,
             // Juli
             'jul', 'juli', 'july' => self::JULY,
             // August
-            'aug', 'august' => self::AUGUST,
+            'aug', 'august', 'augustus' => self::AUGUST,
             // September
             'sep', 'sept', 'september' => self::SEPTEMBER,
             // Oktober
