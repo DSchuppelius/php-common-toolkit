@@ -24,53 +24,60 @@ enum Weekday: int {
     case FRIDAY = 5;
     case SATURDAY = 6;
 
+    /**
+     * Lokalisierte Wochentagsnamen, Schlüssel = Enum-Wert (0=So...6=Sa).
+     * Schreibweise gemäß CLDR: de/en großgeschrieben, fr/it/es/nl/pt/pl kleingeschrieben.
+     */
+    private const NAMES = [
+        'de' => [0 => 'Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+        'en' => [0 => 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        'fr' => [0 => 'dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'],
+        'it' => [0 => 'domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'],
+        'es' => [0 => 'domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'],
+        'nl' => [0 => 'zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'],
+        'pt' => [0 => 'domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'],
+        'pl' => [0 => 'niedziela', 'poniedziałek', 'wtorek', 'środa', 'czwartek', 'piątek', 'sobota'],
+    ];
+
+    /**
+     * Lokalisierte Kurzformen, Schlüssel = Enum-Wert (0=So...6=Sa).
+     */
+    private const SHORT_NAMES = [
+        'de' => [0 => 'So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+        'en' => [0 => 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        'fr' => [0 => 'dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'],
+        'it' => [0 => 'dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'],
+        'es' => [0 => 'dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'],
+        'nl' => [0 => 'zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'],
+        'pt' => [0 => 'dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'],
+        'pl' => [0 => 'nie', 'pon', 'wt', 'śr', 'czw', 'pt', 'sob'],
+    ];
+
+    /**
+     * Gibt den lokalisierten Wochentagsnamen zurück.
+     *
+     * Unterstützte Sprachen: de, en, fr, it, es, nl, pt, pl.
+     * Akzeptiert auch volle Locales wie "de_DE" oder "fr-FR";
+     * unbekannte Sprachen fallen auf Englisch zurück.
+     */
     public function getName(string $locale = 'en'): string {
-        return match ($locale) {
-            'de' => match ($this) {
-                self::MONDAY => 'Montag',
-                self::TUESDAY => 'Dienstag',
-                self::WEDNESDAY => 'Mittwoch',
-                self::THURSDAY => 'Donnerstag',
-                self::FRIDAY => 'Freitag',
-                self::SATURDAY => 'Samstag',
-                self::SUNDAY => 'Sonntag',
-            },
-            default => match ($this) {
-                self::MONDAY => 'Monday',
-                self::TUESDAY => 'Tuesday',
-                self::WEDNESDAY => 'Wednesday',
-                self::THURSDAY => 'Thursday',
-                self::FRIDAY => 'Friday',
-                self::SATURDAY => 'Saturday',
-                self::SUNDAY => 'Sunday',
-            },
-        };
+        return (self::NAMES[self::normalizeLocale($locale)] ?? self::NAMES['en'])[$this->value];
     }
 
     /**
-     * Kurzform (Mo, Di, Mi, Do, Fr, Sa, So / Mon, Tue, Wed, Thu, Fri, Sat, Sun).
+     * Lokalisierte Kurzform (z. B. Mo/Mon/lun/seg).
+     *
+     * Unterstützte Sprachen und Locale-Behandlung wie bei getName().
      */
     public function getShortName(string $locale = 'en'): string {
-        return match ($locale) {
-            'de' => match ($this) {
-                self::MONDAY => 'Mo',
-                self::TUESDAY => 'Di',
-                self::WEDNESDAY => 'Mi',
-                self::THURSDAY => 'Do',
-                self::FRIDAY => 'Fr',
-                self::SATURDAY => 'Sa',
-                self::SUNDAY => 'So',
-            },
-            default => match ($this) {
-                self::MONDAY => 'Mon',
-                self::TUESDAY => 'Tue',
-                self::WEDNESDAY => 'Wed',
-                self::THURSDAY => 'Thu',
-                self::FRIDAY => 'Fri',
-                self::SATURDAY => 'Sat',
-                self::SUNDAY => 'Sun',
-            },
-        };
+        return (self::SHORT_NAMES[self::normalizeLocale($locale)] ?? self::SHORT_NAMES['en'])[$this->value];
+    }
+
+    /**
+     * Reduziert eine Locale wie "de_DE" oder "fr-FR" auf den Sprachcode.
+     */
+    private static function normalizeLocale(string $locale): string {
+        return strtolower(explode('_', str_replace('-', '_', $locale), 2)[0]);
     }
 
     /**

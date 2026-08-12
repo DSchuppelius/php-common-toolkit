@@ -12,7 +12,8 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, RoundingMode, TemperatureUnit};
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, RoundingMode};
+use CommonToolkit\Enums\Units\TemperatureUnit;
 use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
 use RuntimeException;

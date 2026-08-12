@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace CommonToolkit\Enums;
+namespace CommonToolkit\Enums\Units;
 
 enum LengthUnit: string {
     case NANOMETER = 'nm';

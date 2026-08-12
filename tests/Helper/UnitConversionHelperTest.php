@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace Tests\Helper;
 
-use CommonToolkit\Enums\{AccelerationUnit, AngleUnit, AreaUnit, DataSizeUnit, ElectricCapacitanceUnit, ElectricCurrentUnit, ElectricResistanceUnit, ElectricVoltageUnit, EnergyUnit, ForceUnit, FrequencyUnit, IlluminanceUnit, LengthUnit, MagneticFluxDensityUnit, PowerUnit, PressureUnit, SpeedUnit, TimeUnit, TorqueUnit, ViscosityUnit, VolumeUnit, WeightUnit};
+use CommonToolkit\Enums\Units\{AccelerationUnit, AngleUnit, AreaUnit, DataSizeUnit, ElectricCapacitanceUnit, ElectricCurrentUnit, ElectricResistanceUnit, ElectricVoltageUnit, EnergyUnit, ForceUnit, FrequencyUnit, IlluminanceUnit, LengthUnit, MagneticFluxDensityUnit, PowerUnit, PressureUnit, SpeedUnit, TimeUnit, TorqueUnit, ViscosityUnit, VolumeUnit, WeightUnit};
 use CommonToolkit\Helper\Data\UnitConversionHelper;
 use PHPUnit\Framework\TestCase;
 

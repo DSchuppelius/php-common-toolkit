@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace CommonToolkit\Enums;
+namespace CommonToolkit\Enums\Units;
 
 enum AccelerationUnit: string {
     case METER_PER_SECOND_SQUARED = 'm/s²';

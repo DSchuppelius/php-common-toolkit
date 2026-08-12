@@ -8,7 +8,7 @@
  * License Uri  : https://opensource.org/license/mit
  */
 
-namespace CommonToolkit\Enums;
+namespace CommonToolkit\Enums\Units;
 
 enum TemperatureUnit: string {
     case CELSIUS = 'C';

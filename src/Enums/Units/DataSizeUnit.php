@@ -10,7 +10,7 @@
 
 declare(strict_types=1);
 
-namespace CommonToolkit\Enums;
+namespace CommonToolkit\Enums\Units;
 
 /**
  * Datenmenge – unterstützt sowohl SI-Präfixe (dezimal, 10er-Basis, IEC 80000-13)

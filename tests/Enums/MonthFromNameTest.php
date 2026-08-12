@@ -37,6 +37,54 @@ final class MonthFromNameTest extends BaseTestCase {
         $this->assertSame(Month::FEBRUARY, Month::fromName('februari'));
     }
 
+    public function test_french_names_resolve(): void {
+        $this->assertSame(Month::JANUARY, Month::fromName('janvier'));
+        $this->assertSame(Month::FEBRUARY, Month::fromName('février'));
+        $this->assertSame(Month::FEBRUARY, Month::fromName('fevrier'));
+        $this->assertSame(Month::JULY, Month::fromName('juillet'));
+        $this->assertSame(Month::AUGUST, Month::fromName('août'));
+        $this->assertSame(Month::AUGUST, Month::fromName('aout'));
+        $this->assertSame(Month::DECEMBER, Month::fromName('déc.'));
+    }
+
+    public function test_italian_names_resolve(): void {
+        $this->assertSame(Month::JANUARY, Month::fromName('gennaio'));
+        $this->assertSame(Month::MAY, Month::fromName('maggio'));
+        $this->assertSame(Month::JUNE, Month::fromName('giu'));
+        $this->assertSame(Month::JULY, Month::fromName('luglio'));
+        $this->assertSame(Month::OCTOBER, Month::fromName('ottobre'));
+        $this->assertSame(Month::DECEMBER, Month::fromName('dicembre'));
+    }
+
+    public function test_spanish_names_resolve(): void {
+        $this->assertSame(Month::JANUARY, Month::fromName('Enero'));
+        $this->assertSame(Month::AUGUST, Month::fromName('agosto'));
+        $this->assertSame(Month::SEPTEMBER, Month::fromName('septiembre'));
+        $this->assertSame(Month::OCTOBER, Month::fromName('octubre'));
+        $this->assertSame(Month::DECEMBER, Month::fromName('diciembre'));
+    }
+
+    public function test_portuguese_names_resolve(): void {
+        $this->assertSame(Month::JANUARY, Month::fromName('janeiro'));
+        $this->assertSame(Month::FEBRUARY, Month::fromName('fevereiro'));
+        $this->assertSame(Month::MARCH, Month::fromName('março'));
+        $this->assertSame(Month::MARCH, Month::fromName('marco'));
+        $this->assertSame(Month::OCTOBER, Month::fromName('outubro'));
+        $this->assertSame(Month::OCTOBER, Month::fromName('out'));
+        $this->assertSame(Month::DECEMBER, Month::fromName('dezembro'));
+    }
+
+    public function test_polish_names_resolve(): void {
+        $this->assertSame(Month::JANUARY, Month::fromName('styczeń'));
+        $this->assertSame(Month::JANUARY, Month::fromName('styczen'));
+        $this->assertSame(Month::FEBRUARY, Month::fromName('luty'));
+        $this->assertSame(Month::APRIL, Month::fromName('kwiecień'));
+        $this->assertSame(Month::AUGUST, Month::fromName('sierpień'));
+        $this->assertSame(Month::OCTOBER, Month::fromName('październik'));
+        $this->assertSame(Month::OCTOBER, Month::fromName('pazdziernik'));
+        $this->assertSame(Month::DECEMBER, Month::fromName('grudzień'));
+    }
+
     public function test_unknown_name_returns_null(): void {
         $this->assertNull(Month::fromName('Frimaire'));
         $this->assertNull(Month::fromName(''));

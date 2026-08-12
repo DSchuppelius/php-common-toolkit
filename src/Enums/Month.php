@@ -28,37 +28,31 @@ enum Month: int {
     case NOVEMBER = 11;
     case DECEMBER = 12;
 
+    /**
+     * Lokalisierte Monatsnamen (Schreibweise gemäß CLDR: de/en großgeschrieben,
+     * fr/it/es/nl/pt/pl kleingeschrieben).
+     */
+    private const NAMES = [
+        'de' => [1 => 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+        'en' => [1 => 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        'fr' => [1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+        'it' => [1 => 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'],
+        'es' => [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
+        'nl' => [1 => 'januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'],
+        'pt' => [1 => 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
+        'pl' => [1 => 'styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'],
+    ];
+
+    /**
+     * Gibt den lokalisierten Monatsnamen zurück.
+     *
+     * Unterstützte Sprachen: de, en, fr, it, es, nl, pt, pl.
+     * Akzeptiert auch volle Locales wie "de_DE" oder "fr-FR";
+     * unbekannte Sprachen fallen auf Englisch zurück.
+     */
     public function getName(string $locale = 'en'): string {
-        return match ($locale) {
-            'de' => match ($this) {
-                self::JANUARY => 'Januar',
-                self::FEBRUARY => 'Februar',
-                self::MARCH => 'März',
-                self::APRIL => 'April',
-                self::MAY => 'Mai',
-                self::JUNE => 'Juni',
-                self::JULY => 'Juli',
-                self::AUGUST => 'August',
-                self::SEPTEMBER => 'September',
-                self::OCTOBER => 'Oktober',
-                self::NOVEMBER => 'November',
-                self::DECEMBER => 'Dezember',
-            },
-            default => match ($this) {
-                self::JANUARY => 'January',
-                self::FEBRUARY => 'February',
-                self::MARCH => 'March',
-                self::APRIL => 'April',
-                self::MAY => 'May',
-                self::JUNE => 'June',
-                self::JULY => 'July',
-                self::AUGUST => 'August',
-                self::SEPTEMBER => 'September',
-                self::OCTOBER => 'October',
-                self::NOVEMBER => 'November',
-                self::DECEMBER => 'December',
-            },
-        };
+        $language = strtolower(explode('_', str_replace('-', '_', $locale), 2)[0]);
+        return (self::NAMES[$language] ?? self::NAMES['en'])[$this->value];
     }
 
     /**
@@ -129,12 +123,11 @@ enum Month: int {
     }
 
     /**
-     * Parst einen Monatsnamen (DE/EN/NL) in verschiedenen Formaten.
+     * Parst einen Monatsnamen (DE/EN/FR/IT/ES/NL/PT/PL) in verschiedenen Formaten.
      *
-     * Unterstützte Formate:
-     * - Englisch: January, Jan, Feb, March, etc.
-     * - Deutsch: Januar, Jan, Feb, Mär, März, etc.
-     * - Niederländisch: januari, mrt, maart, mei, augustus, etc.
+     * Unterstützt volle Namen und gängige Abkürzungen, jeweils mit/ohne Punkt
+     * und bei Akzenten zusätzlich in akzentfreier Schreibweise
+     * (z. B. März/Maerz, février/fevrier, styczeń/styczen).
      *
      * @param string $name Monatsname (Case-insensitive, mit/ohne Punkt).
      * @return self|null Der entsprechende Monat oder null wenn nicht erkannt.
@@ -144,29 +137,29 @@ enum Month: int {
 
         return match ($name) {
             // Januar
-            'jan', 'januar', 'january', 'januari' => self::JANUARY,
+            'jan', 'januar', 'january', 'januari', 'janvier', 'janv', 'gennaio', 'gen', 'enero', 'ene', 'janeiro', 'styczeń', 'styczen', 'sty' => self::JANUARY,
             // Februar
-            'feb', 'februar', 'february', 'februari' => self::FEBRUARY,
+            'feb', 'februar', 'february', 'februari', 'février', 'fevrier', 'févr', 'fevr', 'febbraio', 'febrero', 'fevereiro', 'fev', 'luty', 'lut' => self::FEBRUARY,
             // März
-            'mär', 'mar', 'märz', 'maerz', 'march', 'mrt', 'maart' => self::MARCH,
+            'mär', 'mar', 'märz', 'maerz', 'march', 'mrt', 'maart', 'mars', 'marzo', 'março', 'marco', 'marzec' => self::MARCH,
             // April
-            'apr', 'april' => self::APRIL,
+            'apr', 'april', 'avril', 'avr', 'aprile', 'abril', 'abr', 'kwiecień', 'kwiecien', 'kwi' => self::APRIL,
             // Mai
-            'mai', 'may', 'mei' => self::MAY,
+            'mai', 'may', 'mei', 'maggio', 'mag', 'mayo', 'maio', 'maj' => self::MAY,
             // Juni
-            'jun', 'juni', 'june' => self::JUNE,
+            'jun', 'juni', 'june', 'juin', 'giugno', 'giu', 'junio', 'junho', 'czerwiec', 'cze' => self::JUNE,
             // Juli
-            'jul', 'juli', 'july' => self::JULY,
+            'jul', 'juli', 'july', 'juillet', 'juil', 'luglio', 'lug', 'julio', 'julho', 'lipiec', 'lip' => self::JULY,
             // August
-            'aug', 'august', 'augustus' => self::AUGUST,
+            'aug', 'august', 'augustus', 'août', 'aout', 'agosto', 'ago', 'sierpień', 'sierpien', 'sie' => self::AUGUST,
             // September
-            'sep', 'sept', 'september' => self::SEPTEMBER,
+            'sep', 'sept', 'september', 'septembre', 'settembre', 'set', 'septiembre', 'setiembre', 'setembro', 'wrzesień', 'wrzesien', 'wrz' => self::SEPTEMBER,
             // Oktober
-            'okt', 'oct', 'oktober', 'october' => self::OCTOBER,
+            'okt', 'oct', 'oktober', 'october', 'octobre', 'ottobre', 'ott', 'octubre', 'outubro', 'out', 'październik', 'pazdziernik', 'paź', 'paz' => self::OCTOBER,
             // November
-            'nov', 'november' => self::NOVEMBER,
+            'nov', 'november', 'novembre', 'noviembre', 'novembro', 'listopad', 'lis' => self::NOVEMBER,
             // Dezember
-            'dez', 'dec', 'dezember', 'december' => self::DECEMBER,
+            'dez', 'dec', 'dezember', 'december', 'décembre', 'decembre', 'déc', 'dicembre', 'dic', 'diciembre', 'dezembro', 'grudzień', 'grudzien', 'gru' => self::DECEMBER,
             default => null,
         };
     }

@@ -12,7 +12,8 @@ declare(strict_types=1);
 
 namespace Tests\Helper;
 
-use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, TemperatureUnit};
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix};
+use CommonToolkit\Enums\Units\TemperatureUnit;
 use CommonToolkit\Helper\Data\NumberHelper;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
