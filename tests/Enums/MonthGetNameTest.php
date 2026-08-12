@@ -51,4 +51,22 @@ final class MonthGetNameTest extends BaseTestCase {
         $this->assertSame('décembre', $months['12']);
         $this->assertCount(12, $months);
     }
+
+    public function test_short_names(): void {
+        $this->assertSame('Jan', Month::JANUARY->getShortName('de'));
+        $this->assertSame('Mär', Month::MARCH->getShortName('de'));
+        $this->assertSame('Dec', Month::DECEMBER->getShortName('en'));
+        $this->assertSame('janv', Month::JANUARY->getShortName('fr'));
+        $this->assertSame('mrt', Month::MARCH->getShortName('nl'));
+        $this->assertSame('out', Month::OCTOBER->getShortName('pt'));
+        $this->assertSame('paź', Month::OCTOBER->getShortName('pl'));
+        $this->assertSame('Mar', Month::MARCH->getShortName('xx'));
+    }
+
+    public function test_to_array_with_short_names(): void {
+        $months = Month::toArray(true, 'de', true);
+        $this->assertSame('Jan', $months['01']);
+        $this->assertSame('Dez', $months['12']);
+        $this->assertCount(12, $months);
+    }
 }

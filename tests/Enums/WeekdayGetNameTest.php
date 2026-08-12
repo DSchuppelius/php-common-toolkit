@@ -60,6 +60,24 @@ final class WeekdayGetNameTest extends BaseTestCase {
         $this->assertCount(7, $days);
     }
 
+    public function test_to_array_short_names(): void {
+        $days = Weekday::toArray(false, 'de', true);
+        $this->assertSame('So', $days[0]);
+        $this->assertSame('Sa', $days[6]);
+        $this->assertCount(7, $days);
+    }
+
+    public function test_to_array_iso_ordered(): void {
+        $days = Weekday::toArray(false, 'de', false, true);
+        $this->assertSame([1, 2, 3, 4, 5, 6, 7], array_keys($days));
+        $this->assertSame('Montag', $days[1]);
+        $this->assertSame('Sonntag', $days[7]);
+
+        $short = Weekday::toArray(true, 'en', true, true);
+        $this->assertSame('Mon', $short['01']);
+        $this->assertSame('Sun', $short['07']);
+    }
+
     public function test_format_mask_uses_locale(): void {
         $mask = Weekday::createMask(Weekday::MONDAY, Weekday::FRIDAY);
         $this->assertSame('Mo, Fr', Weekday::formatMask($mask, 'de'));

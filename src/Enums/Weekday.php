@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Enums;
 
+use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
 
@@ -81,19 +82,119 @@ enum Weekday: int {
     }
 
     /**
+     * @param bool $short Kurzformen statt voller Namen ausgeben.
+     * @param bool $isoOrdered ISO-Reihenfolge Mo-So mit ISO-Schlüsseln (1-7) statt So-Sa (0-6).
      * @return array<array-key, string>
      */
-    public static function toArray(bool $leadingZero = false, string $locale = 'en'): array {
+    public static function toArray(bool $leadingZero = false, string $locale = 'en', bool $short = false, bool $isoOrdered = false): array {
+        $days = self::cases();
+        if ($isoOrdered) {
+            usort($days, fn (self $a, self $b) => $a->getIsoWeekday() <=> $b->getIsoWeekday());
+        }
         $weekdaysArray = [];
-        foreach (self::cases() as $weekday) {
-            $key = $leadingZero ? str_pad((string) $weekday->value, 2, '0', STR_PAD_LEFT) : $weekday->value;
-            $weekdaysArray[$key] = $weekday->getName($locale);
+        foreach ($days as $weekday) {
+            $value = $isoOrdered ? $weekday->getIsoWeekday() : $weekday->value;
+            $key = $leadingZero ? str_pad((string) $value, 2, '0', STR_PAD_LEFT) : $value;
+            $weekdaysArray[$key] = $short ? $weekday->getShortName($locale) : $weekday->getName($locale);
         }
         return $weekdaysArray;
     }
 
     public static function fromDate(DateTimeInterface $date): self {
         return self::from((int) $date->format('w'));
+    }
+
+    /**
+     * Gibt den heutigen Wochentag zurück.
+     */
+    public static function today(): self {
+        return self::fromDate(new DateTimeImmutable);
+    }
+
+    /**
+     * Parst einen Wochentagsnamen (DE/EN/FR/IT/ES/NL/PT/PL) in verschiedenen Formaten.
+     *
+     * Unterstützt volle Namen und gängige Kurzformen, jeweils mit/ohne Punkt
+     * und bei Akzenten zusätzlich in akzentfreier Schreibweise
+     * (z. B. lunedì/lunedi, środa/sroda). Mehrdeutige Kürzel wie das polnische
+     * zweibuchstabige "So" (= Samstag, kollidiert mit deutschem "So" = Sonntag)
+     * werden bewusst nicht unterstützt.
+     *
+     * @param string $name Wochentagsname (Case-insensitive, mit/ohne Punkt).
+     * @return self|null Der entsprechende Wochentag oder null wenn nicht erkannt.
+     */
+    public static function fromName(string $name): ?self {
+        $name = mb_strtolower(trim($name, '. '));
+
+        return match ($name) {
+            // Montag
+            'mo', 'mon', 'montag', 'monday', 'lundi', 'lun', 'lunedì', 'lunedi', 'lunes', 'ma', 'maandag', 'seg', 'segunda', 'segunda-feira', 'pon', 'poniedziałek', 'poniedzialek' => self::MONDAY,
+            // Dienstag
+            'di', 'dienstag', 'tue', 'tues', 'tuesday', 'mardi', 'mar', 'martedì', 'martedi', 'martes', 'dinsdag', 'ter', 'terça', 'terca', 'terça-feira', 'terca-feira', 'wt', 'wtorek' => self::TUESDAY,
+            // Mittwoch
+            'mi', 'mittwoch', 'wed', 'wednesday', 'mercredi', 'mer', 'mercoledì', 'mercoledi', 'miércoles', 'miercoles', 'mié', 'mie', 'wo', 'woensdag', 'qua', 'quarta', 'quarta-feira', 'śr', 'sr', 'środa', 'sroda' => self::WEDNESDAY,
+            // Donnerstag
+            'do', 'donnerstag', 'thu', 'thur', 'thurs', 'thursday', 'jeudi', 'jeu', 'giovedì', 'giovedi', 'gio', 'jueves', 'jue', 'donderdag', 'qui', 'quinta', 'quinta-feira', 'czw', 'czwartek' => self::THURSDAY,
+            // Freitag
+            'fr', 'freitag', 'fri', 'friday', 'vendredi', 'ven', 'venerdì', 'venerdi', 'viernes', 'vie', 'vr', 'vrijdag', 'sex', 'sexta', 'sexta-feira', 'pt', 'pią', 'pia', 'piątek', 'piatek' => self::FRIDAY,
+            // Samstag
+            'sa', 'samstag', 'sonnabend', 'sat', 'saturday', 'samedi', 'sam', 'sabato', 'sab', 'sábado', 'sabado', 'za', 'zaterdag', 'sob', 'sobota' => self::SATURDAY,
+            // Sonntag
+            'so', 'sonntag', 'sun', 'sunday', 'dimanche', 'dim', 'domenica', 'dom', 'domingo', 'zo', 'zondag', 'nie', 'ndz', 'niedziela' => self::SUNDAY,
+            default => null,
+        };
+    }
+
+    // ==================== ARITHMETIK ====================
+
+    /**
+     * Gibt den Folgetag zurück (Samstag → Sonntag).
+     */
+    public function next(): self {
+        return $this->add(1);
+    }
+
+    /**
+     * Gibt den Vortag zurück (Sonntag → Samstag).
+     */
+    public function previous(): self {
+        return $this->add(-1);
+    }
+
+    /**
+     * Addiert Tage mit Wochen-Überlauf (negative Werte erlaubt).
+     */
+    public function add(int $days): self {
+        return self::from(((($this->value + $days) % 7) + 7) % 7);
+    }
+
+    /**
+     * Anzahl Tage vorwärts bis zum anderen Wochentag (0-6).
+     */
+    public function daysUntil(self $other): int {
+        return ($other->value - $this->value + 7) % 7;
+    }
+
+    /**
+     * Gibt den nächsten Werktag zurück (Freitag/Samstag → Montag).
+     */
+    public function nextWorkday(): self {
+        $day = $this->add(1);
+        while (!$day->isWorkday()) {
+            $day = $day->add(1);
+        }
+        return $day;
+    }
+
+    /**
+     * Gibt den vorherigen Werktag zurück (Sonntag/Montag → Freitag).
+     */
+    public function previousWorkday(): self {
+        $day = $this->add(-1);
+        while (!$day->isWorkday()) {
+            $day = $day->add(-1);
+        }
+        return $day;
     }
 
     // ==================== ISO-8601 WOCHENTAG ====================

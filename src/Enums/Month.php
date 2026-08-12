@@ -12,7 +12,9 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Enums;
 
+use DateTimeImmutable;
 use DateTimeInterface;
+use InvalidArgumentException;
 
 enum Month: int {
     case JANUARY = 1;
@@ -44,6 +46,20 @@ enum Month: int {
     ];
 
     /**
+     * Lokalisierte Kurzformen (ohne Punkt), Schlüssel = Monatszahl.
+     */
+    private const SHORT_NAMES = [
+        'de' => [1 => 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+        'en' => [1 => 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        'fr' => [1 => 'janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'],
+        'it' => [1 => 'gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'],
+        'es' => [1 => 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+        'nl' => [1 => 'jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'],
+        'pt' => [1 => 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
+        'pl' => [1 => 'sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'],
+    ];
+
+    /**
      * Gibt den lokalisierten Monatsnamen zurück.
      *
      * Unterstützte Sprachen: de, en, fr, it, es, nl, pt, pl.
@@ -51,18 +67,34 @@ enum Month: int {
      * unbekannte Sprachen fallen auf Englisch zurück.
      */
     public function getName(string $locale = 'en'): string {
-        $language = strtolower(explode('_', str_replace('-', '_', $locale), 2)[0]);
-        return (self::NAMES[$language] ?? self::NAMES['en'])[$this->value];
+        return (self::NAMES[self::normalizeLocale($locale)] ?? self::NAMES['en'])[$this->value];
     }
 
     /**
+     * Lokalisierte Kurzform ohne Punkt (z. B. Jan/janv/gen/sty).
+     *
+     * Unterstützte Sprachen und Locale-Behandlung wie bei getName().
+     */
+    public function getShortName(string $locale = 'en'): string {
+        return (self::SHORT_NAMES[self::normalizeLocale($locale)] ?? self::SHORT_NAMES['en'])[$this->value];
+    }
+
+    /**
+     * Reduziert eine Locale wie "de_DE" oder "fr-FR" auf den Sprachcode.
+     */
+    private static function normalizeLocale(string $locale): string {
+        return strtolower(explode('_', str_replace('-', '_', $locale), 2)[0]);
+    }
+
+    /**
+     * @param bool $short Kurzformen statt voller Namen ausgeben.
      * @return array<array-key, string>
      */
-    public static function toArray(bool $leadingZero = false, string $locale = 'en'): array {
+    public static function toArray(bool $leadingZero = false, string $locale = 'en', bool $short = false): array {
         $monthsArray = [];
         foreach (self::cases() as $month) {
             $key = $leadingZero ? str_pad((string) $month->value, 2, '0', STR_PAD_LEFT) : $month->value;
-            $monthsArray[$key] = $month->getName($locale);
+            $monthsArray[$key] = $short ? $month->getShortName($locale) : $month->getName($locale);
         }
         return $monthsArray;
     }
@@ -72,47 +104,10 @@ enum Month: int {
     }
 
     /**
-     * Erstellt Month aus englischem 3-Buchstaben-Kürzel (JAN, FEB, MAR, ...).
-     *
-     * @param string $abbreviation Das 3-Buchstaben-Kürzel (case-insensitive).
-     * @return self|null Der entsprechende Monat oder null wenn nicht erkannt.
+     * Gibt den Monat des heutigen Datums zurück.
      */
-    public static function fromAbbreviation(string $abbreviation): ?self {
-        return match (strtoupper(trim($abbreviation))) {
-            'JAN' => self::JANUARY,
-            'FEB' => self::FEBRUARY,
-            'MAR' => self::MARCH,
-            'APR' => self::APRIL,
-            'MAY' => self::MAY,
-            'JUN' => self::JUNE,
-            'JUL' => self::JULY,
-            'AUG' => self::AUGUST,
-            'SEP' => self::SEPTEMBER,
-            'OCT' => self::OCTOBER,
-            'NOV' => self::NOVEMBER,
-            'DEC' => self::DECEMBER,
-            default => null,
-        };
-    }
-
-    /**
-     * Gibt das 3-Buchstaben-Kürzel (englisch) zurück.
-     */
-    public function getAbbreviation(): string {
-        return match ($this) {
-            self::JANUARY => 'JAN',
-            self::FEBRUARY => 'FEB',
-            self::MARCH => 'MAR',
-            self::APRIL => 'APR',
-            self::MAY => 'MAY',
-            self::JUNE => 'JUN',
-            self::JULY => 'JUL',
-            self::AUGUST => 'AUG',
-            self::SEPTEMBER => 'SEP',
-            self::OCTOBER => 'OCT',
-            self::NOVEMBER => 'NOV',
-            self::DECEMBER => 'DEC',
-        };
+    public static function current(): self {
+        return self::fromDate(new DateTimeImmutable);
     }
 
     /**
@@ -120,6 +115,86 @@ enum Month: int {
      */
     public function toTwoDigitString(): string {
         return str_pad((string) $this->value, 2, '0', STR_PAD_LEFT);
+    }
+
+    // ==================== QUARTAL ====================
+
+    /**
+     * Gibt das Quartal dieses Monats zurück (1-4).
+     */
+    public function getQuarter(): int {
+        return intdiv($this->value - 1, 3) + 1;
+    }
+
+    /**
+     * Prüft, ob dieser Monat ein Quartal eröffnet (Jan, Apr, Jul, Okt).
+     */
+    public function isQuarterStart(): bool {
+        return $this->value % 3 === 1;
+    }
+
+    /**
+     * Prüft, ob dieser Monat ein Quartal abschließt (Mär, Jun, Sep, Dez).
+     */
+    public function isQuarterEnd(): bool {
+        return $this->value % 3 === 0;
+    }
+
+    /**
+     * Gibt die drei Monate eines Quartals zurück.
+     *
+     * @param int $quarter Quartal (1-4).
+     * @return array{self, self, self}
+     */
+    public static function fromQuarter(int $quarter): array {
+        if ($quarter < 1 || $quarter > 4) {
+            throw new InvalidArgumentException("Ungültiges Quartal: $quarter");
+        }
+        $first = ($quarter - 1) * 3 + 1;
+        return [self::from($first), self::from($first + 1), self::from($first + 2)];
+    }
+
+    // ==================== ARITHMETIK ====================
+
+    /**
+     * Gibt den Folgemonat zurück (Dezember → Januar).
+     */
+    public function next(): self {
+        return $this->add(1);
+    }
+
+    /**
+     * Gibt den Vormonat zurück (Januar → Dezember).
+     */
+    public function previous(): self {
+        return $this->add(-1);
+    }
+
+    /**
+     * Addiert Monate mit Jahres-Überlauf (negative Werte erlaubt).
+     */
+    public function add(int $months): self {
+        return self::from(((($this->value - 1 + $months) % 12) + 12) % 12 + 1);
+    }
+
+    /**
+     * Anzahl Monate vorwärts bis zum anderen Monat (0-11).
+     */
+    public function distanceTo(self $other): int {
+        return ($other->value - $this->value + 12) % 12;
+    }
+
+    /**
+     * Erzeugt ein Datum in diesem Monat (00:00 Uhr).
+     *
+     * @param int $year Jahr.
+     * @param int $day Tag im Monat (Standard: 1).
+     */
+    public function toDate(int $year, int $day = 1): DateTimeImmutable {
+        if (!checkdate($this->value, $day, $year)) {
+            throw new InvalidArgumentException("Ungültiges Datum: $year-{$this->value}-$day");
+        }
+        return new DateTimeImmutable(sprintf('%04d-%02d-%02d 00:00:00', $year, $this->value, $day));
     }
 
     /**
