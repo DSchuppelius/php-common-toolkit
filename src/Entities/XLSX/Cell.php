@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Entities\XLSX;
 
+use DateTimeInterface;
+
 /**
  * Repräsentiert eine einzelne Zelle in einer XLSX-Zeile.
  */
@@ -49,6 +51,37 @@ class Cell {
             return $this->value ? '1' : '0';
         }
         return (string) $this->value;
+    }
+
+    /**
+     * Kanonische String-Fassung für Text-/CSV-Pfade.
+     *
+     * `getStringValue()` allein reicht dafür nicht: `DateTimeInterface` ist
+     * gar nicht string-castbar (Error), und Floats kippen beim `(string)`-Cast
+     * ab einer gewissen Größe in Exponentialschreibweise — beides erzeugt in
+     * einem CSV-Export unbrauchbare Zellen.
+     *
+     * Regeln:
+     *  - Datum/Zeit: `Y-m-d`, wenn die Uhrzeit exakt 00:00:00 ist, sonst
+     *    `Y-m-d H:i:s`. XLSX kennt keinen reinen Datumstyp — ein Datum ohne
+     *    Uhrzeit kommt als Mitternacht an, und „2026-08-20 00:00:00" wäre
+     *    im Export eine erfundene Genauigkeit.
+     *  - Float: feste Notation mit bis zu 10 Nachkommastellen, überflüssige
+     *    Nullen (und ein übrig bleibender Punkt) fallen weg.
+     *  - alles Übrige: {@see getStringValue()} (null ⇒ '', bool ⇒ '1'/'0').
+     */
+    public function toCanonicalString(): string {
+        if ($this->value instanceof DateTimeInterface) {
+            return $this->value->format('H:i:s') === '00:00:00'
+                ? $this->value->format('Y-m-d')
+                : $this->value->format('Y-m-d H:i:s');
+        }
+
+        if (is_float($this->value)) {
+            return rtrim(rtrim(number_format($this->value, 10, '.', ''), '0'), '.');
+        }
+
+        return $this->getStringValue();
     }
 
     /**

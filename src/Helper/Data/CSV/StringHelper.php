@@ -23,6 +23,14 @@ final class StringHelper extends BaseStringHelper {
     public const DEFAULT_DELIMITERS = [';', ',', "\t", '|'];
 
     /**
+     * Standard-Präfixe des Formel-Injektions-Guards (CWE-1236, OWASP):
+     * Tabellenprogramme werten eine Zelle als Formel, wenn sie mit einem
+     * dieser Zeichen beginnt. Über die Parameter von
+     * {@see neutralizeFormulaInjection()} überschreibbar.
+     */
+    public const FORMULA_PREFIXES = ['=', '+', '-', '@', "\t", "\r"];
+
+    /**
      * Erkennt das Spaltentrennzeichen eines CSV-Inhalts (string-basiert) anhand der
      * häufigsten Vorkommen pro Zeile.
      *
@@ -745,18 +753,30 @@ final class StringHelper extends BaseStringHelper {
 
     /**
      * Entschärft Spreadsheet-Formel-Injection (CWE-1236): Werte, die mit
-     * = + - @ oder Tab/CR beginnen, werden mit einem führenden Apostroph
+     * einem der Präfixe beginnen, werden mit einem führenden Apostroph
      * versehen, damit Excel/LibreOffice sie als Text und nicht als Formel
-     * interpretieren. Opt-in über den Parameter $guardFormulaInjection von
-     * {@see encodeField()}; für Exporte aus nicht vertrauenswürdigen Daten
-     * empfohlen.
+     * interpretieren. Opt-in über $guardFormulaInjection von
+     * {@see encodeField()}/{@see encodeLine()}; für Exporte aus nicht
+     * vertrauenswürdigen Daten empfohlen.
+     *
+     * Die Präfixliste ist überschreibbar, weil sie eine Abwägung ist und
+     * keine Konstante der Welt: {@see FORMULA_PREFIXES} folgt der
+     * OWASP-Empfehlung inklusive Tab/CR, aber ein Export, der Telefonnummern
+     * im Format „+49 …" enthält, will `+` womöglich nicht entschärfen — sonst
+     * steht in jeder Zelle ein Apostroph, den niemand erklären kann.
+     *
+     * @param list<string>|null $prefixes Eigene Präfixliste (null = {@see FORMULA_PREFIXES}).
+     * @param bool $ignoreLeadingWhitespace Prüft das erste Zeichen nach ltrim().
      */
-    public static function neutralizeFormulaInjection(string $value): string {
-        if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
-            return "'" . $value;
+    public static function neutralizeFormulaInjection(string $value, ?array $prefixes = null, bool $ignoreLeadingWhitespace = false): string {
+        $candidate = $ignoreLeadingWhitespace ? ltrim($value) : $value;
+        if ($candidate === '') {
+            return $value;
         }
 
-        return $value;
+        return in_array($candidate[0], $prefixes ?? self::FORMULA_PREFIXES, true)
+            ? "'" . $value
+            : $value;
     }
 
     /**
@@ -822,12 +842,25 @@ final class StringHelper extends BaseStringHelper {
      * @param bool|QuotingStyle              $quoting   Quoting-Strategie (bool = deprecated
      *                                                  Alias für $forceEnclosure, s. {@see encodeField()}).
      * @param string                         $escape    Escape-Zeichen für QuotingStyle::FPUTCSV.
+     * @param bool                           $guardFormulaInjection Entschärft Spreadsheet-Formeln
+     *                                                  (CWE-1236) in JEDEM Feld der Zeile. Default aus:
+     *                                                  Der Guard verändert Werte, das darf nur auf
+     *                                                  ausdrücklichen Wunsch geschehen — eine Kopfzeile
+     *                                                  oder ein Maschinenformat will ihn nicht.
+     * @param list<string>|null              $formulaPrefixes Eigene Präfixliste (null = {@see FORMULA_PREFIXES}).
+     * @param bool                           $ignoreLeadingWhitespace Prüft nach ltrim(); strenger, weil
+     *                                                  manche Tabellenprogramme führende Leerzeichen
+     *                                                  beim Import verwerfen.
      * @return string                                   Die encodierte Zeile ohne Zeilenumbruch.
      */
-    public static function encodeLine(array $fields, string $delimiter = ',', string $enclosure = '"', bool|QuotingStyle $quoting = QuotingStyle::MINIMAL, string $escape = '\\'): string {
+    public static function encodeLine(array $fields, string $delimiter = ',', string $enclosure = '"', bool|QuotingStyle $quoting = QuotingStyle::MINIMAL, string $escape = '\\', bool $guardFormulaInjection = false, ?array $formulaPrefixes = null, bool $ignoreLeadingWhitespace = false): string {
         $parts = [];
         foreach (array_values($fields) as $value) {
-            $parts[] = self::encodeField($value === null ? '' : (string) $value, $delimiter, $enclosure, $quoting, $escape);
+            $field = $value === null ? '' : (string) $value;
+            if ($guardFormulaInjection) {
+                $field = self::neutralizeFormulaInjection($field, $formulaPrefixes, $ignoreLeadingWhitespace);
+            }
+            $parts[] = self::encodeField($field, $delimiter, $enclosure, $quoting, $escape);
         }
 
         return implode($delimiter, $parts);
