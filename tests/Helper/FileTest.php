@@ -11,6 +11,7 @@
 namespace Tests\Helper;
 
 use CommonToolkit\Helper\FileSystem\File;
+use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use Tests\Contracts\BaseTestCase;
 
 class FileTest extends BaseTestCase {
@@ -513,5 +514,35 @@ class FileTest extends BaseTestCase {
     public function test_sanitize_filename_keep_extension_windows_reserved(): void {
         $this->assertSame('_CON.txt', File::sanitizeFilename('CON.txt', true));
         $this->assertSame('_NUL.csv', File::sanitizeFilename('NUL.csv', true));
+    }
+
+    // ==================== readChunks ====================
+
+    public function test_read_chunks_roundtrip(): void {
+        $content = str_repeat('ABCDEFGH', 1000); // 8000 Bytes
+        file_put_contents($this->testFile, $content);
+
+        $chunks = iterator_to_array(File::readChunks($this->testFile, 256), false);
+
+        $this->assertGreaterThan(1, count($chunks));
+        $this->assertSame($content, implode('', $chunks));
+    }
+
+    public function test_read_chunks_strict_roundtrip(): void {
+        $content = 'Strict gelesener Inhalt';
+        file_put_contents($this->testFile, $content);
+
+        $chunks = iterator_to_array(File::readChunks($this->testFile, 8, null, true), false);
+
+        $this->assertSame($content, implode('', $chunks));
+    }
+
+    public function test_read_chunks_strict_unreadable_source_throws(): void {
+        // fread === false ist von außen kaum erzwingbar — mindestens der
+        // Guard-Pfad (nicht lesbare Quelle) muss im strict-Modus werfen.
+        $generator = File::readChunks('/path/to/nonexistent/file', 8192, null, true);
+
+        $this->expectException(FileNotFoundException::class);
+        $generator->current(); // Generator läuft erst beim Konsum an
     }
 }

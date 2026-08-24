@@ -19,6 +19,7 @@ use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\{Platform, Shell};
 use CommonToolkit\Traits\RealPathTrait;
 use ERRORToolkit\Exceptions\FileSystem\{FileExistsException, FileNotFoundException, FileNotWrittenException, FolderNotFoundException};
+use ERRORToolkit\Exceptions\FileSystemException;
 use Exception;
 use Generator;
 use InvalidArgumentException;
@@ -493,13 +494,21 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Speichereffizient für sehr große Dateien oder Downloads (z.B. Binärdateien, Logs).
      * Unterstützt lokale Dateien sowie HTTP/HTTPS URLs.
      *
+     * Ohne $strict endet der Generator bei einem Lesefehler mitten im Stream
+     * stillschweigend — der Aufrufer kann einen abgebrochenen von einem
+     * vollständigen Stream nicht unterscheiden (bei Backup-Uploads wäre das
+     * stiller Datenverlust). Mit $strict = true wirft ein fehlgeschlagenes
+     * fread() stattdessen eine FileSystemException.
+     *
      * @param string $file Der Pfad zur Datei oder URL.
      * @param int $chunkSize Größe der Blöcke in Bytes (Standard: 8192).
      * @param array<string, mixed>|null $httpOptions HTTP-Optionen für URL-Streams.
+     * @param bool $strict Lesefehler werfen statt still abzubrechen (Standard: false, rückwärtskompatibel).
      * @return Generator<string> Generator, der Datenblöcke liefert.
      * @throws FileNotFoundException Wenn die Datei nicht gefunden oder lesbar ist.
+     * @throws FileSystemException Im strict-Modus bei einem Lesefehler mitten im Stream.
      */
-    public static function readChunks(string $file, int $chunkSize = 8192, ?array $httpOptions = null): Generator {
+    public static function readChunks(string $file, int $chunkSize = 8192, ?array $httpOptions = null, bool $strict = false): Generator {
         $isUrl = preg_match('#^https?://#i', $file);
 
         if ($isUrl) {
@@ -523,6 +532,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             while (!feof($handle)) {
                 $chunk = fread($handle, max(1, $chunkSize));
                 if ($chunk === false) {
+                    if ($strict) {
+                        self::logErrorAndThrow(FileSystemException::class, "Lesefehler mitten im Stream: $file");
+                    }
                     break;
                 }
                 if ($chunk !== '') {

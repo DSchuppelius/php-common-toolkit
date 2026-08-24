@@ -74,6 +74,63 @@ class DurationTest extends BaseTestCase {
         $this->assertSame('PT129H25M30S', Duration::ofSeconds(465930)->toIso8601());
     }
 
+    // ==================== Uhrenformat (fromClock) ====================
+
+    public function test_from_clock_three_parts(): void {
+        $this->assertSame(30615, Duration::fromClock('8:30:15')->getTotalSeconds());
+        $this->assertSame(30615, Duration::fromClock('08:30:15')->getTotalSeconds());
+        // Der Zweiteiler-Parameter ist für Dreiteiler irrelevant
+        $this->assertSame(30615, Duration::fromClock('8:30:15', false)->getTotalSeconds());
+    }
+
+    public function test_from_clock_two_parts_hours_minutes(): void {
+        // Standard-Deutung H:MM (z. B. Kimai)
+        $this->assertSame(30600, Duration::fromClock('8:30')->getTotalSeconds());
+        $this->assertSame(300, Duration::fromClock('0:05')->getTotalSeconds());
+        $this->assertSame(30600, Duration::fromClock('008:30')->getTotalSeconds()); // führende Nullen
+    }
+
+    public function test_from_clock_two_parts_minutes_seconds(): void {
+        // Deutung MM:SS (z. B. Toggl)
+        $this->assertSame(510, Duration::fromClock('8:30', false)->getTotalSeconds());
+        // Erste Komponente ist unbegrenzt — auch als Minutenzahl
+        $this->assertSame(5430, Duration::fromClock('90:30', false)->getTotalSeconds());
+    }
+
+    public function test_from_clock_supports_more_than_24_hours(): void {
+        $this->assertSame(123 * 3600 + 45 * 60 + 6, Duration::fromClock('123:45:06')->getTotalSeconds());
+        $this->assertSame(129 * 3600 + 5 * 60, Duration::fromClock('129:05')->getTotalSeconds());
+    }
+
+    public function test_from_clock_negative_and_to_clock_roundtrip(): void {
+        $this->assertSame(-900, Duration::fromClock('-0:15')->getTotalSeconds());
+
+        foreach ([Duration::of(8, 30, 15), Duration::ofSeconds(-930), Duration::zero(), Duration::ofSeconds(465930)] as $duration) {
+            $this->assertTrue(Duration::fromClock($duration->toClock(true))->equals($duration), $duration->toClock(true));
+        }
+    }
+
+    public function test_from_clock_rejects_garbage(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Duration::fromClock('acht Uhr dreißig');
+    }
+
+    public function test_from_clock_rejects_single_digit_component(): void {
+        // Folgekomponenten müssen zweistellig sein — "8:5" ist kein Uhrenformat
+        $this->expectException(InvalidArgumentException::class);
+        Duration::fromClock('8:5');
+    }
+
+    public function test_from_clock_rejects_minutes_over_59(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Duration::fromClock('8:75');
+    }
+
+    public function test_from_clock_rejects_four_parts(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Duration::fromClock('1:02:03:04');
+    }
+
     // ==================== between / DateTimeRange ====================
 
     public function test_between(): void {

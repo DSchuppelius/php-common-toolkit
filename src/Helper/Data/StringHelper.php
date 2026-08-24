@@ -1998,4 +1998,28 @@ class StringHelper {
 
         return implode('', $initials);
     }
+
+    /**
+     * Ähnlichkeit zweier Strings als Quote von 0.0 bis 1.0 (similar_text-Prozent).
+     *
+     * null oder leer auf einer Seite ⇒ 0.0; identische Strings ⇒ exakt 1.0.
+     * Byte-basiert wie similar_text() — für Matching-Heuristiken (Dubletten,
+     * Vorschlags-Scoring), nicht für linguistische Vergleiche.
+     *
+     * @param string|null $a Erster String.
+     * @param string|null $b Zweiter String.
+     * @return float Ähnlichkeit im Bereich 0.0–1.0.
+     */
+    public static function similarity(?string $a, ?string $b): float {
+        if (self::isNullOrEmpty($a) || self::isNullOrEmpty($b)) {
+            return 0.0;
+        }
+        if ($a === $b) {
+            return 1.0;
+        }
+
+        similar_text($a, $b, $percent);
+
+        return $percent / 100.0;
+    }
 }

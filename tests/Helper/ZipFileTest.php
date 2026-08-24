@@ -13,7 +13,10 @@ namespace Tests\Helper;
 use CommonToolkit\Helper\FileSystem\{File, Folder};
 use CommonToolkit\Helper\FileSystem\FileTypes\ZipFile;
 use ERRORToolkit\Exceptions\FileSystem\{FileNotFoundException, FolderNotFoundException};
+use Exception;
+use InvalidArgumentException;
 use Tests\Contracts\BaseTestCase;
+use ZipArchive;
 
 class ZipFileTest extends BaseTestCase {
     private string $tempDir;
@@ -264,6 +267,162 @@ class ZipFileTest extends BaseTestCase {
         $this->assertStringContainsString('Speicher', ZipFile::getErrorMessage(\ZipArchive::ER_MEMORY));
         $this->assertStringContainsString('CRC', ZipFile::getErrorMessage(\ZipArchive::ER_CRC));
         $this->assertStringContainsString('Code:', ZipFile::getErrorMessage(9999)); // Unbekannter Code
+    }
+
+    // ==================== In-Memory (readEntries / createFromStrings) ====================
+
+    /**
+     * Baut ein ZIP-Binär direkt über ZipArchive — auch mit bösartigen
+     * Eintragsnamen, die createFromStrings() zu Recht ablehnen würde.
+     *
+     * @param array<string, string> $entries Eintragsname → Inhalt.
+     */
+    private function buildRawZipBinary(array $entries): string {
+        $path = $this->tempDir . DIRECTORY_SEPARATOR . 'raw_' . uniqid() . '.zip';
+
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        foreach ($entries as $name => $content) {
+            $this->assertTrue($zip->addFromString($name, $content));
+        }
+        $this->assertTrue($zip->close());
+
+        $binary = $this->readFile($path);
+        File::delete($path);
+
+        return $binary;
+    }
+
+    public function test_create_from_strings_and_read_entries_roundtrip(): void {
+        $this->skipIfNoZipExtension();
+
+        $entries = [
+            'root.txt' => 'Inhalt Wurzel',
+            'sub/nested.txt' => "Binär\x00Inhalt",
+            'sub/tiefer/leer.txt' => '',
+        ];
+
+        $binary = ZipFile::createFromStrings($entries);
+        $this->assertStringStartsWith('PK', $binary); // ZIP-Signatur
+
+        $this->assertSame($entries, ZipFile::readEntries($binary));
+    }
+
+    public function test_read_entries_skips_directory_entries(): void {
+        $this->skipIfNoZipExtension();
+
+        $path = $this->tempDir . DIRECTORY_SEPARATOR . 'with_dir.zip';
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        $this->assertTrue($zip->addEmptyDir('ordner'));
+        $this->assertTrue($zip->addFromString('ordner/datei.txt', 'Inhalt'));
+        $this->assertTrue($zip->close());
+
+        $entries = ZipFile::readEntries($this->readFile($path));
+        File::delete($path);
+
+        $this->assertSame(['ordner/datei.txt' => 'Inhalt'], $entries);
+    }
+
+    public function test_read_entries_rejects_zip_slip_variants(): void {
+        $this->skipIfNoZipExtension();
+
+        $malicious = [
+            '../evil.txt',
+            'a/../evil.txt',
+            '/etc/evil.txt',
+            '..\\evil.txt',
+            'a\\..\\evil.txt',
+            'C:/windows/evil.txt',
+        ];
+
+        foreach ($malicious as $name) {
+            $binary = $this->buildRawZipBinary([$name => 'böse']);
+            try {
+                ZipFile::readEntries($binary);
+                $this->fail("Zip-Slip-Eintrag wurde nicht abgelehnt: $name");
+            } catch (InvalidArgumentException $e) {
+                $this->assertNotSame('', $e->getMessage());
+            }
+        }
+    }
+
+    public function test_create_from_strings_rejects_zip_slip_variants(): void {
+        $this->skipIfNoZipExtension();
+
+        $malicious = [
+            '../evil.txt',
+            'a/../evil.txt',
+            '/etc/evil.txt',
+            '..\\evil.txt',
+            'C:/windows/evil.txt',
+            'a//b.txt',
+            '',
+        ];
+
+        foreach ($malicious as $name) {
+            try {
+                ZipFile::createFromStrings([$name => 'böse']);
+                $this->fail("Unsicherer Eintragspfad wurde nicht abgelehnt: '$name'");
+            } catch (InvalidArgumentException $e) {
+                $this->assertNotSame('', $e->getMessage());
+            }
+        }
+    }
+
+    public function test_create_from_strings_allows_dotdot_in_filename(): void {
+        $this->skipIfNoZipExtension();
+
+        // ".." als Substring im Dateinamen ist kein Traversal — genau die
+        // Schwäche der bisherigen str_contains('..')-Prüfungen.
+        $binary = ZipFile::createFromStrings(['..geheim.txt' => 'ok']);
+        $this->assertSame(['..geheim.txt' => 'ok'], ZipFile::readEntries($binary));
+    }
+
+    public function test_create_from_strings_rejects_empty_entries(): void {
+        $this->skipIfNoZipExtension();
+
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::createFromStrings([]);
+    }
+
+    public function test_read_entries_enforces_max_entries(): void {
+        $this->skipIfNoZipExtension();
+
+        $binary = ZipFile::createFromStrings(['a.txt' => '1', 'b.txt' => '2', 'c.txt' => '3']);
+        $this->assertCount(3, ZipFile::readEntries($binary, 3));
+
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::readEntries($binary, 2);
+    }
+
+    public function test_read_entries_enforces_max_bytes(): void {
+        $this->skipIfNoZipExtension();
+
+        $binary = ZipFile::createFromStrings([
+            'a.txt' => str_repeat('A', 100),
+            'b.txt' => str_repeat('B', 100),
+        ]);
+        $this->assertCount(2, ZipFile::readEntries($binary, null, 200));
+
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::readEntries($binary, null, 199);
+    }
+
+    public function test_read_entries_rejects_invalid_limits(): void {
+        $this->skipIfNoZipExtension();
+
+        $binary = ZipFile::createFromStrings(['a.txt' => '1']);
+
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::readEntries($binary, 0);
+    }
+
+    public function test_read_entries_rejects_invalid_binary(): void {
+        $this->skipIfNoZipExtension();
+
+        $this->expectException(Exception::class);
+        ZipFile::readEntries('das ist kein ZIP-Archiv');
     }
 
     public function test_create_skips_missing_files(): void {

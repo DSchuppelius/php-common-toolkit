@@ -117,6 +117,51 @@ final class Duration implements JsonSerializable, Stringable {
     }
 
     /**
+     * Parst ein Uhrenformat: "H:MM:SS", "H:MM" oder "MM:SS".
+     *
+     * Zweiteilige Werte sind mehrdeutig — $twoPartsAreHoursMinutes steuert
+     * die Deutung: true (Standard) liest "8:30" als Stunden:Minuten
+     * (z. B. Kimai), false als Minuten:Sekunden (z. B. Toggl). Führende
+     * Nullen und Stunden über 24 ("123:45:06") sind zulässig; die erste
+     * Komponente ist unbegrenzt, die folgenden müssen zweistellig und < 60
+     * sein. Ein führendes '-' wird wie bei {@see fromIso8601()} als negative
+     * Dauer gedeutet — damit ist {@see toClock()} roundtrip-fähig.
+     *
+     * @throws InvalidArgumentException Bei nicht deutbarem Uhrenformat.
+     */
+    public static function fromClock(string $value, bool $twoPartsAreHoursMinutes = true): self {
+        $trimmed = trim($value);
+        $negative = str_starts_with($trimmed, '-');
+        if ($negative) {
+            $trimmed = substr($trimmed, 1);
+        }
+
+        if (preg_match('/^(\d+):(\d{2})(?::(\d{2}))?$/', $trimmed, $matches) !== 1) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Nicht deutbares Uhrenformat: '$value'");
+        }
+
+        $first = (int) $matches[1];
+        $second = (int) $matches[2];
+        // Die optionale Sekundengruppe steht am Muster-Ende — PHP lässt sie
+        // bei Nichttreffer komplett weg, isset() genügt.
+        $third = isset($matches[3]) ? (int) $matches[3] : null;
+
+        if ($second > 59 || ($third !== null && $third > 59)) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Uhrenformat mit Komponente ≥ 60: '$value'");
+        }
+
+        if ($third !== null) {
+            $seconds = $first * 3600 + $second * 60 + $third;
+        } elseif ($twoPartsAreHoursMinutes) {
+            $seconds = $first * 3600 + $second * 60;
+        } else {
+            $seconds = $first * 60 + $second;
+        }
+
+        return new self($negative ? -$seconds : $seconds);
+    }
+
+    /**
      * Tatsächlich verstrichene Zeit zwischen zwei Zeitpunkten
      * (instant-basiert, DST-sicher). Negativ, wenn $end vor $start liegt.
      */

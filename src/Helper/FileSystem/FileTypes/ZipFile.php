@@ -242,6 +242,220 @@ class ZipFile extends HelperAbstract {
     }
 
     /**
+     * Liest ein ZIP-Archiv aus einem Binärstring und liefert Pfad → Inhalt.
+     *
+     * Für In-Memory-Verarbeitung (API-Antworten, Datenbank-Blobs, Uploads)
+     * ohne eigene Tempdatei-Verwaltung beim Aufrufer. Verzeichniseinträge
+     * werden übersprungen. Jeder Eintragspfad durchläuft den harten
+     * Zip-Slip-Guard {@see self::assertSafeEntryPath()}.
+     *
+     * Optionale Limits deckeln Zip-Bomben: $maxEntries begrenzt die Anzahl
+     * der Datei-Einträge, $maxBytes die entpackte Gesamtgröße in Bytes
+     * (geprüft gegen die deklarierte UND die tatsächliche Größe — Header
+     * können lügen).
+     *
+     * @param string $zipBinary Das ZIP-Archiv als Binärstring.
+     * @param int|null $maxEntries Maximale Anzahl Datei-Einträge (null = unbegrenzt).
+     * @param int|null $maxBytes Maximale entpackte Gesamtbytes (null = unbegrenzt).
+     * @return array<string, string> Eintragspfad → Inhalt.
+     * @throws InvalidArgumentException Bei unsicheren Eintragspfaden, ungültigen oder überschrittenen Limits.
+     * @throws Exception Falls der Binärstring kein lesbares ZIP-Archiv ist.
+     */
+    public static function readEntries(string $zipBinary, ?int $maxEntries = null, ?int $maxBytes = null): array {
+        self::checkZipExtension();
+
+        if ($maxEntries !== null && $maxEntries < 1) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxEntries muss mindestens 1 sein: $maxEntries");
+        }
+        if ($maxBytes !== null && $maxBytes < 1) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxBytes muss mindestens 1 sein: $maxBytes");
+        }
+
+        $tempFile = self::createTempZipFile($zipBinary);
+
+        $zip = new ZipArchive;
+        $opened = false;
+        $entries = [];
+
+        try {
+            $openResult = $zip->open($tempFile);
+            if ($openResult !== true) {
+                // false → 0 (unbekannter Fehler), sonst der ZipArchive-Fehlercode
+                self::logErrorAndThrow(Exception::class, "Binärstring ist kein lesbares ZIP-Archiv: " . self::getErrorMessage((int) $openResult));
+            }
+            $opened = true;
+
+            $totalBytes = 0;
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $entryName = $zip->getNameIndex($i);
+                if ($entryName === false || str_ends_with($entryName, '/')) {
+                    // Verzeichniseinträge liefern keinen Inhalt
+                    continue;
+                }
+
+                self::assertSafeEntryPath($entryName);
+
+                if ($maxEntries !== null && count($entries) >= $maxEntries) {
+                    self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Entry-Limit von $maxEntries Datei-Einträgen.");
+                }
+
+                // Deklarierte Größe vorab prüfen, damit eine Zip-Bombe gar
+                // nicht erst entpackt wird …
+                if ($maxBytes !== null) {
+                    $stat = $zip->statIndex($i);
+                    if ($stat !== false && $totalBytes + $stat['size'] > $maxBytes) {
+                        self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).");
+                    }
+                }
+
+                $content = $zip->getFromIndex($i);
+                if ($content === false) {
+                    self::logErrorAndThrow(Exception::class, "Fehler beim Lesen des Eintrags: $entryName");
+                }
+
+                // … und zusätzlich die tatsächliche Größe zählen.
+                $totalBytes += strlen($content);
+                if ($maxBytes !== null && $totalBytes > $maxBytes) {
+                    self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).");
+                }
+
+                $entries[$entryName] = $content;
+            }
+
+            $zip->close();
+            $opened = false;
+        } finally {
+            if ($opened) {
+                $zip->close();
+            }
+            @unlink($tempFile);
+        }
+
+        return self::logDebugAndReturn($entries, "ZIP-Binär gelesen: " . count($entries) . " Einträge");
+    }
+
+    /**
+     * Baut ein ZIP-Archiv als Binärstring aus Pfad → Inhalt.
+     *
+     * Gegenstück zu {@see self::readEntries()} für In-Memory-Erzeugung
+     * (z. B. Download-Antworten) ohne Datei-Zwischenschritt beim Aufrufer.
+     * Alle Eintragspfade durchlaufen VOR dem Schreiben den Zip-Slip-Guard
+     * {@see self::assertSafeEntryPath()}.
+     *
+     * @param array<string, string> $entries Eintragspfad → Inhalt (mindestens ein Eintrag).
+     * @return string Das ZIP-Archiv als Binärstring.
+     * @throws InvalidArgumentException Bei leerer Eintragsliste oder unsicheren Eintragspfaden.
+     * @throws Exception Falls das Archiv nicht erzeugt werden kann.
+     */
+    public static function createFromStrings(array $entries): string {
+        self::checkZipExtension();
+
+        if ($entries === []) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "createFromStrings() verlangt mindestens einen Eintrag.");
+        }
+
+        // Pfade vollständig validieren, bevor irgendetwas geschrieben wird.
+        foreach (array_keys($entries) as $path) {
+            self::assertSafeEntryPath((string) $path);
+        }
+
+        $tempFile = self::createTempZipFile('');
+
+        $zip = new ZipArchive;
+        $opened = false;
+
+        try {
+            // OVERWRITE, da tempnam() die Datei bereits (leer) angelegt hat.
+            $openResult = $zip->open($tempFile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+            if ($openResult !== true) {
+                self::logErrorAndThrow(Exception::class, "Fehler beim Erstellen des In-Memory-ZIP-Archivs: $tempFile");
+            }
+            $opened = true;
+
+            foreach ($entries as $path => $content) {
+                if (!$zip->addFromString((string) $path, $content)) {
+                    self::logErrorAndThrow(Exception::class, "Fehler beim Hinzufügen des Eintrags: $path");
+                }
+            }
+
+            if (!$zip->close()) {
+                $opened = false;
+                self::logErrorAndThrow(Exception::class, "Fehler beim Abschließen des In-Memory-ZIP-Archivs: $tempFile");
+            }
+            $opened = false;
+
+            $binary = file_get_contents($tempFile);
+            if ($binary === false) {
+                self::logErrorAndThrow(Exception::class, "Fehler beim Lesen des erzeugten ZIP-Archivs: $tempFile");
+            }
+        } finally {
+            if ($opened) {
+                $zip->close();
+            }
+            @unlink($tempFile);
+        }
+
+        return self::logDebugAndReturn($binary, "ZIP-Binär erzeugt: " . count($entries) . " Einträge (" . strlen($binary) . " Bytes)");
+    }
+
+    /**
+     * Schreibt einen Binärstring in eine temporäre ZIP-Arbeitsdatei.
+     *
+     * @param string $zipBinary Der zu schreibende Inhalt (leer für neue Archive).
+     * @return string Pfad der temporären Datei (Aufrufer löscht).
+     * @throws Exception Falls die Tempdatei nicht angelegt/geschrieben werden kann.
+     */
+    private static function createTempZipFile(string $zipBinary): string {
+        $tempFile = tempnam(sys_get_temp_dir(), 'ctk_zip_');
+        if ($tempFile === false) {
+            self::logErrorAndThrow(Exception::class, "Temporäre ZIP-Datei konnte nicht angelegt werden.");
+        }
+
+        if (file_put_contents($tempFile, $zipBinary) === false) {
+            @unlink($tempFile);
+            self::logErrorAndThrow(Exception::class, "Temporäre ZIP-Datei konnte nicht geschrieben werden: $tempFile");
+        }
+
+        return $tempFile;
+    }
+
+    /**
+     * Harter Zip-Slip-Guard für Archiv-Eintragspfade (In-Memory-Varianten).
+     *
+     * Lehnt ab: leere Pfade, NUL-Bytes, Backslashes (Windows-Trenner-Varianten,
+     * mit denen Slash-Normalisierungen umgangen werden), absolute Pfade
+     * (führender Slash oder Laufwerksangabe wie "C:") sowie "."-/".."- und
+     * leere Segmente. Bewusst strenger als eine reine str_contains('..')-
+     * Prüfung: "..geheim.txt" bleibt erlaubt, "a/../b" nicht.
+     *
+     * @param string $entryName Der zu prüfende Eintragspfad.
+     * @throws InvalidArgumentException Bei unsicherem Pfad.
+     */
+    private static function assertSafeEntryPath(string $entryName): void {
+        if (trim($entryName) === '') {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Leerer Archiv-Eintragspfad ist nicht zulässig.");
+        }
+        if (str_contains($entryName, "\0")) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "NUL-Byte im Archiv-Eintragspfad: '$entryName'");
+        }
+        if (str_contains($entryName, '\\')) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Backslash im Archiv-Eintragspfad (Zip-Slip-Variante): '$entryName'");
+        }
+        if (str_starts_with($entryName, '/') || preg_match('/^[A-Za-z]:/', $entryName) === 1) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Absoluter Archiv-Eintragspfad ist nicht zulässig: '$entryName'");
+        }
+
+        foreach (explode('/', $entryName) as $segment) {
+            if ($segment === '..' || $segment === '.') {
+                self::logErrorAndThrow(InvalidArgumentException::class, "Pfad-Traversal im Archiv-Eintragspfad erkannt: '$entryName'");
+            }
+            if ($segment === '') {
+                self::logErrorAndThrow(InvalidArgumentException::class, "Leeres Pfadsegment im Archiv-Eintragspfad: '$entryName'");
+            }
+        }
+    }
+
+    /**
      * Normalisiert einen Pfad und löst . und .. auf (ohne realpath, da Datei noch nicht existiert).
      *
      * @param string $path Der zu normalisierende Pfad.

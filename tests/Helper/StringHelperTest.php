@@ -276,4 +276,23 @@ class StringHelperTest extends BaseTestCase {
         $unchanged = StringHelper::convertToUtf8('nur ascii', 'UNSINN-99');
         $this->assertSame('nur ascii', $unchanged);
     }
+
+    public function test_similarity_identical_and_empty(): void {
+        $this->assertSame(1.0, StringHelper::similarity('Müller GmbH', 'Müller GmbH'));
+        $this->assertSame(0.0, StringHelper::similarity(null, 'abc'));
+        $this->assertSame(0.0, StringHelper::similarity('abc', null));
+        $this->assertSame(0.0, StringHelper::similarity('', 'abc'));
+        $this->assertSame(0.0, StringHelper::similarity(null, null));
+        $this->assertSame(0.0, StringHelper::similarity('', ''));
+    }
+
+    public function test_similarity_partial_matches(): void {
+        // Tippfehler-Nähe: hoher, aber nicht perfekter Score
+        $score = StringHelper::similarity('Schuppelius', 'Schupelius');
+        $this->assertGreaterThan(0.9, $score);
+        $this->assertLessThan(1.0, $score);
+
+        $this->assertGreaterThan(0.0, StringHelper::similarity('abc', 'xbc'));
+        $this->assertSame(0.0, StringHelper::similarity('abc', 'xyz'));
+    }
 }
