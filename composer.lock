@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.5.5",
+            "version": "v0.5.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "4ed2d0542a87b49c347f0f59df422c4ad3c53c94"
+                "reference": "73cf2d91ff9e83770f19d688c314bdd5a3960dea"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/4ed2d0542a87b49c347f0f59df422c4ad3c53c94",
-                "reference": "4ed2d0542a87b49c347f0f59df422c4ad3c53c94",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/73cf2d91ff9e83770f19d688c314bdd5a3960dea",
+                "reference": "73cf2d91ff9e83770f19d688c314bdd5a3960dea",
                 "shasum": ""
             },
             "require": {
@@ -48,9 +48,9 @@
             "description": "Ein Toolkit für JSON-basierte Konfigurationsverwaltung",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.5.5"
+                "source": "https://github.com/DSchuppelius/php-config-toolkit/tree/v0.5.8"
             },
-            "time": "2026-07-29T12:42:33+00:00"
+            "time": "2026-08-19T14:07:05+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
