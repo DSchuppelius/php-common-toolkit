@@ -545,4 +545,21 @@ class FileTest extends BaseTestCase {
         $this->expectException(FileNotFoundException::class);
         $generator->current(); // Generator läuft erst beim Konsum an
     }
+
+    public function test_read_lines_as_utf8_streams_utf16_files_line_by_line(): void {
+        $lines = ['Buchungsdatum;Partnername;Betrag', '02.01.2024;Müller & Söhne;-12,50', '', '03.01.2024;Straße "Zitat";1.000,00'];
+        $utf8 = implode("\r\n", $lines) . "\r\n";
+        $file = tempnam(sys_get_temp_dir(), 'utf16');
+        file_put_contents($file, "\xFF\xFE" . mb_convert_encoding($utf8, 'UTF-16LE', 'UTF-8'));
+
+        try {
+            $this->assertSame($lines, iterator_to_array(File::readLinesAsUtf8($file), false));
+            $this->assertSame(array_values(array_filter($lines, fn ($l) => $l !== '')), iterator_to_array(File::readLinesAsUtf8($file, true), false));
+            $this->assertSame($lines[1], iterator_to_array(File::readLinesAsUtf8($file, false, 1, 2), false)[0]);
+            // Gleicher Text wie ueber die Ganzdatei-Konvertierung
+            $this->assertSame(preg_split('/\r\n/', rtrim(File::readAsUtf8($file), "\r\n")), iterator_to_array(File::readLinesAsUtf8($file), false));
+        } finally {
+            unlink($file);
+        }
+    }
 }

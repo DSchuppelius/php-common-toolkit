@@ -820,9 +820,23 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         // BOM-Handling für erste Zeile
         $isFirstLine = true;
 
-        $handle = fopen($file, 'r');
+        $handle = fopen($file, 'rb');
         if ($handle === false) {
             self::logErrorAndThrow(FileNotFoundException::class, "Fehler beim Öffnen der Datei für readLinesAsUtf8: $file");
+        }
+
+        // Mehrbyte-Kodierungen (UTF-16/32) VOR dem Zeilenlesen konvertieren: fgets
+        // trennt sonst am einzelnen \n-Byte mitten in einem Zeichen und verschiebt
+        // die Ausrichtung aller Folgezeilen. Der Iconv-Stream-Filter liefert fgets
+        // fertiges UTF-8 (das BOM wird zu U+FEFF und unten wie ein UTF-8-BOM entfernt).
+        if ($needsConversion && self::isWideEncoding($encoding)) {
+            $filter = @stream_filter_append($handle, 'convert.iconv.' . $encoding . '/UTF-8', STREAM_FILTER_READ);
+            if ($filter !== false) {
+                self::logDebug("readLinesAsUtf8: Stream-Filter convert.iconv.$encoding/UTF-8 für $file");
+                $needsConversion = false;
+            } else {
+                self::logWarning("readLinesAsUtf8: Stream-Filter für $encoding nicht verfügbar, zeilenweise Konvertierung für $file");
+            }
         }
 
         $count = 0;
@@ -873,6 +887,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         fclose($handle);
+    }
+
+    /**
+     * Kodierungen mit mehr als einem Byte je Zeichen, die sich nicht zeilenweise
+     * nach fgets() konvertieren lassen (UTF-16/32, UCS-2/4).
+     */
+    private static function isWideEncoding(string $encoding): bool {
+        return preg_match('/^(UTF-16|UTF-32|UCS-2|UCS-4)/i', $encoding) === 1;
     }
 
     /**
