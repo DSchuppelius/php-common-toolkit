@@ -220,7 +220,28 @@ class BankHelper {
      * @return string|null Die erste gültige IBAN oder null.
      */
     public static function extractIBAN(?string $text, bool $strict = false, bool $spaceTolerant = false): ?string {
-        return self::extractIBANs($text, $strict, $spaceTolerant)[0] ?? null;
+        if ($text === null || $text === '') {
+            return null;
+        }
+
+        // Kandidat fuer Kandidat pruefen und beim ersten gueltigen aufhoeren:
+        // extractIBANs() wuerde erst ALLE Treffer sammeln und validieren — bei
+        // einem Plattformexport mit hunderttausend Gegen-IBANs Minuten fuer ein
+        // Ergebnis, das ohnehin nur der erste Treffer ist.
+        $pattern = $spaceTolerant
+            ? '/[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}/'
+            : '/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/';
+
+        $offset = 0;
+        while (preg_match($pattern, $text, $match, PREG_OFFSET_CAPTURE, $offset) === 1) {
+            $candidate = self::sanitizeIBAN($spaceTolerant ? str_replace(' ', '', $match[0][0]) : $match[0][0]);
+            if ($candidate !== null && self::validateIBAN($candidate, $strict)) {
+                return $candidate;
+            }
+            $offset = $match[0][1] + strlen($match[0][0]);
+        }
+
+        return null;
     }
 
     /**

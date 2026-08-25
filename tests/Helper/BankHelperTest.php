@@ -299,4 +299,33 @@ class BankHelperTest extends BaseTestCase {
         $this->assertEquals("800", $components['branchCode']);
         $this->assertEquals("0000099999999", $components['accountNumber']);
     }
+
+    /**
+     * extractIBAN() bricht beim ersten gueltigen Treffer ab und muss dabei
+     * exakt das erste Element von extractIBANs() liefern.
+     */
+    public function test_extract_iban_matches_first_of_extract_ibans(): void {
+        $texts = [
+            '',
+            'kein iban enthalten',
+            'DE25100800000012345605',
+            'x DE25100800000012345605 y DE89370400440532013000',
+            'DE00000000000000000000 dann DE89370400440532013000',
+            'DE89 3704 0044 0532 0130 00',
+            'ABCD1234567890123 DE89370400440532013000',
+            str_repeat('DE99000000000000000001 ', 20) . 'DE89370400440532013000',
+            'FR7630006000011234567890189 DE89370400440532013000',
+        ];
+        foreach ($texts as $text) {
+            foreach ([[false, false], [true, false], [false, true], [true, true]] as [$strict, $spaceTolerant]) {
+                $this->assertSame(
+                    BankHelper::extractIBANs($text, $strict, $spaceTolerant)[0] ?? null,
+                    BankHelper::extractIBAN($text, $strict, $spaceTolerant),
+                    "Text '$text' (strict=" . var_export($strict, true) . ', spaceTolerant=' . var_export($spaceTolerant, true) . ')'
+                );
+            }
+        }
+        $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('ABCD1234567890123 DE89370400440532013000'));
+        $this->assertNull(BankHelper::extractIBAN(null));
+    }
 }

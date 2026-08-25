@@ -348,4 +348,42 @@ class DateHelperTest extends BaseTestCase {
         $this->assertNull(DateHelper::parseClockTimeShorthand('seit 8h'));
         $this->assertNull(DateHelper::parseClockTimeShorthand('830'));
     }
+
+    /**
+     * Der Vorfilter in detectDateTimeFormat() darf kein unterstuetztes Format
+     * ausschliessen: jedes Format aus Basisliste und Laendergruppen muss fuer
+     * formatierte Beispielwerte weiterhin erkannt werden.
+     */
+    public function test_detect_date_time_format_prefilter_keeps_every_supported_format(): void {
+        $baseFormats = ['Y-m-d H:i:s', 'Y-m-d\\TH:i:s', 'Y-m-d\\TH:i:sP', 'Y-m-d', 'd.m.Y', 'd.m.Y H:i:s', 'd.m.y', 'd.m.y H:i:s'];
+        $samples = [new DateTimeImmutable('2026-03-07 10:11:12'), new DateTimeImmutable('2001-01-01 00:00:00'), new DateTimeImmutable('1999-12-31 23:59:59')];
+
+        foreach (CountryCode::cases() as $country) {
+            $formats = array_unique(array_merge($baseFormats, $country->getDateTimeFormatGroup()->getFormats()));
+            foreach ($formats as $format) {
+                foreach ($samples as $sample) {
+                    $value = $sample->format($format);
+                    $this->assertNotNull(DateHelper::detectDateTimeFormat($value, $country), "Format $format ($value, {$country->name}) muss erkannt werden");
+                    $this->assertNotNull(DateHelper::parseDateTime($value, $country), "Format $format ($value, {$country->name}) muss geparst werden");
+                }
+            }
+        }
+        $this->assertSame('U', DateHelper::detectDateTimeFormat('1700000000'));
+    }
+
+    public function test_detect_date_time_format_rejects_non_dates_before_trying_formats(): void {
+        foreach (['', 'Some text here', 'BA329RJ22322935MJCHD92W75', '1036119_fee Transaction fee', '07.03.2', '12345678', '-902.36', '1.234,56', "07.03.2026\0", ' 07.03.2026', 'x7.03.2026'] as $value) {
+            $this->assertNull(DateHelper::detectDateTimeFormat($value), "'$value' ist kein Datum");
+            $this->assertNull(DateHelper::parseDateTime($value), "'$value' ist kein Datum");
+        }
+    }
+
+    public function test_detect_date_time_format_is_stable_across_repeated_calls(): void {
+        $this->assertSame('d.m.Y', DateHelper::detectDateTimeFormat('07.03.2026'));
+        $this->assertSame('d.m.Y', DateHelper::detectDateTimeFormat('07.03.2026'));
+        $this->assertNull(DateHelper::detectDateTimeFormat('07.03.2026x'));
+        $this->assertNull(DateHelper::detectDateTimeFormat('07.03.2026x'));
+        $this->assertSame('m/d/Y', DateHelper::detectDateTimeFormat('03/07/2026', CountryCode::UnitedStatesOfAmerica));
+        $this->assertSame('d/m/Y', DateHelper::detectDateTimeFormat('03/07/2026', CountryCode::Germany));
+    }
 }

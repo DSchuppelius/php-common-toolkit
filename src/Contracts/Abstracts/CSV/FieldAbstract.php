@@ -48,8 +48,51 @@ class FieldAbstract implements FieldInterface {
      * @param string $enclosure Das Einschlusszeichen.
      */
     private function analyze(string $raw, string $enclosure): void {
-        $enc = preg_quote($enclosure, '/');
         $trimmed = trim($raw);
+
+        // Einzeichen-Enclosure (der Regelfall): Quote-Laeufe per String-Funktionen
+        // bestimmen statt mit vier regulaeren Ausdruecken je Feld. Ein CSV-Import
+        // erzeugt Millionen Felder; die Regex-Variante kostete davon den Loewenanteil.
+        // Mehrzeichen- oder leeres Enclosure nimmt weiter den Regex-Weg.
+        if (strlen($enclosure) === 1) {
+            $length = strlen($trimmed);
+            $startRun = strspn($trimmed, $enclosure);
+
+            // Frühzeitiger Sonderfall: reines Quote-Feld
+            // Beispiele: "", """", """""", usw.
+            if ($length > 0 && $startRun === $length) {
+                $this->quoted = true;
+                $this->typedValue = '';
+                $this->enclosureRepeat = intdiv($length, 2);
+                return;
+            }
+
+            $endRun = $length - strlen(rtrim($trimmed, $enclosure));
+
+            if ($startRun > 0 && $endRun > 0) {
+                $this->quoted = true;
+                // Bei quoted Fields: Whitespace außerhalb der Quotes ignorieren
+                $inner = substr($trimmed, $startRun, $length - $startRun - $endRun);
+
+                // Leeres Feld mit symmetrischen Quotes → intdiv
+                // Innere Leerzeichen zählen für Round-Trip-Erhaltung
+                if (trim($inner) === '' && $startRun === $endRun) {
+                    $this->enclosureRepeat = intdiv($startRun, 2);
+                    $this->innerPadding = strlen($inner);
+                    $this->typedValue = '';
+                    return;
+                }
+
+                $this->enclosureRepeat = min($startRun, $endRun);
+                $this->typedValue = self::balanceQuoteRuns($inner, $startRun, $endRun, $enclosure);
+                return;
+            }
+
+            $this->analyzeUnquoted($raw, $trimmed);
+            return;
+        }
+
+        $enc = preg_quote($enclosure, '/');
 
         // Frühzeitiger Sonderfall: reines Quote-Feld
         // Beispiele: "", """", """""", usw.
@@ -82,45 +125,52 @@ class FieldAbstract implements FieldInterface {
             }
 
             $this->enclosureRepeat = min($startRun, $endRun);
-
-            $inner = $matches[2];
-
-            // Asymmetrische Quote-Runs ausgleichen
-            if ($startRun > $endRun) {
-                $inner = str_repeat($enclosure, $startRun - $endRun) . $inner;
-            } elseif ($endRun > $startRun) {
-                $inner = $inner . str_repeat($enclosure, $endRun - $startRun);
-            }
-
-            // Quoted Fields bleiben als Literal-String erhalten.
-            // getValue() liefert den inneren Wert unverändert zurück.
-            // Die Formatierungs-Konsistenz wird über getValue() für Floats sichergestellt.
-            $this->typedValue = $inner;
-        } else {
-            // Unquoted Field - Whitespace für Round-Trip erhalten
-            $this->quoted = false;
-            $this->enclosureRepeat = 0;
-
-            // Sonderfall: Feld besteht nur aus Whitespace
-            // In diesem Fall würden beide Regexe den gesamten String matchen,
-            // was zu einer Verdoppelung beim Rekonstruieren führen würde.
-            if ($trimmed === '') {
-                // Alles als leadingWhitespace behandeln, trailingWhitespace bleibt leer
-                $this->leadingWhitespace = $raw;
-                $this->trailingWhitespace = '';
-                $this->typedValue = '';
-            } else {
-                // Leading/Trailing Whitespace extrahieren und speichern
-                if (preg_match('/^(\s*)/', $raw, $leadMatch)) {
-                    $this->leadingWhitespace = $leadMatch[1];
-                }
-                if (preg_match('/(\s*)$/', $raw, $trailMatch)) {
-                    $this->trailingWhitespace = $trailMatch[1];
-                }
-
-                $this->analyzeUnquotedValue($trimmed);
-            }
+            $this->typedValue = self::balanceQuoteRuns($matches[2], $startRun, $endRun, $enclosure);
+            return;
         }
+
+        $this->analyzeUnquoted($raw, $trimmed);
+    }
+
+    /**
+     * Gleicht asymmetrische Quote-Laeufe aus: der Ueberschuss der laengeren
+     * Seite gehoert zum Inhalt. Quoted Fields bleiben als Literal-String
+     * erhalten; getValue() liefert den inneren Wert unveraendert zurueck.
+     */
+    private static function balanceQuoteRuns(string $inner, int $startRun, int $endRun, string $enclosure): string {
+        if ($startRun > $endRun) {
+            return str_repeat($enclosure, $startRun - $endRun) . $inner;
+        }
+        if ($endRun > $startRun) {
+            return $inner . str_repeat($enclosure, $endRun - $startRun);
+        }
+
+        return $inner;
+    }
+
+    /**
+     * Unquoted Field: Whitespace für Round-Trip erhalten, Wert typisieren.
+     */
+    private function analyzeUnquoted(string $raw, string $trimmed): void {
+        $this->quoted = false;
+        $this->enclosureRepeat = 0;
+
+        // Sonderfall: Feld besteht nur aus Whitespace — alles als
+        // leadingWhitespace behandeln, sonst verdoppelte es sich beim Rekonstruieren.
+        if ($trimmed === '') {
+            $this->leadingWhitespace = $raw;
+            $this->trailingWhitespace = '';
+            $this->typedValue = '';
+            return;
+        }
+
+        // Leading/Trailing Whitespace wie PCRE \s (Leerzeichen, \t, \n, \v, \f, \r —
+        // anders als trim() ohne \0) extrahieren und speichern
+        $whitespace = " \t\n\x0B\x0C\r";
+        $this->leadingWhitespace = substr($raw, 0, strlen($raw) - strlen(ltrim($raw, $whitespace)));
+        $this->trailingWhitespace = substr($raw, strlen(rtrim($raw, $whitespace)));
+
+        $this->analyzeUnquotedValue($trimmed);
     }
 
     /**

@@ -889,13 +889,57 @@ class DateHelper {
      * @param CountryCode $country Das Land für länder-spezifische Formatinterpretation
      * @return string|null Das erkannte Format oder null ('strtotime' für strtotime-Fallback)
      */
+    /** @var array<string, string|false> Erkannte Formate je Wert und Land (false = kein Datum) */
+    private static array $detectedFormats = [];
+
+    /** Obergrenze des Format-Caches; danach wird er geleert (kein LRU noetig) */
+    private const DETECTED_FORMATS_LIMIT = 8192;
+
+    /**
+     * Gecachte Format-Erkennung: reine Funktion von Wert und Land — der
+     * strtotime-Rueckfall ist durch den Vorfilter auf absolute ISO-Daten
+     * beschraenkt. CSV-Spalten wiederholen dieselben Datumswerte tausendfach,
+     * und jedes Datumsfeld wird zweimal erkannt (Typisierung und Originalformat).
+     */
     private static function detectFormatInternal(string $value, CountryCode $country): ?string {
+        $key = $country->name . "\0" . $value;
+        if (isset(self::$detectedFormats[$key])) {
+            return self::$detectedFormats[$key] ?: null;
+        }
+
+        $format = self::detectFormatUncached($value, $country);
+
+        if (count(self::$detectedFormats) >= self::DETECTED_FORMATS_LIMIT) {
+            self::$detectedFormats = [];
+        }
+        self::$detectedFormats[$key] = $format ?? false;
+
+        return $format;
+    }
+
+    private static function detectFormatUncached(string $value, CountryCode $country): ?string {
         // Unix timestamp prüfen (10 oder 13 Stellen)
         if (ctype_digit($value) && (strlen($value) === 10 || strlen($value) === 13)) {
             $timestamp = (int) $value;
             if ($timestamp > 0 && $timestamp < 2147483647) {
                 return 'U';
             }
+        }
+
+        // Vorfilter: Jedes unterstuetzte Format beginnt mit einem zwei- (d, m, y)
+        // oder vierstelligen (Y) Zahlblock, auf den ein Trennzeichen folgt; die
+        // Round-Trip-Pruefung unten laesst ohnehin nur exakt so aufgebaute Werte
+        // durch. Reine Ziffernfolgen sind nur als Timestamp (oben) ein Datum, und
+        // kein Format erzeugt weniger als acht Zeichen ("01.01.26"). Alles andere
+        // (Texte, Referenzen, Betraege) scheidet hier aus, bevor je Format ein
+        // createFromFormat() versucht wird — bei CSV-Importen der Loewenanteil
+        // der Feldanalyse. Nullbytes lehnt createFromFormat() mit ValueError ab.
+        $length = strlen($value);
+        if ($length < 8 || !ctype_digit($value[0]) || !ctype_digit($value[1]) || ctype_digit($value) || str_contains($value, "\0")) {
+            return null;
+        }
+        if (ctype_digit($value[2]) && (!ctype_digit($value[3]) || ctype_digit($value[4]))) {
+            return null;
         }
 
         // Alle möglichen Formate sammeln

@@ -508,4 +508,41 @@ class DataFieldTest extends BaseTestCase {
             $this->assertSame($raw, $field->toString(), sprintf('Round-Trip muss für "%s" (Länge %d) exakt funktionieren', addcslashes($raw, "\t"), strlen($raw)));
         }
     }
+
+    public function test_unquoted_field_preserves_vertical_tab_and_form_feed_whitespace(): void {
+        $field = new DataField("\x0B\tWert \r");
+        $this->assertFalse($field->isQuoted());
+        $this->assertSame('Wert', $field->getValue());
+        $this->assertSame("\x0B\tWert \r", $field->toString());
+        $this->assertSame('Wert', $field->toString('"', true));
+    }
+
+    public function test_quoted_field_with_asymmetric_enclosure_runs(): void {
+        $field = new DataField('"a""');
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame(1, $field->getEnclosureRepeat());
+        $this->assertSame('a"', $field->getValue());
+        $this->assertSame('"a""', $field->toString());
+
+        $field = new DataField('""a"');
+        $this->assertSame('"a', $field->getValue());
+        $this->assertSame('""a"', $field->toString());
+
+        $field = new DataField('"""');
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame('', $field->getValue());
+        $this->assertSame(1, $field->getEnclosureRepeat());
+    }
+
+    public function test_quoted_field_keeps_multiline_content(): void {
+        $field = new DataField("\"Zeile 1\nZeile 2\"");
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame("Zeile 1\nZeile 2", $field->getValue());
+    }
+
+    public function test_multi_character_enclosure_uses_generic_path(): void {
+        $field = new DataField('abWertab', 'ab');
+        $this->assertTrue($field->isQuoted());
+        $this->assertSame('Wert', $field->getValue());
+    }
 }
