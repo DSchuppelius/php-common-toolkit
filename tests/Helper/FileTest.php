@@ -12,6 +12,7 @@ namespace Tests\Helper;
 
 use CommonToolkit\Helper\FileSystem\File;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Contracts\BaseTestCase;
 
 class FileTest extends BaseTestCase {
@@ -561,5 +562,76 @@ class FileTest extends BaseTestCase {
         } finally {
             unlink($file);
         }
+    }
+
+    /**
+     * Byte-basierte MIME-Erkennung: liefert für Inhalte ohne Datei im Dateisystem
+     * dieselbe Semantik wie File::mimeType() (string|false).
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function mimeContentProvider(): array {
+        return [
+            'pdf' => ["%PDF-1.4\n1 0 obj\n<< >>\nendobj\ntrailer\n%%EOF\n", 'application/pdf'],
+            'png' => ["\x89PNG\r\n\x1a\n" . str_repeat("\x00", 40), 'image/png'],
+            'jpeg' => ["\xFF\xD8\xFF\xE0\x00\x10JFIF\x00" . str_repeat("\x00", 32), 'image/jpeg'],
+            'gif87a' => ['GIF87a' . str_repeat("\x00", 32), 'image/gif'],
+            'gif89a' => ['GIF89a' . str_repeat("\x00", 32), 'image/gif'],
+            'zip' => ["PK\x03\x04" . str_repeat("\x00", 40), 'application/zip'],
+            'xml' => ['<?xml version="1.0" encoding="UTF-8"?><Invoice><ID>1</ID></Invoice>', 'text/xml'],
+            'json' => ['{"invoice": {"id": 1, "lines": [1, 2, 3]}}', 'application/json'],
+            'html' => ['<!DOCTYPE html><html><body>Text</body></html>', 'text/html'],
+            'text' => ["Dies ist reiner Text mit Umlauten: äöüß.\nZeile zwei.\n", 'text/plain'],
+            'binary' => ["\x00\x01\x02\x03\xFF\xFE" . str_repeat("\x7F", 20), 'application/octet-stream'],
+        ];
+    }
+
+    #[DataProvider('mimeContentProvider')]
+    public function test_mime_type_from_content(string $bytes, string $expected): void {
+        $this->assertSame($expected, File::mimeTypeFromContent($bytes));
+    }
+
+    #[DataProvider('mimeContentProvider')]
+    public function test_mime_type_from_magic_bytes_matches_without_finfo(string $bytes, string $expected): void {
+        // Der Fallback muss ohne ext-fileinfo dieselben Typen liefern.
+        $this->assertSame($expected, File::mimeTypeFromMagicBytes($bytes));
+    }
+
+    public function test_mime_type_from_content_detects_further_signatures(): void {
+        $this->assertSame('image/tiff', File::mimeTypeFromMagicBytes("II*\x00" . str_repeat("\x00", 30)));
+        $this->assertSame('image/tiff', File::mimeTypeFromMagicBytes("MM\x00*" . str_repeat("\x00", 30)));
+        $this->assertSame('application/gzip', File::mimeTypeFromMagicBytes("\x1F\x8B\x08\x00" . str_repeat("\x00", 30)));
+        $this->assertSame('image/webp', File::mimeTypeFromMagicBytes("RIFF\x24\x00\x00\x00WEBPVP8 " . str_repeat("\x00", 20)));
+        $this->assertSame('image/bmp', File::mimeTypeFromMagicBytes("BM\x46\x00\x00\x00\x00\x00\x00\x00\x36\x00\x00\x00"));
+        // "BM" allein ist Text, kein Bitmap-Header.
+        $this->assertSame('text/plain', File::mimeTypeFromMagicBytes('BMW Rechnung 2026'));
+    }
+
+    public function test_mime_type_from_content_reads_xml_without_declaration(): void {
+        $this->assertSame('text/xml', File::mimeTypeFromMagicBytes('<Invoice xmlns="urn:test"><ID>1</ID></Invoice>'));
+        $this->assertSame('text/plain', File::mimeTypeFromMagicBytes('kein < Markup, nur Text'));
+    }
+
+    public function test_mime_type_from_content_returns_false_for_empty_input(): void {
+        $this->assertFalse(File::mimeTypeFromContent(''));
+        $this->assertFalse(File::mimeTypeFromMagicBytes(''));
+    }
+
+    public function test_mime_type_from_content_matches_file_based_detection(): void {
+        $bytes = File::read($this->testFile);
+        $this->assertSame(File::mimeType($this->testFile), File::mimeTypeFromContent($bytes));
+    }
+
+    public function test_mime_encoding_from_content(): void {
+        $this->assertSame('us-ascii', File::mimeEncodingFromContent('Plain ASCII content'));
+        $this->assertSame('utf-8', File::mimeEncodingFromContent('Umlaute äöü und ein Euro €'));
+        $this->assertSame('binary', File::mimeEncodingFromContent("\x00\x01\x02\xFF\xFE\xFD" . str_repeat("\x80", 16)));
+        $this->assertFalse(File::mimeEncodingFromContent(''));
+    }
+
+    public function test_mime_encoding_from_content_detects_bom(): void {
+        $utf16 = "\xFF\xFE" . mb_convert_encoding('Hallo Welt', 'UTF-16LE', 'UTF-8');
+        $this->assertSame('utf-16le', File::mimeEncodingFromContent($utf16));
+        $this->assertSame('text/plain', File::mimeTypeFromMagicBytes($utf16));
     }
 }

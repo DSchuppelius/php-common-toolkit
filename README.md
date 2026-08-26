@@ -249,6 +249,29 @@ aktuellen Versionen von bundesbank.de ersetzt werden (URLs in `config/helper.jso
 `Bundesbank.resourceurl` bzw. `Zahlungsdienstleister.resourceurl`). Nach dem Ersetzen
 `BankHelper::clearCache()` aufrufen, falls der Prozess weiterläuft.
 
+### MIME-Typ ohne Datei (Byte-basiert)
+
+`File::mimeType()` braucht einen Pfad. Liegt der Inhalt nur im Speicher (Upload,
+HTTP-Antwort, entpackter Archiv-Eintrag), erkennt `File::mimeTypeFromContent()`
+den Typ direkt aus den Bytes – gleiche Rückgabe-Semantik (`string|false`):
+
+```php
+use CommonToolkit\Helper\FileSystem\File;
+
+$bytes = $request->getContent();
+
+$mimeType = File::mimeTypeFromContent($bytes);   // "application/pdf" | false (leerer Inhalt)
+$encoding = File::mimeEncodingFromContent($bytes); // "us-ascii" | "utf-8" | "binary" | false
+$extension = File::extensionForMimeType($mimeType ?: ''); // "pdf"
+```
+
+Erkannt wird primär über `finfo::buffer()`. Fehlt `ext-fileinfo` oder liefert es
+kein belastbares Ergebnis (`application/x-empty`, `application/octet-stream`),
+greift `File::mimeTypeFromMagicBytes()` – eine deterministische
+Magic-Bytes-Tabelle (PDF, PNG, JPEG, GIF, ZIP, TIFF, GZIP, BMP, RIFF/WebP)
+plus Inhaltsheuristik für XML, HTML, JSON und Text. Unbekannter Binärinhalt
+ergibt `application/octet-stream`, ein leerer String `false`.
+
 ### Currency Formatting
 
 ```php

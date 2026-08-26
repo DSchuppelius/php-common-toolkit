@@ -32,6 +32,29 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     /** @var array<int, string> Windows-reservierte Gerätenamen, die nicht als Dateinamen verwendet werden können */
     public const WINDOWS_RESERVED_NAMES = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'];
 
+    /**
+     * @var array<int, string> finfo-Ergebnisse ohne Aussagekraft - hier greift die Magic-Bytes-Erkennung.
+     */
+    private const INCONCLUSIVE_MIME_TYPES = ['application/x-empty', 'application/octet-stream'];
+
+    /**
+     * @var array<string, string> Magic-Bytes-Signatur (Präfix) => MIME-Typ, längste Signatur zuerst.
+     */
+    private const MAGIC_BYTES = [
+        "\x89PNG\r\n\x1a\n" => 'image/png',
+        "GIF87a" => 'image/gif',
+        "GIF89a" => 'image/gif',
+        "%PDF-" => 'application/pdf',
+        "PK\x03\x04" => 'application/zip',
+        "PK\x05\x06" => 'application/zip',
+        "PK\x07\x08" => 'application/zip',
+        "\xFF\xD8\xFF" => 'image/jpeg',
+        "II*\x00" => 'image/tiff',
+        "MM\x00*" => 'image/tiff',
+        "\x1F\x8B" => 'application/gzip',
+        "%!PS" => 'application/postscript',
+    ];
+
     /** @var array<string, string|false> Cache für chardet-Ergebnisse (Pfad → Encoding) */
     private static array $chardetCache = [];
 
@@ -113,6 +136,174 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         return self::logErrorAndReturn(false, "MIME-Typ konnte nicht bestimmt werden: $file");
+    }
+
+    /**
+     * Bestimmt den MIME-Typ anhand des Inhalts (ohne Datei im Dateisystem).
+     *
+     * Byte-basiertes Gegenstück zu {@see mimeType()} für Inhalte, die nur im
+     * Speicher vorliegen (Uploads, HTTP-Antworten, Archiv-Einträge, entpackte
+     * Anhänge). Erkennung primär über finfo::buffer(); liefert finfo kein
+     * belastbares Ergebnis (Extension fehlt oder meldet application/x-empty bzw.
+     * application/octet-stream), greift die Magic-Bytes-Erkennung
+     * {@see mimeTypeFromMagicBytes()}.
+     *
+     * Bewusst ohne Cache: der Cache-Schlüssel wäre der komplette Inhalt.
+     *
+     * @param string $bytes Der Inhalt als Rohbytes; die ersten Bytes genügen für Binärformate.
+     * @return string|false Der erkannte MIME-Typ oder false bei leerem Inhalt.
+     */
+    public static function mimeTypeFromContent(string $bytes): string|false {
+        if ($bytes === '') {
+            return self::logErrorAndReturn(false, "MIME-Typ konnte nicht bestimmt werden: leerer Inhalt.");
+        }
+
+        if (class_exists('finfo')) {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $result = $finfo->buffer($bytes);
+            if ($result !== false && $result !== '' && !in_array($result, self::INCONCLUSIVE_MIME_TYPES, true)) {
+                return self::logDebugAndReturn($result, "MIME-Typ via finfo-Buffer erkannt: $result");
+            }
+        }
+
+        return self::mimeTypeFromMagicBytes($bytes);
+    }
+
+    /**
+     * Erkennt den MIME-Typ ausschließlich über Magic Bytes und Inhaltsheuristik.
+     *
+     * Deterministischer Fallback ohne ext-fileinfo: Signaturen der häufigsten
+     * Binärformate, danach XML/HTML/JSON und zuletzt die Text-/Binär-Unterscheidung.
+     * Nur die ersten Bytes werden ausgewertet - Ausnahme: die JSON-Erkennung
+     * benötigt den vollständigen Inhalt, ein Teilpuffer wird als text/plain gemeldet.
+     *
+     * @param string $bytes Der Inhalt als Rohbytes.
+     * @return string|false Der erkannte MIME-Typ, "application/octet-stream" bei
+     *                      unbekanntem Binärinhalt oder false bei leerem Inhalt.
+     */
+    public static function mimeTypeFromMagicBytes(string $bytes): string|false {
+        if ($bytes === '') {
+            return self::logErrorAndReturn(false, "MIME-Typ konnte nicht bestimmt werden: leerer Inhalt.");
+        }
+
+        foreach (self::MAGIC_BYTES as $signature => $mimeType) {
+            if (str_starts_with($bytes, $signature)) {
+                return self::logDebugAndReturn($mimeType, "MIME-Typ via Magic Bytes erkannt: $mimeType");
+            }
+        }
+
+        // RIFF-Container: der konkrete Typ steht erst ab Byte 8.
+        if (str_starts_with($bytes, 'RIFF') && strlen($bytes) >= 12) {
+            $riffType = substr($bytes, 8, 4);
+            $riffMime = match ($riffType) {
+                'WEBP' => 'image/webp',
+                'WAVE' => 'audio/wav',
+                'AVI ' => 'video/x-msvideo',
+                default => null,
+            };
+            if ($riffMime !== null) {
+                return self::logDebugAndReturn($riffMime, "MIME-Typ via RIFF-Container erkannt: $riffMime");
+            }
+        }
+
+        // BMP: "BM" allein ist zu unspezifisch (Text!), daher zusaetzlich die
+        // reservierten Felder (Offset 6-9, immer 0) und die Mindestgröße prüfen.
+        if (str_starts_with($bytes, 'BM') && strlen($bytes) >= 14 && substr($bytes, 6, 4) === "\x00\x00\x00\x00") {
+            return self::logDebugAndReturn('image/bmp', "MIME-Typ via Magic Bytes erkannt: image/bmp");
+        }
+
+        $bom = StringHelper::detectBomEncoding($bytes);
+        $content = StringHelper::stripBom($bytes);
+        $trimmed = ltrim($content, " \t\r\n");
+
+        if ($trimmed !== '') {
+            if (str_starts_with($trimmed, '<?xml')) {
+                return self::logDebugAndReturn('text/xml', "MIME-Typ via Inhaltsheuristik erkannt: text/xml");
+            }
+
+            $head = strtolower(substr($trimmed, 0, 14));
+            if (str_starts_with($head, '<!doctype html') || str_starts_with($head, '<html')) {
+                return self::logDebugAndReturn('text/html', "MIME-Typ via Inhaltsheuristik erkannt: text/html");
+            }
+
+            if (preg_match('/^<[a-zA-Z_][\w.:-]*[\s\/>]/', $trimmed) === 1) {
+                return self::logDebugAndReturn('text/xml', "MIME-Typ via Inhaltsheuristik erkannt: text/xml");
+            }
+
+            if (($trimmed[0] === '{' || $trimmed[0] === '[') && self::isJson($trimmed)) {
+                return self::logDebugAndReturn('application/json', "MIME-Typ via Inhaltsheuristik erkannt: application/json");
+            }
+        }
+
+        // UTF-16/UTF-32-BOM: Text, der als Bytefolge Nullbytes enthaelt.
+        if ($bom !== null) {
+            return self::logDebugAndReturn('text/plain', "MIME-Typ via BOM erkannt: text/plain ($bom)");
+        }
+
+        if (self::looksLikeText($content)) {
+            return self::logDebugAndReturn('text/plain', "MIME-Typ via Inhaltsheuristik erkannt: text/plain");
+        }
+
+        return self::logDebugAndReturn('application/octet-stream', "MIME-Typ nicht bestimmbar, Fallback: application/octet-stream");
+    }
+
+    /**
+     * Bestimmt die MIME-Encoding anhand des Inhalts (ohne Datei im Dateisystem).
+     *
+     * Byte-basiertes Gegenstück zu {@see mimeEncoding()}. Ohne ext-fileinfo wird
+     * über BOM und mb_check_encoding() entschieden; die Rückgabewerte folgen
+     * der finfo-Schreibweise (Kleinbuchstaben, z.B. "us-ascii", "utf-8", "binary").
+     *
+     * @param string $bytes Der Inhalt als Rohbytes.
+     * @return string|false Die erkannte MIME-Encoding oder false bei leerem Inhalt.
+     */
+    public static function mimeEncodingFromContent(string $bytes): string|false {
+        if ($bytes === '') {
+            return self::logErrorAndReturn(false, "MIME-Encoding konnte nicht bestimmt werden: leerer Inhalt.");
+        }
+
+        if (class_exists('finfo')) {
+            $finfo = new \finfo(FILEINFO_MIME_ENCODING);
+            $result = $finfo->buffer($bytes);
+            if ($result !== false && $result !== '') {
+                return self::logDebugAndReturn($result, "MIME-Encoding via finfo-Buffer erkannt: $result");
+            }
+        }
+
+        $bom = StringHelper::detectBomEncoding($bytes);
+        if ($bom !== null) {
+            return self::logDebugAndReturn(strtolower($bom), "MIME-Encoding via BOM erkannt: $bom");
+        }
+
+        if (mb_check_encoding($bytes, 'ASCII')) {
+            return 'us-ascii';
+        }
+
+        if (mb_check_encoding($bytes, 'UTF-8')) {
+            return 'utf-8';
+        }
+
+        return 'binary';
+    }
+
+    /**
+     * Prüft, ob der Inhalt vollständiges, gültiges JSON ist.
+     */
+    private static function isJson(string $content): bool {
+        json_decode($content);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+
+    /**
+     * Heuristik für Textinhalte: gültiges UTF-8 ohne Steuerzeichen
+     * (Tabulator, Zeilenumbruch, Wagenrücklauf, Seitenvorschub ausgenommen).
+     */
+    private static function looksLikeText(string $content): bool {
+        if (!mb_check_encoding($content, 'UTF-8')) {
+            return false;
+        }
+
+        return preg_match('/[\x00-\x08\x0B\x0E-\x1F]/', $content) !== 1;
     }
 
     /**
