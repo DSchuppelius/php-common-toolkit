@@ -92,4 +92,12 @@ class AmountTokenizerTest extends BaseTestCase {
         $this->assertNotNull($token);
         $this->assertSame(mb_strpos($line, '50,00'), $token->start);
     }
+
+    public function test_gedankenstrich_als_minus(): void {
+        $tokens = AmountTokenizer::tokens('06.12.24   Telefonica Germany GmbH   –61,50 €   +13.328,28 €');
+        $this->assertCount(2, $tokens);
+        $this->assertSame(-61.5, $tokens[0]->value);
+        $this->assertTrue($tokens[0]->hasSign);
+        $this->assertSame(13328.28, $tokens[1]->value);
+    }
 }

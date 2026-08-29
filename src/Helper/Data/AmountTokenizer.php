@@ -28,7 +28,7 @@ final class AmountTokenizer {
     private const AMT_CH = '\d{1,3}(?:\'\d{3})+\.\d{2}|\d{1,3}(?: \d{3})+[.,]\d{2}';
     private const AMT = '(?:' . self::AMT_CH . '|' . self::AMT_DE . '|' . self::AMT_EN . ')';
     private const CUR = '(?:EUR|CHF|USD|GBP|AED|€|\$|£)';
-    private const AMOUNT_RE = '/(?<![\d.,\'])([-+−]?)\s?(' . self::CUR . ')?\s?(' . self::AMT . ')\s?(' . self::CUR . ')?\s?([-+−]|\b[SH]\b|\bDR\b|\bCR\b)?(?![\d.,])/u';
+    private const AMOUNT_RE = '/(?<![\d.,\'])([-+−–]?)\s?(' . self::CUR . ')?\s?(' . self::AMT . ')\s?(' . self::CUR . ')?\s?([-+−–]|\b[SH]\b|\bDR\b|\bCR\b)?(?![\d.,])/u';
 
     /**
      * Alle Betrags-Token einer Zeile, von links nach rechts.
@@ -49,7 +49,7 @@ final class AmountTokenizer {
             $trail = self::group($m, 5);
 
             $value = self::toFloat($number);
-            $negative = in_array($lead, ['-', '−'], true) || in_array($trail, ['-', '−', 'S', 'DR'], true);
+            $negative = in_array($lead, ['-', '−', '–'], true) || in_array($trail, ['-', '−', '–', 'S', 'DR'], true);
             $hasSign = $lead !== '' || $trail !== '';
 
             $start = self::charPos($line, (int) $m[3][1]);
