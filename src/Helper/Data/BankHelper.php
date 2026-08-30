@@ -466,14 +466,39 @@ class BankHelper {
     /**
      * Gibt die BIC aus einer IBAN zurück.
      *
-     * Nutzt einen BLZ-Index für O(1) Lookups statt linearer Suche.
+     * Deutschland: BLZ-Index der Bundesbank (O(1)). Niederlande: der vierstellige
+     * Bankcode der IBAN ist zugleich der Institutsteil der BIC ("ABNA" → ABNANL2A);
+     * die BIC kommt aus dem Verzeichnis der erreichbaren Zahlungsdienstleister,
+     * sofern dort genau eine achtstellige BIC mit diesem Institut und Land steht.
+     * Andere Länder (z. B. CH: BC-Nummer → BIC braucht den SIX-Bankenstamm) liefern null.
      *
      * @param string $iban Die IBAN.
-     * @return string|null Die BIC oder null, wenn keine BIC gefunden wurde.
+     * @return string|null Die BIC (11-stellig, Filiale XXX) oder null, wenn keine BIC gefunden wurde.
      */
     public static function bicFromIBAN(string $iban): ?string {
-        $blz = substr($iban, 4, 8);
-        return self::bicFromBLZ($blz);
+        $iban = strtoupper((string) preg_replace('/\s+/', '', $iban));
+        return match (substr($iban, 0, 2)) {
+            'DE' => self::bicFromBLZ(substr($iban, 4, 8)),
+            'NL' => self::bicFromNlBankCode(substr($iban, 4, 4)),
+            default => null,
+        };
+    }
+
+    /**
+     * Niederlande: Bankcode der IBAN (4 Buchstaben) → BIC aus dem Zahlungsdienstleister-Verzeichnis.
+     * Eindeutig nur, wenn genau eine achtstellige BIC "<Code>NL??" geführt wird.
+     */
+    private static function bicFromNlBankCode(string $bankCode): ?string {
+        if (preg_match('/^[A-Z]{4}$/', $bankCode) !== 1) {
+            return null;
+        }
+        $matches = [];
+        foreach (array_keys(self::getBicIndex()) as $bic8) {
+            if (str_starts_with($bic8, $bankCode . 'NL')) {
+                $matches[] = $bic8;
+            }
+        }
+        return count($matches) === 1 ? $matches[0] . 'XXX' : null;
     }
 
     /**

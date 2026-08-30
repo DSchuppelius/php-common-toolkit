@@ -33,6 +33,7 @@ final class DateTokenizer {
         'd-mon-y2' => '\d{1,2} %MONTH% \d{2}(?!\d)',
         'dm' => '\d{2}\.\d{2}\.(?![\d])',
         'dm-slash' => '\d{2}\/\d{2}(?![\d\/])',
+        'd-month' => '\d{1,2}\.? ?%MONTH%\.?(?![\p{L}\d])',
     ];
 
     /** Sprachen, deren Monatsnamen in Kontoauszügen vorkommen. */
@@ -121,6 +122,12 @@ final class DateTokenizer {
             case 'dm-slash':
                 [$d, $m] = explode('/', $raw);
                 return [(int) $d, (int) $m, null];
+            case 'd-month':
+                if (preg_match('/^(\d{1,2})\.? ?([^\d\s.]+)\.?$/u', $raw, $p) !== 1) {
+                    return [0, 0, null];
+                }
+                $found = Month::fromName($p[2]);
+                return [(int) $p[1], $found === null ? 0 : $found->value, null];
             default:
                 // "8. Juni 2023", "3 Jan 24"
                 if (preg_match('/^(\d{1,2})\.? ?([^\d\s.]+)\.? (\d{2,4})$/u', $raw, $p) !== 1) {

@@ -101,6 +101,21 @@ class BankHelperOfflineTest extends BaseTestCase {
     }
 
     /**
+     * Niederländische IBAN: Bankcode = Institutsteil der BIC, Rest aus dem
+     * Zahlungsdienstleister-Verzeichnis (ABNA → ABNANL2A, RABO → RABONL2U).
+     */
+    public function test_dutch_iban_yields_bic_from_psp_directory_offline(): void {
+        BankHelper::setNetworkEnabled(false);
+
+        $this->assertSame('ABNANL2AXXX', BankHelper::bicFromIBAN('NL91ABNA0417164300'));
+        $this->assertSame('RABONL2UXXX', BankHelper::bicFromIBAN('NL02 RABO 0123 4567 89'));
+        $this->assertSame('INGBNL2AXXX', BankHelper::bicFromIBAN('NL69INGB0123456789'));
+        // Unbekannter Bankcode und andere Länder ohne Tabelle: null statt Rätselraten
+        $this->assertNull(BankHelper::bicFromIBAN('NL00ZZZZ0000000000'));
+        $this->assertNull(BankHelper::bicFromIBAN('CH9300762011623852957'));
+    }
+
+    /**
      * Bankname aus dem Bezeichnungsfeld (Offset 9, Länge 58) derselben BLZ-Datei.
      */
     public function test_shipped_data_yields_bank_name_offline(): void {
