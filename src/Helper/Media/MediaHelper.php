@@ -34,6 +34,13 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     /** Invariante FFmpeg-Flags für Konvertierungen. */
     private const FFMPEG_BASE_FLAGS = ['-hide_banner', '-loglevel', 'error'];
 
+    /**
+     * Whisper-Ausgabeformate, die genau eine Datei erzeugen.
+     *
+     * @var list<string>
+     */
+    public const WHISPER_FORMATS = ['txt', 'vtt', 'srt', 'tsv', 'json'];
+
     public static function isFfmpegAvailable(): bool {
         return self::isExecutableAvailable('ffmpeg');
     }
@@ -186,10 +193,17 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     /**
      * Transkribiert eine Audiodatei mit OpenAI Whisper.
      *
+     * Das Ausgabeformat ist wählbar, weil derselbe Lauf je nach Zweck etwas
+     * anderes liefern muss: Fließtext zum Weiterverarbeiten, WebVTT/SRT als
+     * Untertitelspur mit Zeitmarken. Whispers 'all' ist bewusst nicht
+     * zugelassen – es schreibt mehrere Dateien, für die es keinen einzelnen
+     * Rückgabewert gibt.
+     *
      * @param string $modelDir Verzeichnis mit den Whisper-Modellen (deployment-spezifisch)
      * @param string $language Sprachcode oder 'auto' für automatische Erkennung
      * @param string $task 'transcribe' oder 'translate'
-     * @return string|null Transkribierter Text oder null bei Fehler
+     * @param string $outputFormat Eines aus WHISPER_FORMATS ('txt', 'vtt', 'srt', 'tsv', 'json')
+     * @return string|null Inhalt der Ausgabedatei oder null bei Fehler
      */
     public static function transcribeWhisper(
         string $input,
@@ -198,8 +212,18 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         string $modelDir = '',
         string $language = 'auto',
         string $task = 'transcribe',
-        string $device = 'cpu'
+        string $device = 'cpu',
+        string $outputFormat = 'txt'
     ): ?string {
+        $outputFormat = strtolower(trim($outputFormat));
+        if (!in_array($outputFormat, self::WHISPER_FORMATS, true)) {
+            return self::logErrorAndReturn(null, sprintf(
+                'Unbekanntes Whisper-Ausgabeformat "%s"; erlaubt: %s.',
+                $outputFormat,
+                implode(', ', self::WHISPER_FORMATS)
+            ));
+        }
+
         $path = self::getExecutablePath('whisper');
         if ($path === null) {
             return self::logErrorAndReturn(null, 'Whisper ist nicht verfügbar (media_executables.json).');
@@ -221,7 +245,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         $parts[] = '--output_dir';
         $parts[] = escapeshellarg($outputDir);
         $parts[] = '--output_format';
-        $parts[] = 'txt';
+        $parts[] = escapeshellarg($outputFormat);
         $parts[] = '--task';
         $parts[] = escapeshellarg($task);
         if ($language !== 'auto') {
@@ -238,9 +262,9 @@ final class MediaHelper extends ConfiguredHelperAbstract {
 
         // Whisper benennt die Ausgabe nach der Eingabedatei.
         $basename = pathinfo($input, PATHINFO_FILENAME);
-        $outputFile = $outputDir . '/' . $basename . '.txt';
+        $outputFile = $outputDir . '/' . $basename . '.' . $outputFormat;
         if (!File::exists($outputFile)) {
-            $files = glob($outputDir . '/*.txt') ?: [];
+            $files = glob($outputDir . '/*.' . $outputFormat) ?: [];
             if (empty($files)) {
                 return self::logErrorAndReturn(null, 'Whisper hat keine Ausgabedatei erstellt: ' . implode("\n", $output));
             }
