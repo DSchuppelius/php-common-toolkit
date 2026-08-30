@@ -30,14 +30,16 @@ final class DateTokenizer {
         'dmy' => '\d{1,2}\.\d{2}\.\d{4}',
         'dmy2' => '\d{2}\.\d{2}\.\d{2}(?!\d)',
         'd-month-y' => '\d{1,2}\.? ?%MONTH% \d{4}',
+        'month-d-y' => '%MONTH% \d{1,2}, \d{2,4}',
         'd-mon-y2' => '\d{1,2} %MONTH% \d{2}(?!\d)',
         'dm' => '\d{2}\.\d{2}\.(?![\d])',
         'dm-slash' => '\d{2}\/\d{2}(?![\d\/])',
+        'dm-dash' => '\d{2}-\d{2}(?![\d-])',
         'd-month' => '\d{1,2}\.? ?%MONTH%\.?(?![\p{L}\d])',
     ];
 
     /** Sprachen, deren Monatsnamen in Kontoauszügen vorkommen. */
-    private const MONTH_LOCALES = ['de', 'en'];
+    private const MONTH_LOCALES = ['de', 'en', 'nl'];
 
     /** @var array<string, string> */
     private static array $anchored = [];
@@ -55,7 +57,8 @@ final class DateTokenizer {
      * @return list<DateToken>
      */
     public static function tokens(string $line, bool $monthFirst = false): array {
-        if (preg_match_all('/(?<![\d.\/-])(' . self::alternation() . ')/u', $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === false) {
+        // Monatsnamen ohne Rücksicht auf Groß-/Kleinschreibung ("16 SEP", "16 Sep", J.P.-Morgan-Auszüge)
+        if (preg_match_all('/(?<![\d.\/-])(' . self::alternation() . ')/iu', $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === false) {
             return [];
         }
 
@@ -86,7 +89,14 @@ final class DateTokenizer {
                 continue;
             }
             [$day, $month, $year] = self::parts($raw, $form);
+            // Der monthFirst-Tausch gilt nur für Schrägstrich-Formen: punktierte Daten sind in
+            // deutschen Auszügen immer TT.MM., und eine einzelne "12/27"-Referenz im Text darf
+            // sie nicht kippen. Eindeutige US-Daten fängt der Zweig darunter ab.
             if ($monthFirst && in_array($form, ['dmy-slash', 'dm-slash'], true)) {
+                [$day, $month] = [$month, $day];
+            } elseif ($month > 12 && $day <= 12 && in_array($form, ['dmy-slash', 'dmy', 'dmy2'], true)) {
+                // Eindeutig US-Form mit Jahr ("08.13.2025", "05/13/2025"): der zweite Teil kann kein
+                // Monat sein. Ohne Jahr ("05/13") bleibt es ungelesen – dort ist Monat/Jahr gemeint.
                 [$day, $month] = [$month, $day];
             }
             if ($day < 1 || $day > 31 || $month < 1 || $month > 12) {
@@ -122,12 +132,23 @@ final class DateTokenizer {
             case 'dm-slash':
                 [$d, $m] = explode('/', $raw);
                 return [(int) $d, (int) $m, null];
+            case 'dm-dash':
+                [$d, $m] = explode('-', $raw);
+                return [(int) $d, (int) $m, null];
             case 'd-month':
                 if (preg_match('/^(\d{1,2})\.? ?([^\d\s.]+)\.?$/u', $raw, $p) !== 1) {
                     return [0, 0, null];
                 }
                 $found = Month::fromName($p[2]);
                 return [(int) $p[1], $found === null ? 0 : $found->value, null];
+            case 'month-d-y':
+                // "Apr 16, 2025"
+                if (preg_match('/^([^\d\s.]+)\.? (\d{1,2}), (\d{2,4})$/u', $raw, $p) !== 1) {
+                    return [0, 0, null];
+                }
+                $found = Month::fromName($p[1]);
+                $year = (int) $p[3];
+                return [(int) $p[2], $found === null ? 0 : $found->value, strlen($p[3]) === 2 ? 2000 + $year : $year];
             default:
                 // "8. Juni 2023", "3 Jan 24"
                 if (preg_match('/^(\d{1,2})\.? ?([^\d\s.]+)\.? (\d{2,4})$/u', $raw, $p) !== 1) {
@@ -144,7 +165,7 @@ final class DateTokenizer {
     private static function anchored(): array {
         if (self::$anchored === []) {
             foreach (self::forms() as $form => $pattern) {
-                self::$anchored[$form] = '/^' . $pattern . '$/u';
+                self::$anchored[$form] = '/^' . $pattern . '$/iu';
             }
         }
         return self::$anchored;

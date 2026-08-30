@@ -565,8 +565,71 @@ enum CurrencyCode: string {
         };
     }
 
+    /**
+     * Eindeutige Schreibweisen des Symbols – regionale Präfixe, die {@see getSymbol()} nicht
+     * unterscheidet ("AU$" ist AUD, "$" bleibt USD). Kommt eine Währung mit eigenem Präfix dazu,
+     * genügt ein Eintrag hier: Tokenizer und {@see fromSymbol()} erkennen sie dann von selbst.
+     *
+     * @return list<string>
+     */
+    public function getUniqueSymbols(): array {
+        return match ($this) {
+            self::AustralianDollar => ['AU$', 'A$'],
+            self::CanadianDollar => ['CA$', 'C$'],
+            self::NewZealandDollar => ['NZ$'],
+            self::HongKongDollar => ['HK$'],
+            self::SingaporeDollar => ['SG$', 'S$'],
+            self::NewTaiwanDollar => ['NT$'],
+            self::BrazilianReal => ['R$'],
+            self::MexicanPeso => ['MX$'],
+            self::ArgentinianPeso => ['AR$'],
+            self::ChileanPeso => ['CLP$'],
+            default => [],
+        };
+    }
+
+    /**
+     * Steht diese Währung in Kontoauszügen direkt am Betrag ("+2.082,50 EUR", "CHF 1'234.56",
+     * "-30,30€")? Nur diese Codes und Symbole sucht der {@see \CommonToolkit\Helper\Data\AmountTokenizer}
+     * – eindeutige Präfixe aus {@see getUniqueSymbols()} erkennt er unabhängig davon.
+     *
+     * Erweiterungen bitte gegen echte Auszüge prüfen: Wird eine Währung aufgenommen, in der ein
+     * Institut die FREMDwährung neben dem Buchungsbetrag ausweist, kann die Fremdwährungszeile
+     * zur Betragszeile werden (belegt bei DKK: Targobank-Kreditkarte "NETTO NAERUM … 69,00 DKK",
+     * der EUR-Betrag steht erst darunter).
+     */
+    public function isStatementCurrency(): bool {
+        return match ($this) {
+            self::Euro,
+            self::SwissFranc,
+            self::USDollar,
+            self::BritishPound,
+            self::ArabEmirateDirham => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Alle Schreibweisen des Symbols, eindeutige zuerst ("AU$", "A$", "$").
+     *
+     * @return list<string>
+     */
+    public function getSymbols(): array {
+        $symbols = $this->getUniqueSymbols();
+        $shared = $this->getSymbol();
+
+        return $shared === '' ? $symbols : [...$symbols, $shared];
+    }
+
     public static function fromSymbol(string $symbol): self {
         $symbol = trim($symbol);
+
+        // Eindeutige Präfixe zuerst: "AU$" ist AUD, nicht USD
+        foreach (self::cases() as $case) {
+            if (in_array($symbol, $case->getUniqueSymbols(), true)) {
+                return $case;
+            }
+        }
 
         $modern = null;
         $historical = null;

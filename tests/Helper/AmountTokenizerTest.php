@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Tests\Helper;
 
+use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\Helper\Data\AmountTokenizer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Contracts\BaseTestCase;
@@ -41,7 +42,7 @@ class AmountTokenizerTest extends BaseTestCase {
             'negativ' => ['05.09.2023 Basislastschrift   -107,00', -107.0, true, null],
             'H = Haben' => ['12.10. 12.10. Gutschrift   175,00 H', 175.0, true, null],
             'S = Soll' => ['31.10. 31.10. siehe Anlage 1   1,61 S', -1.61, true, null],
-            'Euro-Zeichen ohne Leerzeichen' => ['BS HERCEG NOVI   01.08.2023   -30,30€', -30.3, true, '€'],
+            'Euro-Zeichen ohne Leerzeichen' => ['BS HERCEG NOVI   01.08.2023   -30,30€', -30.3, true, 'EUR'],
             'EN ohne Vorzeichen' => ['12/11/2024  IBTRF  30,000.00', 30000.0, false, null],
             'CH mit Währung davor' => ['Zahlung CHF 1\'234.56', 1234.56, false, 'CHF'],
             'nachgestelltes Minus' => ['Zinsen   5,68-', -5.68, true, null],
@@ -99,5 +100,18 @@ class AmountTokenizerTest extends BaseTestCase {
         $this->assertSame(-61.5, $tokens[0]->value);
         $this->assertTrue($tokens[0]->hasSign);
         $this->assertSame(13328.28, $tokens[1]->value);
+    }
+
+    public function test_regionale_dollar_praefixe(): void {
+        // Revolut: "AU$7 500.00" ist AUD, nicht USD
+        $aud = AmountTokenizer::first('15 Dez. 2025  Geld eingezahlt von NEXIGEN DIGITAL PTY   AU$7 500.00');
+        $this->assertNotNull($aud);
+        $this->assertSame(7500.0, $aud->value);
+        $this->assertSame('AUD', $aud->currency);
+        $this->assertSame(CurrencyCode::AustralianDollar, $aud->currencyCode());
+        $this->assertSame('CAD', AmountTokenizer::first('Zahlung C$1,250.00')?->currency);
+        $this->assertSame('USD', AmountTokenizer::first('Zahlung $1,250.00')?->currency);
+        $this->assertSame('GBP', AmountTokenizer::first('Payment £250.00')?->currency);
+        $this->assertSame('CHF', AmountTokenizer::first("Zahlung CHF 1'234.56")?->currency);
     }
 }

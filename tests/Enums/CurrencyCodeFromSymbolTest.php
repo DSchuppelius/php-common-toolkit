@@ -115,4 +115,38 @@ final class CurrencyCodeFromSymbolTest extends BaseTestCase {
         $this->expectException(InvalidArgumentException::class);
         CurrencyCode::fromSymbol('@');
     }
+
+    public function test_eindeutige_regionale_symbole(): void {
+        // "AU$" ist AUD, das nackte "$" bleibt USD
+        $this->assertSame(CurrencyCode::AustralianDollar, CurrencyCode::fromSymbol('AU$'));
+        $this->assertSame(CurrencyCode::AustralianDollar, CurrencyCode::fromSymbol('A$'));
+        $this->assertSame(CurrencyCode::CanadianDollar, CurrencyCode::fromSymbol('C$'));
+        $this->assertSame(CurrencyCode::BrazilianReal, CurrencyCode::fromSymbol('R$'));
+        $this->assertSame(CurrencyCode::USDollar, CurrencyCode::fromSymbol('$'));
+
+        // Schreibweisen: eindeutige zuerst, danach das geteilte Symbol
+        $this->assertSame(['AU$', 'A$', '$'], CurrencyCode::AustralianDollar->getSymbols());
+        $this->assertSame(['€'], CurrencyCode::Euro->getSymbols());
+        $this->assertSame([], CurrencyCode::Euro->getUniqueSymbols());
+    }
+
+    public function test_waehrungen_am_betrag(): void {
+        // Der Kreis, den der AmountTokenizer am Betrag sucht
+        $amBetrag = array_values(array_map(
+            static fn (CurrencyCode $c): string => $c->value,
+            array_filter(CurrencyCode::cases(), static fn (CurrencyCode $c): bool => $c->isStatementCurrency())
+        ));
+        $this->assertSame(['AED', 'CHF', 'EUR', 'GBP', 'USD'], $this->sorted($amBetrag));
+        $this->assertFalse(CurrencyCode::DanishKrone->isStatementCurrency());
+    }
+
+    /**
+     * @param list<string> $codes
+     * @return list<string>
+     */
+    private function sorted(array $codes): array {
+        sort($codes);
+
+        return $codes;
+    }
 }

@@ -12,7 +12,9 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
+use CommonToolkit\Enums\CurrencyCode;
 use CommonToolkit\ValueObjects\AmountToken;
+use InvalidArgumentException;
 
 /**
  * Findet Geldbeträge in Textzeilen – bankneutral, mit Zeichenposition.
@@ -27,8 +29,7 @@ final class AmountTokenizer {
     private const AMT_EN = '\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2}';
     private const AMT_CH = '\d{1,3}(?:\'\d{3})+\.\d{2}|\d{1,3}(?: \d{3})+[.,]\d{2}';
     private const AMT = '(?:' . self::AMT_CH . '|' . self::AMT_DE . '|' . self::AMT_EN . ')';
-    private const CUR = '(?:EUR|CHF|USD|GBP|AED|€|\$|£)';
-    private const AMOUNT_RE = '/(?<![\d.,\'])([-+−–]?)\s?(' . self::CUR . ')?\s?(' . self::AMT . ')\s?(' . self::CUR . ')?\s?([-+−–]|\b[SH]\b|\bDR\b|\bCR\b)?(?![\d.,])/u';
+    private static ?string $amountRe = null;
 
     /**
      * Alle Betrags-Token einer Zeile, von links nach rechts.
@@ -36,7 +37,7 @@ final class AmountTokenizer {
      * @return list<AmountToken>
      */
     public static function tokens(string $line): array {
-        if (preg_match_all(self::AMOUNT_RE, $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === false) {
+        if (preg_match_all(self::amountRe(), $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === false) {
             return [];
         }
 
@@ -59,7 +60,7 @@ final class AmountTokenizer {
                 $hasSign,
                 $start,
                 $start + mb_strlen($number),
-                $currencyBefore !== '' ? $currencyBefore : ($currencyAfter !== '' ? $currencyAfter : null),
+                self::normalizeCurrency($currencyBefore !== '' ? $currencyBefore : $currencyAfter),
             );
         }
         return $tokens;
@@ -107,5 +108,50 @@ final class AmountTokenizer {
 
     private static function charPos(string $line, int $byteOffset): int {
         return mb_strlen(substr($line, 0, $byteOffset));
+    }
+
+    /** Muster mit allen erlaubten Währungen (Codes, Symbole, regionale Präfixe). */
+    private static function amountRe(): string {
+        if (self::$amountRe !== null) {
+            return self::$amountRe;
+        }
+        $tokens = [];
+        foreach (CurrencyCode::cases() as $currency) {
+            // Eindeutige Präfixe ("AU$") sind immer sicher; Code und geteiltes Symbol nur für
+            // die Währungen, die laut Enum am Betrag stehen
+            foreach ($currency->getUniqueSymbols() as $symbol) {
+                $tokens[] = $symbol;
+            }
+            if (!$currency->isStatementCurrency()) {
+                continue;
+            }
+            $tokens[] = $currency->value;
+            $shared = $currency->getSymbol();
+            if ($shared !== '') {
+                $tokens[] = $shared;
+            }
+        }
+        $tokens = array_values(array_unique($tokens));
+        usort($tokens, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+        $cur = '(?:' . implode('|', array_map(static fn (string $t): string => preg_quote($t, '/'), $tokens)) . ')';
+
+        return self::$amountRe = '/(?<![\d.,\'])([-+−–]?)\s?(' . $cur . ')?\s?(' . self::AMT . ')\s?(' . $cur . ')?\s?([-+−–]|\b[SH]\b|\bDR\b|\bCR\b)?(?![\d.,])/u';
+    }
+
+    /** Symbol oder Code am Betrag → ISO-4217-Code ({@see CurrencyCode}); null, wenn keine Währung dastand. */
+    private static function normalizeCurrency(string $raw): ?string {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+        $code = CurrencyCode::tryFrom(strtoupper($raw));
+        if ($code !== null) {
+            return $code->value;
+        }
+        try {
+            return CurrencyCode::fromSymbol($raw)->value;
+        } catch (InvalidArgumentException) {
+            return null;
+        }
     }
 }

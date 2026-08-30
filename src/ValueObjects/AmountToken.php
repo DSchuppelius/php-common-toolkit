@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace CommonToolkit\ValueObjects;
 
+use CommonToolkit\Enums\CurrencyCode;
+
 /**
  * Ein Geldbetrag in einer Textzeile, mit Zeichenposition (für Spaltenzuordnung
  * in Layout-Text, z. B. Kontoauszüge).
@@ -28,7 +30,10 @@ final class AmountToken {
         public readonly int $start,
         /** Zeichenposition hinter der letzten Ziffer (rechte Kante – Beträge sind rechtsbündig). */
         public readonly int $end,
-        /** Währung direkt am Betrag, falls vorhanden (EUR, €, CHF, …). */
+        /**
+         * Währung direkt am Betrag als ISO-4217-Code, falls vorhanden ("€" → EUR, "AU$" → AUD);
+         * null, wenn der Betrag ohne Währung stand. {@see currencyCode()} liefert sie typisiert.
+         */
         public readonly ?string $currency = null,
     ) {}
 
@@ -42,5 +47,10 @@ final class AmountToken {
 
     public function isNegative(): bool {
         return $this->value < 0;
+    }
+
+    /** Währung als Enum; null, wenn der Betrag keine trug oder der Code unbekannt ist. */
+    public function currencyCode(): ?CurrencyCode {
+        return $this->currency === null ? null : CurrencyCode::tryFrom($this->currency);
     }
 }
