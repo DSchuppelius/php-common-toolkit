@@ -42,6 +42,19 @@ class DateTokenizerTest extends BaseTestCase {
         $this->assertSame([$day, $month, $year], [$token->day, $token->month, $token->year]);
     }
 
+    public function test_monatsname_ohne_jahr_als_zweites_datum(): void {
+        // ApoBank: Buchungsdatum mit Jahr, Valuta ohne Jahr, dann eine Auftragsnummer
+        $tokens = DateTokenizer::tokens('19. Apr. 2021   19. Apr.   471970286   Überweisung Online');
+        $this->assertCount(2, $tokens);
+        $this->assertSame('d-month-y', $tokens[0]->form);
+        $this->assertSame(2021, $tokens[0]->year);
+        $this->assertSame('d-month', $tokens[1]->form);
+        $this->assertSame([19, 4, null], [$tokens[1]->day, $tokens[1]->month, $tokens[1]->year]);
+        // Kein Datum: Monatsname als Wortbestandteil oder mit Jahr dahinter bleibt eine Form
+        $this->assertCount(1, DateTokenizer::tokens('8. Juni 2023 Miete'));
+        $this->assertSame([], DateTokenizer::tokens('3 Maiglöckchen'));
+    }
+
     public function test_mehrere_daten_mit_positionen(): void {
         $line = '02.04.2024    02.04.2024    Lastschrift';
         $tokens = DateTokenizer::tokens($line);
