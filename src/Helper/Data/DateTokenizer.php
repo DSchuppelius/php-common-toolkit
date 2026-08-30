@@ -42,8 +42,10 @@ final class DateTokenizer {
     private const MONTH_LOCALES = ['de', 'en', 'nl'];
 
     /** @var array<string, string> */
+    /** @var array<string, array<string, string>> Verankerte Muster je Variante (default/nodot) */
     private static array $anchored = [];
-    private static ?string $alternation = null;
+    /** @var array<string, string> Alternation je Variante */
+    private static array $alternation = [];
 
     /**
      * Alle Datums-Token einer Zeile, nach Position sortiert.
@@ -56,16 +58,16 @@ final class DateTokenizer {
      * @param bool $monthFirst Schrägstrich-Daten als MM/DD(/YYYY) lesen (US-Auszüge)
      * @return list<DateToken>
      */
-    public static function tokens(string $line, bool $monthFirst = false): array {
+    public static function tokens(string $line, bool $monthFirst = false, bool $dayMonthWithoutDot = false): array {
         // Monatsnamen ohne Rücksicht auf Groß-/Kleinschreibung ("16 SEP", "16 Sep", J.P.-Morgan-Auszüge)
-        if (preg_match_all('/(?<![\d.\/-])(' . self::alternation() . ')/iu', $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === false) {
+        if (preg_match_all('/(?<![\d.\/-])(' . self::alternation($dayMonthWithoutDot) . ')/iu', $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === false) {
             return [];
         }
 
         $tokens = [];
         foreach ($matches as $m) {
             $raw = $m[1][0];
-            $token = self::token($raw, mb_strlen(substr($line, 0, (int) $m[1][1])), $monthFirst);
+            $token = self::token($raw, mb_strlen(substr($line, 0, (int) $m[1][1])), $monthFirst, $dayMonthWithoutDot);
             if ($token !== null) {
                 $tokens[] = $token;
             }
@@ -73,8 +75,8 @@ final class DateTokenizer {
         return $tokens;
     }
 
-    public static function first(string $line, bool $monthFirst = false): ?DateToken {
-        $tokens = self::tokens($line, $monthFirst);
+    public static function first(string $line, bool $monthFirst = false, bool $dayMonthWithoutDot = false): ?DateToken {
+        $tokens = self::tokens($line, $monthFirst, $dayMonthWithoutDot);
         return $tokens[0] ?? null;
     }
 
@@ -83,8 +85,8 @@ final class DateTokenizer {
         return mb_strlen($line) - mb_strlen(ltrim($line));
     }
 
-    private static function token(string $raw, int $start, bool $monthFirst = false): ?DateToken {
-        foreach (self::anchored() as $form => $pattern) {
+    private static function token(string $raw, int $start, bool $monthFirst = false, bool $dayMonthWithoutDot = false): ?DateToken {
+        foreach (self::anchored($dayMonthWithoutDot) as $form => $pattern) {
             if (preg_match($pattern, $raw) !== 1) {
                 continue;
             }
@@ -127,6 +129,7 @@ final class DateTokenizer {
                 $year = (int) $y;
                 return [(int) $d, (int) $m, strlen($y) === 2 ? 2000 + $year : $year];
             case 'dm':
+            case 'dm-nodot':
                 [$d, $m] = explode('.', $raw);
                 return [(int) $d, (int) $m, null];
             case 'dm-slash':
@@ -162,21 +165,27 @@ final class DateTokenizer {
     }
 
     /** @return array<string, string> */
-    private static function anchored(): array {
-        if (self::$anchored === []) {
-            foreach (self::forms() as $form => $pattern) {
-                self::$anchored[$form] = '/^' . $pattern . '$/iu';
+    private static function anchored(bool $dayMonthWithoutDot = false): array {
+        $key = $dayMonthWithoutDot ? 'nodot' : 'default';
+        if (!isset(self::$anchored[$key])) {
+            self::$anchored[$key] = [];
+            foreach (self::forms($dayMonthWithoutDot) as $form => $pattern) {
+                self::$anchored[$key][$form] = '/^' . $pattern . '$/iu';
             }
         }
-        return self::$anchored;
+
+        return self::$anchored[$key];
     }
 
-    private static function alternation(): string {
-        return self::$alternation ??= implode('|', array_values(self::forms()));
+    private static function alternation(bool $dayMonthWithoutDot = false): string {
+        $key = $dayMonthWithoutDot ? 'nodot' : 'default';
+
+        return self::$alternation[$key] ??= implode('|', array_values(self::forms($dayMonthWithoutDot)));
     }
 
     /** @var array<string, string>|null */
-    private static ?array $forms = null;
+    /** @var array<string, array<string, string>> Formen je Variante */
+    private static array $forms = [];
 
     /**
      * Formen mit eingesetzter Monats-Alternation: volle und kurze Namen aus
@@ -184,9 +193,10 @@ final class DateTokenizer {
      *
      * @return array<string, string>
      */
-    private static function forms(): array {
-        if (self::$forms !== null) {
-            return self::$forms;
+    private static function forms(bool $dayMonthWithoutDot = false): array {
+        $key = $dayMonthWithoutDot ? 'nodot' : 'default';
+        if (isset(self::$forms[$key])) {
+            return self::$forms[$key];
         }
         $names = ['Maerz', 'Sept'];
         foreach (self::MONTH_LOCALES as $locale) {
@@ -198,10 +208,17 @@ final class DateTokenizer {
         $names = array_values(array_unique($names));
         usort($names, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
         $alternation = '(?:' . implode('|', array_map(static fn (string $n): string => preg_quote($n, '/'), $names)) . ')\.?';
-        self::$forms = [];
-        foreach (self::FORMS as $form => $pattern) {
-            self::$forms[$form] = str_replace('%MONTH%', $alternation, $pattern);
+        $forms = self::FORMS;
+        if ($dayMonthWithoutDot) {
+            // "02.11   DO   RESERV. BETRAG GAA" – Tag.Monat ohne abschließenden Punkt. Nur auf
+            // Anforderung, weil die Form mit englischen Beträgen kollidiert ("16.03" = 16,03).
+            $forms['dm-nodot'] = '\d{2}\.\d{2}(?![\d.,])';
         }
-        return self::$forms;
+        self::$forms[$key] = [];
+        foreach ($forms as $form => $pattern) {
+            self::$forms[$key][$form] = str_replace('%MONTH%', $alternation, $pattern);
+        }
+
+        return self::$forms[$key];
     }
 }
