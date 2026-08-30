@@ -49,6 +49,8 @@ class AmountTokenizerTest extends BaseTestCase {
             'Unicode-Minus' => ['Gebühr −12,00', -12.0, true, null],
             'DR = Soll' => ['Payment 250.00 DR', -250.0, true, null],
             'Vorzeichen mit Leerzeichen (Qonto)' => ['02/10   STRIPE   + 5332.34 EUR', 5332.34, true, 'EUR'],
+            'Af = Soll (NL, Marker in eigener Spalte)' => ['17 dec  17 dec  EVERNOTE  ZURICH  CHE      59,99               Af', -59.99, true, null],
+            'Bij = Haben (NL)' => ['02 jan  02 jan  SALARIS   1.250,00   Bij', 1250.0, true, null],
         ];
     }
 

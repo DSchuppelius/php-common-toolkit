@@ -50,7 +50,8 @@ final class AmountTokenizer {
             $trail = self::group($m, 5);
 
             $value = self::toFloat($number);
-            $negative = in_array($lead, ['-', '−', '–'], true) || in_array($trail, ['-', '−', '–', 'S', 'DR'], true);
+            // "Af"/"Bij" sind die niederländischen Soll-/Haben-Marker (ABN Amro, ING NL)
+            $negative = in_array($lead, ['-', '−', '–'], true) || in_array($trail, ['-', '−', '–', 'S', 'DR', 'Af'], true);
             $hasSign = $lead !== '' || $trail !== '';
 
             $start = self::charPos($line, (int) $m[3][1]);
@@ -135,7 +136,7 @@ final class AmountTokenizer {
         usort($tokens, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
         $cur = '(?:' . implode('|', array_map(static fn (string $t): string => preg_quote($t, '/'), $tokens)) . ')';
 
-        return self::$amountRe = '/(?<![\d.,\'])([-+−–]?)\s?(' . $cur . ')?\s?(' . self::AMT . ')\s?(' . $cur . ')?\s?([-+−–]|\b[SH]\b|\bDR\b|\bCR\b)?(?![\d.,])/u';
+        return self::$amountRe = '/(?<![\d.,\'])([-+−–]?)\s?(' . $cur . ')?\s?(' . self::AMT . ')\s?(' . $cur . ')?\s{0,16}([-+−–]|\b[SH]\b|\bDR\b|\bCR\b|\bAf\b|\bBij\b)?(?![\d.,])/u';
     }
 
     /** Symbol oder Code am Betrag → ISO-4217-Code ({@see CurrencyCode}); null, wenn keine Währung dastand. */
