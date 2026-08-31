@@ -160,14 +160,45 @@ class ZipFile extends HelperAbstract {
     /**
      * Extrahiert eine ZIP-Datei in einen Zielordner mit Zip-Slip-Schutz.
      *
+     * Die optionalen Limits deckeln Zip-Bomben — dieselbe Semantik wie in
+     * {@see self::readEntries()}, hier zusätzlich mit Kompressionsverhältnis:
+     * ein Archiv aus wenigen Kilobyte, das sich zu Gigabyte entfaltet, füllt
+     * sonst die Platte, bevor irgendeine Größenprüfung greift.
+     *
+     * Geprüft wird gegen die deklarierte UND die tatsächliche Größe: der
+     * Header eines Archivs ist eine Behauptung des Absenders, keine Tatsache.
+     * Schlägt ein Limit an, bricht der Vorgang ab; bereits geschriebene
+     * Dateien bleiben liegen — das Aufräumen des Zielordners gehört dem
+     * Aufrufer, der ihn angelegt hat.
+     *
      * @param string $file ZIP-Datei, die extrahiert werden soll.
      * @param string $destinationFolder Zielverzeichnis.
      * @param bool $deleteSourceFile Ob die ZIP-Datei nach dem Extrahieren gelöscht werden soll.
+     * @param int|null $maxEntries Maximale Anzahl Datei-Einträge (null = unbegrenzt).
+     * @param int|null $maxBytes Maximale entpackte Gesamtbytes (null = unbegrenzt).
+     * @param float|null $maxRatio Maximales Verhältnis entpackt/komprimiert (null = unbegrenzt).
      * @throws Exception Falls die Datei nicht extrahiert werden kann.
-     * @throws InvalidArgumentException Falls ein Path-Traversal-Angriff erkannt wird.
+     * @throws InvalidArgumentException Falls ein Path-Traversal-Angriff erkannt oder ein Limit überschritten wird.
      */
-    public static function extract(string $file, string $destinationFolder, bool $deleteSourceFile = true): void {
+    public static function extract(
+        string $file,
+        string $destinationFolder,
+        bool $deleteSourceFile = true,
+        ?int $maxEntries = null,
+        ?int $maxBytes = null,
+        ?float $maxRatio = null
+    ): void {
         self::checkZipExtension();
+
+        if ($maxEntries !== null && $maxEntries < 1) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxEntries muss mindestens 1 sein: $maxEntries");
+        }
+        if ($maxBytes !== null && $maxBytes < 1) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxBytes muss mindestens 1 sein: $maxBytes");
+        }
+        if ($maxRatio !== null && $maxRatio <= 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxRatio muss größer als 0 sein: $maxRatio");
+        }
 
         $file = File::getRealPath($file);
         $destinationFolder = File::getRealPath($destinationFolder);
@@ -192,6 +223,9 @@ class ZipFile extends HelperAbstract {
             self::logErrorAndThrow(Exception::class, "Zielverzeichnis konnte nicht aufgelöst werden: $destinationFolder");
         }
         $destinationReal = rtrim($destinationReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+        $totalBytes = 0;
+        $fileCount = 0;
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $entryName = $zip->getNameIndex($i);
@@ -223,11 +257,41 @@ class ZipFile extends HelperAbstract {
                 continue;
             }
 
+            $fileCount++;
+            if ($maxEntries !== null && $fileCount > $maxEntries) {
+                $zip->close();
+                self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Entry-Limit von $maxEntries Datei-Einträgen.");
+            }
+
+            // Deklarierte Größe und Kompressionsverhältnis vorab prüfen, damit
+            // eine Zip-Bombe gar nicht erst entpackt wird …
+            if ($maxBytes !== null || $maxRatio !== null) {
+                $stat = $zip->statIndex($i);
+                if ($stat !== false) {
+                    if ($maxBytes !== null && $totalBytes + (int) $stat['size'] > $maxBytes) {
+                        $zip->close();
+                        self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).");
+                    }
+                    // comp_size 0 heißt leerer Eintrag, nicht unendliches Verhältnis.
+                    if ($maxRatio !== null && (int) $stat['comp_size'] > 0 && (float) $stat['size'] / (float) $stat['comp_size'] > $maxRatio) {
+                        $zip->close();
+                        self::logErrorAndThrow(InvalidArgumentException::class, "Eintrag '$entryName' überschreitet das Kompressionsverhältnis von $maxRatio.");
+                    }
+                }
+            }
+
             // Datei extrahieren
             $content = $zip->getFromIndex($i);
             if ($content === false) {
                 $zip->close();
                 self::logErrorAndThrow(Exception::class, "Fehler beim Lesen des Eintrags: $entryName");
+            }
+
+            // … und zusätzlich die tatsächliche Größe zählen.
+            $totalBytes += strlen($content);
+            if ($maxBytes !== null && $totalBytes > $maxBytes) {
+                $zip->close();
+                self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).");
             }
 
             File::write($targetPathReal, $content);

@@ -418,6 +418,72 @@ class ZipFileTest extends BaseTestCase {
         ZipFile::readEntries($binary, 0);
     }
 
+    public function test_extract_enforces_max_entries(): void {
+        $this->skipIfNoZipExtension();
+
+        $archive = $this->archiveFromStrings(['a.txt' => '1', 'b.txt' => '2', 'c.txt' => '3']);
+        $target = $this->tempDir . DIRECTORY_SEPARATOR . 'out';
+
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::extract($archive, $target, false, 2);
+    }
+
+    public function test_extract_enforces_max_bytes(): void {
+        $this->skipIfNoZipExtension();
+
+        $archive = $this->archiveFromStrings([
+            'a.txt' => str_repeat('A', 100),
+            'b.txt' => str_repeat('B', 100),
+        ]);
+
+        ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'ok', false, null, 200);
+        $this->assertFileExists($this->tempDir . DIRECTORY_SEPARATOR . 'ok' . DIRECTORY_SEPARATOR . 'b.txt');
+
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'zu-gross', false, null, 199);
+    }
+
+    /** Zip-Bombe: wenige Bytes im Archiv, viele beim Entpacken. */
+    public function test_extract_enforces_max_ratio(): void {
+        $this->skipIfNoZipExtension();
+
+        $archive = $this->archiveFromStrings(['bombe.txt' => str_repeat('A', 200000)]);
+
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'bombe', false, null, null, 10.0);
+    }
+
+    public function test_extract_rejects_invalid_limits(): void {
+        $this->skipIfNoZipExtension();
+
+        $archive = $this->archiveFromStrings(['a.txt' => '1']);
+
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'out', false, 0);
+    }
+
+    /** Ohne Limits bleibt das Verhalten unverändert. */
+    public function test_extract_without_limits_is_unchanged(): void {
+        $this->skipIfNoZipExtension();
+
+        $archive = $this->archiveFromStrings(['a.txt' => 'eins', 'unter/b.txt' => 'zwei']);
+        $target = $this->tempDir . DIRECTORY_SEPARATOR . 'frei';
+
+        ZipFile::extract($archive, $target, false);
+
+        $this->assertSame('eins', file_get_contents($target . DIRECTORY_SEPARATOR . 'a.txt'));
+        $this->assertSame('zwei', file_get_contents($target . DIRECTORY_SEPARATOR . 'unter' . DIRECTORY_SEPARATOR . 'b.txt'));
+    }
+
+    /** @param array<string, string> $entries */
+    private function archiveFromStrings(array $entries): string {
+        $path = $this->tempDir . DIRECTORY_SEPARATOR . 'archiv_' . uniqid() . '.zip';
+        file_put_contents($path, ZipFile::createFromStrings($entries));
+        $this->tempFiles[] = $path;
+
+        return $path;
+    }
+
     public function test_read_entries_rejects_invalid_binary(): void {
         $this->skipIfNoZipExtension();
 
