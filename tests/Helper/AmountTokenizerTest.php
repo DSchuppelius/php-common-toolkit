@@ -116,4 +116,15 @@ class AmountTokenizerTest extends BaseTestCase {
         $this->assertSame('GBP', AmountTokenizer::first('Payment £250.00')?->currency);
         $this->assertSame('CHF', AmountTokenizer::first("Zahlung CHF 1'234.56")?->currency);
     }
+
+    public function test_schweizer_tausendertrenner_auch_typografisch(): void {
+        // ODDO BHF 0346 druckt den Schweizer Trenner als U+2019, nicht als geraden Apostroph –
+        // ohne das zerfiel "43’361.24" in Resttext "43’" plus den Betrag "361.24".
+        $typografisch = AmountTokenizer::tokens('079359 Verkauf von 880 RECKITT   43’361.24   78’284.71 H');
+        $this->assertSame(['43’361.24', '78’284.71'], array_map(static fn ($t) => $t->raw, $typografisch));
+        $this->assertSame([43361.24, 78284.71], array_map(static fn ($t) => $t->value, $typografisch));
+
+        $gerade = AmountTokenizer::tokens("Devisengeschaeft   49'478.23   28'806.48 H");
+        $this->assertSame([49478.23, 28806.48], array_map(static fn ($t) => $t->value, $gerade));
+    }
 }

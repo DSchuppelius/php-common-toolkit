@@ -27,7 +27,8 @@ use InvalidArgumentException;
 final class AmountTokenizer {
     private const AMT_DE = '\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}';
     private const AMT_EN = '\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2}';
-    private const AMT_CH = '\d{1,3}(?:\'\d{3})+\.\d{2}|\d{1,3}(?: \d{3})+[.,]\d{2}';
+    private const CH_APOSTROPHE = '[\'\x{2019}\x{02BC}]';
+    private const AMT_CH = '\d{1,3}(?:' . self::CH_APOSTROPHE . '\d{3})+\.\d{2}|\d{1,3}(?: \d{3})+[.,]\d{2}';
     private const AMT = '(?:' . self::AMT_CH . '|' . self::AMT_DE . '|' . self::AMT_EN . ')';
     private static ?string $amountRe = null;
 
@@ -90,7 +91,7 @@ final class AmountTokenizer {
      * Zahlenteil eines Betrags in einen Float: erkennt DE-, EN- und CH-/FR-Schreibweise.
      */
     public static function toFloat(string $number): float {
-        $s = str_replace(["'", ' '], '', $number);
+        $s = str_replace(["'", "\u{2019}", "\u{02BC}", ' '], '', $number);
         if (preg_match('/^(?:\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})$/', $s) === 1) {
             return (float) str_replace(',', '.', str_replace('.', '', $s));
         }
