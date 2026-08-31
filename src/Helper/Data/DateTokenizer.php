@@ -56,9 +56,12 @@ final class DateTokenizer {
      * Alle Datums-Token einer Zeile, nach Position sortiert.
      *
      * @param bool $monthFirst Schrägstrich-Daten als MM/DD(/YYYY) lesen (US-Auszüge)
+     * @param bool $monthFirstDotted Punktierte Daten als MM.DD.YYYY lesen (db-direct, US-Reports).
+     *                               Bewusst getrennt von $monthFirst: eine Schrägstrich-Referenz im
+     *                               Text darf die Deutung punktierter Daten nicht kippen.
      * @return list<DateToken>
      */
-    public static function tokens(string $line, bool $monthFirst = false, bool $dayMonthWithoutDot = false): array {
+    public static function tokens(string $line, bool $monthFirst = false, bool $dayMonthWithoutDot = false, bool $monthFirstDotted = false): array {
         // Monatsnamen ohne Rücksicht auf Groß-/Kleinschreibung ("16 SEP", "16 Sep", J.P.-Morgan-Auszüge)
         if (preg_match_all('/(?<![\d.\/-])(' . self::alternation($dayMonthWithoutDot) . ')/iu', $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === false) {
             return [];
@@ -67,7 +70,7 @@ final class DateTokenizer {
         $tokens = [];
         foreach ($matches as $m) {
             $raw = $m[1][0];
-            $token = self::token($raw, mb_strlen(substr($line, 0, (int) $m[1][1])), $monthFirst, $dayMonthWithoutDot);
+            $token = self::token($raw, mb_strlen(substr($line, 0, (int) $m[1][1])), $monthFirst, $dayMonthWithoutDot, $monthFirstDotted);
             if ($token !== null) {
                 $tokens[] = $token;
             }
@@ -75,8 +78,8 @@ final class DateTokenizer {
         return $tokens;
     }
 
-    public static function first(string $line, bool $monthFirst = false, bool $dayMonthWithoutDot = false): ?DateToken {
-        $tokens = self::tokens($line, $monthFirst, $dayMonthWithoutDot);
+    public static function first(string $line, bool $monthFirst = false, bool $dayMonthWithoutDot = false, bool $monthFirstDotted = false): ?DateToken {
+        $tokens = self::tokens($line, $monthFirst, $dayMonthWithoutDot, $monthFirstDotted);
         return $tokens[0] ?? null;
     }
 
@@ -85,7 +88,7 @@ final class DateTokenizer {
         return mb_strlen($line) - mb_strlen(ltrim($line));
     }
 
-    private static function token(string $raw, int $start, bool $monthFirst = false, bool $dayMonthWithoutDot = false): ?DateToken {
+    private static function token(string $raw, int $start, bool $monthFirst = false, bool $dayMonthWithoutDot = false, bool $monthFirstDotted = false): ?DateToken {
         foreach (self::anchored($dayMonthWithoutDot) as $form => $pattern) {
             if (preg_match($pattern, $raw) !== 1) {
                 continue;
@@ -95,6 +98,9 @@ final class DateTokenizer {
             // deutschen Auszügen immer TT.MM., und eine einzelne "12/27"-Referenz im Text darf
             // sie nicht kippen. Eindeutige US-Daten fängt der Zweig darunter ab.
             if ($monthFirst && in_array($form, ['dmy-slash', 'dm-slash'], true)) {
+                [$day, $month] = [$month, $day];
+            } elseif ($monthFirstDotted && in_array($form, ['dmy', 'dmy2'], true)) {
+                // Dokument ist als MM.DD.JJJJ belegt (db-direct: "08.13.2025" neben "08.04.2025")
                 [$day, $month] = [$month, $day];
             } elseif ($month > 12 && $day <= 12 && in_array($form, ['dmy-slash', 'dmy', 'dmy2'], true)) {
                 // Eindeutig US-Form mit Jahr ("08.13.2025", "05/13/2025"): der zweite Teil kann kein

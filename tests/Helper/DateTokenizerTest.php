@@ -70,6 +70,17 @@ class DateTokenizerTest extends BaseTestCase {
             $t = DateTokenizer::first('08.05.2025 Zahlung', true);
             return [$t?->day, $t?->month, $t?->year];
         })());
+        // Erst der eigene Schalter für punktierte Daten dreht sie: das Dokument ist als
+        // MM.DD.JJJJ belegt (db direct 0284 führt "08.13.2025" neben "08.04.2025")
+        $this->assertSame([5, 8, 2025], (function (): array {
+            $t = DateTokenizer::first('08.05.2025 Zahlung', false, false, true);
+            return [$t?->day, $t?->month, $t?->year];
+        })());
+        // …und er wirkt nicht auf Schrägstrich-Formen, die $monthFirst allein steuert
+        $this->assertSame([5, 8, 2025], (function (): array {
+            $t = DateTokenizer::first('08/05/2025 Zahlung', true, false, false);
+            return [$t?->day, $t?->month, $t?->year];
+        })());
     }
 
     public function test_niederlaendische_monatskuerzel_und_tag_monat_mit_bindestrich(): void {
