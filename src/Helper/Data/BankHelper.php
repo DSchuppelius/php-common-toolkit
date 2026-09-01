@@ -377,7 +377,26 @@ class BankHelper {
     }
 
     /**
+     * BIC-Präfixe der Institute, deren Kontonummern eine zweistellige
+     * Unterkontonummer tragen (Bundesbank-IBAN-Regelwerk, Anlage 3).
+     *
+     * Deutsche Bank (DEUT), Commerzbank samt comdirect (COBA) und Norisbank
+     * (NORS) führen intern zehnstellige Kontonummern der Form
+     * "0" + sieben Stellen Konto + zwei Stellen Unterkonto. Eine sechs- oder
+     * siebenstellig genannte Kontonummer nennt nur den Kontoteil; für die IBAN
+     * gehört die Unterkontonummer "00" dahinter, NICHT davor.
+     *
+     * @see self::applySubAccountRule()
+     */
+    private const SUB_ACCOUNT_BIC_PREFIXES = ['DEUT', 'COBA', 'NORS'];
+
+    /**
      * Generiert eine IBAN für Deutschland basierend auf BLZ und KTO.
+     *
+     * Wendet die Unterkonto-Regel des Bundesbank-IBAN-Regelwerks an
+     * ({@see self::applySubAccountRule()}) – ohne sie entsteht für Konten der
+     * Deutsche-Bank- und Commerzbank-Gruppe eine rechnerisch gültige, aber
+     * nicht existierende IBAN.
      *
      * @param string $blz Die Bankleitzahl (BLZ).
      * @param string $kto Die Kontonummer (KTO).
@@ -388,6 +407,8 @@ class BankHelper {
         // Entferne nicht-numerische Zeichen und normalisiere
         $blzClean = preg_replace('/[^0-9]/', '', $blz) ?? '';
         $ktoClean = preg_replace('/[^0-9]/', '', $kto) ?? '';
+
+        $ktoClean = self::applySubAccountRule($blzClean, $ktoClean);
 
         // Padding auf Standardlängen
         $blzPadded = str_pad($blzClean, 8, '0', STR_PAD_LEFT);
@@ -402,6 +423,46 @@ class BankHelper {
 
         $account = $blzPadded . $ktoPadded;
         return self::generateIBAN('DE', $account);
+    }
+
+    /**
+     * Ergänzt die zweistellige Unterkontonummer, wo das Institut sie führt.
+     *
+     * Bei Deutsche Bank, Commerzbank/comdirect und Norisbank nennen Anschreiben
+     * und Altbestände die Kontonummer oft ohne Unterkonto: aus "3961547" wird
+     * "0396154700", nicht "0003961547" – nur die erste Form ergibt die IBAN, die
+     * die Bank auch führt (DE54100708480396154700).
+     *
+     * Die Regel greift ausschließlich bei sechs- und siebenstelligen
+     * Kontonummern. Achtstellige und längere tragen die Unterkontonummer
+     * bereits; sie bleiben unangetastet, sonst zerstörte die Regel gültige
+     * Angaben.
+     *
+     * Ist die BIC zur BLZ nicht bekannt (kein Netz, unvollständige Daten), bleibt
+     * die Kontonummer unverändert – lieber die alte Form als eine geratene.
+     *
+     * @param string $blz Bereits auf Ziffern normalisierte Bankleitzahl
+     * @param string $kto Bereits auf Ziffern normalisierte Kontonummer
+     * @return string Die Kontonummer, ggf. um "00" ergänzt
+     */
+    private static function applySubAccountRule(string $blz, string $kto): string {
+        $laenge = strlen($kto);
+        if ($laenge < 6 || $laenge > 7) {
+            return $kto;
+        }
+
+        $bic = self::bicFromBLZ(str_pad($blz, 8, '0', STR_PAD_LEFT));
+        if ($bic === null) {
+            return $kto;
+        }
+
+        foreach (self::SUB_ACCOUNT_BIC_PREFIXES as $prefix) {
+            if (str_starts_with($bic, $prefix)) {
+                return $kto . '00';
+            }
+        }
+
+        return $kto;
     }
 
     /**

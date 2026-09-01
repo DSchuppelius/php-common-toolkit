@@ -69,6 +69,32 @@ class BankHelperTest extends BaseTestCase {
         $this->assertTrue(BankHelper::checkIBAN($ibanGermany));
     }
 
+    /**
+     * Bundesbank-IBAN-Regelwerk: Deutsche Bank, Commerzbank/comdirect und
+     * Norisbank führen die Kontonummer mit zweistelliger Unterkontonummer.
+     * Ohne die Regel entstünde aus "3961547" die rechnerisch gültige, aber
+     * nicht existierende DE83100708480003961547.
+     */
+    public function test_generate_german_iban_appends_sub_account(): void {
+        $this->assertEquals('DE54100708480396154700', BankHelper::generateGermanIBAN('10070848', '3961547'), 'Deutsche Bank, siebenstellig');
+        $this->assertEquals('DE52120400000051598100', BankHelper::generateGermanIBAN('12040000', '515981'), 'Commerzbank, sechsstellig');
+        $this->assertEquals('DE58200411110587993700', BankHelper::generateGermanIBAN('20041111', '5879937'), 'comdirect, siebenstellig');
+    }
+
+    /**
+     * Die Regel darf nur greifen, wo sie hingehört: Achtstellige und längere
+     * Kontonummern tragen die Unterkontonummer bereits, andere Institute
+     * kennen sie gar nicht.
+     */
+    public function test_generate_german_iban_leaves_other_accounts_untouched(): void {
+        // Commerzbank, neunstellig – die Unterkontonummer steckt schon drin
+        $this->assertEquals('DE68100400000971130000', BankHelper::generateGermanIBAN('10040000', '971130000'));
+        // Berliner Sparkasse: kein Institut mit Unterkontonummer
+        $this->assertEquals('DE91100500001068282696', BankHelper::generateGermanIBAN('10050000', '1068282696'));
+        // Sparkasse, siebenstellig – Länge allein löst die Regel nicht aus
+        $this->assertEquals('DE65100500000001234567', BankHelper::generateGermanIBAN('10050000', '1234567'));
+    }
+
     public function test_split_iban(): void {
         $parts = $this->splitIbanOrFail("DE44500105175407324931");
         $this->assertEquals("50010517", $parts['BLZ']);
