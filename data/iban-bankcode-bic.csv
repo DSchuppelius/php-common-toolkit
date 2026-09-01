@@ -1,0 +1,2772 @@
+# Bankcode → BIC für IBAN-Länder, deren Bankcode NICHT im BIC steckt (anders als NL).
+# Format: Land;Bankcode;BIC;Bankname   — Bankcode ohne führende Nullen.
+#
+# Quellen (Stand 01.09.2026, jeweils die offizielle Stelle des Landes):
+#   AT  Oesterreichische Nationalbank — sepa-zv-vz_gesamt.csv
+#       https://www.oenb.at/docroot/downloads_observ/sepa-zv-vz_gesamt.csv
+#   BE  Nationale Bank van Belgie — full_list_current.xlsx
+#       https://www.nbb.be/doc/be/be/protocol/full_list_current.xlsx
+#   CH  SIX Interbank Clearing — bankmaster_V3.csv (IID = Bankclearing-Nummer)
+#       https://api.six-group.com/api/epcd/bankmaster/v3/bankmaster_V3.csv
+#
+# Die Quellen stehen unter den Nutzungsbedingungen der jeweiligen Stelle.
+AT;1000;BUNDATWWXXX;Republik Österreich
+AT;10000;OEKOATWWXXX;Oesterreichische Kontrollbank Aktiengesellschaft
+AT;11000;BKAUATWWXXX;UniCredit Bank Austria AG
+AT;12000;BKAUATWWXXX;UniCredit Bank Austria AG
+AT;12002;BKAUATWWXXX;UniCredit Bank Austria AG
+AT;12004;BKAUATWWXXX;UniCredit Bank Austria AG
+AT;12005;BKAUATWWXXX;UniCredit Bank Austria AG
+AT;14000;BAWAATWWXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;14001;BAWAATWWXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;14002;BAWAATWWXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;14200;BAWAATWWXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;14210;BAWAATWWXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;14900;BAWAATWWXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;15000;OBKLAT2LXXX;Oberbank AG
+AT;15001;OBKLAT2LXXX;Oberbank AG
+AT;15002;OBKLAT2LXXX;Oberbank AG
+AT;15003;OBKLAT2LXXX;Oberbank AG
+AT;15004;OBKLAT2LXXX;Oberbank AG
+AT;15005;OBKLAT2LXXX;Oberbank AG
+AT;15006;OBKLAT2LXXX;Oberbank AG
+AT;15007;OBKLAT2LXXX;Oberbank AG
+AT;15008;OBKLAT2LXXX;Oberbank AG
+AT;15009;OBKLAT2LXXX;Oberbank AG
+AT;15010;OBKLAT2LXXX;Oberbank AG
+AT;15011;OBKLAT2LXXX;Oberbank AG
+AT;15012;OBKLAT2LXXX;Oberbank AG
+AT;15013;OBKLAT2LXXX;Oberbank AG
+AT;15021;OBKLAT2LXXX;Oberbank AG
+AT;15022;OBKLAT2LXXX;Oberbank AG
+AT;15023;OBKLAT2LXXX;Oberbank AG
+AT;15024;OBKLAT2LXXX;Oberbank AG
+AT;15025;OBKLAT2LXXX;Oberbank AG
+AT;15030;OBKLAT2LXXX;Oberbank AG
+AT;15031;OBKLAT2LXXX;Oberbank AG
+AT;15040;OBKLAT2LXXX;Oberbank AG
+AT;15041;OBKLAT2LXXX;Oberbank AG
+AT;15042;OBKLAT2LXXX;Oberbank AG
+AT;15060;OBKLAT2LXXX;Oberbank AG
+AT;15061;OBKLAT2LXXX;Oberbank AG
+AT;15062;OBKLAT2LXXX;Oberbank AG
+AT;15080;OBKLAT2LXXX;Oberbank AG
+AT;15081;OBKLAT2LXXX;Oberbank AG
+AT;15090;OBKLAT2LXXX;Oberbank AG
+AT;15091;OBKLAT2LXXX;Oberbank AG
+AT;15092;OBKLAT2LXXX;Oberbank AG
+AT;15093;OBKLAT2LXXX;Oberbank AG
+AT;15094;OBKLAT2LXXX;Oberbank AG
+AT;15095;OBKLAT2LXXX;Oberbank AG
+AT;15096;OBKLAT2LXXX;Oberbank AG
+AT;15097;OBKLAT2LXXX;Oberbank AG
+AT;15110;OBKLAT2LXXX;Oberbank AG
+AT;15120;OBKLAT2LXXX;Oberbank AG
+AT;15121;OBKLAT2LXXX;Oberbank AG
+AT;15122;OBKLAT2LXXX;Oberbank AG
+AT;15123;OBKLAT2LXXX;Oberbank AG
+AT;15130;OBKLAT2LXXX;Oberbank AG
+AT;15131;OBKLAT2LXXX;Oberbank AG
+AT;15132;OBKLAT2LXXX;Oberbank AG
+AT;15133;OBKLAT2LXXX;Oberbank AG
+AT;15134;OBKLAT2LXXX;Oberbank AG
+AT;15135;OBKLAT2LXXX;Oberbank AG
+AT;15150;OBKLAT2LXXX;Oberbank AG
+AT;15151;OBKLAT2LXXX;Oberbank AG
+AT;15899;OBKLAT2LXXX;Oberbank AG
+AT;16000;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16300;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16310;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16320;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16330;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16340;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16350;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16360;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16370;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16380;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16390;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16400;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16410;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16420;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16430;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16440;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16450;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;16460;BTVAAT22XXX;BTV Vier Länder Bank AG
+AT;17000;BFKKAT2KXXX;BKS Bank AG
+AT;17100;BFKKAT2KXXX;BKS Bank AG
+AT;17200;BFKKAT2KXXX;BKS Bank AG
+AT;17300;BFKKAT2KXXX;BKS Bank AG
+AT;17400;BFKKAT2KXXX;BKS Bank AG
+AT;17500;BFKKAT2KXXX;BKS Bank AG
+AT;17899;BFKKAT2KXXX;BKS Bank AG
+AT;18100;GEBAATWWXXX;BNP Paribas SA Niederlassung Österreich
+AT;18120;PABXATW1XXX;A1 Bank AG
+AT;18130;BWFBATW1XXX;Österreichische Ärzte- und Apothekerbank AG
+AT;18140;CITIATWXXXX;Citibank Europe plc, Austria Branch
+AT;18150;SGABATWWXXX;Société Générale Zweigniederlassung Wien
+AT;18160;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;18190;BAWAATWWXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;18400;BGENATWWXXX;Generali Bank AG
+AT;18600;VKBLAT2LXXX;Volkskreditbank AG
+AT;19001;TRBKATW2XXX;Trade Republic Bank GmbH, Branch Austria
+AT;19100;DEUTATWWXXX;Deutsche Bank Aktiengesellschaft Filiale Wien
+AT;19120;SPBAATWWXXX;bank99 AG
+AT;19140;GUTBATWWXXX;Bank Gutmann Aktiengesellschaft
+AT;19150;KTBKATWWXXX;Kathrein Privatbank Aktiengesellschaft
+AT;19160;WIPBATWWXXX;Wiener Privatbank SE
+AT;19170;PABAAT2LXXX;PARTNER BANK AKTIENGESELLSCHAFT
+AT;19190;BSSWATWWXXX;Schelhammer Capital Bank AG
+AT;19200;SCHOATWWXXX;Schoellerbank Aktiengesellschaft
+AT;19210;SPBAATWWB99;bank99 AG
+AT;19220;WISMATWWXXX;Bank Winter & Co. AG
+AT;19250;DIRAAT2SXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;19360;INGBATWWXXX;ING Austria Branch of ING Bank N.V.
+AT;19380;DENEATW1XXX;Bankhaus Denzel Aktiengesellschaft
+AT;19390;BMASAT21XXX;BMW Austria Bank GmbH
+AT;19420;RCNOATW1XXX;RCI Banque SA, Niederlassung Österreich
+AT;19440;WIPBATWWXXX;Wiener Privatbank SE
+AT;19450;COPRATWWXXX;Liechtensteinische Landesbank (Österreich) AG
+AT;19460;BLFLATWWXXX;LGT Bank AG, Zweigniederlassung Österreich
+AT;19480;BIIWATWWXXX;flatexDEGIRO Bank SE
+AT;19510;COPRATWWXXX;Liechtensteinische Landesbank (Österreich) AG
+AT;19515;OPBAATW2XXX;Stellantis Bank SA Niederlassung Österreich
+AT;19520;STSPAT2GXXX;Steiermärkische Bank und Sparkassen Aktiengesellschaft
+AT;19530;SPAEAT2SXXX;Bankhaus Carl Spängler & Co. Aktiengesellschaft
+AT;19540;BKCHATWWXXX;Bank of China (Central and Eastern Europe) Limited Vienna Branch
+AT;19600;BSSWATWWXXX;Schelhammer Capital Bank AG
+AT;19650;ESBKATWWXXX;DenizBank AG
+AT;19660;INVOATWWXXX;Kommunalkredit Austria AG
+AT;19675;COBAATWXXXX;Commerzbank AG Niederlassung Wien
+AT;19690;TVBAATWWXXX;VakifBank International AG
+AT;19810;SANTATWWXXX;Santander Consumer Bank GmbH
+AT;19825;WUSNATWWXXX;Wüstenrot Bank AG
+AT;19880;WUIBATWWXXX;Western Union International Bank GmbH
+AT;19888;ICBKATWWXXX;ICBC Austria Bank GmbH
+AT;19930;CENBATWWXXX;Raiffeisen Digital Bank AG
+AT;19931;CENBATWWRDB;Raiffeisen Digital Bank AG
+AT;19950;WUBUAT2SXXX;Bausparkasse Wüstenrot Aktiengesellschaft
+AT;19970;BRASATWWXXX;Banco do Brasil Aktiengesellschaft
+AT;20100;GIBAATWGXXX;Erste Group Bank AG
+AT;20111;GIBAATWWXXX;Erste Bank der oesterreichischen Sparkassen AG
+AT;20112;GIBAAT21XXX;Die Zweite Wiener Vereins-Sparcasse
+AT;20202;SPAMAT21XXX;Sparkasse der Stadt Amstetten AG
+AT;20205;SPBDAT21XXX;Sparkasse Baden
+AT;20216;SPHBAT21XXX;Sparkasse Hainburg-Bruck-Neusiedl Aktiengesellschaft
+AT;20218;SPHAAT21XXX;Sparkasse Haugsdorf AG
+AT;20219;SPHEAT21XXX;Sparkasse Herzogenburg-Neulengbach Bank Aktiengesellschaft
+AT;20221;SPHNAT21XXX;Sparkasse Horn-Ravelsbach-Kirchberg Aktiengesellschaft
+AT;20225;SPBDAT21XXX;Sparkasse Baden
+AT;20227;SSKOAT21XXX;Sparkasse Korneuburg AG
+AT;20228;SPKDAT21XXX;KREMSER BANK UND SPARKASSEN AKTIENGESELLSCHAFT
+AT;20230;SPLSAT21XXX;Sparkasse Langenlois
+AT;20241;SPNGAT21XXX;Sparkasse Neunkirchen
+AT;20245;SPPOAT21XXX;Sparkasse Pottenstein N.Ö.
+AT;20246;SPPDAT21XXX;Sparkasse Poysdorf AG
+AT;20256;SPSPAT21XXX;SPARKASSE NIEDERÖSTERREICH MITTE WEST AKTIENGESELLSCHAFT
+AT;20257;SPSBAT21XXX;Sparkasse Scheibbs AG
+AT;20263;SPZWAT21XXX;Waldviertler Sparkasse Bank AG
+AT;20267;WINSATWNXXX;Wiener Neustädter Sparkasse
+AT;20272;SPZWAT21XXX;Waldviertler Sparkasse Bank AG
+AT;20306;SPFRAT21XXX;SPARKASSE FRANKENMARKT AKTIENGESELLSCHAFT
+AT;20314;SKBIAT21XXX;Sparkasse Salzkammergut AG
+AT;20317;SPLAAT21XXX;Sparkasse Lambach Bank Aktiengesellschaft
+AT;20320;ASPKAT2LXXX;Sparkasse Oberösterreich Bank AG
+AT;20326;SPNKAT21XXX;Sparkasse Neuhofen Bank Aktiengesellschaft
+AT;20330;SPPBAT21XXX;Sparkasse Eferding-Peuerbach-Waizenkirchen
+AT;20331;SPPRAT21XXX;Sparkasse Pregarten - Unterweißenbach AG
+AT;20333;SPRHAT21XXX;Sparkasse Ried im Innkreis-Haag am Hausruck
+AT;20334;SMWRAT21XXX;Sparkasse Mühlviertel-West Bank Aktiengesellschaft
+AT;20402;SPMIAT21XXX;Sparkasse Mittersill Bank AG
+AT;20404;SBGSAT2SXXX;Erste Bank der oesterreichischen Sparkassen AG
+AT;20502;SPIMAT21XXX;Sparkasse Imst AG
+AT;20503;SPIHAT22XXX;Tiroler Sparkasse Bankaktiengesellschaft Innsbruck
+AT;20505;SPKIAT2KXXX;Sparkasse der Stadt Kitzbühel
+AT;20506;SPKUAT22XXX;Sparkasse Kufstein Tiroler Sparkasse von 1877
+AT;20507;LISPAT21XXX;Lienzer Sparkasse AG
+AT;20508;SPRTAT21XXX;Sparkasse Rattenberg Bank AG
+AT;20509;SPREAT21XXX;Sparkasse Reutte AG
+AT;20510;SPSCAT22XXX;Sparkasse Schwaz AG
+AT;20601;SPBRAT2BXXX;Sparkasse Bregenz Bank Aktiengesellschaft
+AT;20602;DOSPAT2DXXX;Dornbirner Sparkasse Bank AG
+AT;20603;SPEGAT21XXX;Sparkasse der Gemeinde Egg
+AT;20604;SPFKAT2BXXX;Sparkasse der Stadt Feldkirch
+AT;20607;SSBLAT21XXX;Sparkasse Bludenz Bank AG
+AT;20702;SPFNAT21XXX;Sparkasse Feldkirchen/Kärnten
+AT;20706;KSPKAT2KXXX;Kärntner Sparkasse Aktiengesellschaft
+AT;20815;STSPAT2GXXX;Steiermärkische Bank und Sparkassen Aktiengesellschaft
+AT;20828;SPMZAT21XXX;Sparkasse Mürzzuschlag Aktiengesellschaft
+AT;20833;SPPLAT21XXX;Sparkasse Pöllau AG
+AT;20839;SPVOAT21XXX;Sparkasse Voitsberg-Köflach Bankaktiengesellschaft
+AT;24012;BAOSATWWXXX;Bausparkasse der österreichischen Sparkassen Aktiengesellschaft
+AT;30000;RZBAATWWXXX;Raiffeisen Bank International AG
+AT;31000;RZBAATWWXXX;Raiffeisen Bank International AG
+AT;31111;RZBAATWWVAM;Raiffeisen Bank International AG
+AT;31112;RZBAATWWREC;Raiffeisen Bank International AG
+AT;31303;RBSKATW1XXX;Raiffeisen Bausparkasse Gesellschaft m.b.H.
+AT;31500;NTBAATWWXXX;NOTARTREUHANDBANK AG
+AT;32000;RLNWATWWXXX;RAIFFEISENLANDESBANK NIEDERÖSTERREICH-WIEN AG
+AT;32002;RLNWATW1002;Raiffeisenbank Wagram-Schmidatal eGen
+AT;32025;RLNWATWWAMS;Raiffeisenbank Region Amstetten eGen
+AT;32033;RLNWATWWAMS;Raiffeisenbank Region Amstetten eGen
+AT;32039;RLNWATWWWDF;Raiffeisenbank Wolkersdorf - Auersthal eGen
+AT;32045;RLNWATWWBAD;Raiffeisenbank Region Baden eGen
+AT;32059;RLNWATW1059;Raiffeisenkasse Blindenmarkt eGen
+AT;32073;RLNWATWWBRL;Raiffeisenbank Bruck-Carnuntum eGen
+AT;32092;RLNWATWWGAE;Raiffeisen-Regionalbank Gänserndorf eGen
+AT;32099;RLNWATW1099;Raiffeisenkasse Dobersberg-Waldkirchen eGen
+AT;32118;RLNWATWWBAD;Raiffeisenbank Region Baden eGen
+AT;32123;RLNWATWW123;Raiffeisenbank Eggenburg eGen
+AT;32127;RLNWATWWWTH;Raiffeisenbank im Thayatal eGen
+AT;32145;RLNWATW1145;Raiffeisenkasse Ernstbrunn eGen
+AT;32195;RLNWATWWASP;Raiffeisenbank Region Wiener Alpen eGen
+AT;32198;RLNWATW1322;Raiffeisenbank Hollabrunn eGen
+AT;32227;RLNWATWWZDF;Raiffeisenbank Weinviertel Nordost eGen
+AT;32242;RLNWATW1002;Raiffeisenbank Wagram-Schmidatal eGen
+AT;32247;RLNWATWWBAD;Raiffeisenbank Region Baden eGen
+AT;32250;RLNWATWWGTD;Raiffeisen Regionalbank Mödling eGen
+AT;32275;RLNWATW1275;Raiffeisenbank Seefeld-Hadres eGen
+AT;32278;RLNWATWW278;Raiffeisenkasse Haidershofen eGen
+AT;32286;RLNWATW1286;Raiffeisenkasse Heiligeneich eGen
+AT;32291;RLNWATW1002;Raiffeisenbank Wagram-Schmidatal eGen
+AT;32322;RLNWATW1322;Raiffeisenbank Hollabrunn eGen
+AT;32356;RLNWATWWOBG;Raiffeisenbank Region St. Pölten eGen
+AT;32367;RLNWATW1880;Raiffeisenbank Tulln-Klosterneuburg eGen
+AT;32368;RLNWATW1477;Raiffeisenbank Region Schallaburg eGen
+AT;32374;RLNWATWWASP;Raiffeisenbank Region Wiener Alpen eGen
+AT;32395;RLNWATWWKOR;Raiffeisenbank Korneuburg eGen
+AT;32397;RLNWATWWKRE;Raiffeisenbank Krems eGen
+AT;32413;RLNWATWWLAA;Raiffeisenbank Laa/Thaya eGen
+AT;32414;RLNWATWWPRB;Raiffeisenbank Wienerwald eGen
+AT;32415;RLNWATWWOWS;Raiffeisenbank Oberes Waldviertel eGen
+AT;32426;RLNWATWW426;Raiffeisenbank Langenlois eGen
+AT;32438;RLNWATW1438;Raiffeisenbank Kreuzenstein eGen
+AT;32447;RLNWATWWLFD;Raiffeisenbank Traisen-Gölsental eGen
+AT;32455;RLNWATW1477;Raiffeisenbank Region Schallaburg eGen
+AT;32477;RLNWATW1477;Raiffeisenbank Region Schallaburg eGen
+AT;32497;RLNWATW1880;Raiffeisenbank Tulln-Klosterneuburg eGen
+AT;32501;RLNWATWWMIB;Raiffeisenbank im Weinviertel eGen
+AT;32551;RLNWATWWNSD;Raiffeisenkasse Neusiedl a.d.Zaya eGen
+AT;32585;RLNWATWWOBG;Raiffeisenbank Region St. Pölten eGen
+AT;32589;RLNWATW1589;Raiffeisenbank Gross Gerungs eGen
+AT;32614;RLNWATWWODO;Raiffeisenkasse Orth a.d. Donau eGen
+AT;32615;RLNWATWWZWE;Raiffeisenbank Region Waldviertel Mitte eGen
+AT;32631;RLNWATWWASP;Raiffeisenbank Region Wiener Alpen eGen
+AT;32633;RLNWATWWGTD;Raiffeisen Regionalbank Mödling eGen
+AT;32642;RLNWATWWWRN;Raiffeisenbank Wr. Neustadt-Schneebergland eGen
+AT;32647;RLNWATWWASP;Raiffeisenbank Region Wiener Alpen eGen
+AT;32651;RLNWATWW939;Raiffeisenbank Mittleres Mostviertel eGen
+AT;32660;RLNWATWWASP;Raiffeisenbank Region Wiener Alpen eGen
+AT;32663;RLNWATWWMIB;Raiffeisenbank im Weinviertel eGen
+AT;32667;RLNWATWWPRB;Raiffeisenbank Wienerwald eGen
+AT;32679;RLNWATW1477;Raiffeisenbank Region Schallaburg eGen
+AT;32715;RLNWATW1715;Raiffeisenkasse Retz-Pulkautal eGen
+AT;32731;RLNWATW1438;Raiffeisenbank Kreuzenstein eGen
+AT;32769;RLNWATWWOBG;Raiffeisenbank Region St. Pölten eGen
+AT;32778;RLNWATWWAMS;Raiffeisenbank Region Amstetten eGen
+AT;32789;RLNWATWWAMS;Raiffeisenbank Region Amstetten eGen
+AT;32823;RLNWATWW823;Raiffeisenbank Region Schwechat eGen
+AT;32842;RLNWATWWSTO;Raiffeisenbank Stockerau eGen
+AT;32865;RLNWATWWWRN;Raiffeisenbank Wr. Neustadt-Schneebergland eGen
+AT;32880;RLNWATW1880;Raiffeisenbank Tulln-Klosterneuburg eGen
+AT;32901;RLNWATW1901;Raiffeisenbank Vitis eGen
+AT;32904;RLNWATWWWTH;Raiffeisenbank im Thayatal eGen
+AT;32906;RLNWATWWWHY;Raiffeisenbank Ybbstal eGen
+AT;32930;RLNWATWWBAD;Raiffeisenbank Region Baden eGen
+AT;32936;RLNWATWWOWS;Raiffeisenbank Oberes Waldviertel eGen
+AT;32937;RLNWATWWWRN;Raiffeisenbank Wr. Neustadt-Schneebergland eGen
+AT;32939;RLNWATWW939;Raiffeisenbank Mittleres Mostviertel eGen
+AT;32940;RLNWATWWWRN;Raiffeisenbank Wr. Neustadt-Schneebergland eGen
+AT;32944;RLNWATWWLFD;Raiffeisenbank Traisen-Gölsental eGen
+AT;32951;RLNWATWWWDF;Raiffeisenbank Wolkersdorf - Auersthal eGen
+AT;32982;RLNWATW1322;Raiffeisenbank Hollabrunn eGen
+AT;32985;RLNWATWWZDF;Raiffeisenbank Weinviertel Nordost eGen
+AT;32990;RLNWATWWZWE;Raiffeisenbank Region Waldviertel Mitte eGen
+AT;33000;RLBBAT2EXXX;Raiffeisenlandesbank Burgenland und Revisionsverband eGen
+AT;33002;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33004;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33010;RLBBAT2E010;Raiffeisenbank Region Deutschkreutz-Horitschon eGen
+AT;33012;RLBBAT2E012;Raiffeisenbank Neusiedlersee-Hügelland eGen
+AT;33014;RLBBAT2E014;Raiffeisenbank Draßmarkt-Kobersdorf-St. Martin eGen
+AT;33027;RLBBAT2E027;Raiffeisen Regionalbank Güssing-Jennersdorf eGen
+AT;33028;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33031;RLBBAT2E010;Raiffeisenbank Region Deutschkreutz-Horitschon eGen
+AT;33033;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33034;RLBBAT2E027;Raiffeisen Regionalbank Güssing-Jennersdorf eGen
+AT;33035;RLBBAT2EXXX;Raiffeisenlandesbank Burgenland und Revisionsverband eGen
+AT;33038;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33041;RLBBAT2E027;Raiffeisen Regionalbank Güssing-Jennersdorf eGen
+AT;33046;RLBBAT2E065;Raiffeisenbank Burgenland Mitte eGen
+AT;33048;RLBBAT2E010;Raiffeisenbank Region Deutschkreutz-Horitschon eGen
+AT;33054;RLBBAT2E116;Raiffeisenbank Frauenkirchen-Mönchhof-Podersdorf am See eGen
+AT;33055;RLBBAT2E012;Raiffeisenbank Neusiedlersee-Hügelland eGen
+AT;33058;RLBBAT2E010;Raiffeisenbank Region Deutschkreutz-Horitschon eGen
+AT;33063;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33065;RLBBAT2E065;Raiffeisenbank Burgenland Mitte eGen
+AT;33067;RLBBAT2E125;Raiffeisenbezirksbank Oberwart eGen
+AT;33071;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33072;RLBBAT2E072;Raiffeisenbank Region Parndorf - Weiden am See eGen
+AT;33074;RLBBAT2E116;Raiffeisenbank Frauenkirchen-Mönchhof-Podersdorf am See eGen
+AT;33078;RLBBAT2E078;Raiffeisenbank Purbach eGen
+AT;33085;RLBBAT2E012;Raiffeisenbank Neusiedlersee-Hügelland eGen
+AT;33090;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33092;RLBBAT2E012;Raiffeisenbank Neusiedlersee-Hügelland eGen
+AT;33104;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33106;RLBBAT2E072;Raiffeisenbank Region Parndorf - Weiden am See eGen
+AT;33114;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33116;RLBBAT2E116;Raiffeisenbank Frauenkirchen-Mönchhof-Podersdorf am See eGen
+AT;33118;RLBBAT2E038;Raiffeisen Bezirksbank Neusiedl Ost eGen
+AT;33124;RLBBAT2E065;Raiffeisenbank Burgenland Mitte eGen
+AT;33125;RLBBAT2E125;Raiffeisenbezirksbank Oberwart eGen
+AT;33135;RLBBAT2EXXX;Raiffeisenlandesbank Burgenland und Revisionsverband eGen
+AT;34000;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;34016;RZOOAT2L016;Raiffeisenbank Aspach-Wildenau eGen
+AT;34030;RZOOAT2L030;Raiffeisenbank Region Altheim eGen
+AT;34060;RZOOAT2L060;Raiffeisenbank Region Braunau eGen
+AT;34068;RZOOAT2L068;Raiffeisenbank Grein eGen
+AT;34075;RZOOAT2L075;Raiffeisenbank Donau-Ameisberg eGen
+AT;34080;RZOOAT2L080;Raiffeisenbank Ennstal eGen
+AT;34081;RZOOAT2L081;Raiffeisenbank Eberschwang-Pramet eGen
+AT;34083;RZOOAT2L083;Raiffeisenbank Region Traun-Alm eGen
+AT;34100;RZOOAT2L100;Raiffeisenbank Feldkirchen-Goldwörth eGen
+AT;34110;RZOOAT2L110;Raiffeisenbank Region Freistadt eGen
+AT;34111;RZOOAT2L111;Raiffeisenbank Region Gallneukirchen eGen
+AT;34113;RZOOAT2L113;Raiffeisenbank Gampern eGen
+AT;34114;RZOOAT2L114;Raiffeisenbank Steyr eGen
+AT;34118;RZOOAT2L118;Raiffeisenbank Geretsberg eGen
+AT;34126;RZOOAT2L080;Raiffeisenbank Ennstal eGen
+AT;34127;RZOOAT2L127;Raiffeisenbank Almtal eGen
+AT;34129;RZOOAT2L129;Raiffeisenbank Gunskirchen eGen
+AT;34135;RZOOAT2L135;Raiffeisenbank Gramastetten Rodltal eGen
+AT;34155;RZOOAT2L155;Raiffeisenbank Handenberg - St. Georgen a. F. eGen
+AT;34157;RZOOAT2L560;Raiffeisenbank Region Sierning-Enns eGen
+AT;34160;RZOOAT2L410;Raiffeisenbank Region Rohrbach eGen
+AT;34161;RZOOAT2L111;Raiffeisenbank Region Gallneukirchen eGen
+AT;34165;RZOOAT2L491;Raiffeisenbank Pyhrn-Priel eGen
+AT;34170;RZOOAT2L276;Raiffeisenbank Linz-Land West eGen
+AT;34180;RZOOAT2L180;Raiffeisenbank Region Eferding eGen
+AT;34200;RZOOAT2L200;Raiffeisenbank Innkreis Mitte eGen
+AT;34214;RZOOAT2L214;Raiffeisenbank Kematen-Neuhofen eGen
+AT;34226;RZOOAT2L226;Raiffeisenbank Kleinmünchen/Linz eGen
+AT;34231;RZOOAT2L231;Raiffeisenbank Kollerschlag eGen
+AT;34233;RZOOAT2L380;Raiffeisenbank Region Kirchdorf eGen
+AT;34234;RZOOAT2L680;Raiffeisenbank Wels eGen
+AT;34250;RZOOAT2L250;Raiffeisenbank Region Hausruck eGen
+AT;34276;RZOOAT2L276;Raiffeisenbank Linz-Land West eGen
+AT;34277;RZOOAT2L277;Raiffeisenbank Region Bad Leonfelden eGen
+AT;34284;RZOOAT2L450;Raiffeisenbank Region Ried i.I. eGen
+AT;34290;RZOOAT2L290;Raiffeisenbank Lochen am See eGen
+AT;34300;RZOOAT2L300;Raiffeisenbank Region Neufelden eGen
+AT;34303;RZOOAT2L303;Raiffeisenbank Mattigtal eGen
+AT;34312;RZOOAT2L312;Raiffeisenbank Maria Schmolln-St. Johann eGen
+AT;34313;RZOOAT2L736;Raiffeisenbank Region Grieskirchen eGen
+AT;34318;RZOOAT2L380;Raiffeisenbank Region Kirchdorf eGen
+AT;34321;RZOOAT2L380;Raiffeisenbank Region Kirchdorf eGen
+AT;34322;RZOOAT2L322;Raiffeisenbank Mondseeland eGen
+AT;34330;RZOOAT2L330;Raiffeisenbank Mühlviertler Alm eGen
+AT;34356;RZOOAT2L523;Raiffeisenbank Attergau eGen
+AT;34361;RZOOAT2L300;Raiffeisenbank Region Neufelden eGen
+AT;34362;RZOOAT2L380;Raiffeisenbank Region Kirchdorf eGen
+AT;34363;RZOOAT2L363;Raiffeisenbank Attersee-Süd eGen
+AT;34370;RZOOAT2L370;Raiffeisenbank Oberes Innviertel eGen
+AT;34380;RZOOAT2L380;Raiffeisenbank Region Kirchdorf eGen
+AT;34383;RZOOAT2L135;Raiffeisenbank Gramastetten Rodltal eGen
+AT;34390;RZOOAT2L390;Raiffeisenbank Ohlsdorf eGen
+AT;34400;RZOOAT2L630;Raiffeisenbank Region Schwanenstadt eGen
+AT;34410;RZOOAT2L410;Raiffeisenbank Region Rohrbach eGen
+AT;34420;RZOOAT2L330;Raiffeisenbank Mühlviertler Alm eGen
+AT;34427;RZOOAT2L380;Raiffeisenbank Region Kirchdorf eGen
+AT;34430;RZOOAT2L129;Raiffeisenbank Gunskirchen eGen
+AT;34434;RZOOAT2L434;Raiffeisenbank Pöndorf - Frankenmarkt eGen
+AT;34437;RZOOAT2L437;Raiffeisenbank Prambachkirchen eGen
+AT;34438;RZOOAT2L081;Raiffeisenbank Eberschwang-Pramet eGen
+AT;34442;RZOOAT2L442;Raiffeisenbank Region Peuerbach eGen
+AT;34450;RZOOAT2L450;Raiffeisenbank Region Ried i.I. eGen
+AT;34455;RZOOAT2L455;Raiffeisenbank Region Schärding eGen
+AT;34460;RZOOAT2L460;Raiffeisenbank Aist eGen
+AT;34475;RZOOAT2L111;Raiffeisenbank Region Gallneukirchen eGen
+AT;34481;RZOOAT2L380;Raiffeisenbank Region Kirchdorf eGen
+AT;34491;RZOOAT2L491;Raiffeisenbank Pyhrn-Priel eGen
+AT;34510;RZOOAT2L510;Raiffeisenbank Salzkammergut eGen
+AT;34521;RZOOAT2L442;Raiffeisenbank Region Peuerbach eGen
+AT;34522;RZOOAT2L522;Raiffeisenbank St.Florian am Inn eGen
+AT;34523;RZOOAT2L523;Raiffeisenbank Attergau eGen
+AT;34530;RZOOAT2L530;Raiffeisenbank St. Marien eGen
+AT;34535;RZOOAT2L300;Raiffeisenbank Region Neufelden eGen
+AT;34540;RZOOAT2L540;Raiffeisenbank St. Roman eGen
+AT;34543;RZOOAT2L114;Raiffeisenbank Steyr eGen
+AT;34545;RZOOAT2L545;Raiffeisenbank Inneres Salzkammergut eGen
+AT;34560;RZOOAT2L560;Raiffeisenbank Region Sierning-Enns eGen
+AT;34606;RZOOAT2L380;Raiffeisenbank Region Kirchdorf eGen
+AT;34608;RZOOAT2L608;Raiffeisenbank Attersee-Nord eGen
+AT;34613;RZOOAT2L460;Raiffeisenbank Aist eGen
+AT;34630;RZOOAT2L630;Raiffeisenbank Region Schwanenstadt eGen
+AT;34633;RZOOAT2L633;Raiffeisenbank Steinbach-Grünburg eGen
+AT;34637;RZOOAT2L777;Raiffeisenbank Perg eGen
+AT;34661;RZOOAT2L060;Raiffeisenbank Region Braunau eGen
+AT;34669;RZOOAT2L669;Raiffeisenbank Timelkam-Lenzing-Puchkirchen eGen
+AT;34680;RZOOAT2L680;Raiffeisenbank Wels eGen
+AT;34710;RZOOAT2L710;Raiffeisenbank Region Vöcklabruck eGen
+AT;34732;RZOOAT2L732;Raiffeisenbank Walding-Ottensheim eGen
+AT;34735;RZOOAT2L450;Raiffeisenbank Region Ried i.I. eGen
+AT;34736;RZOOAT2L736;Raiffeisenbank Region Grieskirchen eGen
+AT;34738;RZOOAT2L738;Raiffeisenbank Wartberg an der Krems eGen
+AT;34741;RZOOAT2L741;Raiffeisenbank Weißkirchen a.d. Traun eGen
+AT;34747;RZOOAT2L747;Raiffeisenbank Weyer eGen
+AT;34750;RZOOAT2L083;Raiffeisenbank Region Traun-Alm eGen
+AT;34770;RZOOAT2L770;Raiffeisenbank Wels Süd eGen
+AT;34777;RZOOAT2L777;Raiffeisenbank Perg eGen
+AT;34796;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;34920;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;34921;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;34922;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;34923;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;34950;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;34955;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;35000;RVSAAT2SXXX;Raiffeisenverband Salzburg eGen
+AT;35001;RVSAAT2S001;Raiffeisenbank Lammertal eGen
+AT;35003;RVSAAT2S053;Raiffeisenbank Pinzgau Mitte eGen
+AT;35004;RVSAAT2S004;Raiffeisenbank Altenmarkt-Flachau-Eben eGen
+AT;35005;RVSAAT2S018;Raiffeisenbank Untersberg eGen
+AT;35006;RVSAAT2S001;Raiffeisenbank Lammertal eGen
+AT;35007;RVSAAT2S007;Raiffeisenbank Anthering - Elixhausen eGen
+AT;35008;RVSAAT2S015;Raiffeisenbank Flachgau Mitte eGen
+AT;35009;RVSAAT2S047;Raiffeisenbank Salzburger Seenland eGen
+AT;35010;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35011;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35012;RVSAAT2S012;Raiffeisenbank Hohe Tauern eGen
+AT;35013;RVSAAT2S053;Raiffeisenbank Pinzgau Mitte eGen
+AT;35014;RVSAAT2S007;Raiffeisenbank Anthering - Elixhausen eGen
+AT;35015;RVSAAT2S015;Raiffeisenbank Flachgau Mitte eGen
+AT;35016;RVSAAT2S016;Raiffeisenbank Faistenau-Hintersee eGen
+AT;35017;RVSAAT2S017;Raiffeisenbank Golling-Scheffau-Kellau eGen
+AT;35018;RVSAAT2S018;Raiffeisenbank Untersberg eGen
+AT;35019;RVSAAT2S019;Raiffeisenbank Großarl-Hüttschlag eGen
+AT;35020;RVSAAT2S020;Raiffeisenbank Großgmain eGen
+AT;35021;RVSAAT2S021;Raiffeisenbank Wallersee eGen
+AT;35022;RVSAAT2S022;Raiffeisenbank Hallein-Oberalm eGen
+AT;35023;RVSAAT2S015;Raiffeisenbank Flachgau Mitte eGen
+AT;35024;RVSAAT2S021;Raiffeisenbank Wallersee eGen
+AT;35025;RVSAAT2S065;Raiffeisenbank Fuschlsee West eGen
+AT;35026;RVSAAT2S026;Raiffeisenbank Gastein eGen
+AT;35027;RVSAAT2S027;Raiffeisenbank Hüttau-St. Martin eGen
+AT;35028;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35029;RVSAAT2S029;Raiffeisenbank Kuchl-St. Koloman eGen
+AT;35030;RVSAAT2S030;Raiffeisenbank Flachgau Nord eGen
+AT;35031;RVSAAT2S053;Raiffeisenbank Pinzgau Mitte eGen
+AT;35034;RVSAAT2S034;Raiffeisenbank Salzburg Liefering-Maxglan-Siezenheim eGen
+AT;35035;RVSAAT2S053;Raiffeisenbank Pinzgau Mitte eGen
+AT;35036;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35037;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35038;RVSAAT2S030;Raiffeisenbank Flachgau Nord eGen
+AT;35039;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35042;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35043;RVSAAT2S012;Raiffeisenbank Hohe Tauern eGen
+AT;35044;RVSAAT2S030;Raiffeisenbank Flachgau Nord eGen
+AT;35045;RVSAAT2S022;Raiffeisenbank Hallein-Oberalm eGen
+AT;35046;RVSAAT2S030;Raiffeisenbank Flachgau Nord eGen
+AT;35047;RVSAAT2S047;Raiffeisenbank Salzburger Seenland eGen
+AT;35048;RVSAAT2S012;Raiffeisenbank Hohe Tauern eGen
+AT;35049;RVSAAT2S049;Raiffeisenbank Radstadt-Untertauern-Filzmoos-Forstau registrierte Genossenschaft mit beschränkter Haftung
+AT;35050;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35051;RVSAAT2S051;Raiffeisenbank Rauris-Bucheben eGen
+AT;35052;RVSAAT2S052;Raiffeisenbank Saalbach-Hinterglemm-Viehhofen eGen
+AT;35053;RVSAAT2S053;Raiffeisenbank Pinzgau Mitte eGen
+AT;35054;RVSAAT2S034;Raiffeisenbank Salzburg Liefering-Maxglan-Siezenheim eGen
+AT;35055;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35056;RVSAAT2S056;Raiffeisenbank St.Gilgen-Fuschl-Strobl eGen
+AT;35057;RVSAAT2S069;Raiffeisenbank St. Johann-Wagrain-Kleinarl eGen
+AT;35058;RVSAAT2S029;Raiffeisenbank Kuchl-St. Koloman eGen
+AT;35060;RVSAAT2S060;Raiffeisenbank St. Martin-Lofer-Weißbach eGen
+AT;35061;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35062;RVSAAT2S062;Raiffeisenbank Straßwalchen eGen
+AT;35063;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35064;RVSAAT2S064;Raiffeisenbank Taxenbach eGen
+AT;35065;RVSAAT2S065;Raiffeisenbank Fuschlsee West eGen
+AT;35066;RVSAAT2S066;Raiffeisenbank Unken eGen
+AT;35068;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35069;RVSAAT2S069;Raiffeisenbank St. Johann-Wagrain-Kleinarl eGen
+AT;35070;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35071;RVSAAT2S071;Raiffeisenbank Wals-Himmelreich eGen
+AT;35072;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35075;RVSAAT2S047;Raiffeisenbank Salzburger Seenland eGen
+AT;35101;RVSAAT2S001;Raiffeisenbank Lammertal eGen
+AT;35104;RVSAAT2S004;Raiffeisenbank Altenmarkt-Flachau-Eben eGen
+AT;35105;RVSAAT2S018;Raiffeisenbank Untersberg eGen
+AT;35108;RVSAAT2S015;Raiffeisenbank Flachgau Mitte eGen
+AT;35109;RVSAAT2S047;Raiffeisenbank Salzburger Seenland eGen
+AT;35110;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35111;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35112;RVSAAT2S012;Raiffeisenbank Hohe Tauern eGen
+AT;35115;RVSAAT2S015;Raiffeisenbank Flachgau Mitte eGen
+AT;35118;RVSAAT2S018;Raiffeisenbank Untersberg eGen
+AT;35119;RVSAAT2S019;Raiffeisenbank Großarl-Hüttschlag eGen
+AT;35121;RVSAAT2S021;Raiffeisenbank Wallersee eGen
+AT;35122;RVSAAT2S022;Raiffeisenbank Hallein-Oberalm eGen
+AT;35125;RVSAAT2S065;Raiffeisenbank Fuschlsee West eGen
+AT;35126;RVSAAT2S026;Raiffeisenbank Gastein eGen
+AT;35127;RVSAAT2S027;Raiffeisenbank Hüttau-St. Martin eGen
+AT;35130;RVSAAT2S030;Raiffeisenbank Flachgau Nord eGen
+AT;35139;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35147;RVSAAT2S047;Raiffeisenbank Salzburger Seenland eGen
+AT;35149;RVSAAT2S049;Raiffeisenbank Radstadt-Untertauern-Filzmoos-Forstau registrierte Genossenschaft mit beschränkter Haftung
+AT;35152;RVSAAT2S052;Raiffeisenbank Saalbach-Hinterglemm-Viehhofen eGen
+AT;35154;RVSAAT2S034;Raiffeisenbank Salzburg Liefering-Maxglan-Siezenheim eGen
+AT;35155;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35156;RVSAAT2S056;Raiffeisenbank St.Gilgen-Fuschl-Strobl eGen
+AT;35160;RVSAAT2S060;Raiffeisenbank St. Martin-Lofer-Weißbach eGen
+AT;35161;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35163;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35164;RVSAAT2S064;Raiffeisenbank Taxenbach eGen
+AT;35169;RVSAAT2S069;Raiffeisenbank St. Johann-Wagrain-Kleinarl eGen
+AT;35170;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35172;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35204;RVSAAT2S004;Raiffeisenbank Altenmarkt-Flachau-Eben eGen
+AT;35212;RVSAAT2S012;Raiffeisenbank Hohe Tauern eGen
+AT;35215;RVSAAT2S015;Raiffeisenbank Flachgau Mitte eGen
+AT;35221;RVSAAT2S021;Raiffeisenbank Wallersee eGen
+AT;35225;RVSAAT2S065;Raiffeisenbank Fuschlsee West eGen
+AT;35226;RVSAAT2S026;Raiffeisenbank Gastein eGen
+AT;35239;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35249;RVSAAT2S049;Raiffeisenbank Radstadt-Untertauern-Filzmoos-Forstau registrierte Genossenschaft mit beschränkter Haftung
+AT;35255;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35256;RVSAAT2S056;Raiffeisenbank St.Gilgen-Fuschl-Strobl eGen
+AT;35261;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35263;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35272;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35310;RVSAAT2S055;Raiffeisenbank Pongau Mitte eGen
+AT;35312;RVSAAT2S012;Raiffeisenbank Hohe Tauern eGen
+AT;35322;RVSAAT2S022;Raiffeisenbank Hallein-Oberalm eGen
+AT;35339;RVSAAT2S039;Raiffeisenbank Oberpinzgau eGen
+AT;35352;RVSAAT2S052;Raiffeisenbank Saalbach-Hinterglemm-Viehhofen eGen
+AT;35361;RVSAAT2S063;Raiffeisenbank Lungau eGen
+AT;35371;RVSAAT2S071;Raiffeisenbank Wals-Himmelreich eGen
+AT;35404;RVSAAT2S004;Raiffeisenbank Altenmarkt-Flachau-Eben eGen
+AT;35422;RVSAAT2S022;Raiffeisenbank Hallein-Oberalm eGen
+AT;35452;RVSAAT2S052;Raiffeisenbank Saalbach-Hinterglemm-Viehhofen eGen
+AT;35522;RVSAAT2S022;Raiffeisenbank Hallein-Oberalm eGen
+AT;36000;RZTIAT22XXX;Raiffeisen-Landesbank Tirol AG
+AT;36200;RZTIAT22200;Raiffeisenbank Absam-Thaur-Volders eGen
+AT;36201;RZTIAT22218;Raiffeisen Regionalbank Achensee eGen
+AT;36203;RZTIAT22203;Raiffeisenbank Alpbachtal eGen
+AT;36207;RZTIAT22353;Raiffeisenbank Pitztal eGen
+AT;36209;RZTIAT22336;Raiffeisenbank Tirol Mitte West eGen
+AT;36213;RZTIAT22358;Raiffeisen Bezirksbank Kufstein eGen
+AT;36215;RZTIAT22215;Raiffeisenbank Brixen im Thale eGen
+AT;36216;RZTIAT22358;Raiffeisen Bezirksbank Kufstein eGen
+AT;36218;RZTIAT22218;Raiffeisen Regionalbank Achensee eGen
+AT;36219;RZTIAT22219;Raiffeisenbank Ehrwald-Lermoos-Biberwier eGen
+AT;36220;RBRTAT22XXX;Raiffeisenbank Oberland-Reutte eGen
+AT;36223;RZTIAT22358;Raiffeisen Bezirksbank Kufstein eGen
+AT;36229;RZTIAT22229;Raiffeisen Regionalbank Fügen-Kaltenbach-Zell eGen
+AT;36230;RZTIAT22329;Raiffeisenbank Wipptal - Stubaital Mitte eGen
+AT;36232;RZTIAT22232;RaiffeisenBank Going eGen
+AT;36236;RZTIAT22358;Raiffeisen Bezirksbank Kufstein eGen
+AT;36240;RZTIAT22241;Raiffeisenbank Hippach-Hart eGen
+AT;36241;RZTIAT22241;Raiffeisenbank Hippach-Hart eGen
+AT;36245;RZTIAT22245;Raiffeisenbank Wilder Kaiser - Brixental West eGen
+AT;36248;RZTIAT22248;Raiffeisenbank Arlberg Silvretta eGen
+AT;36249;RZTIAT22218;Raiffeisen Regionalbank Achensee eGen
+AT;36252;RZTIAT22248;Raiffeisenbank Arlberg Silvretta eGen
+AT;36254;RZTIAT22263;Raiffeisenbank Kitzbühel - St. Johann eGen
+AT;36260;RZTIAT22336;Raiffeisenbank Tirol Mitte West eGen
+AT;36262;RZTIAT22264;Raiffeisenbank Kössen-Kirchdorf eGen
+AT;36263;RZTIAT22263;Raiffeisenbank Kitzbühel - St. Johann eGen
+AT;36264;RZTIAT22264;Raiffeisenbank Kössen-Kirchdorf eGen
+AT;36265;RZTIAT22322;Raiffeisen Regionalbank Schwaz-Wattens eGen
+AT;36267;RZTIAT22267;Raiffeisenbank Kundl-Münster eGen
+AT;36268;RZTIAT22268;Raiffeisenbank im Ötztal und Umgebung eGen
+AT;36269;RZTIAT22339;Raiffeisenbank Langkampfen-Thiersee eGen
+AT;36272;RZTIAT22322;Raiffeisen Regionalbank Schwaz-Wattens eGen
+AT;36273;RZTIAT22273;Raiffeisenbank Matrei am Brenner und Umgebung eGen
+AT;36274;RZTIAT22274;Raiffeisenbank Mayrhofen und Umgebung eGen
+AT;36275;RZTIAT22285;Raiffeisenbank Neustift-Mieders-Schönberg im Stubaital eGen
+AT;36276;RZTIAT22336;Raiffeisenbank Tirol Mitte West eGen
+AT;36279;RZTIAT22267;Raiffeisenbank Kundl-Münster eGen
+AT;36281;RZTIAT22281;Raiffeisenkasse für Mutters, Natters und Kreith registrierte Genossenschaft mit beschränkter Haftung
+AT;36283;RZTIAT22283;Raiffeisenbank Serfaus-Fiss-Ried-Nauders eGen
+AT;36285;RZTIAT22285;Raiffeisenbank Neustift-Mieders-Schönberg im Stubaital eGen
+AT;36291;RZTIAT22268;Raiffeisenbank im Ötztal und Umgebung eGen
+AT;36303;RZTIAT22203;Raiffeisenbank Alpbachtal eGen
+AT;36305;RBRTAT22XXX;Raiffeisenbank Oberland-Reutte eGen
+AT;36306;RZTIAT22315;Raiffeisenbank Serfaus-Fiss-Ried-Nauders eGen
+AT;36310;RZTIAT22310;Raiffeisenkasse Rum-Innsbruck/Arzl eGen
+AT;36314;RZTIAT22314;Raiffeisenbank Seefeld-Leutasch-Reith-Scharnitz registrierte Genossenschaft mit beschränkter Haftung
+AT;36315;RZTIAT22315;Raiffeisenbank Serfaus-Fiss-Ried-Nauders eGen
+AT;36316;RZTIAT22268;Raiffeisenbank im Ötztal und Umgebung eGen
+AT;36318;RZTIAT22245;Raiffeisenbank Wilder Kaiser - Brixental West eGen
+AT;36320;RZTIAT22320;Raiffeisenkasse Schlitters, Bruck und Strass registrierte Genossenschaft mit beschränkter Haftung
+AT;36322;RZTIAT22322;Raiffeisen Regionalbank Schwaz-Wattens eGen
+AT;36324;RZTIAT22324;Raiffeisenbank Sölden eGen
+AT;36329;RZTIAT22329;Raiffeisenbank Wipptal - Stubaital Mitte eGen
+AT;36332;RZTIAT22332;Raiffeisenkasse Stumm, Stummerberg und Umgebung registrierte Genossenschaft mit beschränkter Haftung
+AT;36333;RZTIAT22333;Raiffeisenbank Tannheimertal eGen
+AT;36336;RZTIAT22336;Raiffeisenbank Tirol Mitte West eGen
+AT;36337;RZTIAT22200;Raiffeisenbank Absam-Thaur-Volders eGen
+AT;36339;RZTIAT22339;Raiffeisenbank Langkampfen-Thiersee eGen
+AT;36342;RZTIAT22342;Raiffeisenbank Tux eGen
+AT;36345;RBRTAT22XXX;Raiffeisenbank Oberland-Reutte eGen
+AT;36347;RZTIAT22200;Raiffeisenbank Absam-Thaur-Volders eGen
+AT;36349;RZTIAT22349;RaiffeisenBank St. Ulrich - Waidring eGen
+AT;36351;RZTIAT22322;Raiffeisen Regionalbank Schwaz-Wattens eGen
+AT;36352;RZTIAT22218;Raiffeisen Regionalbank Achensee eGen
+AT;36353;RZTIAT22353;Raiffeisenbank Pitztal eGen
+AT;36354;RZTIAT22245;Raiffeisenbank Wilder Kaiser - Brixental West eGen
+AT;36357;RZTIAT22357;Raiffeisenbank Wildschönau eGen
+AT;36358;RZTIAT22358;Raiffeisen Bezirksbank Kufstein eGen
+AT;36359;RBRTAT22XXX;Raiffeisenbank Oberland-Reutte eGen
+AT;36360;RZTIAT22229;Raiffeisen Regionalbank Fügen-Kaltenbach-Zell eGen
+AT;36362;RZTIAT22362;Raiffeisen Regionalbank Hall in Tirol eGen
+AT;36367;RZTIAT22378;Raiffeisen Regionalbank Matrei i.O. eGen
+AT;36368;RZTIAT22368;Raiffeisenbank Sillian - Lienzer Talboden eGen
+AT;36373;RZTIAT22368;Raiffeisenbank Sillian - Lienzer Talboden eGen
+AT;36374;RZTIAT22368;Raiffeisenbank Sillian - Lienzer Talboden eGen
+AT;36378;RZTIAT22378;Raiffeisen Regionalbank Matrei i.O. eGen
+AT;36386;RZTIAT22386;Raiffeisenkasse Villgratental eGen
+AT;36387;RZTIAT22368;Raiffeisenbank Sillian - Lienzer Talboden eGen
+AT;36791;ALPEAT22XXX;Alpen Privatbank Aktiengesellschaft
+AT;36990;RBRTAT22XXX;Raiffeisenbank Oberland-Reutte eGen
+AT;37000;RVVGAT2BXXX;Raiffeisen Landesbank Vorarlberg mit Revisionsverband eGen
+AT;37401;RVVGAT2B401;Raiffeisenbank Alberschwende eGen
+AT;37402;RVVGAT2B422;Raiffeisenbank Montfort eGen
+AT;37405;RVVGAT2B423;Raiffeisenbank Mittel- und Hinterbregenzerwald eGen
+AT;37406;RVVGAT2B406;Raiffeisenbank Bezau-Mellau-Bizau eGen
+AT;37410;RVVGAT2B468;Raiffeisenbank Bludenz-Montafon eGen
+AT;37420;RVVGAT2B420;Raiffeisenbank Im Rheintal eGen
+AT;37422;RVVGAT2B422;Raiffeisenbank Montfort eGen
+AT;37423;RVVGAT2B423;Raiffeisenbank Mittel- und Hinterbregenzerwald eGen
+AT;37424;RVVGAT2B458;RAIFFEISENBANK im Walgau eGen
+AT;37429;RVVGAT2B422;Raiffeisenbank Montfort eGen
+AT;37431;RVVGAT2B431;Raiffeisenbank Bodensee-Leiblachtal eGen
+AT;37434;RANJAT2BXXX;Walser Raiffeisen Bank Aktiengesellschaft
+AT;37435;RVVGAT2B435;Raiffeisenbank Vorderbregenzerwald eGen
+AT;37438;RANMAT21XXX;RAIFFEISENBANK HOHENEMS eGen
+AT;37439;RVVGAT2B431;Raiffeisenbank Bodensee-Leiblachtal eGen
+AT;37445;RVVGAT2B474;Raiffeisenbank Weissachtal eGen
+AT;37449;RVVGAT2B449;Raiffeisenbank Lech am Arlberg eGen
+AT;37453;RVVGAT2B420;Raiffeisenbank Im Rheintal eGen
+AT;37458;RVVGAT2B458;RAIFFEISENBANK im Walgau eGen
+AT;37461;RVVGAT2B422;Raiffeisenbank Montfort eGen
+AT;37468;RVVGAT2B468;Raiffeisenbank Bludenz-Montafon eGen
+AT;37474;RVVGAT2B474;Raiffeisenbank Weissachtal eGen
+AT;37475;RVVGAT2B475;Raiffeisenbank Vorderland eGen
+AT;37482;RVVGAT2B482;Raiffeisenbank am Hofsteig eGen
+AT;38000;RZSTAT2GXXX;Raiffeisen-Landesbank Steiermark AG
+AT;38001;RZSTAT2G215;Raiffeisenbank Region Liezen eGen
+AT;38010;RZSTAT2G187;Raiffeisenbank Weiz-Anger eGen
+AT;38023;RZSTAT2G023;Raiffeisenbank Oststeiermark Nord eGen
+AT;38026;RZSTAT2G282;Raiffeisenbank Passail eGen
+AT;38041;RZSTAT2G023;Raiffeisenbank Oststeiermark Nord eGen
+AT;38043;RZSTAT2G487;Raiffeisenbank Weststeiermark eGen
+AT;38053;RZSTAT2G487;Raiffeisenbank Weststeiermark eGen
+AT;38055;RZSTAT2G252;Raiffeisenbank Nestelbach-Eggersdorf eGen
+AT;38056;RZSTAT2G056;Raiffeisenbank Süd-Weststeiermark eGen
+AT;38071;RZSTAT2G071;Raiffeisenbank Region Fehring eGen
+AT;38072;RZSTAT2G210;Raiffeisenbank Kalsdorf-Lieboch-Stainz eGen
+AT;38075;RZSTAT2G075;Raiffeisenbank Mittlere Südoststeiermark eGen
+AT;38076;RZSTAT2G346;Raiffeisenbank Aichfeld eGen
+AT;38077;RZSTAT2G077;Raiffeisenbank Region Fürstenfeld eGen
+AT;38094;RZSTAT2G094;Raiffeisenbank Gamlitz eGen
+AT;38102;RZSTAT2G102;Raiffeisenbank Gleinstätten-Leutschach-Wildon eGen
+AT;38103;RZSTAT2G103;Raiffeisenbank Region Gleisdorf-Pischelsdorf eGen
+AT;38104;RZSTAT2G497;Raiffeisenbank Region Feldbach eGen
+AT;38108;RZSTAT2G023;Raiffeisenbank Oststeiermark Nord eGen
+AT;38111;RZSTAT2G111;Raiffeisenbank Gratkorn eGen
+AT;38112;RZSTAT2G138;Raiffeisenbank Gratwein-Hitzendorf eGen
+AT;38113;RZSTAT2G113;Raiffeisenbank Schladming-Gröbming eGen
+AT;38118;RZSTAT2G102;Raiffeisenbank Gleinstätten-Leutschach-Wildon eGen
+AT;38120;RZSTAT2G151;Raiffeisenbank Ilz-Großsteinbach-Riegersburg eGen
+AT;38122;RZSTAT2G077;Raiffeisenbank Region Fürstenfeld eGen
+AT;38128;RZSTAT2G312;Raiffeisenbank Region Radkersburg eGen
+AT;38129;RZSTAT2G129;Raiffeisenbank Mariazellerland eGen
+AT;38131;RZSTAT2G497;Raiffeisenbank Region Feldbach eGen
+AT;38132;RZSTAT2G071;Raiffeisenbank Region Fehring eGen
+AT;38133;RZSTAT2G133;Raiffeisenbank Hausmannstätten eGen
+AT;38138;RZSTAT2G138;Raiffeisenbank Gratwein-Hitzendorf eGen
+AT;38151;RZSTAT2G151;Raiffeisenbank Ilz-Großsteinbach-Riegersburg eGen
+AT;38170;RZSTAT2G170;Raiffeisenbank Heiligenkreuz-Kirchbach -St. Georgen eGen
+AT;38171;RZSTAT2G075;Raiffeisenbank Mittlere Südoststeiermark eGen
+AT;38186;RZSTAT2G186;Raiffeisenbank Mürztal eGen
+AT;38187;RZSTAT2G187;Raiffeisenbank Weiz-Anger eGen
+AT;38206;RZSTAT2G206;Raiffeisenbank Leibnitz eGen
+AT;38210;RZSTAT2G210;Raiffeisenbank Kalsdorf-Lieboch-Stainz eGen
+AT;38211;RZSTAT2G487;Raiffeisenbank Weststeiermark eGen
+AT;38215;RZSTAT2G215;Raiffeisenbank Region Liezen eGen
+AT;38223;RZSTAT2G377;Raiffeisenbank Region Graz Nord eGen
+AT;38227;RZSTAT2G227;Raiffeisenbank Liesingtal-St. Stefan eGen
+AT;38235;RZSTAT2G487;Raiffeisenbank Weststeiermark eGen
+AT;38238;RZSTAT2G402;Raiffeisenbank Murau eGen
+AT;38240;RZSTAT2G186;Raiffeisenbank Mürztal eGen
+AT;38249;RZSTAT2G249;Raiffeisenbank Steirisches Salzkammergut-Öblarn eGen
+AT;38252;RZSTAT2G252;Raiffeisenbank Nestelbach-Eggersdorf eGen
+AT;38261;RZSTAT2G368;Raiffeisenbank Zirbenland eGen
+AT;38262;RZSTAT2G102;Raiffeisenbank Gleinstätten-Leutschach-Wildon eGen
+AT;38266;RZSTAT2G249;Raiffeisenbank Steirisches Salzkammergut-Öblarn eGen
+AT;38282;RZSTAT2G282;Raiffeisenbank Passail eGen
+AT;38285;RZSTAT2G103;Raiffeisenbank Region Gleisdorf-Pischelsdorf eGen
+AT;38292;RZSTAT2G102;Raiffeisenbank Gleinstätten-Leutschach-Wildon eGen
+AT;38311;RZSTAT2G023;Raiffeisenbank Oststeiermark Nord eGen
+AT;38312;RZSTAT2G312;Raiffeisenbank Region Radkersburg eGen
+AT;38326;RZSTAT2G151;Raiffeisenbank Ilz-Großsteinbach-Riegersburg eGen
+AT;38333;RZSTAT2G138;Raiffeisenbank Gratwein-Hitzendorf eGen
+AT;38335;RZSTAT2G170;Raiffeisenbank Heiligenkreuz-Kirchbach -St. Georgen eGen
+AT;38346;RZSTAT2G346;Raiffeisenbank Aichfeld eGen
+AT;38347;RZSTAT2G347;Raiffeisenbank Turnau-St. Lorenzen eGen
+AT;38348;RZSTAT2G215;Raiffeisenbank Region Liezen eGen
+AT;38367;RZSTAT2G367;Raiffeisenbank Graz-St. Peter eGen
+AT;38368;RZSTAT2G368;Raiffeisenbank Zirbenland eGen
+AT;38370;RZSTAT2G370;Raiffeisenbank Mureck eGen
+AT;38372;RZSTAT2G103;Raiffeisenbank Region Gleisdorf-Pischelsdorf eGen
+AT;38373;RZSTAT2G227;Raiffeisenbank Liesingtal-St. Stefan eGen
+AT;38374;RZSTAT2G075;Raiffeisenbank Mittlere Südoststeiermark eGen
+AT;38375;RZSTAT2G487;Raiffeisenbank Weststeiermark eGen
+AT;38377;RZSTAT2G377;Raiffeisenbank Region Graz Nord eGen
+AT;38402;RZSTAT2G402;Raiffeisenbank Murau eGen
+AT;38403;RZSTAT2G403;Raiffeisenbank Region Hartberg eGen
+AT;38407;RZSTAT2G056;Raiffeisenbank Süd-Weststeiermark eGen
+AT;38411;RZSTAT2G403;Raiffeisenbank Region Hartberg eGen
+AT;38420;RZSTAT2G420;Raiffeisenbank Straß-Spielfeld eGen
+AT;38433;RZSTAT2G433;Raiffeisenbank Stallhofen eGen
+AT;38436;RZSTAT2G312;Raiffeisenbank Region Radkersburg eGen
+AT;38439;RZSTAT2G439;Raiffeisenbank Graz-Straßgang eGen
+AT;38452;RZSTAT2G402;Raiffeisenbank Murau eGen
+AT;38460;RZSTAT2G460;Raiffeisenbank Leoben-Bruck eGen
+AT;38462;RZSTAT2G347;Raiffeisenbank Turnau-St. Lorenzen eGen
+AT;38477;RZSTAT2G210;Raiffeisenbank Kalsdorf-Lieboch-Stainz eGen
+AT;38481;RZSTAT2G113;Raiffeisenbank Schladming-Gröbming eGen
+AT;38487;RZSTAT2G487;Raiffeisenbank Weststeiermark eGen
+AT;38497;RZSTAT2G497;Raiffeisenbank Region Feldbach eGen
+AT;38499;RZSTAT2G102;Raiffeisenbank Gleinstätten-Leutschach-Wildon eGen
+AT;38503;RZSTAT2G056;Raiffeisenbank Süd-Weststeiermark eGen
+AT;39000;RZKTAT2KXXX;Raiffeisen Landesbank Kärnten und Revisionsverband eGen
+AT;39100;VSGKAT2KXXX;Poso Bank AG
+AT;39101;VSGKAT2KXXX;Poso Bank AG
+AT;39102;VSGKAT2KXXX;Poso Bank AG
+AT;39104;VSGKAT2KXXX;Poso Bank AG
+AT;39109;VSGKAT2KXXX;Poso Bank AG
+AT;39116;VSGKAT2KXXX;Poso Bank AG
+AT;39117;VSGKAT2KXXX;Poso Bank AG
+AT;39130;VSGKAT2KXXX;Poso Bank AG
+AT;39254;RZKTAT2K475;Raiffeisenbank Mittelkärnten eG
+AT;39255;RZKTAT2K475;Raiffeisenbank Mittelkärnten eG
+AT;39257;RZKTAT2K496;Raiffeisenbank Region Villach eG
+AT;39267;RZKTAT2K267;Raiffeisen-Bezirksbank Spittal/Drau, registrierte Genossenschaft mit beschränkter Haftung
+AT;39271;RZKTAT2K546;Raiffeisenbank Völkermarkt-Bleiburg-Brückl eGen
+AT;39272;RZKTAT2K546;Raiffeisenbank Völkermarkt-Bleiburg-Brückl eGen
+AT;39288;RZKTAT2K288;Raiffeisenbank Eberndorf registrierte Genossenschaft mit beschränkter Haftung
+AT;39292;RZKTAT2K292;Raiffeisenbank Unteres Lavanttal eGen
+AT;39305;RZKTAT2K496;Raiffeisenbank Region Villach eG
+AT;39320;RZKTAT2K320;Raiffeisenbank Grafenstein-Magdalensberg und Umgebung, registrierte Genossenschaft mit beschränkter Haftung
+AT;39322;RZKTAT2K561;Raiffeisenbank Großglockner-Weissensee eG
+AT;39340;RZKTAT2K475;Raiffeisenbank Mittelkärnten eG
+AT;39355;RZKTAT2K390;Raiffeisenbank Wörthersee-Landskron-Gegendtal eG
+AT;39358;RZKTAT2KXXX;Raiffeisen Landesbank Kärnten und Revisionsverband eGen
+AT;39364;RZKTAT2K364;Raiffeisenbank Karnische Region eG
+AT;39381;RZKTAT2K390;Raiffeisenbank Wörthersee-Landskron-Gegendtal eG
+AT;39383;RZKTAT2K496;Raiffeisenbank Region Villach eG
+AT;39384;RZKTAT2K475;Raiffeisenbank Mittelkärnten eG
+AT;39390;RZKTAT2K390;Raiffeisenbank Wörthersee-Landskron-Gegendtal eG
+AT;39400;RZKTAT2K464;Raiffeisenbank Lieser-Maltatal eG
+AT;39404;RZKTAT2K442;Raiffeisenbank Drautal registrierte Genossenschaft mit beschränkter Haftung
+AT;39407;RZKTAT2K475;Raiffeisenbank Mittelkärnten eG
+AT;39411;RZKTAT2K411;Raiffeisenbank Moosburg-Tigring, registrierte Genossenschaft mit beschränkter Haftung
+AT;39412;RZKTAT2K412;Raiffeisen Bank Lurnfeld-Mölltal eGen
+AT;39431;RZKTAT2K561;Raiffeisenbank Großglockner-Weissensee eG
+AT;39436;RZKTAT2K412;Raiffeisen Bank Lurnfeld-Mölltal eGen
+AT;39442;RZKTAT2K442;Raiffeisenbank Drautal registrierte Genossenschaft mit beschränkter Haftung
+AT;39457;RZKTAT2K457;Raiffeisenbank Nockberge eGen
+AT;39461;RZKTAT2K457;Raiffeisenbank Nockberge eGen
+AT;39464;RZKTAT2K464;Raiffeisenbank Lieser-Maltatal eG
+AT;39465;RZKTAT2K481;Raiffeisenbank Mittleres Lavanttal eGen
+AT;39475;RZKTAT2K475;Raiffeisenbank Mittelkärnten eG
+AT;39479;RZKTAT2K479;Raiffeisenbank Millstättersee eG
+AT;39481;RZKTAT2K481;Raiffeisenbank Mittleres Lavanttal eGen
+AT;39483;RZKTAT2K496;Raiffeisenbank Region Villach eG
+AT;39487;RZKTAT2K487;Raiffeisenbank Rosental, registrierte Genossenschaft mit beschränkter Haftung
+AT;39491;RZKTAT2K491;Raiffeisenbank Oberes Lavanttal - St. Paul eG
+AT;39496;RZKTAT2K496;Raiffeisenbank Region Villach eG
+AT;39500;RZKTAT2K491;Raiffeisenbank Oberes Lavanttal - St. Paul eG
+AT;39501;RZKTAT2K501;Raiffeisenbank Friesach-Metnitztal, registrierte Genossenschaft mit beschränkter Haftung
+AT;39505;RZKTAT2K475;Raiffeisenbank Mittelkärnten eG
+AT;39510;RZKTAT2K510;Raiffeisenbank Ossiacher See eG
+AT;39511;RZKTAT2K475;Raiffeisenbank Mittelkärnten eG
+AT;39543;RZKTAT2K364;Raiffeisenbank Karnische Region eG
+AT;39546;RZKTAT2K546;Raiffeisenbank Völkermarkt-Bleiburg-Brückl eGen
+AT;39559;RZKTAT2K559;Raiffeisenbank Wernberg, registrierte Genossenschaft mit beschränkter Haftung
+AT;39561;RZKTAT2K561;Raiffeisenbank Großglockner-Weissensee eG
+AT;40000;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;40100;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;40170;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;40430;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;40630;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;40720;VBOEATWWSAL;Volksbank Salzburg eG
+AT;40730;OVLIAT21XXX;DolomitenBank Osttirol-Westkärnten eG
+AT;40850;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;41050;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;41210;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;41600;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;42110;MVOGAT22XXX;Marchfelder Bank eG
+AT;42130;VBOEATWWKLA;Volksbank Kärnten eG
+AT;42320;VBOEATWWGRA;Volksbank Steiermark AG
+AT;42390;VBOEATWWINN;Volksbank Tirol AG
+AT;42550;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;42600;VBOEATWWKLA;Volksbank Kärnten eG
+AT;42630;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;42740;VBOEATWWSAL;Volksbank Salzburg eG
+AT;42750;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;42820;VBOEATWWKLA;Volksbank Kärnten eG
+AT;42830;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;43000;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;43030;VBOEATWWGRA;Volksbank Steiermark AG
+AT;43180;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;43210;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;43380;OVLIAT21XXX;DolomitenBank Osttirol-Westkärnten eG
+AT;43510;ABVRATW1XXX;start:bausparkasse AG
+AT;43530;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;43600;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;43610;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;43690;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;43770;VBOEATWWINN;Volksbank Tirol AG
+AT;43830;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;43920;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;44020;VBOEATWWSAL;Volksbank Salzburg eG
+AT;44220;BWFBATW1XXX;Österreichische Ärzte- und Apothekerbank AG
+AT;44300;VBOEATWWSAL;Volksbank Salzburg eG
+AT;44400;OVLIAT21XXX;DolomitenBank Osttirol-Westkärnten eG
+AT;44430;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;44480;VBOEATWWSAL;Volksbank Salzburg eG
+AT;44570;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;44770;VBOEATWWGRA;Volksbank Steiermark AG
+AT;44780;VBOEATWWGRA;Volksbank Steiermark AG
+AT;44790;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;44800;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;44810;VBOEATWWGRA;Volksbank Steiermark AG
+AT;44820;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;44960;WSPKATW1XXX;WSK Bank AG
+AT;45010;VBOEATWWSAL;Volksbank Salzburg eG
+AT;45330;VBOEATWWOOE;Volksbank Oberösterreich AG
+AT;45710;VBOEATWWVBG;VOLKSBANK VORARLBERG e. Gen.
+AT;45850;VBOEATWWINN;Volksbank Tirol AG
+AT;46590;VBOEATWWGRA;Volksbank Steiermark AG
+AT;46660;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;46900;VBOEATWWKLA;Volksbank Kärnten eG
+AT;47150;VBOEATWWNOM;Volksbank Niederösterreich AG
+AT;48150;VBOEATWWGRA;Volksbank Steiermark AG
+AT;49220;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;49460;VBOEATWWXXX;VOLKSBANK WIEN AG
+AT;51000;EHBBAT2EXXX;HYPO-BANK BURGENLAND Aktiengesellschaft
+AT;52000;HAABAT2KXXX;Austrian Anadi Bank AG
+AT;52300;HSEEAT2KXXX;Addiko Bank AG
+AT;53000;HYPNATWWXXX;HYPO NOE Landesbank für Niederösterreich und Wien AG
+AT;53100;HYPNATWWLDS;HYPO NOE Landesbank für Niederösterreich und Wien AG
+AT;54000;OBLAAT2LXXX;Oberösterreichische Landesbank Aktiengesellschaft
+AT;55000;SLHYAT2SXXX;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;55500;SLHYAT2S500;Raiffeisenlandesbank Oberösterreich Aktiengesellschaft
+AT;56000;RZSTAT2GXXX;Raiffeisen-Landesbank Steiermark AG
+AT;57000;HYPTAT22XXX;HYPO TIROL BANK AG
+AT;57100;HYPTAT22XXX;HYPO TIROL BANK AG
+AT;58000;HYPVAT2BXXX;Hypo Vorarlberg Bank AG
+AT;60000;BAWAATWWXXX;BAWAG P.S.K. Bank für Arbeit und Wirtschaft und Österreichische Postsparkasse Aktiengesellschaft
+AT;74200;SFIVATW1XXX;SPAR-FINANZ BANK AG
+AT;75910;OPBAATW2XXX;Stellantis Bank SA Niederlassung Österreich
+AT;76000;PORCAT21XXX;Porsche Bank Aktiengesellschaft
+AT;76022;VIAUATW1XXX;card complete Service Bank AG
+AT;76032;TEAMDE71TAT;TeamBank Österreich - Niederlassung der TeamBank AG Nürnberg
+AT;76040;VIAUATW1XXX;card complete Service Bank AG
+AT;76520;COPRATWWXXX;Liechtensteinische Landesbank (Österreich) AG
+AT;94646;BIPGATW3XXX;Bitpanda Payments GmbH
+CH;100;SNBZCHZZXXX;Schweizerische Nationalbank
+CH;1007;SNBZCHZZDX2;Schweizerische Nationalbank Transit wCBDC
+CH;110;SNBZCHZZXXX;Schweizerische Nationalbank
+CH;115;SNBZCHZZXXX;Schweizerische Nationalbank
+CH;193;SECGDEFFXXX;SECB Swiss Euro Clearing Bank
+CH;202;UBSWCHZH86N;UBS Switzerland AG
+CH;203;UBSWCHZH93A;UBS Switzerland AG
+CH;204;UBSWCHZH70E;UBS Switzerland AG
+CH;206;UBSWCHZH80V;UBS Switzerland AG
+CH;207;UBSWCHZH81M;UBS Switzerland AG
+CH;208;UBSWCHZH70A;UBS Switzerland AG
+CH;209;UBSWCHZH72D;UBS Switzerland AG
+CH;210;UBSWCHZH52A;UBS Switzerland AG
+CH;211;UBSWCHZH31A;UBS Switzerland AG
+CH;213;UBSWCHZH94N;UBS Switzerland AG
+CH;214;UBSWCHZH88A;UBS Switzerland AG
+CH;215;UBSWCHZH12C;UBS Switzerland AG
+CH;216;UBSWCHZH88B;UBS Switzerland AG
+CH;217;UBSWCHZH82P;UBS Switzerland AG
+CH;219;UBSWCHZH85B;UBS Switzerland AG
+CH;220;UBSWCHZH94P;UBS Switzerland AG
+CH;221;UBSWCHZH75A;UBS Switzerland AG
+CH;222;UBSWCHZH83B;UBS Switzerland AG
+CH;223;UBSWCHZH89D;UBS Switzerland AG
+CH;225;UBSWCHZH80G;UBS Switzerland AG
+CH;226;UBSWCHZH29A;UBS Switzerland AG
+CH;227;UBSWCHZH36A;UBS Switzerland AG
+CH;228;UBSWCHZH12T;UBS Switzerland AG
+CH;230;UBSWCHZH80A;UBS Switzerland AG
+CH;231;UBSWCHZH50A;UBS Switzerland AG
+CH;232;UBSWCHZH54A;UBS Switzerland AG
+CH;233;UBSWCHZH40A;UBS Switzerland AG
+CH;234;UBSWCHZH65A;UBS Switzerland AG
+CH;235;UBSWCHZH30A;UBS Switzerland AG
+CH;236;UBSWCHZH68B;UBS Switzerland AG
+CH;238;UBSWCHZH87C;UBS Switzerland AG
+CH;239;UBSWCHZH85A;UBS Switzerland AG
+CH;240;UBSWCHZH12A;UBS Switzerland AG
+CH;241;UBSWCHZH38A;UBS Switzerland AG
+CH;242;UBSWCHZH23A;UBS Switzerland AG
+CH;243;UBSWCHZH10A;UBS Switzerland AG
+CH;244;UBSWCHZH96C;UBS Switzerland AG
+CH;245;UBSWCHZH44A;UBS Switzerland AG
+CH;246;UBSWCHZH66A;UBS Switzerland AG
+CH;247;UBSWCHZH69A;UBS Switzerland AG
+CH;248;UBSWCHZH60A;UBS Switzerland AG
+CH;249;UBSWCHZH18D;UBS Switzerland AG
+CH;250;UBSWCHZH86M;UBS Switzerland AG
+CH;251;UBSWCHZH80H;UBS Switzerland AG
+CH;252;UBSWCHZH94A;UBS Switzerland AG
+CH;253;UBSWCHZH86P;UBS Switzerland AG
+CH;254;UBSWCHZH90A;UBS Switzerland AG
+CH;255;UBSWCHZH18A;UBS Switzerland AG
+CH;256;UBSWCHZH95A;UBS Switzerland AG
+CH;257;UBSWCHZH84A;UBS Switzerland AG
+CH;258;UBSWCHZH56B;UBS Switzerland AG
+CH;259;UBSWCHZH87B;UBS Switzerland AG
+CH;260;UBSWCHZH17A;UBS Switzerland AG
+CH;261;UBSWCHZH46A;UBS Switzerland AG
+CH;262;UBSWCHZH45A;UBS Switzerland AG
+CH;263;UBSWCHZH39A;UBS Switzerland AG
+CH;264;UBSWCHZH19B;UBS Switzerland AG
+CH;265;UBSWCHZH19E;UBS Switzerland AG
+CH;266;UBSWCHZH16C;UBS Switzerland AG
+CH;267;UBSWCHZH80K;UBS Switzerland AG
+CH;268;UBSWCHZH39L;UBS Switzerland AG
+CH;269;UBSWCHZH80M;UBS Switzerland AG
+CH;270;UBSWCHZH80N;UBS Switzerland AG
+CH;271;UBSWCHZH80A;UBS Switzerland AG
+CH;272;UBSWCHZH25A;UBS Switzerland AG
+CH;273;UBSWCHZH63A;UBS Switzerland AG
+CH;274;UBSWCHZH80Q;UBS Switzerland AG
+CH;275;UBSWCHZH80R;UBS Switzerland AG
+CH;276;UBSWCHZH89E;UBS Switzerland AG
+CH;277;UBSWCHZH18L;UBS Switzerland AG
+CH;278;UBSWCHZH83A;UBS Switzerland AG
+CH;279;UBSWCHZH12B;UBS Switzerland AG
+CH;283;UBSWCHZH81H;UBS Switzerland AG
+CH;284;UBSWCHZH87D;UBS Switzerland AG
+CH;285;UBSWCHZH80P;UBS Switzerland AG
+CH;286;UBSWCHZH80A;UBS Switzerland AG
+CH;287;UBSWCHZH82A;UBS Switzerland AG
+CH;288;UBSWCHZH60G;UBS Switzerland AG
+CH;290;UBSWCHZH20A;UBS Switzerland AG
+CH;291;UBSWCHZH81A;UBS Switzerland AG
+CH;292;UBSWCHZH40M;UBS Switzerland AG
+CH;293;UBSWCHZH88C;UBS Switzerland AG
+CH;294;UBSWCHZH39G;UBS Switzerland AG
+CH;295;UBSWCHZH94F;UBS Switzerland AG
+CH;296;UBSWCHZH86Q;UBS Switzerland AG
+CH;297;UBSWCHZH14A;UBS Switzerland AG
+CH;298;UBSWCHZH80A;UBS Switzerland AG
+CH;30000;POFICHBEXXX;PostFinance AG
+CH;30002;BHFBCHZZXXX;ODDO BHF (Schweiz) AG
+CH;30003;ZURICHZFZLT;Zürich Lebensvers.-Ges. AG Individual Life geb. Vermögen
+CH;30004;ZURICHZFZKT;Zürich Lebensvers.-Ges. AG Group Life geb. Vermögen
+CH;30005;UBSWCHZH80A;UBS Switzerland AG
+CH;30006;ZURICHZFZNT;Zürich Versicherungs.-Ges. AG gebundenes Vermögen
+CH;30010;AGRICHGGXXX;CA Indosuez (Switzerland) SA
+CH;30020;RBABCH22180;Crédit Mutuel de la Vallée SA
+CH;30021;RBABCH22182;Caisse d'Epargne de Cossonay société coopérative
+CH;30022;RBABCH22186;Sparkasse Sense
+CH;30023;RBABCH22240;Caisse d'Epargne Courtelary SA
+CH;30024;VABECH22XXX;Valiant Bank AG
+CH;30026;RBABCH22313;Bernerland Bank AG
+CH;30027;RBABCH22342;SB Saanen Bank AG
+CH;30028;RBABCH22363;Bank SLM AG
+CH;30029;RBABCH22374;Spar+Leihkasse Riggisberg AG
+CH;30030;RBABCH22382;Burgerliche Ersparniskasse Bern Genossenschaft
+CH;30031;RBABCH22387;Ersparniskasse Affoltern i. E. AG
+CH;30032;RBABCH22XXX;Entris Banking AG
+CH;30033;RBABCH22428;Clientis Sparkasse Oftringen Genossenschaft
+CH;30034;RBABCH22434;Clientis Bank im Thal AG
+CH;30035;RBABCH22450;Bank Oberaargau AG
+CH;30036;RBABCH22575;Clientis Bank Aareland AG
+CH;30037;RBABCH22588;Bank Leerau Genossenschaft
+CH;30038;RBABCH22633;Sparkasse Schwyz AG
+CH;30040;RBABCH22670;Clientis Entlebucher Bank AG
+CH;30042;RBABCH22807;GRB Glarner Regionalbank Genossenschaft
+CH;30043;BSZHCHZZXXX;Sparhafen Bank AG
+CH;30044;RBABCH22814;Sparcassa 1816 Genossenschaft
+CH;30045;RBABCH22824;BANK ZIMMERBERG AG
+CH;30046;RBABCH22828;acrevis Bank AG (ex Regiobank Männedorf)
+CH;30047;RBABCH22830;Lienhardt & Partner Privatbank Zürich AG
+CH;30048;RBABCH22835;Ersparniskasse Schaffhausen AG
+CH;30049;RBABCH22850;Bank Avera Genossenschaft
+CH;30050;RBABCH22858;BS Bank Schaffhausen AG
+CH;30051;RBABCH22866;Spar- und Leihkasse Thayngen AG
+CH;30053;RBABCH22875;Leihkasse Stammheim AG
+CH;30054;RBABCH22877;Zürcher Landbank AG
+CH;30055;RBABCH22888;Bank BSU Genossenschaft
+CH;30056;ACRGCH22XXX;acrevis Bank AG
+CH;30057;ARBHCH22XXX;Alpha RHEINTAL Bank AG
+CH;30058;RBABCH22935;Clientis Bank Oberuzwil AG
+CH;30060;RBABCH22955;Clientis Bank Toggenburg AG
+CH;30061;RBABCH22964;Bank in Zuzwil
+CH;30062;RBABCH22977;Clientis Bank Thur Genossenschaft
+CH;30063;RBABCH22980;Biene Bank im Rheintal Genossenschaft
+CH;30110;POSOCH22XXX;Banca Popolare di Sondrio (Suisse) SA
+CH;30111;AMNSLI22XXX;Amnis Europe AG
+CH;30113;AGRICHGXXXX;Crédit Agricole next Bank (Suisse) SA
+CH;30114;CMBNCHZHXXX;Cembra Money Bank AG
+CH;30115;SLWYCH21XXX;Spar- und Leihkasse Wynigen AG
+CH;30116;HYPLCH22XXX;Hypothekarbank Lenzburg AG
+CH;30117;ERSCCH21XXX;Ersparniskasse Speicher
+CH;30118;KBSOCH22XXX;Baloise Bank AG
+CH;30119;BLFLCHBBXXX;LGT Bank (Schweiz) AG
+CH;30121;CDDVCH21XXX;Caisse d'Epargne Riviera, société coopérative
+CH;30122;BZSDCH22XXX;Bezirks-Sparkasse Dielsdorf Genossenschaft
+CH;30123;ABSOCH22XXX;Alternative Bank Schweiz AG
+CH;30124;WIRBCHBBXXX;WIR Bank Genossenschaft
+CH;30125;FRGGCHB1XXX;Freie Gemeinschaftsbank Genossenschaft
+CH;30126;EKIICH22XXX;Bank EKI Genossenschaft
+CH;30127;EEKBCH22XXX;Bank EEK AG
+CH;30128;SLBUCH22XXX;Spar- und Leihkasse Bucheggberg
+CH;30129;SLGUCH2MXXX;Spar + Leihkasse Gürbetal AG
+CH;30130;RBABCH22DCB;DC Bank Deposito-Cassa der Stadt Bern
+CH;30131;VZDBCHZZXXX;VZ Depotbank AG
+CH;30132;MIGRCHZZXXX;Migros Bank AG
+CH;30133;BCLRCHBBXXX;Bank Cler AG
+CH;30141;CBLUCH22XXX;Cornèr Banca SA
+CH;30143;BGAGCH22XXX;Bank Gantrisch Genossenschaft
+CH;30144;EKRUCH21XXX;Ersparniskasse Rüeggisberg Genossenschaft
+CH;30145;BBOBCH22XXX;BBO Bank Brienz Oberhasli AG
+CH;30146;SBTICH22XXX;Società Bancaria Ticinese
+CH;30147;BTVACH22XXX;BTV Vier Länder Bank AG Innsbruck, Zweigniederlassung Staad
+CH;30151;BZBKCH2WXXX;BZ Bank Aktiengesellschaft
+CH;30152;CHASCHGXXXX;JPMorgan Chase Bank, National Association, Columbus
+CH;30153;BASECH22XXX;Banca del Sempione SA
+CH;30154;BPPBCHGGXXX;BNP PARIBAS, Paris, succursale de Lancy/Genève
+CH;30156;HSBCCHZZXXX;HSBC Bank plc, London, Zweigniederlassung Zürich
+CH;30157;AEKTCH22XXX;AEK BANK 1826 Genossenschaft
+CH;30159;CIALCHBBXXX;Bank CIC (SCHWEIZ) AG
+CH;30162;LINSCH23XXX;LLB (Schweiz) AG
+CH;30163;BKTHCH22XXX;Bank Thalwil Genossenschaft
+CH;30164;AGRICHGGXXX;CA Indosuez (Switzerland) SA
+CH;30165;SARACHBBXXX;Bank J. Safra Sarasin AG
+CH;30166;BSSACHGGXXX;CBH - Compagnie Bancaire Helvétique SA
+CH;30167;DEUTCHZZXXX;Deutsche Bank AG Zürich Branch
+CH;30168;SWQBCHZZXXX;Swissquote Bank SA
+CH;30169;SLFFCH22XXX;Spar- und Leihkasse Frutigen AG
+CH;30170;RSOSCH22XXX;Regiobank Solothurn AG
+CH;30172;LILALI2XXXX;Liechtensteinische Landesbank Aktiengesellschaft
+CH;30173;NBANLI22XXX;Neue Bank AG
+CH;30174;VPBVLI2XXXX;VP Bank AG
+CH;30175;BLFLLI2XXXX;LGT Bank AG
+CH;30176;RBABCH22VLH;Hypo Vorarlberg Bank AG, Bregenz, Zweigniederl., St. Gallen
+CH;30177;COBACHZHXXX;COMMERZBANK AG FF, Zweigniederlassung Zürich
+CH;30178;SKBPCH22XXX;Sparkasse Bundespersonal
+CH;30180;BSCHCHGGXXX;Banco Santander International SA
+CH;30182;FSUICHGGXXX;Nexent Bank (Suisse) SA
+CH;30184;IVESCHZZXXX;Investec Bank (Switzerland) AG
+CH;30186;ANPRCH22XXX;Banque Richelieu (Schweiz) AG
+CH;30188;FVLBCHZZXXX;Van Lanschot Kempen (Schweiz) AG
+CH;30189;BILSCHZZXXX;Banque Internationale à Luxembourg (Suisse) SA
+CH;30190;BBVACHZZXXX;BBVA SA
+CH;30194;FBGSCHZZXXX;Frankfurter Bankgesellschaft (Schweiz) AG
+CH;30196;VRLLCHZZXXX;Bank von Roll AG
+CH;30197;SYCOCHGGXXX;Banque SYZ SA
+CH;30198;CAGYCH21XXX;Caisse d'Epargne de Nyon société coopérative
+CH;30199;RBABCH22CEA;Caisse d'Epargne d'Aubonne Sociéte coopérative
+CH;30201;AEXTCHZZXXX;Banque Algérienne du Commerce Extérieur SA
+CH;30202;CDEMCH21XXX;Caisse d'Epargne et de Crédit Mutuel de Chermignon
+CH;30203;ISAECH2NXXX;CACEIS Bank, Montrouge, succursale de Nyon / Suisse
+CH;30206;NEPICHZZXXX;NPB Neue Privat Bank AG
+CH;30207;QNBACHGGXXX;QNB (Suisse) SA
+CH;30208;MGTCCHGGXXX;J.P. Morgan (Suisse) SA
+CH;30209;REYLCHGGXXX;Intesa Sanpaolo Wealth Management SA
+CH;30210;NBOKCHGGXXX;NBK Banque Privée (Suisse) SA
+CH;30211;BBRUCHGTXXX;ING Bank N.V., Amsterdam, succursale de Lancy/Genève
+CH;30212;BABRCHGGXXX;Banque Eric Sturdza SA
+CH;30213;BCRECH22XXX;Banca Credinvest SA
+CH;30214;VRBPCH22XXX;Banca Aletti & C. (Suisse) SA
+CH;30216;UNCECH22XXX;Axion SWISS Bank SA
+CH;30217;NBPSCHGGXXX;FAB Private Bank (Suisse) SA
+CH;30218;BAMRCHZZXXX;Mercantil Bank (Schweiz) AG
+CH;30220;VPBVCHZHXXX;VP Bank (Schweiz) AG
+CH;30221;SELVCHGGXXX;SELVI & Cie SA
+CH;30223;BEGOCHZZXXX;Bergos AG
+CH;30224;BLOMCHGGXXX;BANQUE BANORIENT (SUISSE) SA
+CH;30225;SCOPCHBBXXX;Scobag Privatbank AG
+CH;30226;CCIECHGGXXX;Hyposwiss Private Bank Genève SA
+CH;30228;GRAFCH22XXX;Privatbank Von Graffenried AG
+CH;30229;DREYCHBBXXX;Dreyfus Söhne & Cie AG, Banquiers
+CH;30230;BONHCH22XXX;Banque Bonhôte & Cie SA
+CH;30231;PRIBCHGGXXX;Edmond de Rothschild (Suisse) S.A
+CH;30232;TRAPCHBBXXX;Trafina Privatbank AG
+CH;30233;MAEBCHZZXXX;Maerki, Baumann & Co. AG
+CH;30234;MEDSCHGGXXX;Banque Des Monts Blancs SA
+CH;30237;BACECH22XXX;Banca del Ceresio SA
+CH;30238;EUBACH22XXX;Banca Zarattini & Co. SA
+CH;30239;GENOCHZZXXX;DZ PRIVATBANK (Schweiz) AG
+CH;30240;EFGBCHGGXXX;EFG Bank European Financial Group SA
+CH;30241;NBSZCHZZXXX;Nomura Bank (Switzerland) Ltd
+CH;30243;AUDSCHGGXXX;Banque Audi (Suisse) SA
+CH;30244;BPCPCHGGXXX;Banque de Commerce et de Placements SA
+CH;30245;BJHSCHZZXXX;Schroder & Co Bank AG
+CH;30246;CBSWCHZZXXX;Citibank (Switzerland) AG
+CH;30248;UBPGCHGGXXX;Union Bancaire Privée, UBP SA
+CH;30249;DEUTCHGGXXX;Deutsche Bank (Suisse) S.A.
+CH;30250;RKBZCHZZXXX;GPB (Schweiz) AG
+CH;30251;ROTACHZZXXX;Rothschild & Co Bank AG
+CH;30252;PKBSCH22XXX;PKB PRIVATE BANK SA
+CH;30253;EFGBCHZZXXX;EFG Bank AG
+CH;30254;BLICCHGGXXX;HSBC Private Bank (Suisse) SA
+CH;30256;CITICHZZXXX;Citibank N.A., Sioux Falls
+CH;30259;SGABCHZZXXX;Société Générale
+CH;30260;ARBSCHZZXXX;Arab Bank (Switzerland) Ltd.
+CH;30261;GONECHGGXXX;Gonet & Cie SA
+CH;30262;BOFACH2XXXX;Bank of America Europe DAC, Dublin, Zurich Branch
+CH;30263;CRAMCHGGXXX;Banque Cramer & Cie SA
+CH;30264;BARCCHGGXXX;Barclays Bank (Suisse) SA
+CH;30269;BAUMCHBBXXX;Baumann & Cie KmG
+CH;30270;VONTCHZZXXX;Bank Vontobel AG
+CH;30272;REICCH22XXX;Reichmuth & Co.
+CH;30273;BORDCHGGXXX;Bordier & Cie SCmA
+CH;30275;MIRACHGGXXX;Mirabaud & Cie SA
+CH;30277;PIGUCH22XXX;Piguet Galland & Cie SA
+CH;30283;HBZUCHZZXXX;Habib Bank AG Zürich
+CH;30285;TMBECH22XXX;IBKR Financial Services AG
+CH;30286;INCOCHZZXXX;InCore Bank AG
+CH;30288;HYIBLI22XXX;BENDURA BANK AG
+CH;30289;SERBLI22XXX;Kaiser Partner Privatbank AG
+CH;30290;BFRILI22XXX;Bank Frick AG
+CH;30291;VOAGLI22XXX;SIGMA Bank AG
+CH;30295;DOMICHZZXXX;Tellco Bank AG
+CH;30296;CIMMCHGGXXX;CIM Banque SA
+CH;30297;TXBZCHZZXXX;TradeXBank AG
+CH;30299;ABSGCHGGXXX;S.P. Hinduja Banque Privée SA
+CH;303;UBSWCHZHW03;UBS Switzerland AG
+CH;30308;UBSWCHZH80A;UBS Switzerland AG
+CH;30311;CAGLCHGGXXX;ABANCA CORPORACION BANCARIA S.A., BETANZOS
+CH;30313;BLEMCHGGXXX;Banque du Léman SA
+CH;30314;QVCHCHZHXXX;Quilvest (Switzerland) Ltd.
+CH;30315;ITAUCHZZXXX;Banco Itaú (Suisse) SA
+CH;30316;GLBNCHZZXXX;Globalance Bank AG
+CH;30317;DUBACHGGXXX;Dukascopy Bank SA
+CH;30318;SFBFCH22XXX;Helvetische Bank AG
+CH;30319;AQULCHZZXXX;Aquila AG
+CH;30321;SYGNCHZZXXX;Sygnum Bank AG
+CH;30322;SCRYCH22XXX;AMINA Bank AG
+CH;30324;RMCOCHBBXXX;Remaco Asset Management AG
+CH;30325;LFFSCHGGXXX;LF Finance (Suisse) SA
+CH;30326;SSBECHZZXXX;State Street Bank International GmbH, München, ZN Zürich
+CH;30327;ZAPRCH22XXX;Zähringer Privatbank AG
+CH;30328;BISBCHBBXXX;BIZ Bank für Internationalen Zahlungsausgleich
+CH;30329;ICBKCHZZXXX;Industrial and Commercial Bank of China Limited
+CH;30330;JLSECHGGXXX;JL Securities SA
+CH;30331;FIDHCHGGXXX;Fidurhône SA
+CH;30333;PRBECHZZXXX;Privatbank Bellerive AG
+CH;304;UBSWCHZHW04;UBS Switzerland AG
+CH;305;UBSWCHZHW05;UBS Switzerland AG
+CH;30520;CITIGB2LXXX;Citibank N.A.
+CH;306;UBSWCHZHW06;UBS Switzerland AG
+CH;30700;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;30761;KBAGCH22XXX;Aargauische Kantonalbank
+CH;30763;AIKACH22XXX;Appenzeller Kantonalbank
+CH;30764;BSCTCH22XXX;Banca dello Stato del Cantone Ticino
+CH;30765;BCVSCH2LXXX;Banque Cantonale du Valais
+CH;30766;BCNNCH22XXX;Banque Cantonale Neuchâteloise
+CH;30767;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;30768;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;30769;BLKBCH22XXX;Basellandschaftliche Kantonalbank
+CH;30770;BKBBCHBBXXX;Basler Kantonalbank
+CH;30773;GLKBCH22XXX;Glarner Kantonalbank
+CH;30774;GRKBCH2270A;Graubündner Kantonalbank
+CH;30777;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;30778;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;30779;NIKACH22XXX;Nidwaldner Kantonalbank
+CH;30780;OBWKCH22XXX;Obwaldner Kantonalbank
+CH;30781;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;30782;SHKBCH2SXXX;Schaffhauser Kantonalbank
+CH;30784;KBTGCH22XXX;Thurgauer Kantonalbank
+CH;30785;URKNCH22XXX;Urner Kantonalbank
+CH;30787;KBZGCH22XXX;Zuger Kantonalbank
+CH;30788;BCGECHGGXXX;Banque Cantonale de Genève
+CH;30789;BCJUCH22XXX;Banque Cantonale du Jura SA
+CH;30790;KBBECH22XXX;Berner Kantonalbank AG
+CH;308;UBSWCHZHW08;UBS Switzerland AG
+CH;30808;RAIFCH22XXX;Raiffeisen
+CH;31101;KLARCH22XXX;Bivial AG
+CH;315;UBSBCHZZXXX;UBS AG
+CH;6180;RBABCH22180;Crédit Mutuel de la Vallée SA
+CH;6182;RBABCH22182;Caisse d'Epargne de Cossonay société coopérative
+CH;6186;RBABCH22186;Sparkasse Sense
+CH;61861;RBABCH22186;Sparkasse Sense
+CH;6240;RBABCH22240;Caisse d'Epargne Courtelary SA
+CH;62401;RBABCH22240;Caisse d'Epargne Courtelary SA
+CH;62402;RBABCH22240;Caisse d'Epargne Courtelary SA
+CH;62403;RBABCH22240;Caisse d'Epargne Courtelary SA
+CH;6300;VABECH22XXX;Valiant Bank AG
+CH;6313;RBABCH22313;Bernerland Bank AG
+CH;6336;RBABCH22CLI;Clientis AG
+CH;6342;RBABCH22342;SB Saanen Bank AG
+CH;6363;RBABCH22363;Bank SLM AG
+CH;6374;RBABCH22374;Spar+Leihkasse Riggisberg AG
+CH;6382;RBABCH22382;Burgerliche Ersparniskasse Bern Genossenschaft
+CH;6387;RBABCH22387;Ersparniskasse Affoltern i. E. AG
+CH;6395;RBABCH22XXX;Entris Banking AG
+CH;6428;RBABCH22428;Clientis Sparkasse Oftringen Genossenschaft
+CH;6434;RBABCH22434;Clientis Bank im Thal AG
+CH;6450;RBABCH22450;Bank Oberaargau AG
+CH;6575;RBABCH22575;Clientis Bank Aareland AG
+CH;6588;RBABCH22588;Bank Leerau Genossenschaft
+CH;6633;RBABCH22633;Sparkasse Schwyz AG
+CH;6670;RBABCH22670;Clientis Entlebucher Bank AG
+CH;66701;RBABCH22670;Clientis Entlebucher Bank AG
+CH;66702;RBABCH22670;Clientis Entlebucher Bank AG
+CH;6807;RBABCH22807;GRB Glarner Regionalbank Genossenschaft
+CH;6808;BSZHCHZZXXX;Sparhafen Bank AG
+CH;6814;RBABCH22814;Sparcassa 1816 Genossenschaft
+CH;68141;RBABCH22814;Sparcassa 1816 Genossenschaft
+CH;68142;RBABCH22814;Sparcassa 1816 Genossenschaft
+CH;68143;RBABCH22814;Sparcassa 1816 Genossenschaft
+CH;68144;RBABCH22814;Sparcassa 1816 Genossenschaft
+CH;6824;RBABCH22824;BANK ZIMMERBERG AG
+CH;68241;RBABCH22824;BANK ZIMMERBERG AG
+CH;68242;RBABCH22824;BANK ZIMMERBERG AG
+CH;6828;RBABCH22828;acrevis Bank AG (ex Regiobank Männedorf)
+CH;6830;RBABCH22830;Lienhardt & Partner Privatbank Zürich AG
+CH;6835;RBABCH22835;Ersparniskasse Schaffhausen AG
+CH;6850;RBABCH22850;Bank Avera Genossenschaft
+CH;6858;RBABCH22858;BS Bank Schaffhausen AG
+CH;6866;RBABCH22866;Spar- und Leihkasse Thayngen AG
+CH;6875;RBABCH22875;Leihkasse Stammheim AG
+CH;6877;RBABCH22877;Zürcher Landbank AG
+CH;6888;RBABCH22888;Bank BSU Genossenschaft
+CH;6900;ACRGCH22XXX;acrevis Bank AG
+CH;6920;ARBHCH22XXX;Alpha RHEINTAL Bank AG
+CH;6935;RBABCH22935;Clientis Bank Oberuzwil AG
+CH;6955;RBABCH22955;Clientis Bank Toggenburg AG
+CH;6964;RBABCH22964;Bank in Zuzwil
+CH;6977;RBABCH22977;Clientis Bank Thur Genossenschaft
+CH;6980;RBABCH22980;Biene Bank im Rheintal Genossenschaft
+CH;700;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;702;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;703;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;704;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;705;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;706;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;708;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;709;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;710;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;711;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;712;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;713;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;714;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;715;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;716;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;717;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;718;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;719;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;720;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;721;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;722;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;723;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;724;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;725;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;726;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;727;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;728;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;729;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;730;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;731;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;732;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;733;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;734;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;735;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;736;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;737;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;738;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;739;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;740;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;741;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;742;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;743;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;744;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;745;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;746;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;747;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;748;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;749;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;750;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;751;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;752;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;753;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;754;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;755;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;756;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;757;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;758;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;759;ZKBKCHZZ80A;Zürcher Kantonalbank
+CH;761;KBAGCH22XXX;Aargauische Kantonalbank
+CH;763;AIKACH22XXX;Appenzeller Kantonalbank
+CH;764;BSCTCH22XXX;Banca dello Stato del Cantone Ticino
+CH;76410;BSCTCH22LUG;Banca dello Stato del Cantone Ticino
+CH;76411;BSCTCH22XXX;Banca dello Stato del Cantone Ticino
+CH;76412;BSCTCH22XXX;Banca dello Stato del Cantone Ticino
+CH;76420;BSCTCH22LOC;Banca dello Stato del Cantone Ticino
+CH;76430;BSCTCH22CHI;Banca dello Stato del Cantone Ticino
+CH;76440;BSCTCH22XXX;Banca dello Stato del Cantone Ticino
+CH;76450;BSCTCH22XXX;Banca dello Stato del Cantone Ticino
+CH;76460;BSCTCH22XXX;Banca dello Stato del Cantone Ticino
+CH;76470;BSCTCH22XXX;Banca dello Stato del Cantone Ticino
+CH;765;BCVSCH2LXXX;Banque Cantonale du Valais
+CH;766;BCNNCH22XXX;Banque Cantonale Neuchâteloise
+CH;767;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76711;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76712;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76713;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76714;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76715;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76716;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76717;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76718;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76719;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76720;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76721;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76722;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76723;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76724;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76725;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76726;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76727;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76728;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76729;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76730;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76731;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76732;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76733;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76734;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76735;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76736;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76737;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76738;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76739;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76740;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76741;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76742;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76743;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76744;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76745;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76746;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76747;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76748;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76749;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76750;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76751;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76752;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76753;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76754;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76755;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76756;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76758;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76761;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76762;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76763;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76764;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76765;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;76766;BCVLCH2LXXX;Banque Cantonale Vaudoise
+CH;768;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76822;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76823;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76824;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76825;BEFRCH22XXX;Freiburger Kantonalbank
+CH;76826;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76827;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76828;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76829;BEFRCH22XXX;Freiburger Kantonalbank
+CH;76830;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76831;BEFRCH22XXX;Freiburger Kantonalbank
+CH;76832;BEFRCH22XXX;Freiburger Kantonalbank
+CH;76833;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76834;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76835;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76836;BEFRCH22XXX;Freiburger Kantonalbank
+CH;76837;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76838;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76839;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76840;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76841;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76842;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;76843;BEFRCH22XXX;Banque Cantonale de Fribourg
+CH;769;BLKBCH22XXX;Basellandschaftliche Kantonalbank
+CH;770;BKBBCHBBXXX;Basler Kantonalbank
+CH;773;GLKBCH22XXX;Glarner Kantonalbank
+CH;774;GRKBCH2270A;Graubündner Kantonalbank
+CH;777;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77711;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77712;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77713;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77714;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77715;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77716;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77717;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77718;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77719;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77720;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77721;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77722;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77723;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77724;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77725;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77726;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77727;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77728;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77729;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77730;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77731;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77732;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77733;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;77734;KBSZCH22XXX;Schwyzer Kantonalbank
+CH;778;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77811;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77812;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77813;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77814;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77815;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77816;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77817;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77818;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77819;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77820;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77821;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77823;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77824;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77825;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77828;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77829;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;77860;LUKBCH2260A;Luzerner Kantonalbank AG
+CH;779;NIKACH22XXX;Nidwaldner Kantonalbank
+CH;780;OBWKCH22XXX;Obwaldner Kantonalbank
+CH;781;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78102;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78103;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78111;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78112;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78113;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78114;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78115;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78116;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78117;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78118;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78119;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78120;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78121;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78122;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78123;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78124;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78125;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78126;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78127;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78128;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78129;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78130;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78131;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78132;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;78158;KBSGCH22XXX;St. Galler Kantonalbank AG
+CH;782;SHKBCH2SXXX;Schaffhauser Kantonalbank
+CH;78213;SHKBCH2SXXX;Schaffhauser Kantonalbank
+CH;784;KBTGCH22XXX;Thurgauer Kantonalbank
+CH;785;URKNCH22XXX;Urner Kantonalbank
+CH;787;KBZGCH22XXX;Zuger Kantonalbank
+CH;788;BCGECHGGXXX;Banque Cantonale de Genève
+CH;789;BCJUCH22XXX;Banque Cantonale du Jura SA
+CH;78910;BCJUCH22XXX;Banque Cantonale du Jura SA
+CH;78920;BCJUCH22XXX;Banque Cantonale du Jura SA
+CH;790;KBBECH22XXX;Berner Kantonalbank AG
+CH;80000;RAIFCH22XXX;Raiffeisen Schweiz
+CH;80002;RAIFCH22002;Banque Raiffeisen Région Delémont
+CH;80005;RAIFCH22005;Raiffeisenbank St.Gallen
+CH;80027;RAIFCH22027;Banque Raiffeisen  Ajoie
+CH;80037;RAIFCH22037;Banque Raiffeisen Clos du Doubs et Haute-Ajoie
+CH;80051;RAIFCH22051;Banque Raiffeisen Grand Chasseral
+CH;80059;RAIFCH22059;Banque Raiffeisen Franches-Montagnes
+CH;80073;RAIFCH22073;Banque Raiffeisen du Val-Terbi
+CH;80094;RAIFCH22094;Raiffeisenbank Worblen-Emmental
+CH;80097;RAIFCH22097;Raiffeisenbank Laufental-Thierstein
+CH;80098;RAIFCH22098;Raiffeisenbank Gürbe
+CH;80102;RAIFCH22102;Banque Raiffeisen Sarine-Ouest
+CH;80105;RAIFCH22105;Banque Raiffeisen Région Marly-Cousimbert
+CH;80129;RAIFCH22129;Banque Raiffeisen Moléson
+CH;80139;RAIFCH22139;Banque Raiffeisen Broye Vully Lac
+CH;80159;RAIFCH22159;Banque Raiffeisen Fribourg-Ouest
+CH;80181;RAIFCH22181;Banque Raiffeisen Région Genève Rhône
+CH;80187;RAIFCH22187;Banque Raiffeisen Genève Lac
+CH;80210;RAIFCH22210;Banque Raiffeisen Villes et Vignobles genevois
+CH;80237;RAIFCH22237;Banque Raiffeisen des Montagnes Neuchâteloises
+CH;80241;RAIFCH22241;Banque Raiffeisen Neuchâtel et Vallées
+CH;80272;RAIFCH22272;Banca Raiffeisen del Basso Mendrisiotto
+CH;80280;RAIFCH22280;Banca Raiffeisen Piano di Magadino
+CH;80283;RAIFCH22283;Banca Raiffeisen Vedeggio Cassarate
+CH;80287;RAIFCH22287;Banca Raiffeisen Basso Ceresio
+CH;80290;RAIFCH22290;Banca Raiffeisen Morbio-Vacallo
+CH;80317;RAIFCH22317;Banca Raiffeisen del Malcantone
+CH;80333;RAIFCH22333;Banca Raiffeisen Losone Pedemonte Vallemaggia
+CH;80340;RAIFCH22340;Banca Raiffeisen Mendrisio e Valle di Muggio
+CH;80344;RAIFCH22344;Banca Raiffeisen del Camoghè
+CH;80350;RAIFCH22350;Banca Raiffeisen Tre Valli
+CH;80362;RAIFCH22362;Banca Raiffeisen Colline del Ceresio
+CH;80365;RAIFCH22365;Banca Raiffeisen della Campagnadorna
+CH;80375;RAIFCH22375;Banca Raiffeisen Lugano
+CH;80379;RAIFCH22379;Banca Raiffeisen Locarno
+CH;80387;RAIFCH22387;Banca Raiffeisen Bellinzonese e Visagno
+CH;80401;RAIFCH22401;Banque Raiffeisen Mont-Aubert Orbe
+CH;80414;RAIFCH22414;Banque Raiffeisen d'Assens
+CH;80430;RAIFCH22430;Banque Raiffeisen Alpes Riviera Chablais Vaudois
+CH;80434;RAIFCH22434;Banque Raiffeisen du Gros-de-Vaud
+CH;80442;RAIFCH22442;Banque Raiffeisen Nyon-La Vallée
+CH;80445;RAIFCH22445;Banque Raiffeisen du Mont-Tendre
+CH;80451;RAIFCH22451;Banque Raiffeisen Lausanne Haute-Broye-Jorat
+CH;80454;RAIFCH22454;Banque Raiffeisen de Lavaux
+CH;80460;RAIFCH22460;Banque Raiffeisen Morges Venoge
+CH;80472;RAIFCH22472;Banque Raiffeisen d'Yverdon-les-Bains
+CH;80479;RAIFCH22479;Banque Raiffeisen de la Broye
+CH;80485;RAIFCH22485;Banque Raiffeisen de Gimel
+CH;80496;RAIFCH22496;Raiffeisenbank Mischabel-Matterhorn
+CH;80521;RAIFCH22521;Raiffeisenbank Gampel-Raron
+CH;80527;RAIFCH22527;Raiffeisenbank Region Leuk
+CH;80532;RAIFCH22532;Raiffeisenbank Belalp-Simplon
+CH;80539;RAIFCH22539;Raiffeisenbank Aletsch-Goms
+CH;80553;RAIFCH22553;Raiffeisenbank Region Visp
+CH;80572;RAIFCH22572;Banque Raiffeisen Sion et Région
+CH;80581;RAIFCH22581;Banque Raiffeisen Entremont
+CH;80588;RAIFCH22588;Banque Raiffeisen du Haut-Léman
+CH;80595;RAIFCH22595;Banque Raiffeisen Martigny et Région
+CH;80598;RAIFCH22598;Banque Raiffeisen de Sierre & Région
+CH;80606;RAIFCH22606;Banque Raiffeisen de Massongex-St-Maurice-Vérossaz
+CH;80611;RAIFCH22611;Banque Raiffeisen de Monthey
+CH;80615;RAIFCH22615;Banque Raiffeisen des Communes du Haut Plateau
+CH;80626;RAIFCH22626;Banque Raiffeisen Vallée d'Illiez
+CH;80652;RAIFCH22652;Raiffeisenbank Böttstein
+CH;80666;RAIFCH22666;Raiffeisenbank an der Limmat
+CH;80690;RAIFCH22690;Raiffeisenbank Wasserschloss
+CH;80691;RAIFCH22691;Raiffeisenbank Regio Frick-Mettauertal
+CH;80696;RAIFCH22696;Raiffeisenbank Regio Laufenburg
+CH;80698;RAIFCH22698;Raiffeisenbank Aarau-Lenzburg
+CH;80700;RAIFCH22700;Raiffeisenbank Surbtal-Wehntal
+CH;80701;RAIFCH22701;Raiffeisenbank Aare-Rhein
+CH;80702;RAIFCH22702;Raiffeisenbank Kelleramt-Albis
+CH;80704;RAIFCH22704;Raiffeisenbank Aare-Reuss
+CH;80705;RAIFCH22705;Raiffeisenbank Reuss-Lindenberg
+CH;80706;RAIFCH22706;Raiffeisenbank Möhlin
+CH;80719;RAIFCH22719;Raiffeisenbank Mutschellen
+CH;80721;RAIFCH22721;Raiffeisenbank Region Zofingen
+CH;80723;RAIFCH22723;Raiffeisenbank Reitnau-Rued
+CH;80728;RAIFCH22728;Raiffeisenbank Oberfreiamt
+CH;80736;RAIFCH22736;Raiffeisenbank Villmergen
+CH;80740;RAIFCH22740;Raiffeisenbank Lägern-Baregg
+CH;80744;RAIFCH22744;Raiffeisenbank Wohlen
+CH;80746;RAIFCH22746;Raiffeisenbank Siggenthal-Würenlingen
+CH;80747;RAIFCH22747;Raiffeisenbank Würenlos
+CH;80748;RAIFCH22748;Raiffeisenbank Wegenstettertal
+CH;80773;RAIFCH22773;Raiffeisenbank Liestal-Oberbaselbiet
+CH;80774;RAIFCH22774;Raiffeisenbank Leimental
+CH;80775;RAIFCH22775;Raiffeisenbank Allschwil-Schönenbuch
+CH;80776;RAIFCH22776;Raiffeisenbank Regio Muttenz
+CH;80779;RAIFCH22779;Raiffeisenbank Aesch-Pfeffingen
+CH;80780;RAIFCH22780;Raiffeisenbank Reinach BL
+CH;80808;RAIFCH22XXX;Raiffeisen
+CH;80816;RAIFCH22816;Raiffeisenbank Niedersimmental
+CH;80817;RAIFCH22817;Raiffeisenbank Steffisburg
+CH;80819;RAIFCH22819;Raiffeisenbank Grauholz
+CH;80820;RAIFCH22820;Raiffeisenbank Frutigland
+CH;80842;RAIFCH22842;Raiffeisenbank Jungfrau
+CH;80843;RAIFCH22843;Raiffeisenbank Region Haslital-Brienz
+CH;80856;RAIFCH22856;Raiffeisenbank Obersimmental-Saanenland
+CH;80860;RAIFCH22860;Raiffeisenbank Schwarzwasser
+CH;80862;RAIFCH22862;Raiffeisenbank Seeland
+CH;80867;RAIFCH22867;Raiffeisenbank Thunersee-Kiesental
+CH;80875;RAIFCH22875;Raiffeisenbank Emmental
+CH;80895;RAIFCH22895;Raiffeisenbank Sense-Oberland
+CH;80896;RAIFCH22896;Raiffeisenbank See-Lac
+CH;80905;RAIFCH22905;Raiffeisenbank Sensetal Freiburg-Ost / Sensetal Fribourg-Est
+CH;80911;RAIFCH22911;Raiffeisenbank Dulliken-Starrkirch
+CH;80912;RAIFCH22912;Raiffeisenbank Gäu-Bipperamt
+CH;80914;RAIFCH22914;Raiffeisenbank Aare-Langete
+CH;80918;RAIFCH22918;Raiffeisenbank Mittelgösgen-Staffelegg
+CH;80938;RAIFCH22938;Raiffeisenbank Wasseramt-Buchsi
+CH;80939;RAIFCH22939;Raiffeisenbank Dornach
+CH;80947;RAIFCH22947;Raiffeisenbank Untergäu
+CH;80962;RAIFCH22962;Raiffeisenbank Region Thal
+CH;80965;RAIFCH22965;Raiffeisenbank am Eppenberg
+CH;80970;RAIFCH22970;Raiffeisenbank Olten
+CH;80971;RAIFCH22971;Raiffeisenbank Untere Emme
+CH;80976;RAIFCH22976;Raiffeisenbank Weissenstein
+CH;81011;RAIFCH22A11;Raiffeisenbank Appenzeller Hinterland
+CH;81012;RAIFCH22A12;Raiffeisenbank Heiden
+CH;81023;RAIFCH22A23;Raiffeisenbank Appenzell
+CH;81031;RAIFCH22A31;Raiffeisenbank Glarnerland
+CH;81045;RAIFCH22A45;Raiffeisenbank Bündner Rheintal
+CH;81054;RAIFCH22A54;Banca Raiffeisen del Moesano
+CH;81063;RAIFCH22A63;Raiffeisenbank Mittelbünden
+CH;81072;RAIFCH22A72;Raiffeisenbank Cadi
+CH;81073;RAIFCH22A73;Raiffeisenbank Surselva
+CH;81084;RAIFCH22A84;Raiffeisenbank Prättigau-Davos
+CH;81103;RAIFCH22B03;Banca Raiffeisen Valposchiavo
+CH;81144;RAIFCH22B44;Raiffeisenbank Engiadina Val Müstair
+CH;81165;RAIFCH22B65;Raiffeisenbank Pilatus
+CH;81168;RAIFCH22B68;Raiffeisenbank Adligenswil-Udligenswil-Meggen
+CH;81169;RAIFCH22B69;Raiffeisenbank Hitzkirchertal
+CH;81170;RAIFCH22B70;Raiffeisenbank Beromünster
+CH;81177;RAIFCH22B77;Raiffeisenbank Emmen
+CH;81179;RAIFCH22B79;Raiffeisenbank im Entlebuch
+CH;81186;RAIFCH22B86;Raiffeisenbank Horw
+CH;81187;RAIFCH22B87;Raiffeisenbank Oberseetal
+CH;81194;RAIFCH22B94;Raiffeisenbank Menznau-Wolhusen
+CH;81196;RAIFCH22B96;Raiffeisenbank Sempachersee-Rottal Süd
+CH;81203;RAIFCH22C03;Raiffeisenbank Luzern
+CH;81204;RAIFCH22C04;Raiffeisenbank Rothenburg
+CH;81211;RAIFCH22C11;Raiffeisenbank Luzerner Hinterland
+CH;81212;RAIFCH22C12;Raiffeisenbank Ettiswil
+CH;81214;RAIFCH22C14;Raiffeisenbank Luzerner Landschaft Nordwest
+CH;81223;RAIFCH22C23;Raiffeisenbank Nidwalden
+CH;81232;RAIFCH22C32;Raiffeisenbank Obwalden
+CH;81241;RAIFCH22C41;Raiffeisenbank Regio St. Gallen West
+CH;81251;RAIFCH22C51;Raiffeisenbank Werdenberg
+CH;81256;RAIFCH22C56;Raiffeisenbank Benken
+CH;81259;RAIFCH22C59;Raiffeisenbank Bernhardzell
+CH;81261;RAIFCH22C61;Raiffeisenbank Regio Unteres Toggenburg & Neckertal
+CH;81262;RAIFCH22C62;Raiffeisenbank Diepoldsau-Schmitter
+CH;81271;RAIFCH22C71;Raiffeisenbank Gossau-Andwil-Niederwil
+CH;81274;RAIFCH22C74;Raiffeisenbank Rapperswil-Jona
+CH;81281;RAIFCH22C81;Raiffeisenbank Sarganserland
+CH;81284;RAIFCH22C84;Raiffeisenbank Mörschwil
+CH;81287;RAIFCH22C87;Raiffeisenbank Obertoggenburg
+CH;81291;RAIFCH22C91;Raiffeisenbank Regio Uzwil
+CH;81295;RAIFCH22C95;Raiffeisenbank Unteres Rheintal
+CH;81296;RAIFCH22C96;Raiffeisenbank Region Rorschach
+CH;81297;RAIFCH22C97;Raiffeisenbank Oberes Rheintal
+CH;81298;RAIFCH22C98;Raiffeisenbank am Ricken
+CH;81302;RAIFCH22D02;Raiffeisenbank Schänis-Amden
+CH;81304;RAIFCH22D04;Raiffeisenbank Sennwald
+CH;81307;RAIFCH22D07;Raiffeisenbank Regio Arbon
+CH;81313;RAIFCH22D13;Raiffeisenbank Waldkirch
+CH;81314;RAIFCH22D14;Raiffeisenbank Walenstadt
+CH;81317;RAIFCH22D17;Raiffeisenbank Mittleres Toggenburg
+CH;81319;RAIFCH22D19;Raiffeisenbank Mittelrheintal
+CH;81320;RAIFCH22D20;Raiffeisenbank Wil und Umgebung
+CH;81323;RAIFCH22D23;Raiffeisenbank Wittenbach-Häggenschwil
+CH;81324;RAIFCH22D24;Raiffeisenbank Marbach-Rebstein
+CH;81325;RAIFCH22D25;Raiffeisenbank Flawil-Degersheim-Mogelsberg-Oberuzwil
+CH;81344;RAIFCH22D44;Raiffeisenbank Schaffhausen
+CH;81351;RAIFCH22D51;Raiffeisenbank Rigi
+CH;81356;RAIFCH22D56;Raiffeisenbank Region linker Zürichsee
+CH;81360;RAIFCH22D60;Raiffeisenbank Muotathal
+CH;81361;RAIFCH22D61;Raiffeisenbank Einsiedeln-Ybrig
+CH;81371;RAIFCH22D71;Raiffeisenbank Regio Altnau
+CH;81377;RAIFCH22D77;Raiffeisenbank Aadorf
+CH;81378;RAIFCH22D78;Raiffeisenbank am Bichelsee
+CH;81380;RAIFCH22D80;Raiffeisenbank Mittelthurgau
+CH;81382;RAIFCH22D82;Raiffeisenbank Untersee-Rhein
+CH;81384;RAIFCH22D84;Raiffeisenbank Frauenfeld
+CH;81398;RAIFCH22D98;Raiffeisenbank Neukirch-Romanshorn
+CH;81401;RAIFCH22E01;Raiffeisenbank Seerücken
+CH;81402;RAIFCH22E02;Raiffeisenbank Regio Sirnach
+CH;81412;RAIFCH22E12;Raiffeisenbank Tägerwilen
+CH;81414;RAIFCH22E14;Raiffeisenbank Münchwilen-Tobel
+CH;81416;RAIFCH22E16;Raiffeisenbank Wängi-Matzingen
+CH;81417;RAIFCH22E17;Raiffeisenbank Amriswil Bischofszell
+CH;81431;RAIFCH22E31;Raiffeisenbank Urnerland
+CH;81432;RAIFCH22E32;Raiffeisenbank Schächental
+CH;81454;RAIFCH22E54;Raiffeisenbank Zug
+CH;81455;RAIFCH22E55;Raiffeisenbank Cham-Steinhausen
+CH;81456;RAIFCH22E56;Raiffeisenbank Hünenberg-Risch
+CH;81457;RAIFCH22E57;Raiffeisenbank Menzingen-Neuheim
+CH;81459;RAIFCH22E59;Raiffeisenbank Region Ägerital-Sattel
+CH;81471;RAIFCH22E71;Raiffeisenbank Zürcher Oberland
+CH;81474;RAIFCH22E74;Raiffeisenbank Zürich Flughafen
+CH;81475;RAIFCH22E75;Raiffeisenbank Züri-Unterland
+CH;81477;RAIFCH22E77;Raiffeisenbank Region Glatt
+CH;81479;RAIFCH22E79;Raiffeisenbank Weinland
+CH;81481;RAIFCH22E81;Raiffeisenbank rechter Zürichsee
+CH;81485;RAIFCH22E85;Raiffeisenbank Winterthur
+CH;81486;RAIFCH22E86;Raiffeisenbank Basel
+CH;81487;RAIFCH22E87;Raiffeisenbank Zürich
+CH;81488;RAIFCH22E88;Raiffeisenbank Bern
+CH;81490;RAIFCH22E90;Raiffeisenbank Thalwil
+CH;81491;RAIFCH22E91;RAIFFEISEN SCHWEIZ, FIRMENKUNDEN
+CH;82007;DBSALULLFND;Union Bancaire Privée (Europe) SA
+CH;82008;MIRALULLXXX;Mirabaud & Cie (Europe) SA
+CH;82018;SRLGGB3LXXX;Starling Bank Limited
+CH;8235;BSCHCHGGXXX;Banco Santander International SA
+CH;8236;FSUICHGGXXX;Nexent Bank (Suisse) SA
+CH;8238;IVESCHZZXXX;Investec Bank (Switzerland) AG
+CH;8243;AGRICHGXXXX;Crédit Agricole next Bank (Suisse) SA
+CH;8245;ANPRCH22XXX;Banque Richelieu (Schweiz) AG
+CH;8248;FVLBCHZZXXX;Van Lanschot Kempen (Schweiz) AG
+CH;8252;POSOCH22XXX;Banca Popolare di Sondrio (Suisse) SA
+CH;8268;BILSCHZZXXX;Banque Internationale à Luxembourg (Suisse) SA
+CH;8270;BBVACHZZXXX;BBVA SA
+CH;8278;GOLDCHZZXXX;Goldman Sachs Bank AG
+CH;8288;FBGSCHZZXXX;Frankfurter Bankgesellschaft (Schweiz) AG
+CH;8289;BHFBCHZZXXX;ODDO BHF (Schweiz) AG
+CH;8296;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82961;CMBNCHZHXXX;Cembra Money Bank SA
+CH;82962;CMBNCHZHXXX;Cembra Money Bank SA
+CH;82963;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82964;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82965;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82966;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82967;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82968;CMBNCHZHXXX;Cembra Money Bank SA
+CH;82969;CMBNCHZHXXX;Cembra Money Bank SA
+CH;82971;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82972;CMBNCHZHXXX;Cembra Money Bank SA
+CH;82973;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82975;CMBNCHZHXXX;Cembra Money Bank SA
+CH;82976;CMBNCHZHXXX;Cembra Money Bank SA
+CH;82977;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82979;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82981;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82983;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82984;CMBNCHZHXXX;Cembra Money Bank AG
+CH;82986;CMBNCHZHXXX;Cembra Money Bank SA
+CH;82998;CMBNCHZHXXX;Cembra Money Bank AG
+CH;8300;SLWYCH21XXX;Spar- und Leihkasse Wynigen AG
+CH;83002;VRLLCHZZXXX;Bank von Roll AG
+CH;83003;CLRXCHZZXXX;SIX x-clear AG
+CH;83006;ICBKCHZZXXX;Industrial and Commercial Bank of China Limited
+CH;83007;JLSECHGGXXX;JL Securities SA
+CH;83008;FIDHCHGGXXX;Fidurhône SA
+CH;83009;HELNCH22XXX;Helvetia Schweizerische Versicherungsgesellschaft AG
+CH;83011;PRBECHZZXXX;Privatbank Bellerive AG
+CH;83012;BLFLATWWXXX;LGT Bank AG, Zweigniederlassung Österreich
+CH;83013;JHOTCHZZXXX;Hottinger, Gaultier & Partners AG
+CH;83014;SYGNCHZZXXX;Sygnum Bank AG
+CH;83016;AXIPCHZZWIN;AXA Versicherungen AG
+CH;83017;SDXXCHZHXXX;SIX SIS AG (ex SIX Digital Exchange AG)
+CH;83018;SCRYCH22XXX;AMINA Bank AG
+CH;83019;YAPECHZ2XXX;Yapeal AG
+CH;83021;CITECHGGXXX;Cité Gestion SA
+CH;83022;PLESCHZZXXX;ISP Securities Ltd
+CH;83024;SLAMCHZZEV0;Swiss Life AG (EV, geb. Vermögen)
+CH;83025;SLAMCHZZNZ0;Swiss Life AG (freies Vermögen)
+CH;83026;AXIPCHZZWLE;AXA Leben AG (Einzel, geb. Vermögen)
+CH;83027;BAAMCHBBBKL;Helvetia Schweizerische Lebensvers.- Ges. AG, (KL GV BAL)
+CH;83028;BAAMCHBBBEL;Helvetia Schweizerische Lebensvers.- Ges. AG, (EL GV BAL)
+CH;83031;SWIPCHZHXXX;Swisscanto Fondsleitung AG, handelnd für SUVA EAF
+CH;83032;ZURICHZFZNT;Zürich Versicherungs.-Ges. AG gebundenes Vermögen
+CH;83033;ZURICHZFZKT;Zürich Lebensvers.-Ges. AG Group Life geb. Vermögen
+CH;83034;ZURICHZFZLT;Zürich Lebensvers.-Ges. AG Individual Life geb. Vermögen
+CH;83035;TARSCHGGXXX;Taurus SA
+CH;83039;APNACHGGXXX;Alpian SA
+CH;83040;KSEHCHGGXXX;Kendra Securities House SA
+CH;83041;KLARCH22XXX;Bivial AG
+CH;83043;PICLCHZ2XXX;Private Client Bank AG
+CH;83045;BKCHCHGEXXX;Bank of China Limited, GenevaBranch
+CH;83046;BGPBCH22XXX;BG (Suisse) Private Bank SA
+CH;83047;AMNSLI22XXX;Amnis Europe AG
+CH;83049;BCIRLI22XXX;Banking Circle (Liechtenstein) AG
+CH;83050;REOICHZ2XXX;Relio AG
+CH;83051;SAHHCHZ2XXX;SR Saphirstein AG
+CH;83054;HELNCH22XXX;Helvetia Schweizerische Lebensvers.- Ges. AG (EL GV)
+CH;83055;HELNCH22XXX;Helvetia Schweizerische Lebensvers.- Ges. AG (KL GV)
+CH;83058;SLAMCHZZFMM;Swiss Life Asset Management AG, handelnd für SLF (CH) MM CHF
+CH;83059;FNPICH22XXX;finpension AG
+CH;83061;CLNCLI22XXX;Celsion Bank AG
+CH;83066;BVVACH22XXX;BIVIAL AG
+CH;8307;HYPLCH22XXX;Hypothekarbank Lenzburg AG
+CH;8309;SYCOCHGGXXX;Banque SYZ SA
+CH;8326;CAGYCH21XXX;Caisse d'Epargne de Nyon société coopérative
+CH;8327;RBABCH22CEA;Caisse d'Epargne d'Aubonne Sociéte coopérative
+CH;8329;ERSCCH21XXX;Ersparniskasse Speicher
+CH;8334;KBSOCH22XXX;Baloise Bank AG
+CH;8335;BLFLCHBBXXX;LGT Bank (Schweiz) AG
+CH;8346;AEXTCHZZXXX;Banque Algérienne du Commerce Extérieur SA
+CH;8348;CDEMCH21XXX;Caisse d'Epargne et de Crédit Mutuel de Chermignon
+CH;8349;CDDVCH21XXX;Caisse d'Epargne Riviera, société coopérative
+CH;8352;VIMMCHZZXXX;Loomis Schweiz SA
+CH;8373;PCBCCHZZXXX;China Construction Bank Corporation, Beijing, Swiss Branch
+CH;8374;ISAECH2NXXX;CACEIS Bank, Montrouge, succursale de Nyon / Suisse
+CH;8377;VSFACHZZXXX;Vontobel Swiss Financial Advisers AG
+CH;8378;NEPICHZZXXX;NPB Neue Privat Bank AG
+CH;8379;QNBACHGGXXX;QNB (Suisse) SA
+CH;8380;MGTCCHGGXXX;J.P. Morgan (Suisse) SA
+CH;83838;UBSWCHZH80A;UBS Switzerland AG
+CH;8384;REYLCHGGXXX;Intesa Sanpaolo Wealth Management SA
+CH;8385;NBOKCHGGXXX;NBK Banque Privée (Suisse) SA
+CH;8387;BBRUCHGTXXX;ING Bank N.V., Amsterdam, succursale de Lancy/Genève
+CH;8388;BABRCHGGXXX;Banque Eric Sturdza SA
+CH;8389;BZSDCH22XXX;Bezirks-Sparkasse Dielsdorf Genossenschaft
+CH;8390;ABSOCH22XXX;Alternative Bank Schweiz AG
+CH;8391;WIRBCHBBXXX;WIR Bank Genossenschaft
+CH;8392;FRGGCHB1XXX;Freie Gemeinschaftsbank Genossenschaft
+CH;8393;EKIICH22XXX;Bank EKI Genossenschaft
+CH;8394;EEKBCH22XXX;Bank EEK AG
+CH;8395;SLBUCH22XXX;Spar- und Leihkasse Bucheggberg
+CH;8396;SLGUCH2MXXX;Spar + Leihkasse Gürbetal AG
+CH;8397;RBABCH22DCB;DC Bank Deposito-Cassa der Stadt Bern
+CH;8398;VZDBCHZZXXX;VZ Depotbank AG
+CH;8401;MIGRCHZZXXX;Migros Bank AG
+CH;8440;BCLRCHBBXXX;Bank Cler AG
+CH;8441;BCLRCHBBXXX;Bank Cler AG
+CH;8442;BCLRCHBBXXX;Bank Cler AG
+CH;8443;BCLRCHBBXXX;Bank Cler AG
+CH;8444;BCLRCHBBXXX;Bank Cler AG
+CH;8445;BCLRCHBBXXX;Bank Cler AG
+CH;8446;BCLRCHBBXXX;Bank Cler AG
+CH;8447;BCLRCHBBXXX;Bank Cler AG
+CH;8448;BCLRCHBBXXX;Bank Cler AG
+CH;8449;BCLRCHBBXXX;Bank Cler AG
+CH;8450;BCLRCHBBXXX;Bank Cler AG
+CH;8451;BCLRCHBBXXX;Bank Cler AG
+CH;8452;BCLRCHBBXXX;Bank Cler AG
+CH;8453;BCLRCHBBXXX;Bank Cler AG
+CH;8454;BCLRCHBBXXX;Bank Cler AG
+CH;8455;BCLRCHBBXXX;Bank Cler AG
+CH;8456;BCLRCHBBXXX;Bank Cler AG
+CH;8457;BCLRCHBBXXX;Bank Cler AG
+CH;8490;CBLUCH22XXX;Cornèr Banca SA
+CH;8495;BCRECH22XXX;Banca Credinvest SA
+CH;8496;VRBPCH22XXX;Banca Aletti & C. (Suisse) SA
+CH;8497;SAXOCHZHXXX;SAXO BANK (SCHWEIZ) AG
+CH;8498;UNCECH22XXX;Axion SWISS Bank SA
+CH;8499;NBPSCHGGXXX;FAB Private Bank (Suisse) SA
+CH;8509;BAMRCHZZXXX;Mercantil Bank (Schweiz) AG
+CH;8515;BAERCHZZXXX;Bank Julius Bär & Co AG
+CH;8518;BGAGCH22XXX;Bank Gantrisch Genossenschaft
+CH;8519;EKRUCH21XXX;Ersparniskasse Rüeggisberg Genossenschaft
+CH;8521;BBOBCH22XXX;BBO Bank Brienz Oberhasli AG
+CH;8522;SBTICH22XXX;Società Bancaria Ticinese
+CH;8525;BTVACH22XXX;BTV Vier Länder Bank AG Innsbruck, Zweigniederlassung Staad
+CH;8533;SELVCHGGXXX;SELVI & Cie SA
+CH;8534;VPBVCHZHXXX;VP Bank (Schweiz) AG
+CH;8537;BICFCHGGXXX;Banque Internationale de Commerce-BRED (Suisse) SA
+CH;8539;BEGOCHZZXXX;Bergos AG
+CH;8540;BLOMCHGGXXX;BANQUE BANORIENT (SUISSE) SA
+CH;8543;SCOPCHBBXXX;Scobag Privatbank AG
+CH;8548;CCIECHGGXXX;Hyposwiss Private Bank Genève SA
+CH;8553;BZBKCH2WXXX;BZ Bank Aktiengesellschaft
+CH;8564;GRAFCH22XXX;Privatbank Von Graffenried AG
+CH;8565;DREYCHBBXXX;Dreyfus Söhne & Cie AG, Banquiers
+CH;8570;BONHCH22XXX;Banque Bonhôte & Cie SA
+CH;8571;PRIBCHGGXXX;Edmond de Rothschild (Suisse) S.A
+CH;8572;TRAPCHBBXXX;Trafina Privatbank AG
+CH;8573;MAEBCHZZXXX;Maerki, Baumann & Co. AG
+CH;8574;MEDSCHGGXXX;Banque Des Monts Blancs SA
+CH;8584;BACECH22XXX;Banca del Ceresio SA
+CH;8609;EUBACH22XXX;Banca Zarattini & Co. SA
+CH;8615;GENOCHZZXXX;DZ PRIVATBANK (Schweiz) AG
+CH;8616;EFGBCHGGXXX;EFG Bank European Financial Group SA
+CH;8619;NBSZCHZZXXX;Nomura Bank (Switzerland) Ltd
+CH;8624;AUDSCHGGXXX;Banque Audi (Suisse) SA
+CH;8629;BPCPCHGGXXX;Banque de Commerce et de Placements SA
+CH;8634;BJHSCHZZXXX;Schroder & Co Bank AG
+CH;8635;CHASCHGXXXX;JPMorgan Chase Bank, National Association, Columbus
+CH;8638;CBSWCHZZXXX;Citibank (Switzerland) AG
+CH;8657;UBPGCHGGXXX;Union Bancaire Privée, UBP SA
+CH;8659;DEUTCHGGXXX;Deutsche Bank (Suisse) S.A.
+CH;8660;RKBZCHZZXXX;GPB (Schweiz) AG
+CH;8661;ROTACHZZXXX;Rothschild & Co Bank AG
+CH;8663;PKBSCH22XXX;PKB PRIVATE BANK SA
+CH;8664;PKBSCH2269A;PKB PRIVATBANK AG
+CH;8665;PKBSCH2212A;PKB PRIVATBANK SA
+CH;8666;BASECH22XXX;Banca del Sempione SA
+CH;8667;EFGBCHZZXXX;EFG Bank AG
+CH;8686;BPPBCHGGXXX;BNP PARIBAS, Paris, succursale de Lancy/Genève
+CH;8689;BLICCHGGXXX;HSBC Private Bank (Suisse) SA
+CH;8700;CITICHZZXXX;Citibank N.A., Sioux Falls
+CH;8701;HSBCCHZZXXX;HSBC Bank plc, London, Zweigniederlassung Zürich
+CH;8702;EFGFCHZZXXX;Leonteq Securities AG
+CH;8703;BZPLCHZZXXX;bank zweiplus ag
+CH;8704;AEKTCH22XXX;AEK BANK 1826 Genossenschaft
+CH;8705;SGABCHZZXXX;Société Générale
+CH;8710;CIALCHBBXXX;Bank CIC (SCHWEIZ) AG
+CH;87105;CIALCHBBXXX;Bank CIC (SCHWEIZ) AG
+CH;8719;ARBSCHZZXXX;Arab Bank (Switzerland) Ltd.
+CH;8721;GONECHGGXXX;Gonet & Cie SA
+CH;8726;BOFACH2XXXX;Bank of America Europe DAC, Dublin, Zurich Branch
+CH;8727;CRAMCHGGXXX;Banque Cramer & Cie SA
+CH;8731;LINSCH23XXX;LLB (Schweiz) AG
+CH;8733;BKTHCH22XXX;Bank Thalwil Genossenschaft
+CH;8735;BARCCHGGXXX;Barclays Bank (Suisse) SA
+CH;8740;AGRICHGGXXX;CA Indosuez (Switzerland) SA
+CH;8741;AGRICHGGXXX;CA Indosuez (Switzerland) SA
+CH;8742;AGRICHGGXXX;CA Indosuez (Switzerland) SA
+CH;8743;AGRICHGGXXX;CA Indosuez (Switzerland) SA
+CH;8750;SARACHBBXXX;Bank J. Safra Sarasin AG
+CH;8751;SARACHBBXXX;Bank J. Safra Sarasin AG
+CH;8752;SARACHBBXXX;Bank J. Safra Sarasin AG
+CH;8755;PICTCHGGXXX;Banque Pictet & Cie SA
+CH;8756;BAUMCHBBXXX;Baumann & Cie KmG
+CH;8757;VONTCHZZXXX;Bank Vontobel AG
+CH;8760;LOCYCHGGXXX;Banque Lombard Odier & Cie SA
+CH;8761;REICCH22XXX;Reichmuth & Co.
+CH;8762;BSSACHGGXXX;CBH - Compagnie Bancaire Helvétique SA
+CH;8767;BORDCHGGXXX;Bordier & Cie SCmA
+CH;8770;MIRACHGGXXX;Mirabaud & Cie SA
+CH;8775;GUTZCHBBXXX;E. Gutzwiller & Cie Banquiers
+CH;8777;PIGUCH22XXX;Piguet Galland & Cie SA
+CH;8779;RAHNCHZZXXX;Rahn+Bodmer Co.
+CH;8780;DEUTCHZZXXX;Deutsche Bank AG Zürich Branch
+CH;87801;DEUTCHZZXXX;Deutsche Bank AG Zürich Branch
+CH;87802;DEUTCHZZXXX;Deutsche Bank AG Zürich Branch
+CH;8781;SWQBCHZZXXX;Swissquote Bank SA
+CH;8784;SLFFCH22XXX;Spar- und Leihkasse Frutigen AG
+CH;8785;RSOSCH22XXX;Regiobank Solothurn AG
+CH;8788;HFTCCHGGXXX;BANQUE HERITAGE SA
+CH;8789;HBZUCHZZXXX;Habib Bank AG Zürich
+CH;8797;TMBECH22XXX;IBKR Financial Services AG
+CH;8799;INCOCHZZXXX;InCore Bank AG
+CH;8800;LILALI2XXXX;Liechtensteinische Landesbank Aktiengesellschaft
+CH;8802;NBANLI22XXX;Neue Bank AG
+CH;8803;HYIBLI22XXX;BENDURA BANK AG
+CH;8805;VPBVLI2XXXX;VP Bank AG
+CH;8806;SERBLI22XXX;Kaiser Partner Privatbank AG
+CH;8810;BLFLLI2XXXX;LGT Bank AG
+CH;8811;BFRILI22XXX;Bank Frick AG
+CH;8812;VOAGLI22XXX;SIGMA Bank AG
+CH;8820;DOMICHZZXXX;Tellco Bank AG
+CH;8821;RBABCH22VLH;Hypo Vorarlberg Bank AG, Bregenz, Zweigniederl., St. Gallen
+CH;8822;CIMMCHGGXXX;CIM Banque SA
+CH;8825;TXBZCHZZXXX;TradeXBank AG
+CH;8827;ABSGCHGGXXX;S.P. Hinduja Banque Privée SA
+CH;8831;CAGLCHGGXXX;ABANCA CORPORACION BANCARIA S.A., BETANZOS
+CH;8836;COBACHZHXXX;COMMERZBANK AG FF, Zweigniederlassung Zürich
+CH;8838;BLEMCHGGXXX;Banque du Léman SA
+CH;8839;QVCHCHZHXXX;Quilvest (Switzerland) Ltd.
+CH;8841;ITAUCHZZXXX;Banco Itaú (Suisse) SA
+CH;8842;GLBNCHZZXXX;Globalance Bank AG
+CH;8843;DUBACHGGXXX;Dukascopy Bank SA
+CH;8845;SFBFCH22XXX;Helvetische Bank AG
+CH;8846;AQULCHZZXXX;Aquila AG
+CH;8848;IGBKCHGGXXX;IG Bank S.A.
+CH;8850;FAVSCHGAXXX;compenswiss (Fonds de compensation AVS/AI/APG)
+CH;8851;SUAACH22XXX;SUVA
+CH;8852;SLAMCHZZKV0;Swiss Life AG (KV, geb. Vermögen)
+CH;8853;SWRECHZHXXX;Schweizerische Rückversicherungs-Gesellschaft AG
+CH;8854;AXIPCHZZXXX;AXA Leben AG
+CH;8855;ZURICHZFXXX;Zurich Insurance Company Ltd
+CH;8856;BAAMCHBBXXX;Helvetia Schweizerische Lebensvers.- Ges. AG, (FV BAL)
+CH;8858;BAAMCHBBBVG;Helvetia Schweizerische Vers.- Ges. AG, (GV BAL)
+CH;8865;RMCOCHBBXXX;Remaco Asset Management AG
+CH;8866;LFFSCHGGXXX;LF Finance (Suisse) SA
+CH;8867;SSBECHZZXXX;State Street Bank International GmbH, München, ZN Zürich
+CH;8868;DELECHG2XXX;Delen (Suisse) SA
+CH;8871;ZAPRCH22XXX;Zähringer Privatbank AG
+CH;8880;INSECHZZXXX;SIX SIS AG
+CH;8881;INSECHZZXXX;SIX SIS AG
+CH;8883;EUXCDEFZXXX;EUREX Clearing AG
+CH;8887;INSECHZZXXX;SIX SIS AG
+CH;8890;SKBPCH22XXX;Sparkasse Bundespersonal
+CH;8899;BISBCHBBXXX;BIZ Bank für Internationalen Zahlungsausgleich
+CH;89002;METZDEFFXXX;B. Metzler seel. Sohn & Co. AG
+CH;89018;COBADEFFXXX;COMMERZBANK AG
+CH;89022;DEUTDEFFXXX;Deutsche Bank AG
+CH;89025;GENODEFFXXX;DZ Bank AG
+CH;89042;MEFIDEMM501;Merck Finck, a Quintet Private Bank (Europe) S.A. branch
+CH;89045;MSFFDEFXXXX;Morgan Stanley Bank AG
+CH;89058;SOLADESTXXX;Landesbank Baden-Württemberg
+CH;89059;TUBDDEDDXXX;HSBC Continental Europe S.A., Germany
+CH;89070;GOLDDEFAXXX;Goldman Sachs Bank Europe SE
+CH;89081;DOSPAT2DXXX;Dornbirner Sparkasse Bank AG
+CH;89088;ESSESESSXXX;Skandinaviska Enskilda Banken AB
+CH;89091;GENOLULLXXX;DZ PRIVATBANK AG, Luxembourg Branch
+CH;89093;VOLODE66XXX;Volksbank Dreiländereck EG
+CH;89095;CITIGB2LXXX;Citibank N.A.
+CH;89099;GIBAATWGXXX;Erste Group Bank AG
+CH;8910;CLSBUS33XXX;CLS Bank International
+CH;89102;RABONL2UXXX;Coöperatieve Rabobank U.A.
+CH;89109;RZOOAT2LXXX;Raiffeisenlandesbank Oberösterreich AG
+CH;89115;CEDELULLXXX;Clearstream Banking S.A.
+CH;89128;BCITITMMXXX;Intesa Sanpaolo S.P.A.
+CH;89129;BTVAAT22XXX;BTV Vier Länder Bank AG
+CH;89136;BILLLULLXXX;Banque Internationale à Luxembourg SA
+CH;89139;RZBAATWWXXX;Raiffeisen Bank International AG
+CH;89142;BEILLULLXXX;European Investment Bank
+CH;89151;INGBNL2AXXX;ING Bank N.V.
+CH;89152;SPFKAT2BXXX;Sparkasse der Stadt Feldkirch
+CH;89158;ROYCGB22XXX;RBC Europe Limited
+CH;89162;DABADKKKXXX;Danske Bank A/S
+CH;89165;RVVGAT2BXXX;Raiffeisen Landesbank Vorarlberg mit Revisionsverband eGen
+CH;89169;FMBKDEMMXXX;CACEIS Bank S.A., Germany Branch
+CH;89191;GSILGB2XXXX;Goldman Sachs International
+CH;89197;NDEAFIHHXXX;Nordea Bank Abp
+CH;89199;GENODE61WT1;Volksbank Hochrhein eG
+CH;89202;SKHRDE6WXXX;Sparkasse Hochrhein
+CH;89207;OEKOATWWXXX;Oesterreichische Kontrollbank AG
+CH;89208;GENODE61OG1;Volksbank eG - Die Gestalterbank
+CH;89213;BLUXLULLXXX;Banque de Luxembourg S.A.
+CH;89214;SKLODE66XXX;Sparkasse Lörrach-Rheinfelden
+CH;89215;LCHLGB2LXXX;LCH Limited
+CH;89216;ABNCNL2AXXX;ABN AMRO Clearing Bank N.V.
+CH;9000;POFICHBEXXX;PostFinance AG
+BE;000;GEBABEBB;BNP Paribas Fortis
+BE;001;GEBABEBB;BNP Paribas Fortis
+BE;002;GEBABEBB;BNP Paribas Fortis
+BE;003;GEBABEBB;BNP Paribas Fortis
+BE;004;GEBABEBB;BNP Paribas Fortis
+BE;005;GEBABEBB;BNP Paribas Fortis
+BE;006;GEBABEBB;BNP Paribas Fortis
+BE;007;GEBABEBB;BNP Paribas Fortis
+BE;008;GEBABEBB;BNP Paribas Fortis
+BE;009;GEBABEBB;BNP Paribas Fortis
+BE;010;GEBABEBB;BNP Paribas Fortis
+BE;011;GEBABEBB;BNP Paribas Fortis
+BE;012;GEBABEBB;BNP Paribas Fortis
+BE;013;GEBABEBB;BNP Paribas Fortis
+BE;014;GEBABEBB;BNP Paribas Fortis
+BE;015;GEBABEBB;BNP Paribas Fortis
+BE;016;GEBABEBB;BNP Paribas Fortis
+BE;017;GEBABEBB;BNP Paribas Fortis
+BE;018;GEBABEBB;BNP Paribas Fortis
+BE;019;GEBABEBB;BNP Paribas Fortis
+BE;020;GEBABEBB;BNP Paribas Fortis
+BE;021;GEBABEBB;BNP Paribas Fortis
+BE;022;GEBABEBB;BNP Paribas Fortis
+BE;023;GEBABEBB;BNP Paribas Fortis
+BE;024;GEBABEBB;BNP Paribas Fortis
+BE;025;GEBABEBB;BNP Paribas Fortis
+BE;026;GEBABEBB;BNP Paribas Fortis
+BE;027;GEBABEBB;BNP Paribas Fortis
+BE;028;GEBABEBB;BNP Paribas Fortis
+BE;029;GEBABEBB;BNP Paribas Fortis
+BE;030;GEBABEBB;BNP Paribas Fortis
+BE;031;GEBABEBB;BNP Paribas Fortis
+BE;032;GEBABEBB;BNP Paribas Fortis
+BE;033;GEBABEBB;BNP Paribas Fortis
+BE;034;GEBABEBB;BNP Paribas Fortis
+BE;035;GEBABEBB;BNP Paribas Fortis
+BE;036;GEBABEBB;BNP Paribas Fortis
+BE;037;GEBABEBB;BNP Paribas Fortis
+BE;038;GEBABEBB;BNP Paribas Fortis
+BE;039;GEBABEBB;BNP Paribas Fortis
+BE;040;GEBABEBB;BNP Paribas Fortis
+BE;041;GEBABEBB;BNP Paribas Fortis
+BE;042;GEBABEBB;BNP Paribas Fortis
+BE;043;GEBABEBB;BNP Paribas Fortis
+BE;044;GEBABEBB;BNP Paribas Fortis
+BE;045;GEBABEBB;BNP Paribas Fortis
+BE;046;GEBABEBB;BNP Paribas Fortis
+BE;047;GEBABEBB;BNP Paribas Fortis
+BE;048;GEBABEBB;BNP Paribas Fortis
+BE;049;GEBABEBB;BNP Paribas Fortis
+BE;050;GKCCBEBB;BELFIUS BANK
+BE;051;GKCCBEBB;BELFIUS BANK
+BE;052;GKCCBEBB;BELFIUS BANK
+BE;053;GKCCBEBB;BELFIUS BANK
+BE;054;GKCCBEBB;BELFIUS BANK
+BE;055;GKCCBEBB;BELFIUS BANK
+BE;056;GKCCBEBB;BELFIUS BANK
+BE;057;GKCCBEBB;BELFIUS BANK
+BE;058;GKCCBEBB;BELFIUS BANK
+BE;059;GKCCBEBB;BELFIUS BANK
+BE;060;GKCCBEBB;BELFIUS BANK
+BE;061;GKCCBEBB;BELFIUS BANK
+BE;062;GKCCBEBB;BELFIUS BANK
+BE;063;GKCCBEBB;BELFIUS BANK
+BE;064;GKCCBEBB;BELFIUS BANK
+BE;065;GKCCBEBB;BELFIUS BANK
+BE;066;GKCCBEBB;BELFIUS BANK
+BE;067;GKCCBEBB;BELFIUS BANK
+BE;068;GKCCBEBB;BELFIUS BANK
+BE;069;GKCCBEBB;BELFIUS BANK
+BE;070;GKCCBEBB;BELFIUS BANK
+BE;071;GKCCBEBB;BELFIUS BANK
+BE;072;GKCCBEBB;BELFIUS BANK
+BE;073;GKCCBEBB;BELFIUS BANK
+BE;074;GKCCBEBB;BELFIUS BANK
+BE;075;GKCCBEBB;BELFIUS BANK
+BE;076;GKCCBEBB;BELFIUS BANK
+BE;077;GKCCBEBB;BELFIUS BANK
+BE;078;GKCCBEBB;BELFIUS BANK
+BE;079;GKCCBEBB;BELFIUS BANK
+BE;080;GKCCBEBB;BELFIUS BANK
+BE;081;GKCCBEBB;BELFIUS BANK
+BE;082;GKCCBEBB;BELFIUS BANK
+BE;083;GKCCBEBB;BELFIUS BANK
+BE;084;GKCCBEBB;BELFIUS BANK
+BE;085;GKCCBEBB;BELFIUS BANK
+BE;086;GKCCBEBB;BELFIUS BANK
+BE;087;GKCCBEBB;BELFIUS BANK
+BE;088;GKCCBEBB;BELFIUS BANK
+BE;089;GKCCBEBB;BELFIUS BANK
+BE;090;GKCCBEBB;BELFIUS BANK
+BE;091;GKCCBEBB;BELFIUS BANK
+BE;092;GKCCBEBB;BELFIUS BANK
+BE;093;GKCCBEBB;BELFIUS BANK
+BE;094;GKCCBEBB;BELFIUS BANK
+BE;095;GKCCBEBB;BELFIUS BANK
+BE;096;GKCCBEBB;BELFIUS BANK
+BE;097;GKCCBEBB;BELFIUS BANK
+BE;098;GKCCBEBB;BELFIUS BANK
+BE;099;GKCCBEBB;BELFIUS BANK
+BE;100;NBBEBEBB203;Nationale Bank van België
+BE;101;NBBEBEBBHCC;Nationale Bank van België (Hoofdkas)
+BE;103;NICABEBB;Crelan
+BE;104;NICABEBB;Crelan
+BE;105;NICABEBB;Crelan
+BE;106;NICABEBB;Crelan
+BE;107;NICABEBB;Crelan
+BE;108;NICABEBB;Crelan
+BE;109;CTBKBEBX;Beobank
+BE;110;CTBKBEBX;Beobank
+BE;111;ABERBE22;Bank J. Van Breda &amp; C°
+BE;113;CTBKBEBX;Beobank
+BE;114;CTBKBEBX;Beobank
+BE;115;PAUIBE22;HR Pay Solutions
+BE;116;ATMNBE32XXX;Atlantic Money NV/SA
+BE;119;CTBKBEBX;Beobank
+BE;120;CTBKBEBX;Beobank
+BE;121;CTBKBEBX;Beobank
+BE;122;CTBKBEBX;Beobank
+BE;123;CTBKBEBX;Beobank
+BE;124;CTBKBEBX;Beobank
+BE;125;CPHBBE75;Banque CPH
+BE;126;CPHBBE75;Banque CPH
+BE;127;CTBKBEBX;Beobank
+BE;128;MPSNBE92;Mobile Payment Solutions nv
+BE;129;CTBKBEBX;Beobank
+BE;130;DIGEBEB2;Digiteal SA
+BE;131;CTBKBEBX;Beobank
+BE;132;BNAGBEBB;Bank Nagelmackers
+BE;133;CTBKBEBX;Beobank
+BE;134;CTBKBEBX;Beobank
+BE;137;GEBABEBB;BNP Paribas Fortis
+BE;140;GEBABEBB;BNP Paribas Fortis
+BE;141;GEBABEBB;BNP Paribas Fortis
+BE;142;GEBABEBB;BNP Paribas Fortis
+BE;143;GEBABEBB;BNP Paribas Fortis
+BE;144;GEBABEBB;BNP Paribas Fortis
+BE;145;GEBABEBB;BNP Paribas Fortis
+BE;146;GEBABEBB;BNP Paribas Fortis
+BE;147;GEBABEBB;BNP Paribas Fortis
+BE;148;GEBABEBB;BNP Paribas Fortis
+BE;149;GEBABEBB;BNP Paribas Fortis
+BE;150;BCMCBEBB;Bancontact Payconiq Company
+BE;167;BUNQBEB2XXX;BUNQ, Belgian Branch
+BE;171;CPHBBE75;
+BE;176;BSCHBEBBRET;Santander Consumer Finance – Succursale en Belgique/Bijkantoor in België
+BE;185;BBRUBEBB;ING België
+BE;189;SMBCBEBB;Sumitomo Mitsui Banking Corporation (SMBC)
+BE;190;CREGBEBB;
+BE;191;CREGBEBB;
+BE;192;CREGBEBB;
+BE;193;CREGBEBB;
+BE;194;CREGBEBB;
+BE;195;CREGBEBB;
+BE;196;CREGBEBB;
+BE;197;CREGBEBB;
+BE;198;CREGBEBB;
+BE;199;CREGBEBB;
+BE;200;GEBABEBB;BNP Paribas Fortis
+BE;201;GEBABEBB;BNP Paribas Fortis
+BE;202;GEBABEBB;BNP Paribas Fortis
+BE;203;GEBABEBB;BNP Paribas Fortis
+BE;204;GEBABEBB;BNP Paribas Fortis
+BE;205;GEBABEBB;BNP Paribas Fortis
+BE;206;GEBABEBB;BNP Paribas Fortis
+BE;207;GEBABEBB;BNP Paribas Fortis
+BE;208;GEBABEBB;BNP Paribas Fortis
+BE;209;GEBABEBB;BNP Paribas Fortis
+BE;210;GEBABEBB;BNP Paribas Fortis
+BE;211;GEBABEBB;BNP Paribas Fortis
+BE;212;GEBABEBB;BNP Paribas Fortis
+BE;213;GEBABEBB;BNP Paribas Fortis
+BE;214;GEBABEBB;BNP Paribas Fortis
+BE;220;GEBABEBB;BNP Paribas Fortis
+BE;221;GEBABEBB;BNP Paribas Fortis
+BE;222;GEBABEBB;BNP Paribas Fortis
+BE;223;GEBABEBB;BNP Paribas Fortis
+BE;224;GEBABEBB;BNP Paribas Fortis
+BE;225;GEBABEBB;BNP Paribas Fortis
+BE;226;GEBABEBB;BNP Paribas Fortis
+BE;227;GEBABEBB;BNP Paribas Fortis
+BE;228;GEBABEBB;BNP Paribas Fortis
+BE;229;GEBABEBB;BNP Paribas Fortis
+BE;230;GEBABEBB;BNP Paribas Fortis
+BE;231;GEBABEBB;BNP Paribas Fortis
+BE;232;GEBABEBB;BNP Paribas Fortis
+BE;233;GEBABEBB;BNP Paribas Fortis
+BE;234;GEBABEBB;BNP Paribas Fortis
+BE;235;GEBABEBB;BNP Paribas Fortis
+BE;236;GEBABEBB;BNP Paribas Fortis
+BE;237;GEBABEBB;BNP Paribas Fortis
+BE;238;GEBABEBB;BNP Paribas Fortis
+BE;239;GEBABEBB;BNP Paribas Fortis
+BE;240;GEBABEBB;BNP Paribas Fortis
+BE;241;GEBABEBB;BNP Paribas Fortis
+BE;242;GEBABEBB;BNP Paribas Fortis
+BE;243;GEBABEBB;BNP Paribas Fortis
+BE;244;GEBABEBB;BNP Paribas Fortis
+BE;245;GEBABEBB;BNP Paribas Fortis
+BE;246;GEBABEBB;BNP Paribas Fortis
+BE;247;GEBABEBB;BNP Paribas Fortis
+BE;248;GEBABEBB;BNP Paribas Fortis
+BE;249;GEBABEBB;BNP Paribas Fortis
+BE;250;GEBABEBB;BNP Paribas Fortis
+BE;251;GEBABEBB;BNP Paribas Fortis
+BE;252;GEBABEBB;BNP Paribas Fortis
+BE;253;GEBABEBB;BNP Paribas Fortis
+BE;254;GEBABEBB;BNP Paribas Fortis
+BE;255;GEBABEBB;BNP Paribas Fortis
+BE;256;GEBABEBB;BNP Paribas Fortis
+BE;257;GEBABEBB;BNP Paribas Fortis
+BE;258;GEBABEBB;BNP Paribas Fortis
+BE;259;GEBABEBB;BNP Paribas Fortis
+BE;260;GEBABEBB;BNP Paribas Fortis
+BE;261;GEBABEBB;BNP Paribas Fortis
+BE;262;GEBABEBB;BNP Paribas Fortis
+BE;263;GEBABEBB;BNP Paribas Fortis
+BE;264;GEBABEBB;BNP Paribas Fortis
+BE;265;GEBABEBB;BNP Paribas Fortis
+BE;266;GEBABEBB;BNP Paribas Fortis
+BE;267;GEBABEBB;BNP Paribas Fortis
+BE;268;GEBABEBB;BNP Paribas Fortis
+BE;269;GEBABEBB;BNP Paribas Fortis
+BE;270;GEBABEBB;BNP Paribas Fortis
+BE;271;GEBABEBB;BNP Paribas Fortis
+BE;272;GEBABEBB;BNP Paribas Fortis
+BE;273;GEBABEBB;BNP Paribas Fortis
+BE;274;GEBABEBB;BNP Paribas Fortis
+BE;275;GEBABEBB;BNP Paribas Fortis
+BE;276;GEBABEBB;BNP Paribas Fortis
+BE;277;GEBABEBB;BNP Paribas Fortis
+BE;278;GEBABEBB;BNP Paribas Fortis
+BE;279;GEBABEBB;BNP Paribas Fortis
+BE;280;GEBABEBB;BNP Paribas Fortis
+BE;281;GEBABEBB;BNP Paribas Fortis
+BE;282;GEBABEBB;BNP Paribas Fortis
+BE;283;GEBABEBB;BNP Paribas Fortis
+BE;284;GEBABEBB;BNP Paribas Fortis
+BE;285;GEBABEBB;BNP Paribas Fortis
+BE;286;GEBABEBB;BNP Paribas Fortis
+BE;287;GEBABEBB;BNP Paribas Fortis
+BE;288;GEBABEBB;BNP Paribas Fortis
+BE;289;GEBABEBB;BNP Paribas Fortis
+BE;290;GEBABEBB;BNP Paribas Fortis
+BE;291;GEBABEBB;BNP Paribas Fortis
+BE;292;GEBABEBB;BNP Paribas Fortis
+BE;293;GEBABEBB;BNP Paribas Fortis
+BE;294;GEBABEBB;BNP Paribas Fortis
+BE;295;GEBABEBB;BNP Paribas Fortis
+BE;296;GEBABEBB;BNP Paribas Fortis
+BE;297;GEBABEBB;BNP Paribas Fortis
+BE;298;GEBABEBB;BNP Paribas Fortis
+BE;299;GEBABEBB;BNP Paribas Fortis
+BE;300;BBRUBEBB;ING België
+BE;301;BBRUBEBB;ING België
+BE;302;BBRUBEBB;ING België
+BE;303;BBRUBEBB;ING België
+BE;304;BBRUBEBB;ING België
+BE;305;BBRUBEBB;ING België
+BE;306;BBRUBEBB;ING België
+BE;307;BBRUBEBB;ING België
+BE;308;BBRUBEBB;ING België
+BE;309;BBRUBEBB;ING België
+BE;310;BBRUBEBB;ING België
+BE;311;BBRUBEBB;ING België
+BE;312;BBRUBEBB;ING België
+BE;313;BBRUBEBB;ING België
+BE;314;BBRUBEBB;ING België
+BE;315;BBRUBEBB;ING België
+BE;316;BBRUBEBB;ING België
+BE;317;BBRUBEBB;ING België
+BE;318;BBRUBEBB;ING België
+BE;319;BBRUBEBB;ING België
+BE;320;BBRUBEBB;ING België
+BE;321;BBRUBEBB;ING België
+BE;322;BBRUBEBB;ING België
+BE;323;BBRUBEBB;ING België
+BE;324;BBRUBEBB;ING België
+BE;325;BBRUBEBB;ING België
+BE;326;BBRUBEBB;ING België
+BE;327;BBRUBEBB;ING België
+BE;328;BBRUBEBB;ING België
+BE;329;BBRUBEBB;ING België
+BE;330;BBRUBEBB;ING België
+BE;331;BBRUBEBB;ING België
+BE;332;BBRUBEBB;ING België
+BE;333;BBRUBEBB;ING België
+BE;334;BBRUBEBB;ING België
+BE;335;BBRUBEBB;ING België
+BE;336;BBRUBEBB;ING België
+BE;337;BBRUBEBB;ING België
+BE;338;BBRUBEBB;ING België
+BE;339;BBRUBEBB;ING België
+BE;340;BBRUBEBB;ING België
+BE;341;BBRUBEBB;ING België
+BE;342;BBRUBEBB;ING België
+BE;343;BBRUBEBB;ING België
+BE;344;BBRUBEBB;ING België
+BE;345;BBRUBEBB;ING België
+BE;346;BBRUBEBB;ING België
+BE;347;BBRUBEBB;ING België
+BE;348;BBRUBEBB;ING België
+BE;349;BBRUBEBB;ING België
+BE;350;BBRUBEBB;ING België
+BE;351;BBRUBEBB;ING België
+BE;352;BBRUBEBB;ING België
+BE;353;BBRUBEBB;ING België
+BE;354;BBRUBEBB;ING België
+BE;355;BBRUBEBB;ING België
+BE;356;BBRUBEBB;ING België
+BE;357;BBRUBEBB;ING België
+BE;358;BBRUBEBB;ING België
+BE;359;BBRUBEBB;ING België
+BE;360;BBRUBEBB;ING België
+BE;361;BBRUBEBB;ING België
+BE;362;BBRUBEBB;ING België
+BE;363;BBRUBEBB;ING België
+BE;364;BBRUBEBB;ING België
+BE;365;BBRUBEBB;ING België
+BE;366;BBRUBEBB;ING België
+BE;367;BBRUBEBB;ING België
+BE;368;BBRUBEBB;ING België
+BE;369;BBRUBEBB;ING België
+BE;370;BBRUBEBB;ING België
+BE;371;BBRUBEBB;ING België
+BE;372;BBRUBEBB;ING België
+BE;373;BBRUBEBB;ING België
+BE;374;BBRUBEBB;ING België
+BE;375;BBRUBEBB;ING België
+BE;376;BBRUBEBB;ING België
+BE;377;BBRUBEBB;ING België
+BE;378;BBRUBEBB;ING België
+BE;379;BBRUBEBB;ING België
+BE;380;BBRUBEBB;ING België
+BE;381;BBRUBEBB;ING België
+BE;382;BBRUBEBB;ING België
+BE;383;BBRUBEBB;ING België
+BE;384;BBRUBEBB;ING België
+BE;385;BBRUBEBB;ING België
+BE;386;BBRUBEBB;ING België
+BE;387;BBRUBEBB;ING België
+BE;388;BBRUBEBB;ING België
+BE;389;BBRUBEBB;ING België
+BE;390;BBRUBEBB;ING België
+BE;391;BBRUBEBB;ING België
+BE;392;BBRUBEBB;ING België
+BE;393;BBRUBEBB;ING België
+BE;394;BBRUBEBB;ING België
+BE;395;BBRUBEBB;ING België
+BE;396;BBRUBEBB;ING België
+BE;397;BBRUBEBB;ING België
+BE;398;BBRUBEBB;ING België
+BE;399;BBRUBEBB;ING België
+BE;400;KREDBEBB;KBC Bank
+BE;401;KREDBEBB;KBC Bank
+BE;402;KREDBEBB;KBC Bank
+BE;403;KREDBEBB;KBC Bank
+BE;404;KREDBEBB;KBC Bank
+BE;405;KREDBEBB;KBC Bank
+BE;406;KREDBEBB;KBC Bank
+BE;407;KREDBEBB;KBC Bank
+BE;408;KREDBEBB;KBC Bank
+BE;409;KREDBEBB;KBC Bank
+BE;410;KREDBEBB;KBC Bank
+BE;411;KREDBEBB;KBC Bank
+BE;412;KREDBEBB;KBC Bank
+BE;413;KREDBEBB;KBC Bank
+BE;414;KREDBEBB;KBC Bank
+BE;415;KREDBEBB;KBC Bank
+BE;416;KREDBEBB;KBC Bank
+BE;417;KREDBEBB;KBC Bank
+BE;418;KREDBEBB;KBC Bank
+BE;419;KREDBEBB;KBC Bank
+BE;420;KREDBEBB;KBC Bank
+BE;421;KREDBEBB;KBC Bank
+BE;422;KREDBEBB;KBC Bank
+BE;423;KREDBEBB;KBC Bank
+BE;424;KREDBEBB;KBC Bank
+BE;425;KREDBEBB;KBC Bank
+BE;426;KREDBEBB;KBC Bank
+BE;427;KREDBEBB;KBC Bank
+BE;428;KREDBEBB;KBC Bank
+BE;429;KREDBEBB;KBC Bank
+BE;430;KREDBEBB;KBC Bank
+BE;431;KREDBEBB;KBC Bank
+BE;432;KREDBEBB;KBC Bank
+BE;433;KREDBEBB;KBC Bank
+BE;434;KREDBEBB;KBC Bank
+BE;435;KREDBEBB;KBC Bank
+BE;436;KREDBEBB;KBC Bank
+BE;437;KREDBEBB;KBC Bank
+BE;438;KREDBEBB;KBC Bank
+BE;439;KREDBEBB;KBC Bank
+BE;440;KREDBEBB;KBC Bank
+BE;441;KREDBEBB;KBC Bank
+BE;442;KREDBEBB;KBC Bank
+BE;443;KREDBEBB;KBC Bank
+BE;444;KREDBEBB;KBC Bank
+BE;445;KREDBEBB;KBC Bank
+BE;446;KREDBEBB;KBC Bank
+BE;447;KREDBEBB;KBC Bank
+BE;448;KREDBEBB;KBC Bank
+BE;449;KREDBEBB;KBC Bank
+BE;450;KREDBEBB;KBC Bank
+BE;451;KREDBEBB;KBC Bank
+BE;452;KREDBEBB;KBC Bank
+BE;453;KREDBEBB;KBC Bank
+BE;454;KREDBEBB;KBC Bank
+BE;455;KREDBEBB;KBC Bank
+BE;456;KREDBEBB;KBC Bank
+BE;457;KREDBEBB;KBC Bank
+BE;458;KREDBEBB;KBC Bank
+BE;459;KREDBEBB;KBC Bank
+BE;460;KREDBEBB;KBC Bank
+BE;461;KREDBEBB;KBC Bank
+BE;462;KREDBEBB;KBC Bank
+BE;463;KREDBEBB;KBC Bank
+BE;464;KREDBEBB;KBC Bank
+BE;465;KREDBEBB;KBC Bank
+BE;466;KREDBEBB;KBC Bank
+BE;467;KREDBEBB;KBC Bank
+BE;468;KREDBEBB;KBC Bank
+BE;469;KREDBEBB;KBC Bank
+BE;470;KREDBEBB;KBC Bank
+BE;471;KREDBEBB;KBC Bank
+BE;472;KREDBEBB;KBC Bank
+BE;473;KREDBEBB;KBC Bank
+BE;474;KREDBEBB;KBC Bank
+BE;475;KREDBEBB;KBC Bank
+BE;476;KREDBEBB;KBC Bank
+BE;477;KREDBEBB;KBC Bank
+BE;478;KREDBEBB;KBC Bank
+BE;479;KREDBEBB;KBC Bank
+BE;480;KREDBEBB;KBC Bank
+BE;481;KREDBEBB;KBC Bank
+BE;482;KREDBEBB;KBC Bank
+BE;483;KREDBEBB;KBC Bank
+BE;484;KREDBEBB;KBC Bank
+BE;485;KREDBEBB;KBC Bank
+BE;486;KREDBEBB;KBC Bank
+BE;487;KREDBEBB;KBC Bank
+BE;488;KREDBEBB;KBC Bank
+BE;489;KREDBEBB;KBC Bank
+BE;490;KREDBEBB;KBC Bank
+BE;491;KREDBEBB;KBC Bank
+BE;492;KREDBEBB;KBC Bank
+BE;493;KREDBEBB;KBC Bank
+BE;494;KREDBEBB;KBC Bank
+BE;495;KREDBEBB;KBC Bank
+BE;496;KREDBEBB;KBC Bank
+BE;497;KREDBEBB;KBC Bank
+BE;498;KREDBEBB;KBC Bank
+BE;499;KREDBEBB;KBC Bank
+BE;501;DHBNBEBB;Demir-Halk Bank (Nederland) (DHB)
+BE;504;PANXBEB1;Unifiedpost Payments
+BE;507;DIERBE21;Dierickx, Leys &amp; Cie Effectenbank
+BE;508;PARBBEBZMDC;BNP Paribas SA, Belgium Branch – Securities Services business
+BE;509;ABNABE2AIPC;ABN AMRO Bank N.V.
+BE;510;VAPEBE22;VAN DE PUT &amp; CO Privaatbankiers
+BE;512;DNIBBE21;NIBC BANK
+BE;513;ABNABE2AIPC;ABN AMRO Bank N.V.
+BE;514;PUILBEBB;Puilaetco Branch of Quintet Private Bank SA
+BE;515;IRVTBEBB;The Bank of New York Mellon NV/SA
+BE;521;FVLBBE22;F. van Lanschot Bankiers
+BE;522;UTWBBEBB;United Taiwan Bank
+BE;523;TRIOBEBB;Triodos Bank
+BE;524;WAFABEBB;Attijariwafa bank Europe
+BE;525;FVLBBE22;F. van Lanschot Bankiers
+BE;541;BKIDBE22;BANK OF INDIA
+BE;546;WAFABEBB;Attijariwafa bank Europe
+BE;548;LOCYBEBB;Lombard Odier (Europe)
+BE;549;CHASBEBX;J.P. Morgan SE -Brussels Branch
+BE;550;GKCCBEBB;BELFIUS BANK
+BE;551;GKCCBEBB;BELFIUS BANK
+BE;552;GKCCBEBB;BELFIUS BANK
+BE;553;GKCCBEBB;BELFIUS BANK
+BE;554;GKCCBEBB;BELFIUS BANK
+BE;555;GKCCBEBB;BELFIUS BANK
+BE;556;GKCCBEBB;BELFIUS BANK
+BE;557;GKCCBEBB;BELFIUS BANK
+BE;558;GKCCBEBB;BELFIUS BANK
+BE;559;GKCCBEBB;BELFIUS BANK
+BE;560;GKCCBEBB;BELFIUS BANK
+BE;562;GKCCBEBB;BELFIUS BANK
+BE;563;GKCCBEBB;BELFIUS BANK
+BE;564;GKCCBEBB;BELFIUS BANK
+BE;565;GKCCBEBB;BELFIUS BANK
+BE;566;GKCCBEBB;BELFIUS BANK
+BE;567;GKCCBEBB;BELFIUS BANK
+BE;568;GKCCBEBB;BELFIUS BANK
+BE;569;GKCCBEBB;BELFIUS BANK
+BE;570;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;571;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;572;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;573;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;574;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;575;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;576;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;577;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;578;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;579;CITIBEBX;Citibank Europe Plc - Belgium Branch
+BE;581;MHCBBEBB;Mizuho Bank Europe N.V. Brussels Branch
+BE;583;DEGRBEBB;Banque Degroof Petercam Luxembourg
+BE;585;RCBPBEBB;
+BE;586;CFFRBEB1;
+BE;587;BIBLBE21;BinckBank
+BE;588;CMCIBEB1BTB;Banque Transatlantique Belgium
+BE;590;BSCHBEBB;Santander Consumer Finance – Succursale en Belgique/Bijkantoor in België
+BE;591;BSCHBEBB;Santander Consumer Finance – Succursale en Belgique/Bijkantoor in België
+BE;592;BSCHBEBB;Santander Consumer Finance – Succursale en Belgique/Bijkantoor in België
+BE;593;BSCHBEBB;Santander Consumer Finance – Succursale en Belgique/Bijkantoor in België
+BE;594;BSCHBEBB;Santander Consumer Finance – Succursale en Belgique/Bijkantoor in België
+BE;595;CTBKBEBX;Beobank
+BE;596;CTBKBEBX;Beobank
+BE;597;CTBKBEBX;Beobank
+BE;598;CTBKBEBX;Beobank
+BE;599;CTBKBEBX;Beobank
+BE;600;CTBKBEBX;Beobank
+BE;601;CTBKBEBX;Beobank
+BE;603;SWNBBEB2;SWAN SAS
+BE;604;SWNBBEB2;SWAN SAS
+BE;605;BKCHBEBB;Bank of China (Europe) SA Brussels Branch
+BE;606;DLLUBE22;Delen Private Bank Luxembourg – Belgian Branch
+BE;607;ICBKBEBB;Industrial and Commercial Bank of China (Europe)
+BE;610;DEUTBEBE;Deutsche Bank AG
+BE;611;DEUTBEBE;Deutsche Bank AG
+BE;612;DEUTBEBE;Deutsche Bank AG
+BE;613;DEUTBEBE;Deutsche Bank AG
+BE;624;GKCCBEBB;BELFIUS BANK
+BE;625;GKCCBEBB;BELFIUS BANK
+BE;630;BBRUBEBB;ING België
+BE;631;BBRUBEBB;ING België
+BE;634;BNAGBEBB;Bank Nagelmackers
+BE;635;BNAGBEBB;Bank Nagelmackers
+BE;636;BNAGBEBB;Bank Nagelmackers
+BE;638;GKCCBEBB;BELFIUS BANK
+BE;640;KREDBEBB;KBC Bank
+BE;642;BBVABEBB;Banco Bilbao Vizcaya Argentaria
+BE;643;BMPBBEBB;UniCredit SA/NV
+BE;645;JVBABE22;Bank J. Van Breda &amp; C°
+BE;646;BNAGBEBB;Bank Nagelmackers
+BE;647;BNAGBEBB;Bank Nagelmackers
+BE;648;BMPBBEBBVOD;UniCredit SA/NV
+BE;649;CEPABEB2;
+BE;650;REVOBEB2XXX;Revolut Bank UAB Belgian branch
+BE;651;KEYTBEBB;Arkéa Direct Bank (nom commercial / commerciële naam: Keytrade Bank)
+BE;652;BBRUBEBB;ING België
+BE;653;BARCBEBB;Barclays Bank Ireland Plc Brussels Branch
+BE;657;GKCCBEBB;BELFIUS BANK
+BE;658;HABBBEBB;Habib Bank
+BE;663;BMEUBEB1;BMCE Euro Services
+BE;664;BCDMBEBB;Banque Chaabi du Maroc
+BE;667;CMCIBEB1CIC;Crédit Industriel et Commercial - Succursale de Bruxelles
+BE;668;SBINBE2X;State Bank of India
+BE;671;EURBBE99;Europabank
+BE;672;GKCCBEBB;BELFIUS BANK
+BE;673;BBRUBEBB;ING België
+BE;674;ABNABE2AIDJ;ABN AMRO Bank N.V.
+BE;675;BYBBBEBB;Byblos Bank Europe
+BE;676;DEGRBEBB;Bank Degroof Petercam
+BE;677;CBPXBE99;Intesa Sanpaolo Wealth Management
+BE;678;DELEBE22;Delen Private Bank
+BE;679;GEBABEBB;BNP Paribas Fortis
+BE;680;GKCCBEBB;BELFIUS BANK
+BE;682;GKCCBEBB;BELFIUS BANK
+BE;683;GKCCBEBB;BELFIUS BANK
+BE;684;SGABBEB2;Société Générale
+BE;685;BOFABE3X;Bank of America Europe DAC - Brussels Branch
+BE;686;BOFABE3X;Bank of America Europe DAC - Brussels Branch
+BE;687;MGTCBEBE;Euroclear Bank
+BE;688;SGABBEB2;Société Générale
+BE;689;BOFABE3X;Bank of America Europe DAC - Brussels Branch
+BE;693;BOTKBEBX;MUFG Bank (Europe)
+BE;694;DEUTBEBE;Deutsche Bank AG
+BE;695;MGTCBEBE;Euroclear Bank
+BE;696;CRLYBEBB;Crédit Agricole Corporate &amp; Investment Bank
+BE;699;MGTCBEBE;Euroclear Bank
+BE;700;AXABBE22;Crelan
+BE;701;AXABBE22;Crelan
+BE;702;AXABBE22;Crelan
+BE;703;AXABBE22;Crelan
+BE;704;AXABBE22;Crelan
+BE;705;AXABBE22;Crelan
+BE;706;AXABBE22;Crelan
+BE;707;AXABBE22;Crelan
+BE;708;AXABBE22;Crelan
+BE;709;AXABBE22;Crelan
+BE;719;ABNABE2AXXX;ABN AMRO Bank N.V.
+BE;722;ABNABE2AIPC;ABN AMRO Bank N.V.
+BE;725;KREDBEBB;KBC Bank
+BE;726;KREDBEBB;KBC Bank
+BE;727;KREDBEBB;KBC Bank
+BE;728;CREGBEBB;
+BE;729;CREGBEBB;
+BE;730;KREDBEBB;KBC Bank
+BE;731;KREDBEBB;KBC Bank
+BE;732;CREGBEBB;
+BE;733;KREDBEBB;KBC Bank
+BE;734;KREDBEBB;KBC Bank
+BE;735;KREDBEBB;KBC Bank
+BE;736;KREDBEBB;KBC Bank
+BE;737;KREDBEBB;KBC Bank
+BE;738;KREDBEBB;KBC Bank
+BE;739;KREDBEBB;KBC Bank
+BE;740;KREDBEBB;KBC Bank
+BE;741;KREDBEBB;KBC Bank
+BE;742;CREGBEBB;
+BE;743;KREDBEBB;KBC Bank
+BE;744;KREDBEBB;KBC Bank
+BE;745;KREDBEBB;KBC Bank
+BE;746;KREDBEBB;KBC Bank
+BE;747;KREDBEBB;KBC Bank
+BE;748;KREDBEBB;KBC Bank
+BE;749;KREDBEBB;KBC Bank
+BE;750;AXABBE22;Crelan
+BE;751;AXABBE22;Crelan
+BE;752;AXABBE22;Crelan
+BE;753;AXABBE22;Crelan
+BE;754;AXABBE22;Crelan
+BE;755;AXABBE22;Crelan
+BE;756;AXABBE22;Crelan
+BE;757;AXABBE22;Crelan
+BE;758;AXABBE22;Crelan
+BE;759;AXABBE22;Crelan
+BE;760;AXABBE22;Crelan
+BE;761;AXABBE22;Crelan
+BE;762;AXABBE22;Crelan
+BE;763;AXABBE22;Crelan
+BE;764;AXABBE22;Crelan
+BE;765;AXABBE22;Crelan
+BE;772;AXABBE22;Crelan
+BE;773;AXABBE22;Crelan
+BE;774;AXABBE22;Crelan
+BE;775;GKCCBEBB;BELFIUS BANK
+BE;776;GKCCBEBB;BELFIUS BANK
+BE;777;GKCCBEBB;BELFIUS BANK
+BE;778;GKCCBEBB;BELFIUS BANK
+BE;779;GKCCBEBB;BELFIUS BANK
+BE;780;GKCCBEBB;BELFIUS BANK
+BE;781;GKCCBEBB;BELFIUS BANK
+BE;782;GKCCBEBB;BELFIUS BANK
+BE;783;GKCCBEBB;BELFIUS BANK
+BE;784;GKCCBEBB;BELFIUS BANK
+BE;785;GKCCBEBB;BELFIUS BANK
+BE;786;GKCCBEBB;BELFIUS BANK
+BE;787;GKCCBEBB;BELFIUS BANK
+BE;788;GKCCBEBB;BELFIUS BANK
+BE;789;GKCCBEBB;BELFIUS BANK
+BE;790;GKCCBEBB;BELFIUS BANK
+BE;791;GKCCBEBB;BELFIUS BANK
+BE;792;GKCCBEBB;BELFIUS BANK
+BE;793;GKCCBEBB;BELFIUS BANK
+BE;794;GKCCBEBB;BELFIUS BANK
+BE;795;GKCCBEBB;BELFIUS BANK
+BE;796;GKCCBEBB;BELFIUS BANK
+BE;797;GKCCBEBB;BELFIUS BANK
+BE;798;GKCCBEBB;BELFIUS BANK
+BE;799;GKCCBEBB;BELFIUS BANK
+BE;800;AXABBE22;Crelan
+BE;801;AXABBE22;Crelan
+BE;802;AXABBE22;Crelan
+BE;803;AXABBE22;Crelan
+BE;804;AXABBE22;Crelan
+BE;805;AXABBE22;Crelan
+BE;806;AXABBE22;Crelan
+BE;817;ISAEBEBB;CACEIS Bank Belgian Branch
+BE;823;BLUXBEBB;Banque de Luxembourg
+BE;825;DEUTBEBE;Deutsche Bank AG
+BE;826;DEUTBEBE;Deutsche Bank AG
+BE;828;BBRUBEBB;ING België
+BE;830;GKCCBEBB;BELFIUS BANK
+BE;831;GKCCBEBB;BELFIUS BANK
+BE;832;GKCCBEBB;BELFIUS BANK
+BE;833;GKCCBEBB;BELFIUS BANK
+BE;834;GKCCBEBB;BELFIUS BANK
+BE;835;GKCCBEBB;BELFIUS BANK
+BE;836;GKCCBEBB;BELFIUS BANK
+BE;837;GKCCBEBB;BELFIUS BANK
+BE;838;GKCCBEBB;BELFIUS BANK
+BE;839;GKCCBEBB;BELFIUS BANK
+BE;840;PRIBBEBB;Edmond de Rothschild (Europe)
+BE;845;DEGRBEBB;Bank Degroof Petercam
+BE;850;NICABEBB;Crelan
+BE;851;NICABEBB;Crelan
+BE;852;NICABEBB;Crelan
+BE;853;NICABEBB;Crelan
+BE;859;NICABEBB;Crelan
+BE;860;NICABEBB;Crelan
+BE;862;NICABEBB;Crelan
+BE;863;NICABEBB;Crelan
+BE;865;NICABEBB;Crelan
+BE;866;NICABEBB;Crelan
+BE;868;KREDBEBB;KBC Bank
+BE;871;BNAGBEBB;Bank Nagelmackers
+BE;875;BUXABE22;ABN AMRO Bank N.V.
+BE;876;MBWMBEBB;MeDirect Bank S.A.
+BE;877;BNAGBEBB;Bank Nagelmackers
+BE;878;BNAGBEBB;Bank Nagelmackers
+BE;879;BNAGBEBB;Bank Nagelmackers
+BE;880;BBRUBEBB;ING België
+BE;881;BBRUBEBB;ING België
+BE;883;BBRUBEBB;ING België
+BE;884;BBRUBEBB;ING België
+BE;887;BBRUBEBB;ING België
+BE;888;BBRUBEBB;ING België
+BE;890;VDSPBE91;vdk bank
+BE;891;VDSPBE91;vdk bank
+BE;892;VDSPBE91;vdk bank
+BE;893;VDSPBE91;vdk bank
+BE;894;VDSPBE91;vdk bank
+BE;895;VDSPBE91;vdk bank
+BE;896;VDSPBE91;vdk bank
+BE;897;VDSPBE91;vdk bank
+BE;898;VDSPBE91;vdk bank
+BE;899;VDSPBE91;vdk bank
+BE;903;TRWIBEB1;Wise Europe SA
+BE;904;TRWIBEBB;Wise Europe SA
+BE;905;TRWIBEB1;Wise Europe SA
+BE;906;CEKVBE88;Centrale Kredietverlening (C.K.V.)
+BE;907;MLLEBE92;Mollie B.V.
+BE;908;CEKVBE88;Centrale Kredietverlening (C.K.V.)
+BE;910;BBRUBEBB;ING België
+BE;911;TUNZBEB1;Worldline Financial Solutions nv/SA
+BE;913;EPBFBEBB;EPBF
+BE;914;FXBBBEBB;Ibanfirst
+BE;915;OONXBEBB;Equals Money Europe SA
+BE;916;GOCFBEB1;GOLD COMMODITIES FOREX (G.C.F.)
+BE;919;TRBKBEB2;Trade Republic Bank GmbH, Belgian Branch
+BE;920;BBRUBEBB;ING België
+BE;922;BBRUBEBB;ING België
+BE;923;BBRUBEBB;ING België
+BE;924;FMMSBEB1;Fimaser
+BE;926;EBPBBEB1;Ebury Partners Belgium
+BE;929;BBRUBEBB;ING België
+BE;930;BBRUBEBB;ING België
+BE;931;BBRUBEBB;ING België
+BE;934;BBRUBEBB;ING België
+BE;936;BBRUBEBB;ING België
+BE;939;BBRUBEBB;ING België
+BE;940;CLIQBEB1;Banque Centrale de Compensation (Clearnet)
+BE;941;DEGRBEBB;Banque Degroof Petercam Luxembourg
+BE;942;PUILBEBB;Puilaetco Branch of Quintet Private Bank SA
+BE;945;JPMGBEBB;J.P. Morgan SE – Brussels Branch
+BE;948;HOMNBEB2;Mastercard Transaction Services (Europe) NV/SA
+BE;949;HSBCBEBB;HSBC Continental Europe Belgium
+BE;950;CTBKBEBX;Beobank
+BE;951;CTBKBEBX;Beobank
+BE;952;CTBKBEBX;Beobank
+BE;953;CTBKBEBX;Beobank
+BE;954;CTBKBEBX;Beobank
+BE;955;CTBKBEBX;Beobank
+BE;956;CTBKBEBX;Beobank
+BE;957;CTBKBEBX;Beobank
+BE;958;CTBKBEBX;Beobank
+BE;959;CTBKBEBX;Beobank
+BE;960;ABNABE2AIPC;ABN AMRO Bank N.V.
+BE;961;BBRUBEBB;ING België
+BE;963;AXABBE22;Crelan
+BE;964;FPEBBEB2;FINANCIERE DES PAIEMENTS ELECTRONIQUES SAS - NICKEL BELGIUM
+BE;967;TRWIBEB1;Wise Europe SA
+BE;968;ENIBBEBB;
+BE;969;PUILBEBB;Puilaetco Branch of Quintet Private Bank SA
+BE;971;BBRUBEBB;ING België
+BE;973;ARSPBE22;Argenta Spaarbank (ASPA)
+BE;974;PESOBEB1;PPS EU SA
+BE;975;AXABBE22;Crelan
+BE;976;BBRUBEBB;ING België
+BE;977;PAYVBEB2;Paynovate
+BE;978;ARSPBE22;Argenta Spaarbank (ASPA)
+BE;979;ARSPBE22;Argenta Spaarbank (ASPA)
+BE;980;ARSPBE22;Argenta Spaarbank (ASPA)

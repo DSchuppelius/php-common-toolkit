@@ -35,6 +35,9 @@ class BankHelper {
     /** @var array<string, string>|null Cache für BIC-Index (BIC8 => Zeile) */
     private static ?array $bicIndex = null;
 
+    /** @var array<string, string>|null "<Land>;<Bankcode>" → BIC (AT/CH/BE) */
+    private static ?array $nationalBankCodeIndex = null;
+
     /**
      * Override für den Netzschalter.
      *
@@ -480,8 +483,67 @@ class BankHelper {
         return match (substr($iban, 0, 2)) {
             'DE' => self::bicFromBLZ(substr($iban, 4, 8)),
             'NL' => self::bicFromNlBankCode(substr($iban, 4, 4)),
+            'AT' => self::bicFromNationalBankCode('AT', substr($iban, 4, 5)),
+            'CH' => self::bicFromNationalBankCode('CH', substr($iban, 4, 5)),
+            'BE' => self::bicFromNationalBankCode('BE', substr($iban, 4, 3)),
             default => null,
         };
+    }
+
+    /**
+     * Bankcode → BIC für Länder, deren IBAN einen numerischen Bankcode führt.
+     *
+     * Anders als in den Niederlanden (Bankcode = die ersten vier Zeichen des BIC)
+     * lässt sich der BIC in AT, CH und BE nicht aus der IBAN ableiten – er steht
+     * nur in der Liste der zuständigen Stelle (OeNB, SIX Interbank Clearing, NBB).
+     * Die Zusammenstellung liegt in data/iban-bankcode-bic.csv; fehlt sie, liefert
+     * die Methode wie bisher null.
+     *
+     * Führende Nullen entfallen: die IBAN führt den Code auf feste Breite
+     * aufgefüllt ("CH93 0076 2…" → IID 762), die Quellen ohne Auffüllung.
+     */
+    private static function bicFromNationalBankCode(string $country, string $bankCode): ?string {
+        $bankCode = ltrim(trim($bankCode), '0');
+        if ($bankCode === '' || preg_match('/^\d+$/', $bankCode) !== 1) {
+            return null;
+        }
+        $index = self::getNationalBankCodeIndex();
+
+        return $index[$country . ';' . $bankCode] ?? null;
+    }
+
+    /**
+     * @return array<string, string> "<Land>;<Bankcode>" → BIC
+     */
+    private static function getNationalBankCodeIndex(): array {
+        if (self::$nationalBankCodeIndex !== null) {
+            return self::$nationalBankCodeIndex;
+        }
+        self::$nationalBankCodeIndex = [];
+        $file = __DIR__ . '/../../../data/iban-bankcode-bic.csv';
+        if (!is_readable($file)) {
+            return self::$nationalBankCodeIndex;
+        }
+        $handle = fopen($file, 'r');
+        if ($handle === false) {
+            return self::$nationalBankCodeIndex;
+        }
+        while (($line = fgets($handle)) !== false) {
+            if ($line === '' || $line[0] === '#') {
+                continue;
+            }
+            $fields = explode(';', trim($line));
+            if (count($fields) < 3 || $fields[2] === '') {
+                continue;
+            }
+            $key = $fields[0] . ';' . ltrim($fields[1], '0');
+            if (!isset(self::$nationalBankCodeIndex[$key])) {
+                self::$nationalBankCodeIndex[$key] = $fields[2];
+            }
+        }
+        fclose($handle);
+
+        return self::$nationalBankCodeIndex;
     }
 
     /**

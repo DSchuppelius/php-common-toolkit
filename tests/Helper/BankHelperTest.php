@@ -328,4 +328,24 @@ class BankHelperTest extends BaseTestCase {
         $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('ABCD1234567890123 DE89370400440532013000'));
         $this->assertNull(BankHelper::extractIBAN(null));
     }
+
+    public function test_bic_from_iban_for_countries_with_numeric_bank_code(): void {
+        // AT, CH und BE führen einen numerischen Bankcode in der IBAN; der BIC steckt
+        // — anders als in den Niederlanden — nicht darin, sondern nur in der Liste der
+        // jeweiligen Stelle (OeNB, SIX Interbank Clearing, NBB).
+        self::assertSame('TRWIBEB1', BankHelper::bicFromIBAN('BE16967023680187'), 'BE: Bankcode = Stellen 5-7');
+        self::assertSame('KBBECH22XXX', BankHelper::bicFromIBAN('CH1630790016245148291'), 'CH: IID = Stellen 5-9');
+        self::assertSame('RLNWATWWXXX', BankHelper::bicFromIBAN('AT483200000012345864'), 'AT: BLZ = Stellen 5-9');
+    }
+
+    public function test_bic_from_iban_strips_leading_zeros_of_bank_code(): void {
+        // Die IBAN füllt den Bankcode auf feste Breite auf ("CH32 3000 0…" → IID 30000),
+        // die Quellen führen ihn ohne Auffüllung.
+        self::assertSame('POFICHBEXXX', BankHelper::bicFromIBAN('CH3230000001876930777'));
+    }
+
+    public function test_bic_from_iban_returns_null_for_country_without_table(): void {
+        // Für Luxemburg gibt es keine offen abrufbare Zuordnung — dann bleibt es bei null.
+        self::assertNull(BankHelper::bicFromIBAN('LU280019400644750000'));
+    }
 }
