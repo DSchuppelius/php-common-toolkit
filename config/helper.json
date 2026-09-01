@@ -21,6 +21,28 @@
 			"enabled": true
 		}
 	],
+	"SixBankmaster": [
+		{
+			"key": "resourceurl",
+			"value": "https://api.six-group.com/api/epcd/bankmaster/v3/bankmaster_V3.csv",
+			"type": "text",
+			"description": "URL to the SIX Interbank Clearing bank master (CH: IID to BIC). Not shipped with the package: SIX prohibits redistribution.",
+			"enabled": true
+		},
+		{
+			"key": "file",
+			"value": "data/bankmaster_V3.csv",
+			"type": "text",
+			"description": "Path to the local SIX bank master file",
+			"enabled": true
+		},
+		{
+			"key": "expiry_days",
+			"value": 90,
+			"type": "int",
+			"enabled": true
+		}
+	],
 	"Zahlungsdienstleister": [
 		{
 			"key": "resourceurl",

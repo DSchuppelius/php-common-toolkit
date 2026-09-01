@@ -497,8 +497,9 @@ class BankHelper {
      * Anders als in den Niederlanden (Bankcode = die ersten vier Zeichen des BIC)
      * lässt sich der BIC in AT, CH, BE und LU nicht aus der IBAN ableiten – er steht
      * nur in der Liste der zuständigen Stelle (OeNB, SIX Interbank Clearing, NBB, ABBL).
-     * Die Zusammenstellung liegt in data/iban-bankcode-bic.csv; fehlt sie, liefert
-     * die Methode wie bisher null.
+     * Die Zusammenstellung liegt in data/iban-bankcode-bic.csv (AT/BE) und – sofern
+     * per bin/update-bankcodes.php geholt – in data/iban-bankcode-bic.local.csv
+     * (CH/LU); fehlt eine Datei, liefert die Methode für dieses Land null.
      *
      * Führende Nullen entfallen: die IBAN führt den Code auf feste Breite
      * aufgefüllt ("CH93 0076 2…" → IID 762), die Quellen ohne Auffüllung.
@@ -521,28 +522,48 @@ class BankHelper {
             return self::$nationalBankCodeIndex;
         }
         self::$nationalBankCodeIndex = [];
-        $file = __DIR__ . '/../../../data/iban-bankcode-bic.csv';
-        if (!is_readable($file)) {
-            return self::$nationalBankCodeIndex;
-        }
-        $handle = fopen($file, 'r');
-        if ($handle === false) {
-            return self::$nationalBankCodeIndex;
-        }
-        while (($line = fgets($handle)) !== false) {
-            if ($line === '' || $line[0] === '#') {
+        // Zwei Dateien: die mitgelieferte (AT/BE — Quellen erlauben die Weitergabe) und
+        // die lokal erzeugte (CH/LU — SIX und ABBL untersagen sie, deshalb holt
+        // bin/update-bankcodes.php sie beim Anwender). Fehlt eine, greift nur die andere.
+        foreach (['iban-bankcode-bic.csv', 'iban-bankcode-bic.local.csv'] as $name) {
+            $file = __DIR__ . '/../../../data/' . $name;
+            if (!is_readable($file)) {
                 continue;
             }
-            $fields = explode(';', trim($line));
-            if (count($fields) < 3 || $fields[2] === '') {
+            $handle = fopen($file, 'r');
+            if ($handle === false) {
                 continue;
             }
-            $key = $fields[0] . ';' . ltrim($fields[1], '0');
-            if (!isset(self::$nationalBankCodeIndex[$key])) {
-                self::$nationalBankCodeIndex[$key] = $fields[2];
+            while (($line = fgets($handle)) !== false) {
+                if ($line === '' || $line[0] === '#') {
+                    continue;
+                }
+                $fields = explode(';', trim($line));
+                if (count($fields) < 3 || $fields[2] === '') {
+                    continue;
+                }
+                $key = $fields[0] . ';' . ltrim($fields[1], '0');
+                if (!isset(self::$nationalBankCodeIndex[$key])) {
+                    self::$nationalBankCodeIndex[$key] = $fields[2];
+                }
             }
+            fclose($handle);
         }
-        fclose($handle);
+
+        // CH kommt aus dem SIX-Bankenstamm, der zur Laufzeit geholt wird (Spalte 1 =
+        // IID, 9 = Name, 15 = BIC). Bereits geladene Einträge behalten Vorrang.
+        foreach (self::loadSixBankmasterData() as $zeile) {
+            $fields = str_getcsv(rtrim($zeile), ';', '"', '');
+            $iid = ltrim(trim((string) ($fields[0] ?? '')), '0');
+            $bic = strtoupper(trim((string) ($fields[14] ?? '')));
+            if ($iid === '' || preg_match('/^\d+$/', $iid) !== 1) {
+                continue;
+            }
+            if (preg_match('/^[A-Z]{6}[A-Z0-9]{2,5}$/', $bic) !== 1) {
+                continue;
+            }
+            self::$nationalBankCodeIndex['CH;' . $iid] ??= $bic;
+        }
 
         return self::$nationalBankCodeIndex;
     }
@@ -1237,6 +1258,27 @@ class BankHelper {
         $path = $configLoader->get('Zahlungsdienstleister', 'file', 'data/verzeichnis-der-erreichbaren-zahlungsdienstleister-data.csv');
         $url = $configLoader->get('Zahlungsdienstleister', 'resourceurl', '');
         $expiry = $configLoader->get('Zahlungsdienstleister', 'expiry_days', 365);
+
+        return self::loadDataFile($path, $url, $expiry, self::isNetworkEnabled());
+    }
+
+    /**
+     * Lädt den Bankenstamm von SIX Interbank Clearing (CH: IID → BIC).
+     *
+     * Anders als die Bundesbank-Dateien liegt diese NICHT bei — SIX untersagt die
+     * Weitergabe ("may not be reproduced or reused in any way"). Sie wird beim
+     * Anwender geholt und dort zwischengespeichert, wie jede andere Quelle über
+     * {@see loadDataFile()}; ohne Netz bleibt es bei null statt einer Schätzung.
+     *
+     * @return string[]
+     */
+    private static function loadSixBankmasterData(): array {
+        $configLoader = ConfigLoader::getInstance(self::$logger);
+        $configLoader->loadConfigFile(__DIR__ . '/../../../config/helper.json');
+
+        $path = $configLoader->get('SixBankmaster', 'file', 'data/bankmaster_V3.csv');
+        $url = $configLoader->get('SixBankmaster', 'resourceurl', '');
+        $expiry = $configLoader->get('SixBankmaster', 'expiry_days', 90);
 
         return self::loadDataFile($path, $url, $expiry, self::isNetworkEnabled());
     }

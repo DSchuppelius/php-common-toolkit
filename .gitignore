@@ -419,3 +419,15 @@ phpunit.xml
 
 # PHPStan
 /var/phpstan
+
+# Quellen, deren Bedingungen die Weitergabe NICHT erlauben — anders als bei der
+# Bundesbank werden diese Dateien nur zur Laufzeit geholt, nie ausgeliefert:
+#   SIX Interbank Clearing (CH): "may not be reproduced or reused in any way"
+#   ABBL (LU): nur unverändert nutzbar
+data/bankmaster_V3.csv
+data/iban-bankcode-bic.local.csv
+
+# Ausnahme zum [Bb]in/-Muster der Visual-Studio-Vorlage weiter oben: dieses
+# Werkzeug gehört zum Paket und muss versioniert werden.
+!/bin/
+!/bin/update-bankcodes.php

@@ -329,22 +329,44 @@ class BankHelperTest extends BaseTestCase {
         $this->assertNull(BankHelper::extractIBAN(null));
     }
 
+    /** CH: der SIX-Bankenstamm wird zur Laufzeit geholt (nicht ausgeliefert). */
+    private static function hatSchweizerBankenstamm(): bool {
+        return is_readable(__DIR__ . '/../../data/bankmaster_V3.csv');
+    }
+
+    /** LU: das ABBL-Register ist nicht offen abrufbar, die Tabelle wird lokal erzeugt. */
+    private static function hatLuxemburgerTabelle(): bool {
+        return is_readable(__DIR__ . '/../../data/iban-bankcode-bic.local.csv');
+    }
+
     public function test_bic_from_iban_for_countries_with_numeric_bank_code(): void {
-        // AT, CH und BE führen einen numerischen Bankcode in der IBAN; der BIC steckt
+        // AT und BE führen einen numerischen Bankcode in der IBAN; der BIC steckt
         // — anders als in den Niederlanden — nicht darin, sondern nur in der Liste der
-        // jeweiligen Stelle (OeNB, SIX Interbank Clearing, NBB, ABBL).
+        // jeweiligen Stelle (OeNB, NBB). Beide liegen bei.
         self::assertSame('TRWIBEB1', BankHelper::bicFromIBAN('BE16967023680187'), 'BE: Bankcode = Stellen 5-7');
-        self::assertSame('KBBECH22XXX', BankHelper::bicFromIBAN('CH1630790016245148291'), 'CH: IID = Stellen 5-9');
         self::assertSame('RLNWATWWXXX', BankHelper::bicFromIBAN('AT483200000012345864'), 'AT: BLZ = Stellen 5-9');
     }
 
+    public function test_bic_from_iban_for_switzerland(): void {
+        if (!self::hatSchweizerBankenstamm()) {
+            self::markTestSkipped('SIX-Bankenstamm fehlt (kein Netzabruf möglich).');
+        }
+        self::assertSame('KBBECH22XXX', BankHelper::bicFromIBAN('CH1630790016245148291'), 'CH: IID = Stellen 5-9');
+    }
+
     public function test_bic_from_iban_strips_leading_zeros_of_bank_code(): void {
+        if (!self::hatSchweizerBankenstamm()) {
+            self::markTestSkipped('SIX-Bankenstamm fehlt (kein Netzabruf möglich).');
+        }
         // Die IBAN füllt den Bankcode auf feste Breite auf ("CH32 3000 0…" → IID 30000),
         // die Quellen führen ihn ohne Auffüllung.
         self::assertSame('POFICHBEXXX', BankHelper::bicFromIBAN('CH3230000001876930777'));
     }
 
     public function test_bic_from_iban_for_luxembourg(): void {
+        if (!self::hatLuxemburgerTabelle()) {
+            self::markTestSkipped('LU-Tabelle fehlt — bin/update-bankcodes.php --lu=<ABBL-Register.xlsx>.');
+        }
         // LU: dreistelliger Bankcode, Zuordnung aus dem ABBL-Register.
         self::assertSame('BCEELULL', BankHelper::bicFromIBAN('LU280019400644750000'));
     }
