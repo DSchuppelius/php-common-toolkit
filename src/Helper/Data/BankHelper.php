@@ -486,6 +486,7 @@ class BankHelper {
             'AT' => self::bicFromNationalBankCode('AT', substr($iban, 4, 5)),
             'CH' => self::bicFromNationalBankCode('CH', substr($iban, 4, 5)),
             'BE' => self::bicFromNationalBankCode('BE', substr($iban, 4, 3)),
+            'LU' => self::bicFromNationalBankCode('LU', substr($iban, 4, 3)),
             default => null,
         };
     }
@@ -494,8 +495,8 @@ class BankHelper {
      * Bankcode → BIC für Länder, deren IBAN einen numerischen Bankcode führt.
      *
      * Anders als in den Niederlanden (Bankcode = die ersten vier Zeichen des BIC)
-     * lässt sich der BIC in AT, CH und BE nicht aus der IBAN ableiten – er steht
-     * nur in der Liste der zuständigen Stelle (OeNB, SIX Interbank Clearing, NBB).
+     * lässt sich der BIC in AT, CH, BE und LU nicht aus der IBAN ableiten – er steht
+     * nur in der Liste der zuständigen Stelle (OeNB, SIX Interbank Clearing, NBB, ABBL).
      * Die Zusammenstellung liegt in data/iban-bankcode-bic.csv; fehlt sie, liefert
      * die Methode wie bisher null.
      *
