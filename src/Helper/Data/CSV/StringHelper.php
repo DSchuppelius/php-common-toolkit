@@ -427,7 +427,17 @@ final class StringHelper extends BaseStringHelper {
                     $quoteRun = 1;
                     continue;
                 }
-                if ($inQuotes && ($next === $delimiter || $next === '' || $next === "\r" || $next === "\n")) {
+                // Ein Zeilenumbruch schließt das Feld nur, wenn danach nichts
+                // Substanzielles mehr folgt: Übergeben wird EIN Datensatz, und
+                // ein Umbruch mitten darin gehört zum Feldinhalt (mehrzeilige
+                // Adressfelder). Ohne diese Unterscheidung endet das Feld schon
+                // am ersten inneren Umbruch — bei '"""ROOM 02, 21/F,""\n12345"'
+                // gilt der Rest dann als unquotiert und die Zeile als ungültig.
+                $closesField = $next === $delimiter
+                    || $next === ''
+                    || (($next === "\r" || $next === "\n") && trim(substr($line, $i + 1)) === '');
+
+                if ($inQuotes && $closesField) {
                     $inQuotes = false;
                     $quoteRun = 0;
                     continue;
