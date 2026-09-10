@@ -41,6 +41,9 @@ use Throwable;
  * @see \CommonToolkit\Helper\Data\CSV\StringHelper Für String-Operationen
  */
 class CSVDocumentParser extends HelperAbstract {
+    /** Anzahl der Zeilennummern, die die Inkonsistenz-Exception maximal nennt. */
+    public const MAX_REPORTED_DEVIATIONS = 5;
+
     /**
      * Erkennt automatisch das Trennzeichen einer CSV-Datei.
      * Delegiert an CsvFile::detectDelimiter().
@@ -62,6 +65,10 @@ class CSVDocumentParser extends HelperAbstract {
      * @param string $enclosure CSV-Textbegrenzer
      * @param bool $hasHeader Ob ein Header vorhanden ist
      * @param string|null $encoding Das Quell-Encoding. Wenn null, wird UTF-8 angenommen.
+     * @param bool $strict Bei true (Standard) führt eine abweichende Feldzahl zu einer RuntimeException,
+     *                     die die ersten Zeilennummern nennt. Bei false werden zu kurze Zeilen mit leeren
+     *                     Feldern aufgefüllt und zu lange abgeschnitten; die betroffenen Zeilen liefert
+     *                     {@see Document::inconsistentRows()}.
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Parsing-Fehlern
      */
@@ -70,7 +77,8 @@ class CSVDocumentParser extends HelperAbstract {
         string $delimiter = LineInterface::DEFAULT_DELIMITER,
         string $enclosure = FieldInterface::DEFAULT_ENCLOSURE,
         bool $hasHeader = true,
-        ?string $encoding = null
+        ?string $encoding = null,
+        bool $strict = true
     ): Document {
         $csv = trim($csv);
         if ($csv === '') {
@@ -89,13 +97,17 @@ class CSVDocumentParser extends HelperAbstract {
         }
 
         $builder = new CSVDocumentBuilder($delimiter, $enclosure, null, $sourceEncoding);
+        $expectedFields = null;
+        $deviations = [];
 
         try {
             $lineNumber = 0;
             if ($hasHeader) {
                 $headerLine = array_shift($lines);
                 $lineNumber++;
-                $builder->setHeader(self::parseHeaderLine($headerLine, $delimiter, $enclosure, $lineNumber));
+                $header = self::parseHeaderLine($headerLine, $delimiter, $enclosure, $lineNumber);
+                $builder->setHeader($header);
+                $expectedFields = $header->countFields();
             }
 
             foreach ($lines as $line) {
@@ -103,17 +115,15 @@ class CSVDocumentParser extends HelperAbstract {
                 if (trim($line) === '') {
                     continue;
                 }
-                $builder->addRow(self::parseDataLine($line, $delimiter, $enclosure, $lineNumber));
+                $row = self::parseDataLine($line, $delimiter, $enclosure, $lineNumber);
+                $expectedFields ??= $row->countFields();
+                $builder->addRow(self::alignRow($row, $expectedFields, $lineNumber, $strict, $deviations));
             }
         } catch (Throwable $e) {
             static::logErrorAndThrow(RuntimeException::class, "Fehler beim Parsen der CSV: " . $e->getMessage());
         }
 
-        $result = $builder->build();
-        if (!$result->isConsistent()) {
-            static::logErrorAndThrow(RuntimeException::class, 'Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
-        }
-        return $result;
+        return self::finishDocument($builder, $expectedFields, $deviations, $strict);
     }
 
     /**
@@ -129,6 +139,10 @@ class CSVDocumentParser extends HelperAbstract {
      * @param bool $skipEmpty Leere Zeilen überspringen
      * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
      * @param string|null $sourceEncoding Explizites Quell-Encoding (z.B. 'CP850', 'CP437')
+     * @param bool $strict Bei true (Standard) führt eine abweichende Feldzahl zu einer RuntimeException,
+     *                     die die ersten Zeilennummern nennt. Bei false werden zu kurze Zeilen mit leeren
+     *                     Feldern aufgefüllt und zu lange abgeschnitten; die betroffenen Zeilen liefert
+     *                     {@see Document::inconsistentRows()}.
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
@@ -141,7 +155,8 @@ class CSVDocumentParser extends HelperAbstract {
         ?int $maxLines = null,
         bool $skipEmpty = false,
         bool $detectEncoding = true,
-        ?string $sourceEncoding = null
+        ?string $sourceEncoding = null,
+        bool $strict = true
     ): Document {
         if (!File::isReadable($file)) {
             static::logErrorAndThrow(RuntimeException::class, "CSV-Datei nicht lesbar: $file");
@@ -152,17 +167,23 @@ class CSVDocumentParser extends HelperAbstract {
 
         $headerParsed = !$hasHeader;
         $rowCount = 0;
+        $expectedFields = null;
+        $deviations = [];
 
         foreach (self::resolveLogicalLines($linesGenerator, $enclosure, $startLine - 1) as $lineNumber => $logicalLine) {
             // Header parsen
             if (!$headerParsed) {
-                $builder->setHeader(self::parseHeaderLine($logicalLine, $delimiter, $enclosure, $lineNumber));
+                $header = self::parseHeaderLine($logicalLine, $delimiter, $enclosure, $lineNumber);
+                $builder->setHeader($header);
+                $expectedFields = $header->countFields();
                 $headerParsed = true;
                 continue;
             }
 
             // Datenzeile parsen
-            $builder->addRow(self::parseDataLine($logicalLine, $delimiter, $enclosure, $lineNumber));
+            $row = self::parseDataLine($logicalLine, $delimiter, $enclosure, $lineNumber);
+            $expectedFields ??= $row->countFields();
+            $builder->addRow(self::alignRow($row, $expectedFields, $lineNumber, $strict, $deviations));
             $rowCount++;
 
             if ($maxLines !== null && $rowCount >= $maxLines) {
@@ -170,14 +191,10 @@ class CSVDocumentParser extends HelperAbstract {
             }
         }
 
-        $result = $builder->build();
+        $result = self::finishDocument($builder, $expectedFields, $deviations, $strict);
 
         if ($result->countRows() === 0 && !$result->hasHeader()) {
             static::logErrorAndThrow(RuntimeException::class, "Keine Zeilen in CSV-Datei gefunden: $file");
-        }
-
-        if (!$result->isConsistent()) {
-            static::logErrorAndThrow(RuntimeException::class, 'Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen');
         }
 
         static::logDebug("CSV-Datei gelesen: $file ($rowCount Zeilen)");
@@ -195,6 +212,10 @@ class CSVDocumentParser extends HelperAbstract {
      * @param bool $includeHeader Ob Header-Zeile aus Zeile 1 mit einbezogen werden soll
      * @param bool $detectEncoding Automatische Encoding-Erkennung aktivieren
      * @param string|null $sourceEncoding Explizites Quell-Encoding
+     * @param bool $strict Bei true (Standard) führt eine abweichende Feldzahl zu einer RuntimeException,
+     *                     die die ersten Zeilennummern nennt. Bei false werden zu kurze Zeilen mit leeren
+     *                     Feldern aufgefüllt und zu lange abgeschnitten; die betroffenen Zeilen liefert
+     *                     {@see Document::inconsistentRows()}.
      * @return Document Das geparste CSV-Dokument
      * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
      */
@@ -206,7 +227,8 @@ class CSVDocumentParser extends HelperAbstract {
         string $enclosure = FieldInterface::DEFAULT_ENCLOSURE,
         bool $includeHeader = true,
         bool $detectEncoding = true,
-        ?string $sourceEncoding = null
+        ?string $sourceEncoding = null,
+        bool $strict = true
     ): Document {
         if ($fromLine > $toLine) {
             static::logErrorAndThrow(RuntimeException::class, "Startzeile ($fromLine) darf nicht größer als Endzeile ($toLine) sein");
@@ -217,12 +239,16 @@ class CSVDocumentParser extends HelperAbstract {
         }
 
         $builder = new CSVDocumentBuilder($delimiter, $enclosure);
+        $expectedFields = null;
+        $deviations = [];
 
         // Header aus Zeile 1 lesen wenn gewünscht und Startzeile > 1
         if ($includeHeader && $fromLine > 1) {
             $headerGen = self::createLinesGenerator($file, false, 1, $detectEncoding, $sourceEncoding);
             foreach ($headerGen as $headerLine) {
-                $builder->setHeader(self::parseHeaderLine($headerLine, $delimiter, $enclosure, 1));
+                $header = self::parseHeaderLine($headerLine, $delimiter, $enclosure, 1);
+                $builder->setHeader($header);
+                $expectedFields = $header->countFields();
                 break; // Nur erste Zeile
             }
         }
@@ -240,12 +266,16 @@ class CSVDocumentParser extends HelperAbstract {
             }
 
             if (!$headerParsed) {
-                $builder->setHeader(self::parseHeaderLine($logicalLine, $delimiter, $enclosure, $lineNumber));
+                $header = self::parseHeaderLine($logicalLine, $delimiter, $enclosure, $lineNumber);
+                $builder->setHeader($header);
+                $expectedFields = $header->countFields();
                 $headerParsed = true;
                 continue;
             }
 
-            $builder->addRow(self::parseDataLine($logicalLine, $delimiter, $enclosure, $lineNumber));
+            $row = self::parseDataLine($logicalLine, $delimiter, $enclosure, $lineNumber);
+            $expectedFields ??= $row->countFields();
+            $builder->addRow(self::alignRow($row, $expectedFields, $lineNumber, $strict, $deviations));
             $rowCount++;
 
             if ($rowCount >= $maxRows) {
@@ -253,7 +283,7 @@ class CSVDocumentParser extends HelperAbstract {
             }
         }
 
-        $result = $builder->build();
+        $result = self::finishDocument($builder, $expectedFields, $deviations, $strict);
 
         if ($result->countRows() === 0 && !$result->hasHeader()) {
             static::logErrorAndThrow(RuntimeException::class, "Keine Zeilen im angegebenen Bereich gefunden: $file (Zeilen $fromLine-$toLine)");
@@ -570,6 +600,71 @@ class CSVDocumentParser extends HelperAbstract {
             $preview = self::getLinePreview($line);
             static::logErrorAndThrow(RuntimeException::class, "Fehler beim Parsen der Zeile $lineNumber: $preview - " . $e->getMessage());
         }
+    }
+
+    /**
+     * Gleicht eine Datenzeile an die erwartete Feldzahl an bzw. protokolliert die Abweichung.
+     *
+     * Im strikten Modus wird die Zeile unverändert übernommen und nur die Abweichung
+     * vermerkt (die Exception folgt gesammelt in {@see finishDocument()}). Im toleranten
+     * Modus werden fehlende Felder leer aufgefüllt und überzählige abgeschnitten.
+     *
+     * @param DataLine $row Die geparste Zeile
+     * @param int $expected Erwartete Feldzahl (Header bzw. erste Datenzeile)
+     * @param int $lineNumber Quell-Zeilennummer (1-basiert, inkl. Header)
+     * @param bool $strict Strikter Modus (keine Reparatur)
+     * @param array<int, int> $deviations Sammelt Zeilennummer => gefundene Feldzahl (wird ergänzt)
+     * @return DataLine Die (ggf. angeglichene) Zeile
+     */
+    private static function alignRow(DataLine $row, int $expected, int $lineNumber, bool $strict, array &$deviations): DataLine {
+        $found = $row->countFields();
+        if ($found === $expected) {
+            return $row;
+        }
+
+        $deviations[$lineNumber] = $found;
+        if ($strict) {
+            return $row;
+        }
+
+        $fields = $row->getFields();
+        $fields = $found > $expected
+            ? array_slice($fields, 0, $expected)
+            : array_merge($fields, array_fill(0, $expected - $found, ''));
+
+        return new DataLine($fields, $row->getDelimiter(), $row->getEnclosure());
+    }
+
+    /**
+     * Baut das Dokument und wertet die gesammelten Feldzahl-Abweichungen aus:
+     * strikt → RuntimeException mit den ersten Zeilennummern, tolerant → Zeilen im Dokument vermerken.
+     *
+     * @param array<int, int> $deviations Zeilennummer => gefundene Feldzahl
+     * @throws RuntimeException Im strikten Modus bei Abweichungen
+     */
+    private static function finishDocument(CSVDocumentBuilder $builder, ?int $expectedFields, array $deviations, bool $strict): Document {
+        if ($deviations !== [] && $strict) {
+            $parts = [];
+            foreach (array_slice($deviations, 0, self::MAX_REPORTED_DEVIATIONS, true) as $lineNumber => $found) {
+                $parts[] = "Zeile $lineNumber: $found";
+            }
+            $more = count($deviations) - count($parts);
+            $suffix = $more > 0 ? " … und $more weitere" : '';
+
+            static::logErrorAndThrow(RuntimeException::class, sprintf(
+                'Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen (erwartet: %d Felder; gefunden: %s%s)',
+                $expectedFields ?? 0,
+                implode(', ', $parts),
+                $suffix
+            ));
+        }
+
+        $result = $builder->build();
+        if ($deviations !== []) {
+            $result->markRepairedRows($deviations);
+        }
+
+        return $result;
     }
 
     /**

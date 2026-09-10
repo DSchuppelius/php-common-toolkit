@@ -188,6 +188,38 @@ class DateHelperTest extends BaseTestCase {
         $this->assertNull($result);
     }
 
+    /**
+     * Tag/Monat ohne Nullfüllung: Round-Trip bleibt exakt (auch gemischt gefüllt),
+     * die Länderlogik (Germany → Tag zuerst, USA → Monat zuerst) bleibt erhalten,
+     * und ungültige Kalendertage fallen weiterhin durch.
+     */
+    public function test_parse_date_time_accepts_single_digit_day_and_month(): void {
+        $this->assertSame('2026-02-03', DateHelper::parseDateTime('3.2.2026')?->format('Y-m-d'));
+        $this->assertSame('2026-02-03', DateHelper::parseDateTime('03.2.2026')?->format('Y-m-d'));
+        $this->assertSame('2026-02-03', DateHelper::parseDateTime('3.02.2026')?->format('Y-m-d'));
+        $this->assertSame('2026-02-03', DateHelper::parseDateTime('3/2/2026', CountryCode::Germany)?->format('Y-m-d'));
+        $this->assertSame('2026-02-03', DateHelper::parseDateTime('2/3/2026', CountryCode::UnitedStatesOfAmerica)?->format('Y-m-d'));
+        $this->assertSame('2026-02-03', DateHelper::parseDateTime('3.2.26')?->format('Y-m-d'));
+        $this->assertSame('2026-02-03 09:05:07', DateHelper::parseDateTime('3.2.2026 09:05:07')?->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-02-03', DateHelper::parseDateTime('2026-2-3')?->format('Y-m-d'));
+
+        // Erkanntes Format reproduziert den Wert exakt (CSV-Originalformat-Rückformatierung)
+        $this->assertSame('j.n.Y', DateHelper::detectDateTimeFormat('3.2.2026'));
+        $this->assertSame('d.n.Y', DateHelper::detectDateTimeFormat('03.2.2026'));
+        $this->assertSame('j/n/Y', DateHelper::detectDateTimeFormat('3/2/2026', CountryCode::Germany));
+        $this->assertSame('n/j/Y', DateHelper::detectDateTimeFormat('2/3/2026', CountryCode::UnitedStatesOfAmerica));
+        $this->assertSame('d.m.Y', DateHelper::detectDateTimeFormat('03.02.2026'), 'Nullgefüllt bleibt beim bisherigen Format');
+        $this->assertTrue(DateHelper::isDateTime('3.2.2026'));
+
+        // Ungültige Kalendertage bleiben null (kein Überlauf zum 3. März), Zeitteil ohne Nullfüllung nicht unterstützt
+        $this->assertNull(DateHelper::parseDateTime('31.02.2026'));
+        $this->assertNull(DateHelper::parseDateTime('31.2.2026'));
+        $this->assertNull(DateHelper::detectDateTimeFormat('3.2.2026 9:05:07'));
+        foreach (['07.03.2', '1.234,56', '1.2.3', '12.345', '3.2', '1.2.3456.7'] as $value) {
+            $this->assertNull(DateHelper::parseDateTime($value), "'$value' ist kein Datum");
+        }
+    }
+
     public function test_parse_date_time_with_country_code(): void {
         // Deutschland: dd/mm/yyyy
         $result = DateHelper::parseDateTime('22/12/2024', CountryCode::Germany);

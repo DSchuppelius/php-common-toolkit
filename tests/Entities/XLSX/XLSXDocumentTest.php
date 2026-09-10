@@ -21,6 +21,8 @@ use DateTimeInterface;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
+use InvalidArgumentException;
+use RuntimeException;
 use Tests\Contracts\BaseTestCase;
 use ZipArchive;
 
@@ -105,6 +107,71 @@ class XLSXDocumentTest extends BaseTestCase {
 
         $names = $sheet->getColumnByName('Name');
         $this->assertEquals(['Alice', 'Bob'], $names);
+    }
+
+    /**
+     * Regression: getHeaderNames()/toStringArray() casteten mit (string) und stürzten
+     * über einer Datumszelle (DateTimeImmutable ist nicht string-castbar).
+     */
+    public function test_header_names_with_date_cell_in_first_row(): void {
+        $header = Row::fromArray(['Kunde', new DateTimeImmutable('2026-02-03'), new DateTimeImmutable('2026-02-03 07:30:15'), 45.67, true, null], 1);
+        $sheet = new Sheet('Zeiten', $header, [Row::fromArray(['A', 1, 2, 3, 4, 5], 2)], 0);
+
+        $this->assertSame(['Kunde', '2026-02-03', '2026-02-03 07:30:15', '45.67', '1', ''], $sheet->getHeaderNames());
+        $this->assertSame(['Kunde', '2026-02-03', '2026-02-03 07:30:15', '45.67', '1', ''], $header->toStringArray());
+        $this->assertSame(1, $sheet->getColumnIndex('2026-02-03'));
+        $this->assertSame([1], $sheet->getColumnByName('2026-02-03'));
+
+        // Floats bleiben beim bisherigen (string)-Cast, nur Datum wird gesondert behandelt
+        $this->assertSame((string) (1 / 3), (new Cell(1 / 3, 'n'))->getStringValue());
+        $this->assertSame('2026-02-03', (new Cell(new DateTimeImmutable('2026-02-03'), 'd'))->getStringValue());
+    }
+
+    public function test_parser_header_row_with_date_cell(): void {
+        // Zeile 1 enthält ein Datum (z.B. Monatsspalten "Kunde | 01.01.2026 | 01.02.2026")
+        $doc = (new XLSXDocumentBuilder)
+            ->sheet('Monate')
+            ->setHeaderRow(Row::fromArray(['Kunde', new DateTimeImmutable('2026-01-01'), new DateTimeImmutable('2026-02-01')], 1))
+            ->addRow(['Alpha', 10, 20])
+            ->build();
+
+        $path = $this->tempDir . '/date_header.xlsx';
+        XLSXGenerator::toFile($doc, $path);
+
+        $sheet = XLSXDocumentParser::fromFile($path, true)->getFirstSheet();
+        $this->assertNotNull($sheet);
+        $this->assertInstanceOf(DateTimeImmutable::class, $sheet->getHeader()?->getCell(1)?->getValue());
+        $this->assertSame(['Kunde', '2026-01-01', '2026-02-01'], $sheet->getHeaderNames());
+        $this->assertSame([20], $sheet->getColumnByName('2026-02-01'));
+    }
+
+    public function test_sheet_column_index_normalized_and_by_aliases(): void {
+        $header = Row::fromArray(["\u{FEFF}Kunde", ' Beginn ', "Ende\u{00A0}(Datum)", 'Dauer  in   Stunden'], 1);
+        $sheet = new Sheet('Zeiten', $header, [Row::fromArray(['A', '08:00', '17:00', 9], 2)], 0);
+
+        // Exakter Vergleich bleibt der Standard
+        $this->assertNull($sheet->getColumnIndex('Beginn'));
+        $this->assertSame(1, $sheet->getColumnIndex(' Beginn '));
+
+        // Toleranter Vergleich: Trim, Groß-/Kleinschreibung, BOM, Whitespace-Kollaps, NBSP
+        $this->assertSame(1, $sheet->getColumnIndex('Beginn', true));
+        $this->assertSame(1, $sheet->getColumnIndex('BEGINN', true));
+        $this->assertSame(0, $sheet->getColumnIndex('kunde', true));
+        $this->assertSame(2, $sheet->getColumnIndex('Ende (Datum)', true));
+        $this->assertSame(3, $sheet->getColumnIndex('dauer in stunden', true));
+        $this->assertNull($sheet->getColumnIndex('Beginn Ende', true));
+
+        // Alias-Liste: erster passender Alias gewinnt
+        $this->assertSame(1, $sheet->getColumnIndexByAliases(['Start', 'Beginn', 'Von']));
+        $this->assertSame(2, $sheet->getColumnIndexByAliases(['ende (datum)', 'Kunde']));
+        $this->assertNull($sheet->getColumnIndexByAliases(['Start', 'Von']));
+        $this->assertNull($sheet->getColumnIndexByAliases(['Beginn'], false));
+        $this->assertSame(1, $sheet->getColumnIndexByAliases([' Beginn '], false));
+
+        // Ohne Header: immer null
+        $noHeader = new Sheet('Leer', null, [], 0);
+        $this->assertNull($noHeader->getColumnIndex('Beginn', true));
+        $this->assertNull($noHeader->getColumnIndexByAliases(['Beginn']));
     }
 
     public function test_document_basics(): void {
@@ -200,6 +267,93 @@ class XLSXDocumentTest extends BaseTestCase {
         $row1 = $sheet->getRow(0);
         $this->assertNotNull($row1);
         $this->assertEquals('Wert1', $row1->getCell(0)?->getValue());
+    }
+
+    private function writeLimitFixture(): string {
+        $doc = (new XLSXDocumentBuilder)
+            ->sheet('Daten')
+            ->setHeader(['Kunde', 'Beginn', 'Ende'])
+            ->addRow(['Alpha', '2026-01-01', '2026-01-31'])
+            ->addRow(['Beta', '2026-02-01', '2026-02-28'])
+            ->build();
+
+        $path = $this->tempDir . '/limits.xlsx';
+        $this->assertTrue(XLSXGenerator::toFile($doc, $path));
+
+        return $path;
+    }
+
+    /** Summe der entpackten Größen aller Einträge laut Central Directory. */
+    private function uncompressedSize(string $path): int {
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($path));
+        $total = 0;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            $this->assertNotFalse($stat);
+            $total += (int) $stat['size'];
+        }
+        $zip->close();
+
+        return $total;
+    }
+
+    public function test_parser_respects_uncompressed_size_limit(): void {
+        $path = $this->writeLimitFixture();
+        $size = $this->uncompressedSize($path);
+        $this->assertGreaterThan(0, $size);
+
+        // (a) Unter der Grenze (Standard 256 MiB, explizit knapp darüber, und null = unbegrenzt) parst
+        $this->assertCount(2, XLSXDocumentParser::fromFile($path)->getFirstSheet() ?? []);
+        $this->assertCount(2, XLSXDocumentParser::fromFile($path, true, null, $size)->getFirstSheet() ?? []);
+        $this->assertCount(2, XLSXDocumentParser::fromFile($path, true, null, null)->getFirstSheet() ?? []);
+
+        // (b) Grenze unter der Fixture-Größe wirft – bevor irgendein Eintrag entpackt wird
+        try {
+            XLSXDocumentParser::fromFile($path, true, null, $size - 1);
+            $this->fail('RuntimeException erwartet');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('XLSX überschreitet die erlaubte entpackte Größe: ', $e->getMessage());
+            $this->assertStringContainsString(' > ' . ($size - 1) . ' Bytes', $e->getMessage());
+            $this->assertStringContainsString('limits.xlsx', $e->getMessage());
+            $this->assertStringNotContainsString($this->tempDir, $e->getMessage(), 'Kein Serverpfad in der Meldung');
+        }
+    }
+
+    public function test_parser_respects_max_rows(): void {
+        $path = $this->writeLimitFixture();
+
+        // (c) maxRows = 1 bei 2 Datenzeilen wirft (kein stilles Kürzen), maxRows = 2 passt genau
+        $this->assertCount(2, XLSXDocumentParser::fromFile($path, true, null, null, 2)->getFirstSheet() ?? []);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("XLSX-Blatt 'Daten' überschreitet die erlaubte Zeilenzahl: mehr als 1 Datenzeilen");
+        XLSXDocumentParser::fromFile($path, true, null, null, 1);
+    }
+
+    public function test_parser_max_rows_counts_header_row_without_header_mode(): void {
+        $path = $this->writeLimitFixture();
+
+        // Ohne Header-Modus zählt die Kopfzeile als Datenzeile: 3 Zeilen → Grenze 3 passt, 2 wirft
+        $this->assertCount(3, XLSXDocumentParser::fromFile($path, false, null, null, 3)->getFirstSheet() ?? []);
+
+        $this->expectException(RuntimeException::class);
+        XLSXDocumentParser::fromFile($path, false, null, null, 2);
+    }
+
+    public function test_parser_rejects_non_positive_limits(): void {
+        $path = $this->writeLimitFixture();
+
+        try {
+            XLSXDocumentParser::fromFile($path, true, null, 0);
+            $this->fail('InvalidArgumentException erwartet');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('maxUncompressedBytes muss > 0 sein', $e->getMessage());
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('maxRows muss > 0 sein');
+        XLSXDocumentParser::fromFile($path, true, null, null, -5);
     }
 
     /**

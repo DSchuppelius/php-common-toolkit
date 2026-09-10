@@ -13,6 +13,8 @@ declare(strict_types=1);
 namespace Tests\Entities\CSV;
 
 use CommonToolkit\Entities\CSV\DataField;
+use CommonToolkit\Enums\CountryCode;
+use DateTimeImmutable;
 use Tests\Contracts\BaseTestCase;
 
 class DataFieldTest extends BaseTestCase {
@@ -22,6 +24,20 @@ class DataFieldTest extends BaseTestCase {
         $this->assertSame('ABC', $field->getValue());
         $this->assertSame(1, $field->getEnclosureRepeat());
         $this->assertSame('"ABC"', $field->toString());
+    }
+
+    /** Ein Datum ohne Nullfüllung wird typisiert, bleibt beim Rückschreiben aber zeichengenau erhalten. */
+    public function test_single_digit_date_keeps_original_format(): void {
+        foreach (['3.2.2026', '03.2.2026', '3.02.2026'] as $raw) {
+            $field = new DataField($raw, '"', CountryCode::Germany);
+            $typed = $field->getTypedValue();
+            $this->assertInstanceOf(DateTimeImmutable::class, $typed, "$raw sollte als Datum erkannt werden");
+            $this->assertSame('2026-02-03', $typed->format('Y-m-d'));
+            $this->assertSame($raw, $field->getValue(), 'Originalformat bleibt beim Round-Trip erhalten');
+            $this->assertSame($raw, $field->toString());
+        }
+
+        $this->assertSame('31.02.2026', (new DataField('31.02.2026', '"', CountryCode::Germany))->getTypedValue());
     }
 
     public function test_unquoted_value(): void {

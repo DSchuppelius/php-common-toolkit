@@ -102,6 +102,22 @@ class DocumentTest extends BaseTestCase {
         $this->assertNull($doc->getColumnIndex('NonExistent'));
     }
 
+    public function test_get_column_index_normalized_and_by_aliases(): void {
+        $doc = $this->createTestDocument();
+
+        $this->assertNull($doc->getColumnIndex('email'));
+        $this->assertSame(1, $doc->getColumnIndex('email', true));
+        $this->assertSame(1, $doc->getColumnIndex(' EMAIL ', true));
+
+        $this->assertSame(2, $doc->getColumnIndexByAliases(['Alter', 'age']));
+        $this->assertNull($doc->getColumnIndexByAliases(['Alter']));
+
+        // Ohne Header: immer null
+        $noHeader = new Document(null, [DataLine::fromString('a,b', ',', '"')]);
+        $this->assertNull($noHeader->getColumnIndex('a', true));
+        $this->assertNull($noHeader->getColumnIndexByAliases(['a']));
+    }
+
     public function test_has_column(): void {
         $doc = $this->createTestDocument();
 
@@ -179,6 +195,49 @@ class DocumentTest extends BaseTestCase {
     // =========================================================================
     // getFirstRow / getLastRow Tests
     // =========================================================================
+
+    public function test_inconsistent_rows_with_header(): void {
+        $builder = new CSVDocumentBuilder;
+        $builder->setHeader(HeaderLine::fromString('A,B,C', ',', '"'));
+        $builder->addRow(DataLine::fromString('1,2,3', ',', '"'));
+        $builder->addRow(DataLine::fromString('1,2', ',', '"'));
+        $builder->addRow(DataLine::fromString('1,2,3,4', ',', '"'));
+        $doc = $builder->build();
+
+        $this->assertSame(3, $doc->expectedFieldCount());
+        $this->assertFalse($doc->isConsistent());
+        // Header = Zeile 1, erste Datenzeile = Zeile 2
+        $this->assertSame([3 => 2, 4 => 4], $doc->inconsistentRows());
+        $this->assertSame([], $doc->repairedRows());
+    }
+
+    public function test_inconsistent_rows_without_header_uses_first_row(): void {
+        $doc = new Document(null, [
+            DataLine::fromString('1,2', ',', '"'),
+            DataLine::fromString('1,2,3', ',', '"'),
+            DataLine::fromString('1,2', ',', '"'),
+        ]);
+
+        $this->assertSame(2, $doc->expectedFieldCount());
+        $this->assertSame([2 => 3], $doc->inconsistentRows());
+
+        $this->assertSame([], $this->createTestDocument()->inconsistentRows());
+        $this->assertNull((new Document)->expectedFieldCount());
+        $this->assertSame([], (new Document)->inconsistentRows());
+    }
+
+    public function test_mark_repaired_rows_is_kept_and_merged(): void {
+        $doc = $this->createTestDocument();
+        $doc->markRepairedRows([7 => 2]);
+        $doc->markRepairedRows([3 => 5]);
+
+        $this->assertTrue($doc->isConsistent(), 'Reparierte Zeilen sind konsistent');
+        $this->assertSame([3 => 5, 7 => 2], $doc->inconsistentRows());
+        $this->assertSame([7 => 2, 3 => 5], $doc->repairedRows());
+
+        // Abgeleitete Dokumente (Filter/Slice) behalten die Quell-Information
+        $this->assertSame([3 => 5, 7 => 2], $doc->sliceRows(0, 1)->inconsistentRows());
+    }
 
     public function test_get_first_row(): void {
         $doc = $this->createTestDocument();

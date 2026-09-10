@@ -16,7 +16,7 @@ use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\CSV\DataLine;
 use CommonToolkit\Helper\Data\CSV\StringHelper;
 use CommonToolkit\Helper\FileSystem\File;
-use Exception;
+use ERRORToolkit\Exceptions\FileSystem\{FileInvalidException, FileNotFoundException};
 use Generator;
 use Throwable;
 
@@ -103,6 +103,9 @@ class CsvFile extends HelperAbstract {
      *
      * @param string $file      Der Pfad zur CSV-Datei.
      * @param int $maxLines     Anzahl der zu prüfenden Zeilen (Standard: 10).
+     * @throws FileNotFoundException Wenn die Datei nicht existiert oder nicht lesbar ist.
+     * @throws FileInvalidException Wenn kein Trennzeichen erkennbar ist (leere oder einspaltige Datei);
+     *                              die Meldung nennt nur den Dateinamen, nicht den Serverpfad.
      */
     public static function detectDelimiter(string $file, int $maxLines = 10): string {
         $file = self::resolveFile($file);
@@ -121,7 +124,8 @@ class CsvFile extends HelperAbstract {
         );
 
         if ($detectedDelimiter === '') {
-            self::logErrorAndThrow(Exception::class, "Kein geeignetes Trennzeichen in der Datei $file gefunden.");
+            // Nur der Basename: die Meldung landet oft in UI/API-Antworten, der Serverpfad gehört dort nicht hin.
+            self::logErrorAndThrow(FileInvalidException::class, 'Kein geeignetes Trennzeichen in der Datei ' . basename($file) . ' gefunden (leer oder einspaltig).');
         }
 
         return $detectedDelimiter;

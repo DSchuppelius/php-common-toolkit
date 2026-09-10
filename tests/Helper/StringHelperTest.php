@@ -109,6 +109,22 @@ class StringHelperTest extends BaseTestCase {
         $this->assertSame("straße", $lower);
     }
 
+    public function test_normalize_column_name(): void {
+        $this->assertSame('beginn', StringHelper::normalizeColumnName(' Beginn '));
+        $this->assertSame('beginn', StringHelper::normalizeColumnName('BEGINN'));
+        $this->assertSame('beginn', StringHelper::normalizeColumnName(StringHelper::BOM_UTF8 . "\tBeginn\n"));
+        $this->assertSame('ende (datum)', StringHelper::normalizeColumnName("Ende\u{00A0}(Datum)"));
+        $this->assertSame('dauer in stunden', StringHelper::normalizeColumnName("Dauer  in \t stunden"));
+        $this->assertSame('strasse', StringHelper::normalizeColumnName('STRASSE'));
+        $this->assertSame('straße', StringHelper::normalizeColumnName('Straße'));
+        $this->assertSame('', StringHelper::normalizeColumnName(null));
+        $this->assertSame('', StringHelper::normalizeColumnName('   '));
+        // Ungültiges UTF-8 wird nicht verschluckt (kein leerer Schlüssel), sondern byteweise behandelt
+        $invalid = StringHelper::normalizeColumnName(" NA\xFFME ");
+        $this->assertStringStartsWith('na', $invalid);
+        $this->assertStringEndsWith('me', $invalid);
+    }
+
     public function test_strip_bom(): void {
         // UTF-8 BOM
         $bomUtf8 = StringHelper::BOM_UTF8 . "Hallo";

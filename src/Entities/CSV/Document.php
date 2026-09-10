@@ -41,6 +41,14 @@ class Document extends TextDocumentAbstract {
     protected bool $exportWithHeader = true;
 
     /**
+     * Vom Parser gemeldete Zeilen, die im toleranten Modus (strict=false) aufgefüllt
+     * oder gekürzt wurden: Quell-Zeilennummer (1-basiert, inkl. Header) => ursprüngliche Feldzahl.
+     *
+     * @var array<int, int>
+     */
+    protected array $repairedRows = [];
+
+    /**
      * @param DataLine[] $rows
      */
     public function __construct(?HeaderLine $header = null, array $rows = [], string $delimiter = ',', string $enclosure = '"', ?ColumnWidthConfig $columnWidthConfig = null, string $encoding = self::DEFAULT_ENCODING) {
@@ -284,6 +292,66 @@ class Document extends TextDocumentAbstract {
     }
 
     /**
+     * Liefert die erwartete Feldzahl je Zeile: die des Headers, sonst die der ersten Datenzeile.
+     *
+     * @return int|null null wenn weder Header noch Zeilen vorhanden sind
+     */
+    public function expectedFieldCount(): ?int {
+        return $this->header?->countFields() ?? ($this->rows[0] ?? null)?->countFields();
+    }
+
+    /**
+     * Listet alle Zeilen, deren Feldzahl von der erwarteten (Header bzw. erste Zeile) abweicht.
+     *
+     * Schlüssel ist die Zeilennummer im Dokument, 1-basiert inkl. Header (Header = 1,
+     * erste Datenzeile = 2; ohne Header beginnt die erste Datenzeile bei 1), Wert die
+     * gefundene Feldzahl. Wurde das Dokument tolerant geparst (strict=false), sind die
+     * reparierten Zeilen bereits angeglichen; sie erscheinen hier trotzdem mit ihrer
+     * ursprünglichen Feldzahl unter der Quell-Zeilennummer des Parsers.
+     *
+     * @return array<int, int> Zeilennummer => gefundene Feldzahl (leer = konsistent)
+     */
+    public function inconsistentRows(): array {
+        $result = $this->repairedRows;
+        $expected = $this->expectedFieldCount();
+
+        if ($expected !== null) {
+            $offset = $this->header !== null ? 2 : 1;
+            foreach (array_values($this->rows) as $i => $row) {
+                $actual = $row->countFields();
+                if ($actual !== $expected) {
+                    $result[$i + $offset] = $actual;
+                }
+            }
+        }
+
+        ksort($result);
+        return $result;
+    }
+
+    /**
+     * Merkt sich Zeilen, die beim toleranten Parsen (strict=false) aufgefüllt oder gekürzt wurden.
+     * Wird vom CSVDocumentParser gesetzt; die Zeilen selbst sind danach konsistent
+     * ({@see isConsistent()} bleibt true), {@see inconsistentRows()} nennt sie weiterhin.
+     *
+     * @param array<int, int> $rows Quell-Zeilennummer (1-basiert, inkl. Header) => ursprüngliche Feldzahl
+     */
+    public function markRepairedRows(array $rows): void {
+        foreach ($rows as $lineNumber => $fieldCount) {
+            $this->repairedRows[$lineNumber] = $fieldCount;
+        }
+    }
+
+    /**
+     * Liefert die im toleranten Modus reparierten Zeilen.
+     *
+     * @return array<int, int> Quell-Zeilennummer (1-basiert, inkl. Header) => ursprüngliche Feldzahl
+     */
+    public function repairedRows(): array {
+        return $this->repairedRows;
+    }
+
+    /**
      * Wandelt das gesamte CSV-Dokument in eine rohe CSV-Zeichenkette um.
      *
      * @param string|null $delimiter Das Trennzeichen. Wenn null, wird das Standard-Trennzeichen verwendet.
@@ -334,10 +402,23 @@ class Document extends TextDocumentAbstract {
      * Delegiert an HeaderLine::getColumnIndex().
      *
      * @param string $columnName Name der Spalte
+     * @param bool   $normalized Tolerant vergleichen (BOM/Trim/Whitespace/Groß-Klein), siehe {@see HeaderLine::getColumnIndex()}
      * @return int|null Index der Spalte oder null wenn nicht gefunden
      */
-    public function getColumnIndex(string $columnName): ?int {
-        return $this->header?->getColumnIndex($columnName);
+    public function getColumnIndex(string $columnName, bool $normalized = false): ?int {
+        return $this->header?->getColumnIndex($columnName, $normalized);
+    }
+
+    /**
+     * Findet den Index der ersten Spalte, die einem der Aliasnamen entspricht.
+     * Delegiert an HeaderLine::getColumnIndexByAliases().
+     *
+     * @param array<string> $aliases    Alternative Spaltennamen in Prioritätsreihenfolge
+     * @param bool          $normalized Tolerant vergleichen (Standard: true)
+     * @return int|null Index der Spalte oder null wenn kein Alias passt (oder kein Header vorhanden)
+     */
+    public function getColumnIndexByAliases(array $aliases, bool $normalized = true): ?int {
+        return $this->header?->getColumnIndexByAliases($aliases, $normalized);
     }
 
     /**

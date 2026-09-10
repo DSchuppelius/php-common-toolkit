@@ -42,6 +42,12 @@ class Cell {
 
     /**
      * Gibt den Zellwert als String zurück.
+     *
+     * null ⇒ '', bool ⇒ '1'/'0', Datum/Zeit ⇒ wie {@see toCanonicalString()}
+     * (`DateTimeInterface` ist nicht string-castbar; ohne diesen Zweig stürzte
+     * z.B. {@see Sheet::getHeaderNames()} über einer Datumszelle in Zeile 1).
+     * Zahlen bleiben beim `(string)`-Cast — Floats also unverändert zur
+     * bisherigen Ausgabe; für CSV-taugliche Floats {@see toCanonicalString()}.
      */
     public function getStringValue(): string {
         if ($this->value === null) {
@@ -50,16 +56,18 @@ class Cell {
         if (is_bool($this->value)) {
             return $this->value ? '1' : '0';
         }
+        if ($this->value instanceof DateTimeInterface) {
+            return self::formatDateTime($this->value);
+        }
         return (string) $this->value;
     }
 
     /**
      * Kanonische String-Fassung für Text-/CSV-Pfade.
      *
-     * `getStringValue()` allein reicht dafür nicht: `DateTimeInterface` ist
-     * gar nicht string-castbar (Error), und Floats kippen beim `(string)`-Cast
-     * ab einer gewissen Größe in Exponentialschreibweise — beides erzeugt in
-     * einem CSV-Export unbrauchbare Zellen.
+     * Ergänzt {@see getStringValue()} um den Float-Fall: Floats kippen beim
+     * `(string)`-Cast ab einer gewissen Größe in Exponentialschreibweise und
+     * erzeugen in einem CSV-Export unbrauchbare Zellen.
      *
      * Regeln:
      *  - Datum/Zeit: `Y-m-d`, wenn die Uhrzeit exakt 00:00:00 ist, sonst
@@ -72,9 +80,7 @@ class Cell {
      */
     public function toCanonicalString(): string {
         if ($this->value instanceof DateTimeInterface) {
-            return $this->value->format('H:i:s') === '00:00:00'
-                ? $this->value->format('Y-m-d')
-                : $this->value->format('Y-m-d H:i:s');
+            return self::formatDateTime($this->value);
         }
 
         if (is_float($this->value)) {
@@ -82,6 +88,15 @@ class Cell {
         }
 
         return $this->getStringValue();
+    }
+
+    /**
+     * `Y-m-d` bei exakt Mitternacht, sonst `Y-m-d H:i:s` (siehe {@see toCanonicalString()}).
+     */
+    private static function formatDateTime(DateTimeInterface $value): string {
+        return $value->format('H:i:s') === '00:00:00'
+            ? $value->format('Y-m-d')
+            : $value->format('Y-m-d H:i:s');
     }
 
     /**

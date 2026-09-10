@@ -139,6 +139,92 @@ class CSVDocumentParserTest extends BaseTestCase {
         CSVDocumentParser::fromString($csv);
     }
 
+    public function test_inconsistent_csv_message_names_line_numbers(): void {
+        // Zeile 1 = Header, Zeile 3 hat nur 2 statt 3 Felder
+        $csv = $this->readFile($this->testFileMalformed);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Inkonsistente CSV-Daten: Ungleiche Anzahl an Feldern in den Zeilen (erwartet: 3 Felder; gefunden: Zeile 3: 2)');
+        CSVDocumentParser::fromString($csv);
+    }
+
+    public function test_inconsistent_csv_message_lists_at_most_five_lines(): void {
+        $csv = "A;B;C\n1;2;3\n1;2\n1\n1;2;3;4\n\n1;2;3;4;5\n1;2;3\n1\n1;2\n";
+
+        try {
+            CSVDocumentParser::fromString($csv, ';');
+            $this->fail('RuntimeException erwartet');
+        } catch (RuntimeException $e) {
+            // Leerzeile 6 zählt in der Nummerierung mit, ist aber keine Abweichung
+            $this->assertStringContainsString('erwartet: 3 Felder; gefunden: Zeile 3: 2, Zeile 4: 1, Zeile 5: 4, Zeile 7: 5, Zeile 9: 1 … und 1 weitere)', $e->getMessage());
+            $this->assertStringNotContainsString('Zeile 10', $e->getMessage());
+        }
+    }
+
+    public function test_from_string_lenient_pads_and_truncates(): void {
+        $csv = "A;B;C\n1;2;3\n1;2\n1;2;3;4\n1\n";
+        $doc = CSVDocumentParser::fromString($csv, ';', '"', true, null, false);
+
+        $this->assertTrue($doc->isConsistent(), 'Nach der Reparatur sind alle Zeilen gleich breit');
+        $this->assertSame(4, $doc->countRows());
+        $this->assertSame(['1', '2', ''], array_map(fn ($f) => $f->getValue(), $doc->getRow(1)?->getFields() ?? []));
+        $this->assertSame(['1', '2', '3'], array_map(fn ($f) => $f->getValue(), $doc->getRow(2)?->getFields() ?? []));
+        $this->assertSame(['1', '', ''], array_map(fn ($f) => $f->getValue(), $doc->getRow(3)?->getFields() ?? []));
+
+        // Betroffene Zeilen bleiben nachvollziehbar (Quell-Zeilennummer => ursprüngliche Feldzahl)
+        $this->assertSame([3 => 2, 4 => 4, 5 => 1], $doc->inconsistentRows());
+        $this->assertSame([3 => 2, 4 => 4, 5 => 1], $doc->repairedRows());
+        $this->assertSame(['A' => '1', 'B' => '', 'C' => ''], $doc->toAssoc()[3]);
+    }
+
+    public function test_from_string_lenient_without_header_uses_first_row_as_reference(): void {
+        $doc = CSVDocumentParser::fromString("1;2;3\n4;5\n", ';', '"', false, null, false);
+
+        $this->assertSame(2, $doc->countRows());
+        $this->assertSame(3, $doc->getRow(1)?->countFields());
+        $this->assertSame([2 => 2], $doc->inconsistentRows());
+    }
+
+    public function test_from_file_strict_message_and_lenient_repair(): void {
+        try {
+            CSVDocumentParser::fromFile($this->testFileMalformed);
+            $this->fail('RuntimeException erwartet');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('(erwartet: 3 Felder; gefunden: Zeile 3: 2)', $e->getMessage());
+        }
+
+        $doc = CSVDocumentParser::fromFile($this->testFileMalformed, strict: false);
+        $this->assertTrue($doc->isConsistent());
+        $this->assertSame(2, $doc->countRows());
+        $this->assertSame(['2', 'Anna', ''], array_map(fn ($f) => $f->getValue(), $doc->getRow(1)?->getFields() ?? []));
+        $this->assertSame([3 => 2], $doc->inconsistentRows());
+    }
+
+    public function test_from_file_range_strict_and_lenient(): void {
+        $base = sys_get_temp_dir() . '/csv_range_' . uniqid();
+        $file = $base . '.csv';
+        file_put_contents($file, "A,B,C\n1,2,3\n4,5\n6,7,8\n9,10,11,12\n");
+
+        try {
+            // Bereich 3–5 ohne Zeile 4 wäre konsistent; Zeile 3 (2 Felder) und 5 (4 Felder) weichen ab
+            try {
+                CSVDocumentParser::fromFileRange($file, 3, 5);
+                $this->fail('RuntimeException erwartet');
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('(erwartet: 3 Felder; gefunden: Zeile 3: 2, Zeile 5: 4)', $e->getMessage());
+            }
+
+            $doc = CSVDocumentParser::fromFileRange($file, 3, 5, strict: false);
+            $this->assertTrue($doc->hasHeader());
+            $this->assertSame(3, $doc->countRows());
+            $this->assertTrue($doc->isConsistent());
+            $this->assertSame([3 => 2, 5 => 4], $doc->inconsistentRows());
+            $this->assertSame(['9', '10', '11'], array_map(fn ($f) => $f->getValue(), $doc->getRow(2)?->getFields() ?? []));
+        } finally {
+            unlink($file);
+        }
+    }
+
     public function test_round_trip_integrity(): void {
         $csv = $this->readFile($this->testFileComma);
         $doc = CSVDocumentParser::fromString($csv, ',', '"');

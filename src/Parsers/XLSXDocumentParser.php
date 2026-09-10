@@ -20,6 +20,7 @@ use DOMDocument;
 use DOMElement;
 use DOMNode;
 use DOMXPath;
+use InvalidArgumentException;
 use RuntimeException;
 use ZipArchive;
 
@@ -28,6 +29,16 @@ use ZipArchive;
  * Analog zu CSVDocumentParser.
  */
 class XLSXDocumentParser extends HelperAbstract {
+    /**
+     * Standard-Obergrenze für die Summe der entpackten Größen aller ZIP-Einträge (256 MiB).
+     * Schutz gegen ZIP-Bomben: geprüft anhand der Central-Directory-Angaben, bevor ein
+     * Eintrag entpackt wird, und erneut an der tatsächlich gelesenen Länge.
+     */
+    public const DEFAULT_MAX_UNCOMPRESSED_BYTES = 256 * 1024 * 1024;
+
+    /** Standard für die Zeilenbegrenzung je Blatt: null = unbegrenzt. */
+    public const DEFAULT_MAX_ROWS = null;
+
     /** @var array<int, string> Shared Strings Cache */
     protected array $sharedStrings = [];
 
@@ -37,19 +48,51 @@ class XLSXDocumentParser extends HelperAbstract {
     /** @var array<int, int> Cell Styles -> Number Format Mapping */
     protected array $cellStyles = [];
 
+    /** Obergrenze für die entpackte Gesamtgröße des aktuellen Archivs (null = unbegrenzt). */
+    protected ?int $maxUncompressedBytes = self::DEFAULT_MAX_UNCOMPRESSED_BYTES;
+
+    /** Obergrenze für Datenzeilen je Blatt (null = unbegrenzt). */
+    protected ?int $maxRows = self::DEFAULT_MAX_ROWS;
+
+    /** Dateiname (ohne Pfad) des aktuellen Archivs für Fehlermeldungen. */
+    protected string $archiveName = '';
+
     /**
      * Parst eine XLSX-Datei in ein XLSX-Document.
      *
-     * @param string    $file      Der Pfad zur XLSX-Datei
-     * @param bool      $hasHeader Ob die erste Zeile als Header interpretiert werden soll
-     * @param int|null  $sheetIndex Nur ein bestimmtes Sheet laden (0-basiert), null = alle
+     * @param string    $file                 Der Pfad zur XLSX-Datei
+     * @param bool      $hasHeader            Ob die erste Zeile als Header interpretiert werden soll
+     * @param int|null  $sheetIndex           Nur ein bestimmtes Sheet laden (0-basiert), null = alle
+     * @param int|null  $maxUncompressedBytes Obergrenze für die Summe der entpackten Größen aller
+     *                                        ZIP-Einträge (Standard: {@see DEFAULT_MAX_UNCOMPRESSED_BYTES}
+     *                                        = 256 MiB); null = unbegrenzt (bewusster Opt-out)
+     * @param int|null  $maxRows              Obergrenze für Datenzeilen je Blatt (ohne Header);
+     *                                        null = unbegrenzt. Überschreitung wirft, kürzt nicht still.
      * @return Document Das geparste XLSX-Dokument
-     * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern
+     * @throws InvalidArgumentException Wenn eine Grenze <= 0 ist
+     * @throws RuntimeException Bei Dateizugriffs- oder Parsing-Fehlern sowie bei Überschreitung einer Grenze
      */
-    public static function fromFile(string $file, bool $hasHeader = true, ?int $sheetIndex = null): Document {
+    public static function fromFile(
+        string $file,
+        bool $hasHeader = true,
+        ?int $sheetIndex = null,
+        ?int $maxUncompressedBytes = self::DEFAULT_MAX_UNCOMPRESSED_BYTES,
+        ?int $maxRows = self::DEFAULT_MAX_ROWS
+    ): Document {
+        if ($maxUncompressedBytes !== null && $maxUncompressedBytes <= 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxUncompressedBytes muss > 0 sein (oder null für unbegrenzt), erhalten: $maxUncompressedBytes");
+        }
+        if ($maxRows !== null && $maxRows <= 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxRows muss > 0 sein (oder null für unbegrenzt), erhalten: $maxRows");
+        }
+
         $file = File::resolveFile($file);
 
         $parser = new self;
+        $parser->maxUncompressedBytes = $maxUncompressedBytes;
+        $parser->maxRows = $maxRows;
+        $parser->archiveName = basename($file);
+
         return $parser->parse($file, $hasHeader, $sheetIndex);
     }
 
@@ -64,6 +107,9 @@ class XLSXDocumentParser extends HelperAbstract {
         }
 
         try {
+            // Entpackte Gesamtgröße prüfen, bevor irgendein Eintrag gelesen wird (ZIP-Bomben-Schutz)
+            $this->assertUncompressedSizeWithinLimit($zip);
+
             // Shared Strings laden
             $this->loadSharedStrings($zip);
 
@@ -103,12 +149,75 @@ class XLSXDocumentParser extends HelperAbstract {
     }
 
     /**
+     * Prüft die Summe der entpackten Größen aller Archiv-Einträge (Central Directory)
+     * gegen die konfigurierte Obergrenze.
+     *
+     * @throws RuntimeException Wenn die Summe die Grenze überschreitet
+     */
+    protected function assertUncompressedSizeWithinLimit(ZipArchive $zip): void {
+        if ($this->maxUncompressedBytes === null) {
+            return;
+        }
+
+        $total = 0;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            if ($stat === false) {
+                continue;
+            }
+            $total += (int) $stat['size'];
+            if ($total > $this->maxUncompressedBytes) {
+                $this->throwUncompressedLimitExceeded($total);
+            }
+        }
+    }
+
+    /**
+     * Liest einen Archiv-Eintrag; Größe wird vor dem Entpacken (Central Directory) und
+     * anschließend an der tatsächlichen Länge gegen die Obergrenze geprüft, damit auch
+     * manipulierte Größenangaben nicht zu unbegrenztem Speicherverbrauch führen.
+     *
+     * @return string|false Inhalt oder false, wenn der Eintrag nicht existiert
+     * @throws RuntimeException Wenn der Eintrag die Grenze überschreitet
+     */
+    protected function readEntry(ZipArchive $zip, string $name): string|false {
+        $limit = $this->maxUncompressedBytes;
+
+        if ($limit !== null) {
+            $stat = $zip->statName($name);
+            if ($stat !== false && (int) $stat['size'] > $limit) {
+                $this->throwUncompressedLimitExceeded((int) $stat['size'], $name);
+            }
+        }
+
+        $content = $zip->getFromName($name);
+
+        if ($limit !== null && $content !== false && strlen($content) > $limit) {
+            $this->throwUncompressedLimitExceeded(strlen($content), $name);
+        }
+
+        return $content;
+    }
+
+    /**
+     * @throws RuntimeException
+     */
+    protected function throwUncompressedLimitExceeded(int $actual, ?string $entry = null): never {
+        $limit = (int) $this->maxUncompressedBytes;
+        $where = $entry !== null ? "Eintrag $entry, " : '';
+        self::logErrorAndThrow(
+            RuntimeException::class,
+            "XLSX überschreitet die erlaubte entpackte Größe: $actual > $limit Bytes ({$where}Datei {$this->archiveName})"
+        );
+    }
+
+    /**
      * Lädt die Shared Strings aus dem XLSX-Archiv.
      */
     protected function loadSharedStrings(ZipArchive $zip): void {
         $this->sharedStrings = [];
 
-        $content = $zip->getFromName('xl/sharedStrings.xml');
+        $content = $this->readEntry($zip, 'xl/sharedStrings.xml');
         if ($content === false) {
             return; // Keine Shared Strings vorhanden
         }
@@ -166,7 +275,7 @@ class XLSXDocumentParser extends HelperAbstract {
         ];
         $this->numberFormats = $builtInFormats;
 
-        $content = $zip->getFromName('xl/styles.xml');
+        $content = $this->readEntry($zip, 'xl/styles.xml');
         if ($content === false) {
             return;
         }
@@ -218,7 +327,7 @@ class XLSXDocumentParser extends HelperAbstract {
         ];
 
         // Core Properties
-        $content = $zip->getFromName('docProps/core.xml');
+        $content = $this->readEntry($zip, 'docProps/core.xml');
         if ($content !== false) {
             $dom = new DOMDocument;
             $dom->loadXML($content, LIBXML_NONET);
@@ -262,7 +371,7 @@ class XLSXDocumentParser extends HelperAbstract {
     protected function loadWorkbook(ZipArchive $zip): array {
         $sheets = [];
 
-        $content = $zip->getFromName('xl/workbook.xml');
+        $content = $this->readEntry($zip, 'xl/workbook.xml');
         if ($content === false) {
             self::logErrorAndThrow(RuntimeException::class, 'Workbook.xml nicht gefunden');
         }
@@ -310,7 +419,7 @@ class XLSXDocumentParser extends HelperAbstract {
     protected function loadRelationships(ZipArchive $zip, string $path): array {
         $rels = [];
 
-        $content = $zip->getFromName($path);
+        $content = $this->readEntry($zip, $path);
         if ($content === false) {
             return [];
         }
@@ -339,7 +448,7 @@ class XLSXDocumentParser extends HelperAbstract {
      * Parst ein einzelnes Worksheet.
      */
     protected function parseSheet(ZipArchive $zip, string $path, string $name, bool $hasHeader, int $sheetIndex): ?Sheet {
-        $content = $zip->getFromName($path);
+        $content = $this->readEntry($zip, $path);
         if ($content === false) {
             self::logWarning("Sheet nicht gefunden: $path");
             return null;
@@ -363,6 +472,13 @@ class XLSXDocumentParser extends HelperAbstract {
         foreach ($rowNodes as $rowNode) {
             if (!$rowNode instanceof DOMElement) {
                 continue;
+            }
+
+            if (!($hasHeader && $isFirstRow) && $this->maxRows !== null && count($rows) >= $this->maxRows) {
+                self::logErrorAndThrow(
+                    RuntimeException::class,
+                    "XLSX-Blatt '$name' überschreitet die erlaubte Zeilenzahl: mehr als {$this->maxRows} Datenzeilen (Datei {$this->archiveName})"
+                );
             }
 
             $rowIndex = (int) $rowNode->getAttribute('r');

@@ -13,6 +13,7 @@ namespace CommonToolkit\Entities\CSV;
 use CommonToolkit\Contracts\Abstracts\CSV\LineAbstract;
 use CommonToolkit\Contracts\Interfaces\CSV\{FieldInterface, LineInterface};
 use CommonToolkit\Enums\CountryCode;
+use CommonToolkit\Helper\Data\StringHelper;
 use RuntimeException;
 
 class HeaderLine extends LineAbstract {
@@ -54,11 +55,46 @@ class HeaderLine extends LineAbstract {
     }
 
     /**
-     * Liefert den Index einer Spalte anhand des Namens.
+     * Liefert den Index einer Spalte anhand des Namens (erster Treffer).
+     *
+     * @param string $columnName Der Spaltenname
+     * @param bool   $normalized Bei true wird tolerant verglichen (BOM entfernt, getrimmt,
+     *                           Whitespace kollabiert, Groß-/Kleinschreibung ignoriert),
+     *                           siehe {@see StringHelper::normalizeColumnName()}.
+     * @return int|null Der 0-basierte Spaltenindex oder null wenn nicht gefunden
      */
-    public function getColumnIndex(string $columnName): ?int {
-        $index = array_search($columnName, $this->getColumnNames(), true);
+    public function getColumnIndex(string $columnName, bool $normalized = false): ?int {
+        $names = $this->getColumnNames();
+
+        if ($normalized) {
+            $columnName = StringHelper::normalizeColumnName($columnName);
+            $names = array_map(StringHelper::normalizeColumnName(...), $names);
+        }
+
+        $index = array_search($columnName, $names, true);
         return is_int($index) ? $index : null;
+    }
+
+    /**
+     * Liefert den Index der ersten Spalte, die einem der Aliasnamen entspricht.
+     *
+     * Die Aliasse werden in der übergebenen Reihenfolge geprüft; der erste Alias mit
+     * Treffer entscheidet. Typischer Einsatz: Import-Mappings mit mehreren erlaubten
+     * Kopfzeilenvarianten (z.B. ['Beginn', 'Start', 'Von']).
+     *
+     * @param array<string> $aliases    Alternative Spaltennamen in Prioritätsreihenfolge
+     * @param bool          $normalized Tolerant vergleichen (Standard: true), siehe {@see getColumnIndex()}
+     * @return int|null Der 0-basierte Spaltenindex oder null wenn kein Alias passt
+     */
+    public function getColumnIndexByAliases(array $aliases, bool $normalized = true): ?int {
+        foreach ($aliases as $alias) {
+            $index = $this->getColumnIndex($alias, $normalized);
+            if ($index !== null) {
+                return $index;
+            }
+        }
+
+        return null;
     }
 
     /**

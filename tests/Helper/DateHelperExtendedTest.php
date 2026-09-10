@@ -11,7 +11,11 @@
 namespace Tests\Helper;
 
 use CommonToolkit\Helper\Data\DateHelper;
+use DateTime;
 use DateTimeImmutable;
+use DateTimeZone;
+use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Contracts\BaseTestCase;
 
 class DateHelperExtendedTest extends BaseTestCase {
@@ -240,6 +244,46 @@ class DateHelperExtendedTest extends BaseTestCase {
         $end2 = new DateTimeImmutable('2025-01-01');
         $this->assertEquals(1, DateHelper::diffIn($start2, $end2, 'years'));
         $this->assertEquals(12, DateHelper::diffIn($start2, $end2, 'months'));
+    }
+
+    /**
+     * @return array<string, array{string, string, int}>
+     */
+    public static function monthsBetweenInclusiveProvider(): array {
+        return [
+            'ganzes Jahr' => ['2025-01-01', '2025-12-31', 12],
+            'Jahreswechsel mitten im Monat' => ['2025-12-15', '2026-12-14', 12],
+            'ein Monat' => ['2025-01-01', '2025-01-31', 1],
+            'Monatsende Januar bis Monatsende Februar' => ['2025-01-31', '2025-02-28', 1],
+            'Schaltjahr Februar' => ['2024-02-01', '2024-02-29', 1],
+            'halber Monat rundet ab' => ['2025-01-01', '2025-01-15', 0],
+            'zwanzig Tage runden auf' => ['2025-01-01', '2025-01-20', 1],
+            'ein Tag' => ['2025-01-01', '2025-01-01', 0],
+            'zwei Jahre über Jahreswechsel' => ['2024-07-01', '2026-06-30', 24],
+            'Monatsmitte bis Monatsmitte' => ['2025-01-16', '2025-02-15', 1],
+            'Quartal über Jahreswechsel' => ['2025-11-01', '2026-01-31', 3],
+        ];
+    }
+
+    #[DataProvider('monthsBetweenInclusiveProvider')]
+    public function test_months_between_inclusive(string $from, string $to, int $expected): void {
+        $this->assertSame($expected, DateHelper::monthsBetweenInclusive(new DateTimeImmutable($from), new DateTimeImmutable($to)));
+    }
+
+    public function test_months_between_inclusive_ignores_time_and_timezone(): void {
+        $from = new DateTimeImmutable('2025-01-01 23:59:59', new DateTimeZone('Europe/Berlin'));
+        $to = new DateTimeImmutable('2025-12-31 00:00:00', new DateTimeZone('America/New_York'));
+
+        $this->assertSame(12, DateHelper::monthsBetweenInclusive($from, $to));
+        // Auch ein veränderliches DateTime wird akzeptiert
+        $this->assertSame(1, DateHelper::monthsBetweenInclusive(new DateTime('2025-03-01'), new DateTime('2025-03-31')));
+    }
+
+    public function test_months_between_inclusive_throws_when_end_before_start(): void {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Das Ende (2025-01-01) darf nicht vor dem Beginn (2025-01-02) liegen.');
+
+        DateHelper::monthsBetweenInclusive(new DateTimeImmutable('2025-01-02'), new DateTimeImmutable('2025-01-01'));
     }
 
     public function test_human_diff(): void {

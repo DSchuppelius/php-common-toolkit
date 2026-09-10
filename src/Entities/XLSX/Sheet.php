@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\XLSX;
 
 use ArrayIterator;
+use CommonToolkit\Helper\Data\StringHelper;
 use Countable;
 use IteratorAggregate;
 use Traversable;
@@ -181,17 +182,49 @@ class Sheet implements Countable, IteratorAggregate {
     }
 
     /**
-     * Gibt den Spaltenindex für einen Header-Namen zurück.
+     * Gibt den Spaltenindex für einen Header-Namen zurück (erster Treffer).
      *
+     * @param string $name       Der Header-Name
+     * @param bool   $normalized Bei true wird tolerant verglichen (BOM entfernt, getrimmt,
+     *                           Whitespace kollabiert, Groß-/Kleinschreibung ignoriert),
+     *                           siehe {@see StringHelper::normalizeColumnName()}.
      * @return int|null Der 0-basierte Spaltenindex oder null
      */
-    public function getColumnIndex(string $name): ?int {
+    public function getColumnIndex(string $name, bool $normalized = false): ?int {
         if ($this->header === null) {
             return null;
         }
 
-        $index = array_search($name, $this->getHeaderNames(), true);
+        $names = $this->getHeaderNames();
+
+        if ($normalized) {
+            $name = StringHelper::normalizeColumnName($name);
+            $names = array_map(StringHelper::normalizeColumnName(...), $names);
+        }
+
+        $index = array_search($name, $names, true);
         return $index !== false ? (int) $index : null;
+    }
+
+    /**
+     * Gibt den Index der ersten Spalte zurück, die einem der Aliasnamen entspricht.
+     *
+     * Die Aliasse werden in der übergebenen Reihenfolge geprüft; der erste Alias mit
+     * Treffer entscheidet (gleiche Semantik wie {@see \CommonToolkit\Entities\CSV\HeaderLine::getColumnIndexByAliases()}).
+     *
+     * @param array<string> $aliases    Alternative Header-Namen in Prioritätsreihenfolge
+     * @param bool          $normalized Tolerant vergleichen (Standard: true), siehe {@see getColumnIndex()}
+     * @return int|null Der 0-basierte Spaltenindex oder null wenn kein Alias passt
+     */
+    public function getColumnIndexByAliases(array $aliases, bool $normalized = true): ?int {
+        foreach ($aliases as $alias) {
+            $index = $this->getColumnIndex($alias, $normalized);
+            if ($index !== null) {
+                return $index;
+            }
+        }
+
+        return null;
     }
 
     /**

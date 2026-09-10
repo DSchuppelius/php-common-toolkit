@@ -880,6 +880,33 @@ class StringHelper {
     }
 
     /**
+     * Normalisiert einen Spalten-/Header-Namen für tolerante Vergleiche.
+     *
+     * Reihenfolge: BOM entfernen, U+FEFF (ZWNBSP) im Text verwerfen, jede Whitespace-Folge
+     * (inkl. geschütztem Leerzeichen U+00A0) auf ein Leerzeichen kollabieren, trimmen,
+     * Kleinbuchstaben (UTF-8). " Beginn ", "BEGINN" und "Beginn" ergeben so denselben Schlüssel.
+     *
+     * @param string|null $name Der Spaltenname (null wird als leerer String behandelt).
+     * @return string Der normalisierte Schlüssel.
+     * @see \CommonToolkit\Entities\CSV\HeaderLine::getColumnIndex() Nutzer der Normalisierung (CSV)
+     * @see \CommonToolkit\Entities\XLSX\Sheet::getColumnIndex() Nutzer der Normalisierung (XLSX)
+     */
+    public static function normalizeColumnName(?string $name): string {
+        if (self::isNullOrEmpty($name)) {
+            return '';
+        }
+
+        $name = str_replace("\u{FEFF}", '', self::stripBom($name));
+        $collapsed = preg_replace('/[\s\x{00A0}]+/u', ' ', $name);
+        if ($collapsed === null) {
+            // Kein gültiges UTF-8 → byteweise kollabieren statt leer zurückzugeben
+            $collapsed = preg_replace('/\s+/', ' ', $name) ?? $name;
+        }
+
+        return self::toLower(trim($collapsed));
+    }
+
+    /**
      * Konvertiert einen String in Kleinbuchstaben (UTF-8).
      *
      * @param string|null $input Der zu konvertierende String (null wird als leerer String behandelt).

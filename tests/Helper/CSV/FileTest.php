@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace Tests\Helper\CSV;
 
 use CommonToolkit\Helper\FileSystem\FileTypes\CsvFile;
-use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\{FileInvalidException, FileNotFoundException};
 use Exception;
 use Tests\Contracts\BaseTestCase;
 
@@ -67,8 +67,31 @@ class FileTest extends BaseTestCase {
     }
 
     public function test_empty_file(): void {
-        $this->expectException(Exception::class);
-        CsvFile::detectDelimiter($this->testFileEmpty);
+        try {
+            CsvFile::detectDelimiter($this->testFileEmpty);
+            $this->fail('FileInvalidException erwartet');
+        } catch (FileInvalidException $e) {
+            // Nur der Dateiname, kein Serverpfad in der Meldung
+            $this->assertSame('Kein geeignetes Trennzeichen in der Datei empty.csv gefunden (leer oder einspaltig).', $e->getMessage());
+            $this->assertStringNotContainsString(dirname($this->testFileEmpty), $e->getMessage());
+        }
+    }
+
+    public function test_single_column_file_throws_specific_exception(): void {
+        $file = sys_get_temp_dir() . '/csv_single_' . uniqid() . '.csv';
+        file_put_contents($file, "Name\nAlice\nBob\n");
+
+        try {
+            CsvFile::detectDelimiter($file);
+            $this->fail('FileInvalidException erwartet');
+        } catch (FileInvalidException $e) {
+            $this->assertStringContainsString(basename($file), $e->getMessage());
+            $this->assertStringNotContainsString(sys_get_temp_dir() . '/', $e->getMessage());
+            // Bleibt für bestehende Aufrufer eine Exception/RuntimeException
+            $this->assertInstanceOf(Exception::class, $e);
+        } finally {
+            unlink($file);
+        }
     }
 
     public function test_match_row_success(): void {

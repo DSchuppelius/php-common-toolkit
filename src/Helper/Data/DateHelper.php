@@ -18,6 +18,7 @@ use DateInterval;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
 use Throwable;
@@ -926,19 +927,20 @@ class DateHelper {
             }
         }
 
-        // Vorfilter: Jedes unterstuetzte Format beginnt mit einem zwei- (d, m, y)
-        // oder vierstelligen (Y) Zahlblock, auf den ein Trennzeichen folgt; die
-        // Round-Trip-Pruefung unten laesst ohnehin nur exakt so aufgebaute Werte
-        // durch. Reine Ziffernfolgen sind nur als Timestamp (oben) ein Datum, und
-        // kein Format erzeugt weniger als acht Zeichen ("01.01.26"). Alles andere
+        // Vorfilter: Jedes unterstuetzte Format beginnt mit einem ein- oder zwei-
+        // (d/j, m/n, y) oder vierstelligen (Y) Zahlblock, auf den ein Trennzeichen
+        // folgt; die Round-Trip-Pruefung unten laesst ohnehin nur exakt so aufgebaute
+        // Werte durch. Reine Ziffernfolgen sind nur als Timestamp (oben) ein Datum,
+        // und kein Format erzeugt weniger als sechs Zeichen ("1.1.26"). Alles andere
         // (Texte, Referenzen, Betraege) scheidet hier aus, bevor je Format ein
         // createFromFormat() versucht wird — bei CSV-Importen der Loewenanteil
         // der Feldanalyse. Nullbytes lehnt createFromFormat() mit ValueError ab.
         $length = strlen($value);
-        if ($length < 8 || !ctype_digit($value[0]) || !ctype_digit($value[1]) || ctype_digit($value) || str_contains($value, "\0")) {
+        if ($length < 6 || !ctype_digit($value[0]) || ctype_digit($value) || str_contains($value, "\0")) {
             return null;
         }
-        if (ctype_digit($value[2]) && (!ctype_digit($value[3]) || ctype_digit($value[4]))) {
+        $firstBlock = strspn($value, '0123456789');
+        if ($firstBlock === 3 || $firstBlock > 4) {
             return null;
         }
 
@@ -960,14 +962,22 @@ class DateHelper {
         $formats = array_merge($formats, $countryFormats);
 
         // Formate durchprobieren mit Round-Trip-Validierung
-        foreach ($formats as $fmt) {
-            $date = DateTimeImmutable::createFromFormat($fmt, $value);
-            if ($date !== false) {
-                // Prüfe, ob das Format korrekt rück-formatiert wird (Round-Trip)
-                // Dies verhindert, dass d.m.Y für "29.12.15" matched (ergibt "29.12.0015")
-                if ($date->format($fmt) === $value) {
-                    return $fmt;
-                }
+        $format = self::matchFormatRoundTrip($formats, $value);
+        if ($format !== null) {
+            return $format;
+        }
+
+        // Tag/Monat ohne Nullfuellung ("3.2.2026", "03.2.2026", "3/2/2026"): dieselben
+        // Formate in allen Kombinationen aus d/j und m/n — der exakte Round-Trip bleibt
+        // damit erhalten (fuer "03.2.2026" trifft "d.n.Y"), und "31.2.2026" faellt wie
+        // "31.02.2026" durch. Nur versucht, wenn der Datumsteil ueberhaupt einen
+        // einstelligen Block enthaelt; sonst kostet der Fall nichts.
+        $datePart = strpbrk($value, ' T');
+        $datePart = $datePart === false ? $value : substr($value, 0, $length - strlen($datePart));
+        if (preg_match('/(?<!\d)\d(?!\d)/', $datePart) === 1) {
+            $format = self::matchFormatRoundTrip(self::singleDigitVariants($formats), $value);
+            if ($format !== null) {
+                return $format;
             }
         }
 
@@ -980,6 +990,48 @@ class DateHelper {
         }
 
         return null;
+    }
+
+    /**
+     * Liefert das erste Format, das den Wert parst UND exakt rück-formatiert (Round-Trip).
+     * Der Round-Trip verhindert z.B., dass d.m.Y für "29.12.15" matched (ergibt "29.12.0015")
+     * oder "31.02.2026" per Überlauf zum 3. März wird.
+     *
+     * @param array<string> $formats Formate in Prioritätsreihenfolge
+     */
+    private static function matchFormatRoundTrip(array $formats, string $value): ?string {
+        foreach ($formats as $fmt) {
+            $date = DateTimeImmutable::createFromFormat($fmt, $value);
+            if ($date !== false && $date->format($fmt) === $value) {
+                return $fmt;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Bildet zu Formaten mit Tag (d) und/oder Monat (m) alle Varianten ohne Nullfüllung
+     * (j bzw. n) — jede Kombination, damit auch gemischt gefüllte Werte ("03.2.2026")
+     * ein exakt reproduzierendes Format finden. Formate ohne d/m entfallen.
+     *
+     * @param array<string> $formats
+     * @return list<string> Varianten in der Reihenfolge der Ausgangsformate (ohne Duplikate)
+     */
+    private static function singleDigitVariants(array $formats): array {
+        $variants = [];
+        foreach ($formats as $fmt) {
+            foreach (['d', 'j'] as $day) {
+                foreach (['m', 'n'] as $month) {
+                    $variant = strtr($fmt, ['d' => $day, 'm' => $month]);
+                    if ($variant !== $fmt) {
+                        $variants[$variant] = true;
+                    }
+                }
+            }
+        }
+
+        return array_keys($variants);
     }
 
     /**
@@ -1453,6 +1505,55 @@ class DateHelper {
             'seconds' => ($totalDays * 86400) + ($diff->h * 3600) + ($diff->i * 60) + $diff->s * ($diff->invert ? -1 : 1),
             default => $totalDays,
         };
+    }
+
+    /**
+     * Zählt die Monate zwischen zwei Kalenderdaten, wenn das Ende INKLUSIV gemeint ist
+     * (typisch für Abo-/Laufzeit-/Leistungszeiträume: 01.01.–31.12. = 12 Monate).
+     *
+     * Regel: Das inklusive Ende wird um einen Tag auf ein exklusives Ende verschoben,
+     * dann wird die Differenz in Monaten gebildet und kaufmännisch gerundet
+     * (round half up). Volle Monate zählen ganz; verbleibende Tage werden anteilig
+     * an der Länge des Monats gemessen, in dem der Rest beginnt (Start + volle Monate).
+     * Uhrzeit und Zeitzone werden ignoriert, es zählen nur die Kalenderdaten.
+     *
+     * Beispiele:
+     *   01.01.2025–31.12.2025 → 12    15.12.2025–14.12.2026 → 12
+     *   01.01.2025–31.01.2025 → 1     31.01.2025–28.02.2025 → 1
+     *   01.02.2024–29.02.2024 → 1     (Schaltjahr)
+     *   01.01.2025–15.01.2025 → 0     (15/31 = 0,48 → abgerundet)
+     *   01.01.2025–20.01.2025 → 1     (20/31 = 0,65 → aufgerundet)
+     *
+     * @param DateTimeInterface $from        Beginn (inklusiv).
+     * @param DateTimeInterface $toInclusive Ende (inklusiv); darf nicht vor $from liegen.
+     * @return int Anzahl der Monate (>= 0).
+     * @throws InvalidArgumentException Wenn das Ende vor dem Beginn liegt.
+     */
+    public static function monthsBetweenInclusive(DateTimeInterface $from, DateTimeInterface $toInclusive): int {
+        // Nur die Kalenderdaten zählen: in UTC neu aufbauen, damit weder Uhrzeit noch DST hineinspielen.
+        $utc = new DateTimeZone('UTC');
+        $start = new DateTimeImmutable($from->format('Y-m-d'), $utc);
+        $end = new DateTimeImmutable($toInclusive->format('Y-m-d'), $utc);
+
+        if ($end < $start) {
+            self::logErrorAndThrow(InvalidArgumentException::class, sprintf(
+                'Das Ende (%s) darf nicht vor dem Beginn (%s) liegen.',
+                $end->format('Y-m-d'),
+                $start->format('Y-m-d')
+            ));
+        }
+
+        $diff = $start->diff($end->modify('+1 day'));
+        $fullMonths = $diff->y * 12 + $diff->m;
+
+        if ($diff->d === 0) {
+            return $fullMonths;
+        }
+
+        // Länge des Monats, in dem die Resttage beginnen (Monatsanfang, damit kein Tagesüberlauf entsteht).
+        $daysInMonth = (int) $start->modify('first day of this month')->modify("+{$fullMonths} months")->format('t');
+
+        return (int) round($fullMonths + $diff->d / $daysInMonth);
     }
 
     /**
