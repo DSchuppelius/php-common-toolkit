@@ -81,7 +81,7 @@ class TiffFileTest extends BaseTestCase {
         $tiffFile = TifFile::repair($this->testFile);
         $this->assertFileExists($tiffFile);
         $this->assertEquals('image/tiff', File::mimeType($tiffFile));
-        $this->assertStringStartsWith($this->workDir, $tiffFile, 'repair() arbeitet nur im Arbeitsverzeichnis');
+        $this->assertSame($this->workDir, dirname($tiffFile), 'repair() arbeitet nur im Arbeitsverzeichnis');
     }
 
     public function test_convert_to_pdf(): void {
