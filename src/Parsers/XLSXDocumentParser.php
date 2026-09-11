@@ -14,6 +14,7 @@ namespace CommonToolkit\Parsers;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
 use CommonToolkit\Entities\XLSX\{Cell, Document, Row, Sheet};
+use CommonToolkit\Exceptions\Parsers\DocumentLimitExceededException;
 use CommonToolkit\Helper\FileSystem\File;
 use DateTimeImmutable;
 use DOMDocument;
@@ -205,10 +206,10 @@ class XLSXDocumentParser extends HelperAbstract {
     protected function throwUncompressedLimitExceeded(int $actual, ?string $entry = null): never {
         $limit = (int) $this->maxUncompressedBytes;
         $where = $entry !== null ? "Eintrag $entry, " : '';
-        self::logErrorAndThrow(
-            RuntimeException::class,
-            "XLSX überschreitet die erlaubte entpackte Größe: $actual > $limit Bytes ({$where}Datei {$this->archiveName})"
-        );
+        $message = "XLSX überschreitet die erlaubte entpackte Größe: $actual > $limit Bytes ({$where}Datei {$this->archiveName})";
+        self::logError($message);
+
+        throw new DocumentLimitExceededException($message, DocumentLimitExceededException::KIND_BYTES, $limit, $actual, $this->archiveName);
     }
 
     /**
@@ -475,10 +476,10 @@ class XLSXDocumentParser extends HelperAbstract {
             }
 
             if (!($hasHeader && $isFirstRow) && $this->maxRows !== null && count($rows) >= $this->maxRows) {
-                self::logErrorAndThrow(
-                    RuntimeException::class,
-                    "XLSX-Blatt '$name' überschreitet die erlaubte Zeilenzahl: mehr als {$this->maxRows} Datenzeilen (Datei {$this->archiveName})"
-                );
+                $message = "XLSX-Blatt '$name' überschreitet die erlaubte Zeilenzahl: mehr als {$this->maxRows} Datenzeilen (Datei {$this->archiveName})";
+                self::logError($message);
+
+                throw new DocumentLimitExceededException($message, DocumentLimitExceededException::KIND_ROWS, (int) $this->maxRows, null, $this->archiveName);
             }
 
             $rowIndex = (int) $rowNode->getAttribute('r');

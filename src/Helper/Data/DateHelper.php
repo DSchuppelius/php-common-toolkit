@@ -953,8 +953,11 @@ class DateHelper {
             'Y-m-d',        // ISO Format: YYYY-MM-DD
             'd.m.Y',        // Deutsch: DD.MM.YYYY (sicherer als DD-MM-YYYY)
             'd.m.Y H:i:s',  // Deutsch mit Zeit
+            'd.m.Y H:i',    // Deutsch mit Zeit ohne Sekunden (Belegtexte, Exporte)
+            'Y-m-d H:i',
             'd.m.y',        // Deutsch 2-stellig: DD.MM.YY
             'd.m.y H:i:s',  // Deutsch 2-stellig mit Zeit
+            'd.m.y H:i',
         ];
 
         // Länder-spezifische Formate hinzufügen

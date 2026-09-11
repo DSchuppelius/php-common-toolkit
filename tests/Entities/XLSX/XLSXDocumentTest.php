@@ -14,6 +14,7 @@ namespace Tests\Entities\XLSX;
 
 use CommonToolkit\Builders\XLSXDocumentBuilder;
 use CommonToolkit\Entities\XLSX\{Cell, Document, Row, Sheet};
+use CommonToolkit\Exceptions\Parsers\DocumentLimitExceededException;
 use CommonToolkit\Generators\XLSX\XLSXGenerator;
 use CommonToolkit\Parsers\XLSXDocumentParser;
 use DateTimeImmutable;
@@ -329,6 +330,31 @@ class XLSXDocumentTest extends BaseTestCase {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("XLSX-Blatt 'Daten' überschreitet die erlaubte Zeilenzahl: mehr als 1 Datenzeilen");
         XLSXDocumentParser::fromFile($path, true, null, null, 1);
+    }
+
+    public function test_limit_exceptions_carry_kind_limit_and_document(): void {
+        $path = $this->writeLimitFixture();
+
+        try {
+            XLSXDocumentParser::fromFile($path, true, null, null, 1);
+            $this->fail('Zeilenlimit muss werfen');
+        } catch (DocumentLimitExceededException $e) {
+            $this->assertSame(DocumentLimitExceededException::KIND_ROWS, $e->getKind());
+            $this->assertSame(1, $e->getLimit());
+            $this->assertNull($e->getActual());
+            $this->assertSame(basename($path), $e->getDocument());
+        }
+
+        try {
+            XLSXDocumentParser::fromFile($path, true, null, 16);
+            $this->fail('Byte-Limit muss werfen');
+        } catch (DocumentLimitExceededException $e) {
+            $this->assertSame(DocumentLimitExceededException::KIND_BYTES, $e->getKind());
+            $this->assertSame(16, $e->getLimit());
+            $this->assertGreaterThan(16, $e->getActual());
+            $this->assertSame(basename($path), $e->getDocument());
+            $this->assertStringNotContainsString(dirname($path), $e->getMessage(), 'kein Serverpfad in der Meldung');
+        }
     }
 
     public function test_parser_max_rows_counts_header_row_without_header_mode(): void {

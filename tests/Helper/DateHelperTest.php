@@ -193,6 +193,15 @@ class DateHelperTest extends BaseTestCase {
      * die Länderlogik (Germany → Tag zuerst, USA → Monat zuerst) bleibt erhalten,
      * und ungültige Kalendertage fallen weiterhin durch.
      */
+    public function test_parse_date_time_accepts_time_without_seconds(): void {
+        $this->assertSame('2026-02-01 10:30:00', DateHelper::parseDateTime('01.02.2026 10:30')?->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-02-01 10:30:00', DateHelper::parseDateTime('1.2.2026 10:30', CountryCode::Germany)?->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-02-01 10:30:00', DateHelper::parseDateTime('2026-02-01 10:30')?->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-02-01 10:30:00', DateHelper::parseDateTime('01.02.26 10:30')?->format('Y-m-d H:i:s'));
+        $this->assertNull(DateHelper::parseDateTime('01.02.2026 10:3'), 'Minuten brauchen zwei Stellen');
+        $this->assertNull(DateHelper::parseDateTime('31.02.2026 10:30'), 'Ueberlauf bleibt ungueltig');
+    }
+
     public function test_parse_date_time_accepts_single_digit_day_and_month(): void {
         $this->assertSame('2026-02-03', DateHelper::parseDateTime('3.2.2026')?->format('Y-m-d'));
         $this->assertSame('2026-02-03', DateHelper::parseDateTime('03.2.2026')?->format('Y-m-d'));
