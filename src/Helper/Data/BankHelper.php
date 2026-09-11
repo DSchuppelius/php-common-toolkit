@@ -26,6 +26,14 @@ class BankHelper {
     /** IBAN-Suchmuster: 2 Buchstaben + 2 Ziffern + 12-30 alphanumerische Zeichen (ohne Anker/Delimiter) */
     public const IBAN_REGEX = '[A-Z]{2}\d{2}[A-Z0-9]{12,30}';
 
+    /**
+     * Wie {@see IBAN_REGEX}, aber tolerant gegenüber Gruppierung durch
+     * einzelne Leerzeichen ("DE89 3704 0044 0532 0130 00" in PDFs).
+     * Treffer vor der Weiterverarbeitung mit str_replace(' ', '')
+     * normalisieren — {@see extractIBANs()} mit $spaceTolerant tut das.
+     */
+    public const IBAN_SPACED_REGEX = '[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}';
+
     /** BIC-Suchmuster: 4+2 Buchstaben + 2-5 alphanumerische Zeichen, 8 oder 11 Zeichen (ohne Anker/Delimiter) */
     public const BIC_REGEX = '[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?';
 
@@ -206,7 +214,7 @@ class BankHelper {
      */
     public static function extractIBANs(?string $text, bool $strict = false, bool $spaceTolerant = false): array {
         $pattern = $spaceTolerant
-            ? '/[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}/'
+            ? '/' . self::IBAN_SPACED_REGEX . '/'
             : '/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/';
 
         if ($text === null || $text === '' || preg_match_all($pattern, $text, $matches) === 0) {
@@ -242,7 +250,7 @@ class BankHelper {
         // einem Plattformexport mit hunderttausend Gegen-IBANs Minuten fuer ein
         // Ergebnis, das ohnehin nur der erste Treffer ist.
         $pattern = $spaceTolerant
-            ? '/[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}/'
+            ? '/' . self::IBAN_SPACED_REGEX . '/'
             : '/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/';
 
         $offset = 0;
