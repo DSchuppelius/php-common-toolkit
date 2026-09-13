@@ -10,6 +10,7 @@
 
 namespace Tests\Helper;
 
+use CommonToolkit\Exceptions\Parsers\DocumentLimitExceededException;
 use CommonToolkit\Helper\FileSystem\{File, Folder};
 use CommonToolkit\Helper\FileSystem\FileTypes\ZipFile;
 use ERRORToolkit\Exceptions\FileSystem\{FileNotFoundException, FolderNotFoundException};
@@ -392,8 +393,15 @@ class ZipFileTest extends BaseTestCase {
         $binary = ZipFile::createFromStrings(['a.txt' => '1', 'b.txt' => '2', 'c.txt' => '3']);
         $this->assertCount(3, ZipFile::readEntries($binary, 3));
 
-        $this->expectException(InvalidArgumentException::class);
-        ZipFile::readEntries($binary, 2);
+        try {
+            ZipFile::readEntries($binary, 2);
+            $this->fail('Entry-Limit muss werfen');
+        } catch (DocumentLimitExceededException $e) {
+            $this->assertSame(DocumentLimitExceededException::KIND_ENTRIES, $e->getKind());
+            $this->assertSame(2, $e->getLimit());
+            $this->assertSame(3, $e->getActual());
+            $this->assertNull($e->getDocument(), 'In-Memory-Archiv hat keinen Dateinamen');
+        }
     }
 
     public function test_read_entries_enforces_max_bytes(): void {
@@ -405,8 +413,14 @@ class ZipFileTest extends BaseTestCase {
         ]);
         $this->assertCount(2, ZipFile::readEntries($binary, null, 200));
 
-        $this->expectException(InvalidArgumentException::class);
-        ZipFile::readEntries($binary, null, 199);
+        try {
+            ZipFile::readEntries($binary, null, 199);
+            $this->fail('Byte-Limit muss werfen');
+        } catch (DocumentLimitExceededException $e) {
+            $this->assertSame(DocumentLimitExceededException::KIND_BYTES, $e->getKind());
+            $this->assertSame(199, $e->getLimit());
+            $this->assertSame(200, $e->getActual());
+        }
     }
 
     public function test_read_entries_rejects_invalid_limits(): void {
@@ -424,8 +438,15 @@ class ZipFileTest extends BaseTestCase {
         $archive = $this->archiveFromStrings(['a.txt' => '1', 'b.txt' => '2', 'c.txt' => '3']);
         $target = $this->tempDir . DIRECTORY_SEPARATOR . 'out';
 
-        $this->expectException(InvalidArgumentException::class);
-        ZipFile::extract($archive, $target, false, 2);
+        try {
+            ZipFile::extract($archive, $target, false, 2);
+            $this->fail('Entry-Limit muss werfen');
+        } catch (DocumentLimitExceededException $e) {
+            $this->assertSame(DocumentLimitExceededException::KIND_ENTRIES, $e->getKind());
+            $this->assertSame(2, $e->getLimit());
+            $this->assertSame(basename($archive), $e->getDocument());
+            $this->assertStringNotContainsString($this->tempDir, $e->getDocument(), 'kein Serverpfad');
+        }
     }
 
     public function test_extract_enforces_max_bytes(): void {
@@ -439,8 +460,13 @@ class ZipFileTest extends BaseTestCase {
         ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'ok', false, null, 200);
         $this->assertFileExists($this->tempDir . DIRECTORY_SEPARATOR . 'ok' . DIRECTORY_SEPARATOR . 'b.txt');
 
-        $this->expectException(InvalidArgumentException::class);
-        ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'zu-gross', false, null, 199);
+        try {
+            ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'zu-gross', false, null, 199);
+            $this->fail('Byte-Limit muss werfen');
+        } catch (DocumentLimitExceededException $e) {
+            $this->assertSame(DocumentLimitExceededException::KIND_BYTES, $e->getKind());
+            $this->assertSame(199, $e->getLimit());
+        }
     }
 
     /** Zip-Bombe: wenige Bytes im Archiv, viele beim Entpacken. */
@@ -449,8 +475,13 @@ class ZipFileTest extends BaseTestCase {
 
         $archive = $this->archiveFromStrings(['bombe.txt' => str_repeat('A', 200000)]);
 
-        $this->expectException(InvalidArgumentException::class);
-        ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'bombe', false, null, null, 10.0);
+        try {
+            ZipFile::extract($archive, $this->tempDir . DIRECTORY_SEPARATOR . 'bombe', false, null, null, 10.0);
+            $this->fail('Ratio-Limit muss werfen');
+        } catch (DocumentLimitExceededException $e) {
+            $this->assertSame(DocumentLimitExceededException::KIND_RATIO, $e->getKind());
+            $this->assertSame(10.0, $e->getLimit());
+        }
     }
 
     public function test_extract_rejects_invalid_limits(): void {

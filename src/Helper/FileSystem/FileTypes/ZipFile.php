@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\HelperAbstract;
+use CommonToolkit\Exceptions\Parsers\DocumentLimitExceededException;
 use CommonToolkit\Helper\FileSystem\{File, Files, Folder};
 use ERRORToolkit\Exceptions\FileSystem\{FileNotFoundException, FolderNotFoundException};
 use Exception;
@@ -178,7 +179,8 @@ class ZipFile extends HelperAbstract {
      * @param int|null $maxBytes Maximale entpackte Gesamtbytes (null = unbegrenzt).
      * @param float|null $maxRatio Maximales Verhältnis entpackt/komprimiert (null = unbegrenzt).
      * @throws Exception Falls die Datei nicht extrahiert werden kann.
-     * @throws InvalidArgumentException Falls ein Path-Traversal-Angriff erkannt oder ein Limit überschritten wird.
+     * @throws InvalidArgumentException Falls ein Path-Traversal-Angriff erkannt wird oder ein Limit-Parameter ungültig ist.
+     * @throws DocumentLimitExceededException Falls ein Limit (Einträge, Bytes, Kompressionsverhältnis) überschritten wird — Art über getKind().
      */
     public static function extract(
         string $file,
@@ -260,7 +262,7 @@ class ZipFile extends HelperAbstract {
             $fileCount++;
             if ($maxEntries !== null && $fileCount > $maxEntries) {
                 $zip->close();
-                self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Entry-Limit von $maxEntries Datei-Einträgen.");
+                self::throwLimitExceeded(DocumentLimitExceededException::KIND_ENTRIES, $maxEntries, "ZIP-Archiv überschreitet das Entry-Limit von $maxEntries Datei-Einträgen.", $fileCount, basename($file));
             }
 
             // Deklarierte Größe und Kompressionsverhältnis vorab prüfen, damit
@@ -270,12 +272,12 @@ class ZipFile extends HelperAbstract {
                 if ($stat !== false) {
                     if ($maxBytes !== null && $totalBytes + (int) $stat['size'] > $maxBytes) {
                         $zip->close();
-                        self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).");
+                        self::throwLimitExceeded(DocumentLimitExceededException::KIND_BYTES, $maxBytes, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).", $totalBytes + (int) $stat['size'], basename($file));
                     }
                     // comp_size 0 heißt leerer Eintrag, nicht unendliches Verhältnis.
                     if ($maxRatio !== null && (int) $stat['comp_size'] > 0 && (float) $stat['size'] / (float) $stat['comp_size'] > $maxRatio) {
                         $zip->close();
-                        self::logErrorAndThrow(InvalidArgumentException::class, "Eintrag '$entryName' überschreitet das Kompressionsverhältnis von $maxRatio.");
+                        self::throwLimitExceeded(DocumentLimitExceededException::KIND_RATIO, $maxRatio, "Eintrag '$entryName' überschreitet das Kompressionsverhältnis von $maxRatio.", null, basename($file));
                     }
                 }
             }
@@ -291,7 +293,7 @@ class ZipFile extends HelperAbstract {
             $totalBytes += strlen($content);
             if ($maxBytes !== null && $totalBytes > $maxBytes) {
                 $zip->close();
-                self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).");
+                self::throwLimitExceeded(DocumentLimitExceededException::KIND_BYTES, $maxBytes, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).", $totalBytes, basename($file));
             }
 
             File::write($targetPathReal, $content);
@@ -322,7 +324,8 @@ class ZipFile extends HelperAbstract {
      * @param int|null $maxEntries Maximale Anzahl Datei-Einträge (null = unbegrenzt).
      * @param int|null $maxBytes Maximale entpackte Gesamtbytes (null = unbegrenzt).
      * @return array<string, string> Eintragspfad → Inhalt.
-     * @throws InvalidArgumentException Bei unsicheren Eintragspfaden, ungültigen oder überschrittenen Limits.
+     * @throws InvalidArgumentException Bei unsicheren Eintragspfaden oder ungültigen Limit-Parametern.
+     * @throws DocumentLimitExceededException Bei überschrittenem Entry- oder Byte-Limit — Art über getKind().
      * @throws Exception Falls der Binärstring kein lesbares ZIP-Archiv ist.
      */
     public static function readEntries(string $zipBinary, ?int $maxEntries = null, ?int $maxBytes = null): array {
@@ -360,15 +363,15 @@ class ZipFile extends HelperAbstract {
                 self::assertSafeEntryPath($entryName);
 
                 if ($maxEntries !== null && count($entries) >= $maxEntries) {
-                    self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Entry-Limit von $maxEntries Datei-Einträgen.");
+                    self::throwLimitExceeded(DocumentLimitExceededException::KIND_ENTRIES, $maxEntries, "ZIP-Archiv überschreitet das Entry-Limit von $maxEntries Datei-Einträgen.", count($entries) + 1);
                 }
 
                 // Deklarierte Größe vorab prüfen, damit eine Zip-Bombe gar
                 // nicht erst entpackt wird …
                 if ($maxBytes !== null) {
                     $stat = $zip->statIndex($i);
-                    if ($stat !== false && $totalBytes + $stat['size'] > $maxBytes) {
-                        self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).");
+                    if ($stat !== false && $totalBytes + (int) $stat['size'] > $maxBytes) {
+                        self::throwLimitExceeded(DocumentLimitExceededException::KIND_BYTES, $maxBytes, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).", $totalBytes + (int) $stat['size']);
                     }
                 }
 
@@ -380,7 +383,7 @@ class ZipFile extends HelperAbstract {
                 // … und zusätzlich die tatsächliche Größe zählen.
                 $totalBytes += strlen($content);
                 if ($maxBytes !== null && $totalBytes > $maxBytes) {
-                    self::logErrorAndThrow(InvalidArgumentException::class, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).");
+                    self::throwLimitExceeded(DocumentLimitExceededException::KIND_BYTES, $maxBytes, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).", $totalBytes);
                 }
 
                 $entries[$entryName] = $content;
@@ -396,6 +399,18 @@ class ZipFile extends HelperAbstract {
         }
 
         return self::logDebugAndReturn($entries, "ZIP-Binär gelesen: " . count($entries) . " Einträge");
+    }
+
+    /**
+     * Limit-Überschreitung protokollieren und als typisierte Exception werfen —
+     * Aufrufer unterscheiden Art/Limit über die Klasse statt über den Meldungstext.
+     *
+     * @throws DocumentLimitExceededException
+     */
+    private static function throwLimitExceeded(string $kind, int|float $limit, string $message, ?int $actual = null, ?string $document = null): never {
+        self::logError($message);
+
+        throw new DocumentLimitExceededException($message, $kind, $limit, $actual, $document);
     }
 
     /**
