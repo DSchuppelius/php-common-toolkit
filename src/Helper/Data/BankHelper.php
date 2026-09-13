@@ -93,14 +93,19 @@ class BankHelper {
         if (preg_match("/^[A-Z]{2}[A-Z0-9]{14,33}\$/", $value) !== 1) {
             return false;
         }
-        // Länderlänge prüfen, wo sie bekannt ist: "DE…1123BIC" (25 Zeichen) ist keine
-        // deutsche IBAN (22) – zusammengeklebte Folgetexte fliegen so raus.
+        // Länderlänge prüfen: "DE…1123BIC" (25 Zeichen) ist keine deutsche IBAN
+        // (22) – zusammengeklebte Folgetexte fliegen so raus.
         $country = CountryCode::tryFrom(substr($value, 0, 2));
         if ($country === null) {
             return false; // "RF…" ist eine Gläubiger-Referenz (ISO 11649), kein Land
         }
         $length = $country->getIBANLength();
-        return $length === null || strlen($value) === $length;
+
+        // Kein Registry-Eintrag = das Land nimmt nicht am IBAN-System teil.
+        // Früher passierte hier jeder zweibuchstabige Präfix mit plausibler
+        // Länge ("US62…"-OCR-Müll, PayPal-IDs "SH48…", "ER00…"-Referenzen) —
+        // die Tabelle in CountryCode ist seit 13.09.2026 registry-vollständig.
+        return $length !== null && strlen($value) === $length;
     }
 
     /**
