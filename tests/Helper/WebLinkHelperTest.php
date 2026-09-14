@@ -339,4 +339,25 @@ class WebLinkHelperTest extends BaseTestCase {
         // Nicht existierende Domain
         $this->assertFalse(WebLinkHelper::hasValidDns('this-domain-does-not-exist-12345.com'));
     }
+
+    public function test_is_absolute_iri(): void {
+        foreach (['http://adlnet.gov/expapi/verbs/completed', 'urn:uuid:9fe4b3f2-6b1e-4c2a-8f1d-2a3b4c5d6e7f', 'tag:example.org,2026:kurs', 'mailto:a@example.org', 'https://example.org/kurs/übung'] as $iri) {
+            $this->assertTrue(\CommonToolkit\Helper\Data\WebLinkHelper::isAbsoluteIri($iri), $iri);
+        }
+        foreach ([null, '', 'kurs/übung', '/relativ', 'http://example.org/mit leerzeichen', '1http://x', 'http:', "http://x\n"] as $iri) {
+            $this->assertFalse(\CommonToolkit\Helper\Data\WebLinkHelper::isAbsoluteIri($iri), var_export($iri, true));
+        }
+    }
+
+    public function test_origin(): void {
+        $this->assertSame('https://work.example.org', \CommonToolkit\Helper\Data\WebLinkHelper::origin('https://work.example.org/pfad?x=1#y'));
+        $this->assertSame('http://localhost:8080', \CommonToolkit\Helper\Data\WebLinkHelper::origin('http://localhost:8080/'));
+        $this->assertSame('http://[::1]:8000', \CommonToolkit\Helper\Data\WebLinkHelper::origin('http://[::1]:8000/a'));
+
+        foreach ([null, '', 'work.example.org', 'ftp://example.org', "https://x;script-src 'unsafe-inline';y", 'https://ex ample.org', 'javascript:alert(1)'] as $url) {
+            $this->assertNull(\CommonToolkit\Helper\Data\WebLinkHelper::origin($url), var_export($url, true));
+        }
+
+        $this->assertSame('ftp://example.org', \CommonToolkit\Helper\Data\WebLinkHelper::origin('ftp://example.org/datei', ['ftp']));
+    }
 }

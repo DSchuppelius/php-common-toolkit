@@ -861,4 +861,70 @@ class WebLinkHelper {
 
         return $filename !== '' ? $filename : null;
     }
+
+    /**
+     * Prüft, ob ein String eine absolute IRI nach RFC 3987 ist: Schema, Doppelpunkt
+     * und ein nicht leerer Rest ohne Leer-, Steuer- und in IRIs verbotene Zeichen.
+     *
+     * Anders als {@see self::isUrl()} gelten auch `urn:`, `tag:` und `mailto:` sowie
+     * Nicht-ASCII-Zeichen. Das Schema selbst wird nicht inhaltlich geprüft.
+     */
+    public static function isAbsoluteIri(?string $iri): bool {
+        if ($iri === null || $iri === '') {
+            return false;
+        }
+
+        return preg_match('/^[a-z][a-z0-9+.\-]*:[^\s\x00-\x1f\x7f<>"{}|\\\\^`]+$/iuD', $iri) === 1;
+    }
+
+    /**
+     * Ursprung (`scheme://host[:port]`) einer URL — oder `null`, wenn keiner sicher
+     * bestimmbar ist.
+     *
+     * Der Host wird streng geprüft, weil ein Ursprung typischerweise in einen
+     * HTTP-Header wandert (CSP, CORS, `postMessage`-Prüfung). `parse_url()` akzeptiert
+     * im Host-Teil auch Semikolons, Leerzeichen und Anführungszeichen — ein Semikolon
+     * beendet eine CSP-Direktive und startet eine neue (in workDiary Befund S-05 des
+     * Sicherheitsscans 2026-08-23). Zugelassen sind Hostnamen und IP-Literale in
+     * eckigen Klammern; der Port muss eine gültige Portnummer sein.
+     *
+     * @param list<string> $schemes Erlaubte Schemata, kleingeschrieben.
+     */
+    public static function origin(?string $url, array $schemes = ['http', 'https']): ?string {
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+            return null;
+        }
+
+        $scheme = strtolower((string) $parts['scheme']);
+        if (!in_array($scheme, $schemes, true)) {
+            return null;
+        }
+
+        $host = (string) $parts['host'];
+        $literal = trim($host, '[]');
+
+        $isHostname = filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false;
+        $isIpLiteral = $literal !== $host && filter_var($literal, FILTER_VALIDATE_IP) !== false;
+
+        if (!$isHostname && !$isIpLiteral) {
+            return null;
+        }
+
+        $origin = $scheme . '://' . $host;
+
+        if (!empty($parts['port'])) {
+            $port = (string) $parts['port'];
+            if (!ctype_digit($port) || (int) $port < 1 || (int) $port > 65535) {
+                return null;
+            }
+            $origin .= ':' . $port;
+        }
+
+        return $origin;
+    }
 }

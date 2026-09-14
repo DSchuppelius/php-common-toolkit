@@ -2049,4 +2049,15 @@ class StringHelper {
 
         return $percent / 100.0;
     }
+
+    /**
+     * Prüft, ob ein String eine UUID nach RFC 9562 (vormals RFC 4122) ist.
+     *
+     * Akzeptiert werden die Versionen 1 bis 8 in der Variante `10xx` — so verlangt
+     * es unter anderem xAPI für Statement-IDs und Registrierungen. Nil- und
+     * Max-UUID zählen nicht, Umgebungszeichen ebenso wenig.
+     */
+    public static function isUuid(string $value): bool {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iD', $value) === 1;
+    }
 }

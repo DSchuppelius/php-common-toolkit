@@ -311,4 +311,15 @@ class StringHelperTest extends BaseTestCase {
         $this->assertGreaterThan(0.0, StringHelper::similarity('abc', 'xbc'));
         $this->assertSame(0.0, StringHelper::similarity('abc', 'xyz'));
     }
+
+    public function test_is_uuid(): void {
+        $this->assertTrue(\CommonToolkit\Helper\Data\StringHelper::isUuid('9fe4b3f2-6b1e-4c2a-8f1d-2a3b4c5d6e7f'));
+        $this->assertTrue(\CommonToolkit\Helper\Data\StringHelper::isUuid('9FE4B3F2-6B1E-4C2A-AF1D-2A3B4C5D6E7F'));
+        $this->assertTrue(\CommonToolkit\Helper\Data\StringHelper::isUuid('01890a5d-ac96-774b-bcce-b302099a8057'), 'Version 7 zählt.');
+        $this->assertFalse(\CommonToolkit\Helper\Data\StringHelper::isUuid('00000000-0000-0000-0000-000000000000'), 'Nil-UUID ist keine gültige Kennung.');
+        $this->assertFalse(\CommonToolkit\Helper\Data\StringHelper::isUuid('9fe4b3f2-6b1e-4c2a-cf1d-2a3b4c5d6e7f'), 'Falsche Variante.');
+        $this->assertFalse(\CommonToolkit\Helper\Data\StringHelper::isUuid('9fe4b3f26b1e4c2a8f1d2a3b4c5d6e7f'));
+        $this->assertFalse(\CommonToolkit\Helper\Data\StringHelper::isUuid(' 9fe4b3f2-6b1e-4c2a-8f1d-2a3b4c5d6e7f'));
+        $this->assertFalse(\CommonToolkit\Helper\Data\StringHelper::isUuid("9fe4b3f2-6b1e-4c2a-8f1d-2a3b4c5d6e7f\n"), 'Ein abschließender Zeilenumbruch darf nicht durchrutschen.');
+    }
 }

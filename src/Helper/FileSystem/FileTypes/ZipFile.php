@@ -178,6 +178,9 @@ class ZipFile extends HelperAbstract {
      * @param int|null $maxEntries Maximale Anzahl Datei-Einträge (null = unbegrenzt).
      * @param int|null $maxBytes Maximale entpackte Gesamtbytes (null = unbegrenzt).
      * @param float|null $maxRatio Maximales Verhältnis entpackt/komprimiert (null = unbegrenzt).
+     * @param (callable(string): bool)|null $skipEntry Liefert true für Einträge, die nicht entpackt werden
+     *        sollen (z. B. ausführbare Endungen in hochgeladenen Paketen). Übersprungene Einträge werden
+     *        weder geschrieben noch auf die Limits angerechnet; die Zip-Slip-Prüfung gilt trotzdem.
      * @throws Exception Falls die Datei nicht extrahiert werden kann.
      * @throws InvalidArgumentException Falls ein Path-Traversal-Angriff erkannt wird oder ein Limit-Parameter ungültig ist.
      * @throws DocumentLimitExceededException Falls ein Limit (Einträge, Bytes, Kompressionsverhältnis) überschritten wird — Art über getKind().
@@ -188,7 +191,8 @@ class ZipFile extends HelperAbstract {
         bool $deleteSourceFile = true,
         ?int $maxEntries = null,
         ?int $maxBytes = null,
-        ?float $maxRatio = null
+        ?float $maxRatio = null,
+        ?callable $skipEntry = null
     ): void {
         self::checkZipExtension();
 
@@ -246,6 +250,13 @@ class ZipFile extends HelperAbstract {
                     InvalidArgumentException::class,
                     "Zip-Slip-Angriff erkannt! Eintrag '$entryName' versucht außerhalb des Zielverzeichnisses zu schreiben."
                 );
+            }
+
+            // Vom Aufrufer ausgeschlossene Einträge: weder schreiben noch zählen.
+            // Die Zip-Slip-Prüfung davor gilt trotzdem — ein Ausbruchspfad bleibt
+            // ein Angriff, auch wenn der Eintrag übersprungen würde.
+            if ($skipEntry !== null && !str_ends_with($entryName, '/') && $skipEntry($entryName) === true) {
+                continue;
             }
 
             // Verzeichnis erstellen falls nötig

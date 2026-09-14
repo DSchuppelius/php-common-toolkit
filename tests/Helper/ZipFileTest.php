@@ -542,4 +542,44 @@ class ZipFileTest extends BaseTestCase {
 
         File::delete($zipPath);
     }
+
+    public function test_extract_skips_entries_rejected_by_the_filter(): void {
+        $this->skipIfNoZipExtension();
+
+        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'filter.zip';
+        $zip = new ZipArchive();
+        $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $zip->addFromString('index.html', '<html></html>');
+        $zip->addFromString('shell.php', '<?php system($_GET["cmd"]);');
+        $zip->addFromString('sub/.htaccess', 'php_flag engine on');
+        $zip->close();
+
+        $extractDir = $this->tempDir . DIRECTORY_SEPARATOR . 'filtered';
+        ZipFile::extract(
+            $zipPath,
+            $extractDir,
+            false,
+            maxEntries: 1,
+            skipEntry: static fn (string $name): bool => in_array(strtolower(pathinfo($name, PATHINFO_EXTENSION)), ['php', 'htaccess'], true),
+        );
+
+        $this->assertTrue(File::exists($extractDir . DIRECTORY_SEPARATOR . 'index.html'));
+        $this->assertFalse(File::exists($extractDir . DIRECTORY_SEPARATOR . 'shell.php'), 'Gefilterte Einträge dürfen nicht auf der Platte landen.');
+        $this->assertFalse(File::exists($extractDir . DIRECTORY_SEPARATOR . 'sub' . DIRECTORY_SEPARATOR . '.htaccess'));
+        // maxEntries: 1 greift nicht, weil übersprungene Einträge nicht zählen.
+    }
+
+    public function test_extract_filter_does_not_bypass_the_zip_slip_check(): void {
+        $this->skipIfNoZipExtension();
+
+        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'slip-filter.zip';
+        $zip = new ZipArchive();
+        $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $zip->addFromString('../../boese.php', 'nicht hierhin');
+        $zip->close();
+
+        // Der Filter würde den Eintrag überspringen — ein Ausbruchspfad bleibt trotzdem ein Angriff.
+        $this->expectException(InvalidArgumentException::class);
+        ZipFile::extract($zipPath, $this->tempDir . DIRECTORY_SEPARATOR . 'slip', false, skipEntry: static fn (string $name): bool => true);
+    }
 }
