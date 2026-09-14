@@ -547,7 +547,7 @@ class ZipFileTest extends BaseTestCase {
         $this->skipIfNoZipExtension();
 
         $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'filter.zip';
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         $zip->addFromString('index.html', '<html></html>');
         $zip->addFromString('shell.php', '<?php system($_GET["cmd"]);');
@@ -573,7 +573,7 @@ class ZipFileTest extends BaseTestCase {
         $this->skipIfNoZipExtension();
 
         $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'slip-filter.zip';
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         $zip->addFromString('../../boese.php', 'nicht hierhin');
         $zip->close();
