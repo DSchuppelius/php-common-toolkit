@@ -117,7 +117,33 @@ class BankHelperTest extends BaseTestCase {
 
     public function test_is_bic(): void {
         $this->assertTrue(BankHelper::isBIC("COBADEFFXXX"));
+        $this->assertTrue(BankHelper::isBIC("COBADEFF"));
+        $this->assertTrue(BankHelper::isBIC("PPLXLUL2"));
+        $this->assertTrue(BankHelper::isBIC("NOVHSCSC")); // Seychellen — Nicht-SEPA-Land zählt
         $this->assertFalse(BankHelper::isBIC("INVALID"));
+    }
+
+    /**
+     * Stellen 5-6 müssen ein ISO-3166-Land sein: vorher galt JEDES
+     * Großbuchstaben-Wort mit 8/11 Zeichen als BIC — Kontoauszugs-Vokabular
+     * wanderte so als Gegen-BIC in die Ausgabe.
+     */
+    public function test_is_bic_requires_iso_country_code(): void {
+        $this->assertFalse(BankHelper::isBIC("BUCHUNGSTAG")); // "UN" ist kein Land
+        $this->assertFalse(BankHelper::isBIC("ABCDQQ22"));    // "QQ" ist kein Land
+        $this->assertFalse(BankHelper::isBIC("RECHNUNGEN"));  // 10 Zeichen, Formatfehler
+
+        // Dokumentierte Grenze: Wörter, deren Stellen 5-6 zufällig ein Land
+        // sind, bleiben strukturell gültige BICs (ISO 9362 gibt ohne
+        // Verzeichnis-Lookup nicht mehr her).
+        $this->assertTrue(BankHelper::isBIC("DEUTSCHLAND")); // "SC" = Seychellen
+    }
+
+    public function test_format_iban_groups_of_four(): void {
+        $this->assertSame("DE44 5001 0517 5407 3249 31", BankHelper::formatIBAN("DE44500105175407324931"));
+        $this->assertSame("DE44 5001 0517 5407 3249 31", BankHelper::formatIBAN("de44 5001 0517 5407 3249 31"));
+        $this->assertSame("", BankHelper::formatIBAN(null));
+        $this->assertSame("", BankHelper::formatIBAN("   "));
     }
 
     public function test_is_iban_anon(): void {

@@ -76,10 +76,18 @@ class BankHelper {
     }
 
     /**
-     * Überprüft die IBAN auf Gültigkeit.
+     * Prüft, ob der Wert wie eine IBAN AUSSIEHT — reine Struktur-Prüfung
+     * (Länderpräfix, Zeichenklasse, registrierte Länderlänge), OHNE Mod-97.
+     *
+     * ACHTUNG API-Falle: Der Name klingt nach Validierung, aber eine
+     * prüfsummen-falsche IBAN ("DE21…78" mit gekippter Endziffer) besteht
+     * diese Prüfung. Wer "gültige IBAN" meint (Kontoinhaber-Identität,
+     * Ausgabe-Felder), braucht {@see checkIBAN()} (Mod-97). isIBAN() ist für
+     * Gruppierung, Erkennung und Kandidaten-Filter gedacht — dort sollen auch
+     * anonymisierte Testdaten mit kaputter Prüfsumme noch als IBAN gelten.
      *
      * @param string|null $value Die IBAN.
-     * @return bool True, wenn die IBAN gültig ist, andernfalls false.
+     * @return bool True, wenn der Wert strukturell eine IBAN ist.
      */
     public static function isIBAN(?string $value): bool {
         // Anonymisierte/maskierte IBANs ablehnen. Der frühere X{5,}-Guard traf
@@ -127,6 +135,24 @@ class BankHelper {
         $normalized = strtoupper(preg_replace('/\s+/', '', $iban) ?? '');
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    /**
+     * Formatiert eine IBAN für die ANZEIGE in Vierergruppen
+     * ("DE89 3704 0044 0532 0130 00" — ISO 13616 Papierformat).
+     *
+     * Gegenstück zu {@see normalizeIBAN()} (Vergleich/Speicherung). Ersetzt
+     * das vielfach kopierte `trim(chunk_split($iban, 4, ' '))`-Idiom der
+     * Aufrufer. Eingaben mit vorhandenem Whitespace werden erst normalisiert;
+     * leere Eingaben bleiben leer.
+     *
+     * @param string|null $iban Die IBAN (mit oder ohne Leerzeichen).
+     * @return string Die gruppierte IBAN, '' bei leerer Eingabe.
+     */
+    public static function formatIBAN(?string $iban): string {
+        $normalized = self::normalizeIBAN($iban);
+
+        return $normalized === null ? '' : trim(chunk_split($normalized, 4, ' '));
     }
 
     /**
@@ -321,13 +347,26 @@ class BankHelper {
     }
 
     /**
-     * Überprüft die BIC auf Gültigkeit.
+     * Überprüft die BIC auf Gültigkeit (ISO 9362): 4 Buchstaben Bankcode,
+     * 2 Buchstaben ISO-3166-Ländercode, Location-Code (Stelle 7 ohne 0/1,
+     * Stelle 8 ohne O), optional 3 Zeichen Branch.
+     *
+     * Der Ländercode wird gegen die ISO-Tabelle geprüft — vorher galt JEDES
+     * Großbuchstaben-Wort mit 8/11 Zeichen als BIC ("BUCHUNGSTAG": „UN" ist
+     * kein Land → jetzt false). Strukturell NICHT erkennbar bleiben Wörter,
+     * deren Stellen 5-6 zufällig ein Land sind ("DEUTSCHLAND", "LASTSCHRIFT":
+     * „SC" = Seychellen) — mehr gibt ISO 9362 ohne Verzeichnis-Lookup nicht
+     * her; solche Fälle muss der Aufrufer über seinen Kontext ausschließen.
      *
      * @param string|null $value Die BIC.
      * @return bool True, wenn die BIC gültig ist, andernfalls false.
      */
     public static function isBIC(?string $value): bool {
-        return $value !== null && preg_match("/^[A-Z]{6}[2-9A-Z][0-9A-NP-Z]([A-Z0-9]{3}|x{3})?\$/", $value) === 1;
+        if ($value === null || preg_match("/^[A-Z]{6}[2-9A-Z][0-9A-NP-Z]([A-Z0-9]{3}|x{3})?\$/", $value) !== 1) {
+            return false;
+        }
+
+        return CountryCode::tryFrom(substr($value, 4, 2)) !== null;
     }
 
     /**

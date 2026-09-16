@@ -15,6 +15,7 @@ namespace CommonToolkit\Helper\Data\CSV;
 use CommonToolkit\Entities\CSV\DataLine;
 use CommonToolkit\Enums\Common\CSV\QuotingStyle;
 use CommonToolkit\Helper\Data\{StringHelper as BaseStringHelper, Validator};
+use Generator;
 use RuntimeException;
 use Throwable;
 
@@ -377,24 +378,47 @@ final class StringHelper extends BaseStringHelper {
      * @return array<string>    Array der logischen CSV-Zeilen
      */
     public static function splitCsvByLogicalLine(string $csv, string $delimiter = ',', string $enclosure = '"'): array {
-        $lines = preg_split('/\r\n|\r|\n/', $csv) ?: [];
-        $result = [];
+        return iterator_to_array(
+            self::iterateLogicalLines(preg_split('/\r\n|\r|\n/', $csv) ?: [], $delimiter, $enclosure),
+            false,
+        );
+    }
+
+    /**
+     * Setzt PHYSISCHE Zeilen zu LOGISCHEN CSV-Zeilen zusammen — als Generator,
+     * damit große Quellen zeilenweise (z. B. aus einem Datei-Stream) verarbeitet
+     * werden können, ohne den Volltext zu halten.
+     *
+     * Hintergrund: {@see parseLineToFields()}/{@see extractFields()} werfen bei
+     * einem offenen Enclosure eine RuntimeException — wer physische Zeilen
+     * einzeln parst, explodiert deshalb beim ersten mehrzeiligen quoted Feld
+     * (Verwendungszweck mit Zeilenumbruch). Dieser Iterator puffert offene
+     * Enclosures per {@see hasMultilineFields()} und liefert erst die
+     * vollständige logische Zeile — die Zusammenfüge-Logik, die Aufrufer
+     * bislang selbst nachbauen mussten.
+     *
+     * @param iterable<string> $lines Physische Zeilen (ohne Zeilenende-Zeichen)
+     * @param string $delimiter Spaltentrennzeichen (z. B. "," oder ";")
+     * @param string $enclosure Enclosure-Zeichen (z. B. '"')
+     * @return Generator<int, string> Logische CSV-Zeilen
+     */
+    public static function iterateLogicalLines(iterable $lines, string $delimiter = ',', string $enclosure = '"'): Generator {
         $buffer = '';
 
         foreach ($lines as $line) {
             $buffer .= ($buffer !== '' ? "\n" : '') . $line;
 
             if (!self::hasMultilineFields($buffer, $delimiter, $enclosure)) {
-                $result[] = $buffer;
+                yield $buffer;
                 $buffer = '';
             }
         }
 
+        // Rest mit offenem Enclosure: unverändert ausliefern statt still zu
+        // verschlucken — der Parser des Aufrufers entscheidet über den Fehler.
         if (trim($buffer) !== '') {
-            $result[] = $buffer;
+            yield $buffer;
         }
-
-        return $result;
     }
 
     /**
