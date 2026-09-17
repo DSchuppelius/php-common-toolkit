@@ -54,16 +54,16 @@
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.7.2",
+            "version": "v2.7.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "f88fe42f0d90aac1479ca65f588d41253970532f"
+                "reference": "c0e815416a986fa73ea2ed99c74704420b84f484"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/f88fe42f0d90aac1479ca65f588d41253970532f",
-                "reference": "f88fe42f0d90aac1479ca65f588d41253970532f",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/c0e815416a986fa73ea2ed99c74704420b84f484",
+                "reference": "c0e815416a986fa73ea2ed99c74704420b84f484",
                 "shasum": ""
             },
             "require": {
@@ -107,9 +107,9 @@
             "description": "Logging and error handling foundation for the Schuppelius PHP toolkits (PSR-3 loggers, global error handler, LoggerRegistry, Laravel bridge)",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.7.2"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.7.3"
             },
-            "time": "2026-07-26T11:10:17+00:00"
+            "time": "2026-09-16T08:41:01+00:00"
         },
         {
             "name": "maxmind-db/reader",
@@ -2143,5 +2143,5 @@
     "platform-overrides": {
         "php": "8.2.0"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }
