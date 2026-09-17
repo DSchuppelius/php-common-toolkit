@@ -170,7 +170,7 @@ final class Duration implements JsonSerializable, Stringable {
     }
 
     /**
-     * Summiert Dauern (leere Liste → 0).
+     * Summiert Dauern (leere Liste -> 0).
      *
      * @param iterable<self> $durations
      */
@@ -247,14 +247,14 @@ final class Duration implements JsonSerializable, Stringable {
     }
 
     /**
-     * Gesamtminuten, Richtung Null abgeschnitten (90:30 min → 90).
+     * Gesamtminuten, Richtung Null abgeschnitten (90:30 min -> 90).
      */
     public function getTotalMinutes(): int {
         return intdiv($this->seconds, 60);
     }
 
     /**
-     * Dezimalstunden ohne Rundung (90 min → 1.5, -15 min → -0.25) —
+     * Dezimalstunden ohne Rundung (90 min -> 1.5, -15 min -> -0.25) —
      * für Faktura-Mengen und Industriestunden-Anzeigen.
      */
     public function toDecimalHours(): float {

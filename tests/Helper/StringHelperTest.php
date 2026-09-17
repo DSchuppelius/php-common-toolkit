@@ -277,7 +277,7 @@ class StringHelperTest extends BaseTestCase {
         $this->assertTrue(StringHelper::isMbEncodingSupported('ISO-8859-15'));
         $this->assertTrue(StringHelper::isMbEncodingSupported('Windows-1252'));
 
-        // mbstring-fremde Encodings (DOS-Codepages, chardet-Fehlerkennungen) → iconv-Pfad
+        // mbstring-fremde Encodings (DOS-Codepages, chardet-Fehlerkennungen) -> iconv-Pfad
         $this->assertFalse(StringHelper::isMbEncodingSupported('CP850'));
         $this->assertFalse(StringHelper::isMbEncodingSupported('JOHAB'));
         $this->assertFalse(StringHelper::isMbEncodingSupported('UNSINN-99'));

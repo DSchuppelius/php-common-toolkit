@@ -140,7 +140,7 @@ final class AmountTokenizer {
         return self::$amountRe = '/(?<![\d.,\'])([-+−–]?)\s?(' . $cur . ')?\s?(' . self::AMT . ')\s?(' . $cur . ')?\s{0,16}([-+−–]|\b[SH]\b|\bDR\b|\bCR\b|\bAf\b|\bBij\b)?(?![\d.,])/u';
     }
 
-    /** Symbol oder Code am Betrag → ISO-4217-Code ({@see CurrencyCode}); null, wenn keine Währung dastand. */
+    /** Symbol oder Code am Betrag -> ISO-4217-Code ({@see CurrencyCode}); null, wenn keine Währung dastand. */
     private static function normalizeCurrency(string $raw): ?string {
         $raw = trim($raw);
         if ($raw === '') {

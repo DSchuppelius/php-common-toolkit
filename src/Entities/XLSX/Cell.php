@@ -43,7 +43,7 @@ class Cell {
     /**
      * Gibt den Zellwert als String zurück.
      *
-     * null ⇒ '', bool ⇒ '1'/'0', Datum/Zeit ⇒ wie {@see toCanonicalString()}
+     * null => '', bool => '1'/'0', Datum/Zeit => wie {@see toCanonicalString()}
      * (`DateTimeInterface` ist nicht string-castbar; ohne diesen Zweig stürzte
      * z.B. {@see Sheet::getHeaderNames()} über einer Datumszelle in Zeile 1).
      * Zahlen bleiben beim `(string)`-Cast — Floats also unverändert zur
@@ -76,7 +76,7 @@ class Cell {
      *    im Export eine erfundene Genauigkeit.
      *  - Float: feste Notation mit bis zu 10 Nachkommastellen, überflüssige
      *    Nullen (und ein übrig bleibender Punkt) fallen weg.
-     *  - alles Übrige: {@see getStringValue()} (null ⇒ '', bool ⇒ '1'/'0').
+     *  - alles Übrige: {@see getStringValue()} (null => '', bool => '1'/'0').
      */
     public function toCanonicalString(): string {
         if ($this->value instanceof DateTimeInterface) {

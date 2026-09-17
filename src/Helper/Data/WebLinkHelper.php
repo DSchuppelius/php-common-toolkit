@@ -643,7 +643,7 @@ class WebLinkHelper {
 
         $ips = gethostbynamel($host);
         if ($ips === false || $ips === []) {
-            return true; // nicht auflösbar → blockieren
+            return true; // nicht auflösbar -> blockieren
         }
 
         foreach ($ips as $ip) {

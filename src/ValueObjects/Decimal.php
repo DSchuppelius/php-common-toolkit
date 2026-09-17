@@ -160,7 +160,7 @@ final class Decimal implements JsonSerializable, Stringable {
      * Zwischenrundung auftritt).
      *
      * @param iterable<self> $values Zu summierende Werte.
-     * @param int|null       $scale  Zielskala (null = größte vorkommende Skala; leere Liste → 0).
+     * @param int|null       $scale  Zielskala (null = größte vorkommende Skala; leere Liste -> 0).
      */
     public static function sum(iterable $values, ?int $scale = null): self {
         $amounts = [];

@@ -166,7 +166,7 @@ final class Quantity implements JsonSerializable, Stringable {
     }
 
     /**
-     * Multipliziert mit einem einheitenlosen Faktor (z.B. Stückzahl × Faktor).
+     * Multipliziert mit einem einheitenlosen Faktor (z.B. Stückzahl x Faktor).
      */
     public function times(Decimal $factor, ?int $scale = null, RoundingMode $mode = RoundingMode::HalfUp): self {
         return new self($this->value->times($factor, $scale, $mode), $this->unit);

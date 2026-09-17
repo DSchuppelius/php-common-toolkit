@@ -268,7 +268,7 @@ final class Money implements JsonSerializable, Stringable {
     }
 
     /**
-     * Betrag zuzüglich Prozentsatz (Netto → Brutto): `$net->plusPercentage('19')`.
+     * Betrag zuzüglich Prozentsatz (Netto -> Brutto): `$net->plusPercentage('19')`.
      *
      * @param numeric-string|int|float $percent Prozentsatz (19 = 19 %).
      */
@@ -348,7 +348,7 @@ final class Money implements JsonSerializable, Stringable {
      * Largest-Remainder-Verfahren, die Summe der Teile entspricht exakt dem
      * Original. Array-Schlüssel bleiben erhalten.
      *
-     * @param array<array-key, numeric-string|int|float> $weights Gewichte je Position (alle 0 → gleichmäßig).
+     * @param array<array-key, numeric-string|int|float> $weights Gewichte je Position (alle 0 -> gleichmäßig).
      * @return array<array-key, self>
      */
     public function allocateByWeights(array $weights): array {
@@ -489,8 +489,8 @@ final class Money implements JsonSerializable, Stringable {
     }
 
     /**
-     * Gleicher Betrag mit anderer Nachkommastellenzahl (z.B. 2 → 3 Stellen für
-     * Zwischenrechnungen oder 3 → 2 für die Belegausgabe).
+     * Gleicher Betrag mit anderer Nachkommastellenzahl (z.B. 2 -> 3 Stellen für
+     * Zwischenrechnungen oder 3 -> 2 für die Belegausgabe).
      */
     public function withScale(int $scale, RoundingMode $mode = RoundingMode::HalfUp): self {
         $scale = self::assertScale($scale, $this->currency);
@@ -503,7 +503,7 @@ final class Money implements JsonSerializable, Stringable {
 
     /**
      * Rechnet mit einem Wechselkurs in eine andere Währung um. Der Kurs ist der
-     * Faktor Zielwährung/Ausgangswährung (1 EUR = 0.92 CHF → convertTo(CHF, '0.92')).
+     * Faktor Zielwährung/Ausgangswährung (1 EUR = 0.92 CHF -> convertTo(CHF, '0.92')).
      * Die Zielskala folgt standardmäßig der Zielwährung (JPY 0, KWD 3 Stellen).
      *
      * @param numeric-string|int|float $rate Wechselkurs (> 0).

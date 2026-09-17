@@ -16,10 +16,10 @@ use CommonToolkit\Helper\Data\DataUrlHelper;
 use Tests\Contracts\BaseTestCase;
 
 class DataUrlHelperTest extends BaseTestCase {
-    /** 1×1-PNG, Base64. */
+    /** 1x1-PNG, Base64. */
     private const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
-    /** 1×1-GIF, Base64. */
+    /** 1x1-GIF, Base64. */
     private const GIF = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
     public function test_decodes_png_data_url_with_allowed_type(): void {

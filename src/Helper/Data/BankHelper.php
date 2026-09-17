@@ -43,7 +43,7 @@ class BankHelper {
     /** @var array<string, string>|null Cache für BIC-Index (BIC8 => Zeile) */
     private static ?array $bicIndex = null;
 
-    /** @var array<string, string>|null "<Land>;<Bankcode>" → BIC (AT/CH/BE) */
+    /** @var array<string, string>|null "<Land>;<Bankcode>" -> BIC (AT/CH/BE) */
     private static ?array $nationalBankCodeIndex = null;
 
     /**
@@ -161,7 +161,7 @@ class BankHelper {
      * Aufbauend auf {@see self::normalizeIBAN()} (Whitespace weg + Großschreibung)
      * wird ein direkt angehängter, exakt bekannter ISO-4217-Währungscode entfernt,
      * sofern die IBAN dadurch wieder auf die erwartete Länderlänge zurückfällt
-     * (z.B. "DE89 3704 0044 0532 0130 00 EUR" bzw. "DE...EUR" → "DE..."). Das ist
+     * (z.B. "DE89 3704 0044 0532 0130 00 EUR" bzw. "DE...EUR" -> "DE..."). Das ist
      * ein häufiger Extraktions-/Eingabefehler, bei dem das Währungskürzel aus einem
      * Nachbarfeld (Payment currency, MT940 :25:) an die IBAN geklebt wird.
      *
@@ -195,7 +195,7 @@ class BankHelper {
      * Deterministischer Digest der normalisierten IBAN (Blind-Index).
      *
      * Komposition aus {@see self::normalizeIBAN()} und
-     * {@see CryptoHelper::hash()}: null/leer → null, sonst Digest der
+     * {@see CryptoHelper::hash()}: null/leer -> null, sonst Digest der
      * normalisierten IBAN (Default: SHA-256, Hex). Das Ausgabeformat ist
      * Format-Anker für persistierte Blind-Indizes — Änderungen brechen
      * bestehende Indizes.
@@ -203,7 +203,7 @@ class BankHelper {
      * @param string|null $iban Die IBAN (roh, ggf. mit Leerzeichen/gemischter Schreibweise).
      * @param HashAlgorithm $algorithm Hash-Algorithmus (Default SHA-256).
      * @return string|null Hex-Digest der normalisierten IBAN oder null bei null/leerer
-     *                     Eingabe (auch Whitespace-only → null; daher bewusst KEINE
+     *                     Eingabe (auch Whitespace-only -> null; daher bewusst KEINE
      *                     konditionale ($iban is null …)-Annotation).
      */
     public static function hashIBAN(?string $iban, HashAlgorithm $algorithm = HashAlgorithm::SHA256): ?string {
@@ -353,7 +353,7 @@ class BankHelper {
      *
      * Der Ländercode wird gegen die ISO-Tabelle geprüft — vorher galt JEDES
      * Großbuchstaben-Wort mit 8/11 Zeichen als BIC ("BUCHUNGSTAG": „UN" ist
-     * kein Land → jetzt false). Strukturell NICHT erkennbar bleiben Wörter,
+     * kein Land -> jetzt false). Strukturell NICHT erkennbar bleiben Wörter,
      * deren Stellen 5-6 zufällig ein Land sind ("DEUTSCHLAND", "LASTSCHRIFT":
      * „SC" = Seychellen) — mehr gibt ISO 9362 ohne Verzeichnis-Lookup nicht
      * her; solche Fälle muss der Aufrufer über seinen Kontext ausschließen.
@@ -583,10 +583,10 @@ class BankHelper {
      * Gibt die BIC aus einer IBAN zurück.
      *
      * Deutschland: BLZ-Index der Bundesbank (O(1)). Niederlande: der vierstellige
-     * Bankcode der IBAN ist zugleich der Institutsteil der BIC ("ABNA" → ABNANL2A);
+     * Bankcode der IBAN ist zugleich der Institutsteil der BIC ("ABNA" -> ABNANL2A);
      * die BIC kommt aus dem Verzeichnis der erreichbaren Zahlungsdienstleister,
      * sofern dort genau eine achtstellige BIC mit diesem Institut und Land steht.
-     * Andere Länder (z. B. CH: BC-Nummer → BIC braucht den SIX-Bankenstamm) liefern null.
+     * Andere Länder (z. B. CH: BC-Nummer -> BIC braucht den SIX-Bankenstamm) liefern null.
      *
      * @param string $iban Die IBAN.
      * @return string|null Die BIC (11-stellig, Filiale XXX) oder null, wenn keine BIC gefunden wurde.
@@ -605,7 +605,7 @@ class BankHelper {
     }
 
     /**
-     * Bankcode → BIC für Länder, deren IBAN einen numerischen Bankcode führt.
+     * Bankcode -> BIC für Länder, deren IBAN einen numerischen Bankcode führt.
      *
      * Anders als in den Niederlanden (Bankcode = die ersten vier Zeichen des BIC)
      * lässt sich der BIC in AT, CH, BE und LU nicht aus der IBAN ableiten – er steht
@@ -615,7 +615,7 @@ class BankHelper {
      * (CH/LU); fehlt eine Datei, liefert die Methode für dieses Land null.
      *
      * Führende Nullen entfallen: die IBAN führt den Code auf feste Breite
-     * aufgefüllt ("CH93 0076 2…" → IID 762), die Quellen ohne Auffüllung.
+     * aufgefüllt ("CH93 0076 2…" -> IID 762), die Quellen ohne Auffüllung.
      */
     private static function bicFromNationalBankCode(string $country, string $bankCode): ?string {
         $bankCode = ltrim(trim($bankCode), '0');
@@ -628,7 +628,7 @@ class BankHelper {
     }
 
     /**
-     * @return array<string, string> "<Land>;<Bankcode>" → BIC
+     * @return array<string, string> "<Land>;<Bankcode>" -> BIC
      */
     private static function getNationalBankCodeIndex(): array {
         if (self::$nationalBankCodeIndex !== null) {
@@ -682,7 +682,7 @@ class BankHelper {
     }
 
     /**
-     * Niederlande: Bankcode der IBAN (4 Buchstaben) → BIC aus dem Zahlungsdienstleister-Verzeichnis.
+     * Niederlande: Bankcode der IBAN (4 Buchstaben) -> BIC aus dem Zahlungsdienstleister-Verzeichnis.
      * Eindeutig nur, wenn genau eine achtstellige BIC "<Code>NL??" geführt wird.
      */
     private static function bicFromNlBankCode(string $bankCode): ?string {
@@ -1376,7 +1376,7 @@ class BankHelper {
     }
 
     /**
-     * Lädt den Bankenstamm von SIX Interbank Clearing (CH: IID → BIC).
+     * Lädt den Bankenstamm von SIX Interbank Clearing (CH: IID -> BIC).
      *
      * Anders als die Bundesbank-Dateien liegt diese NICHT bei — SIX untersagt die
      * Weitergabe ("may not be reproduced or reused in any way"). Sie wird beim

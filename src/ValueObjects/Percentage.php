@@ -113,7 +113,7 @@ final class Percentage implements JsonSerializable, Stringable {
     }
 
     /**
-     * Betrag zuzüglich dieses Prozentsatzes (Netto → Brutto).
+     * Betrag zuzüglich dieses Prozentsatzes (Netto -> Brutto).
      */
     public function addTo(Money $money, RoundingMode $mode = RoundingMode::HalfUp): Money {
         return $money->plusPercentage($this->value->getValue(), $mode);
@@ -127,7 +127,7 @@ final class Percentage implements JsonSerializable, Stringable {
     }
 
     /**
-     * Prozentwert als Faktor: 19 % → 0.19 (für Multiplikationen).
+     * Prozentwert als Faktor: 19 % -> 0.19 (für Multiplikationen).
      */
     public function asFactor(int $scale = 8, RoundingMode $mode = RoundingMode::HalfUp): Decimal {
         return $this->value->dividedBy(Decimal::of(100), $scale, $mode);

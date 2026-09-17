@@ -100,7 +100,7 @@ final class ByteSize implements JsonSerializable, Stringable {
     }
 
     /**
-     * Summiert Datenmengen (leere Liste → 0 Bytes).
+     * Summiert Datenmengen (leere Liste -> 0 Bytes).
      *
      * @param iterable<self> $sizes
      */

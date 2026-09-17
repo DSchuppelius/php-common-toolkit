@@ -157,14 +157,14 @@ enum Month: int {
     // ==================== ARITHMETIK ====================
 
     /**
-     * Gibt den Folgemonat zurück (Dezember → Januar).
+     * Gibt den Folgemonat zurück (Dezember -> Januar).
      */
     public function next(): self {
         return $this->add(1);
     }
 
     /**
-     * Gibt den Vormonat zurück (Januar → Dezember).
+     * Gibt den Vormonat zurück (Januar -> Dezember).
      */
     public function previous(): self {
         return $this->add(-1);

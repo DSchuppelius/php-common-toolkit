@@ -74,7 +74,7 @@ class FieldAbstract implements FieldInterface {
                 // Bei quoted Fields: Whitespace außerhalb der Quotes ignorieren
                 $inner = substr($trimmed, $startRun, $length - $startRun - $endRun);
 
-                // Leeres Feld mit symmetrischen Quotes → intdiv
+                // Leeres Feld mit symmetrischen Quotes -> intdiv
                 // Innere Leerzeichen zählen für Round-Trip-Erhaltung
                 if (trim($inner) === '' && $startRun === $endRun) {
                     $this->enclosureRepeat = intdiv($startRun, 2);
@@ -115,7 +115,7 @@ class FieldAbstract implements FieldInterface {
                 $endRun = strlen($endMatch[1]);
             }
 
-            // Leeres Feld mit symmetrischen Quotes → intdiv
+            // Leeres Feld mit symmetrischen Quotes -> intdiv
             // Innere Leerzeichen zählen für Round-Trip-Erhaltung
             if (trim($matches[2]) === '' && $startRun === $endRun) {
                 $this->enclosureRepeat = intdiv($startRun, 2);
@@ -272,7 +272,7 @@ class FieldAbstract implements FieldInterface {
                 $decimalSeparator = $m[1];
                 $decimals = strlen($m[2]);
             } else {
-                // Kein Originalformat → tatsächliche Dezimalstellen des Float-Werts nutzen
+                // Kein Originalformat -> tatsächliche Dezimalstellen des Float-Werts nutzen
                 // sprintf('%.10f') statt number_format(14) um Float-Precision-Artefakte zu vermeiden
                 $str = rtrim(rtrim(sprintf('%.10f', $this->typedValue), '0'), '.');
                 $dotPos = strpos($str, '.');

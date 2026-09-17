@@ -637,7 +637,7 @@ class CSVDocumentParser extends HelperAbstract {
 
     /**
      * Baut das Dokument und wertet die gesammelten Feldzahl-Abweichungen aus:
-     * strikt → RuntimeException mit den ersten Zeilennummern, tolerant → Zeilen im Dokument vermerken.
+     * strikt -> RuntimeException mit den ersten Zeilennummern, tolerant -> Zeilen im Dokument vermerken.
      *
      * @param array<int, int> $deviations Zeilennummer => gefundene Feldzahl
      * @throws RuntimeException Im strikten Modus bei Abweichungen

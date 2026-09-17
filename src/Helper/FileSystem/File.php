@@ -55,10 +55,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         "%!PS" => 'application/postscript',
     ];
 
-    /** @var array<string, string|false> Cache für chardet-Ergebnisse (Pfad → Encoding) */
+    /** @var array<string, string|false> Cache für chardet-Ergebnisse (Pfad -> Encoding) */
     private static array $chardetCache = [];
 
-    /** @var array<string, string|false> Cache für MIME-Typ-Ergebnisse (Pfad → MIME-Typ) */
+    /** @var array<string, string|false> Cache für MIME-Typ-Ergebnisse (Pfad -> MIME-Typ) */
     private static array $mimeTypeCache = [];
 
     /**
@@ -1634,7 +1634,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         // aktuelle Endung der Datei ermitteln
         $fileExt = ltrim(self::extension($file), '.');
 
-        // Eingaben normalisieren → Punkt vorne entfernen
+        // Eingaben normalisieren -> Punkt vorne entfernen
         if (is_array($extensions)) {
             $extensions = array_map(fn ($ext) => ltrim($ext, '.'), $extensions);
         } else {
@@ -1708,7 +1708,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * vorliegen (z.B. HTTP-Downloads mit Content-Type) und ein Dateiname erzeugt
      * werden soll. MIME-Parameter (z.B. "; charset=utf-8") werden ignoriert,
      * Groß-/Kleinschreibung spielt keine Rolle. Bei MIME-Typen mit mehreren
-     * gebräuchlichen Endungen wird die üblichste gewählt (z.B. image/jpeg → jpg).
+     * gebräuchlichen Endungen wird die üblichste gewählt (z.B. image/jpeg -> jpg).
      *
      * @param string $mimeType Der MIME-Typ (z.B. "application/pdf" oder "text/csv; charset=utf-8").
      * @return string|null Die Dateiendung ohne Punkt oder null bei unbekanntem MIME-Typ.

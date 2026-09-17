@@ -436,7 +436,7 @@ class DocumentTest extends BaseTestCase {
         $builder->addRow(DataLine::fromString('C;200', ';', '"'));
         $doc = $builder->build();
 
-        // skipNonNumeric=true (Standard) → N/A wird übersprungen
+        // skipNonNumeric=true (Standard) -> N/A wird übersprungen
         $sum = $doc->sumColumnByName('Wert', 2, null, true);
         $this->assertEquals('300.00', $sum);
     }
@@ -494,7 +494,7 @@ class DocumentTest extends BaseTestCase {
         $builder->setHeader($header);
         $doc = $builder->build();
 
-        // Leeres Dokument → Summe 0
+        // Leeres Dokument -> Summe 0
         $sum = $doc->sumColumnByName('Wert', 2);
         $this->assertEquals('0.00', $sum);
     }

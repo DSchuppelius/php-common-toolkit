@@ -204,7 +204,7 @@ function findeLink(string $seite): array {
     return [null, '', count($alle)];
 }
 
-/** @var array<string, string> "<Land>;<Code>" → Datenzeile */
+/** @var array<string, string> "<Land>;<Code>" -> Datenzeile */
 $eintraege = [];
 
 // --- LU: ABBL-Register ------------------------------------------------------
@@ -273,7 +273,7 @@ if ($blatt === null) {
     abbruch('kein Tabellenblatt in der XLSX-Datei gefunden');
 }
 
-/** @return array<string, string> Spaltenbuchstabe → Wert */
+/** @return array<string, string> Spaltenbuchstabe -> Wert */
 $zellenAus = static function (string $row) use ($texte): array {
     preg_match_all('#<c\s+r="([A-Z]+)\d+"([^>]*)>(?:<v>([^<]*)</v>)?</c>#', $row, $cs, PREG_SET_ORDER);
     $zellen = [];

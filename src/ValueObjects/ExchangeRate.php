@@ -121,7 +121,7 @@ final class ExchangeRate implements JsonSerializable, Stringable {
         if ($money->getCurrency() !== $this->sourceCurrency) {
             self::logErrorAndThrow(
                 InvalidArgumentException::class,
-                "Kurs gilt für {$this->sourceCurrency->value} → {$this->targetCurrency->value}, Betrag ist in {$money->getCurrency()->value}."
+                "Kurs gilt für {$this->sourceCurrency->value} -> {$this->targetCurrency->value}, Betrag ist in {$money->getCurrency()->value}."
             );
         }
 

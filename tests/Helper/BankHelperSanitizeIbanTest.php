@@ -69,7 +69,7 @@ class BankHelperSanitizeIbanTest extends BaseTestCase {
     }
 
     public function test_keeps_unknown_suffix(): void {
-        // Kein exakter Währungscode → konservativ nicht abschneiden.
+        // Kein exakter Währungscode -> konservativ nicht abschneiden.
         $this->assertSame(
             'DE89370400440532013000EURX',
             BankHelper::sanitizeIBAN('DE89370400440532013000EURX')
@@ -77,7 +77,7 @@ class BankHelperSanitizeIbanTest extends BaseTestCase {
     }
 
     public function test_keeps_too_short_iban_with_currency(): void {
-        // Länge unterschreitet die DE-Länderlänge auch nach dem Suffix → nichts
+        // Länge unterschreitet die DE-Länderlänge auch nach dem Suffix -> nichts
         // entfernen (bleibt ungültig und wird nachgelagert als solche erkannt).
         $this->assertSame(
             'DE1234567890EUR',

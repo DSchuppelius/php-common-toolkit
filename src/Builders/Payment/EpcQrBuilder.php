@@ -36,8 +36,8 @@ use InvalidArgumentException;
  *  7 <IBAN>
  *  8 EUR<Betrag>         optional; Punkt als Dezimaltrenner, 0.01–999999999.99
  *  9 <Zweck-Code>        optional (Purpose, 4 Zeichen)
- * 10 <Strukturierte Referenz>  optional  ─┐ nur EINES von beiden
- * 11 <Verwendungszweck>         optional ─┘
+ * 10 <Strukturierte Referenz>  optional  -+ nur EINES von beiden
+ * 11 <Verwendungszweck>         optional -+
  * 12 <Hinweis für den Zahler>   optional, max. 70 Zeichen
  * ```
  *

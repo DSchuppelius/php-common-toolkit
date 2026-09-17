@@ -130,7 +130,7 @@ class DateTimeRangeTest extends BaseTestCase {
     }
 
     public function test_duration_over_dst_change_is_real_elapsed_time(): void {
-        // DST-Beginn Europe/Berlin am 29.03.2026: 02:00 → 03:00.
+        // DST-Beginn Europe/Berlin am 29.03.2026: 02:00 -> 03:00.
         // Der Kalendertag hat real nur 23 Stunden.
         $berlin = new DateTimeZone('Europe/Berlin');
         $range = DateTimeRange::between(

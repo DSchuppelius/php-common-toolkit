@@ -360,7 +360,7 @@ class XLSXDocumentTest extends BaseTestCase {
     public function test_parser_max_rows_counts_header_row_without_header_mode(): void {
         $path = $this->writeLimitFixture();
 
-        // Ohne Header-Modus zählt die Kopfzeile als Datenzeile: 3 Zeilen → Grenze 3 passt, 2 wirft
+        // Ohne Header-Modus zählt die Kopfzeile als Datenzeile: 3 Zeilen -> Grenze 3 passt, 2 wirft
         $this->assertCount(3, XLSXDocumentParser::fromFile($path, false, null, null, 3)->getFirstSheet() ?? []);
 
         $this->expectException(RuntimeException::class);
@@ -391,7 +391,7 @@ class XLSXDocumentTest extends BaseTestCase {
      *   Serial 46204 = 01.07.2026
      * Regression: dateTimeToExcel() korrigierte den Lotus-Bug doppelt (Epoche
      * 1899-12-30 UND +1 ab Serial 60) — alle Daten ab dem 01.03.1900 waren um
-     * einen Tag verschoben (2026-07-01 → 46205 statt 46204).
+     * einen Tag verschoben (2026-07-01 -> 46205 statt 46204).
      */
     public function test_date_time_to_excel_reference_values(): void {
         $generator = new class extends XLSXGenerator {

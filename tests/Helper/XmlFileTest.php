@@ -45,7 +45,7 @@ class XmlFileTest extends BaseTestCase {
 
     public function test_count_records_without_element_name(): void {
         $count = XmlFile::countRecords($this->testValidXml);
-        $this->assertEquals(2, $count); // z. B. <kunde> … </kunde> ×2 unter <kunden>
+        $this->assertEquals(2, $count); // z. B. <kunde> … </kunde> x2 unter <kunden>
     }
 
     public function test_count_records_with_element_name(): void {

@@ -69,7 +69,7 @@ final class StringHelper extends BaseStringHelper {
         }
 
         arsort($counts);
-        // $candidates ist hier garantiert nicht leer (Early-Return oben) → kein null-Key.
+        // $candidates ist hier garantiert nicht leer (Early-Return oben) -> kein null-Key.
         $best = array_key_first($counts);
 
         // Schwelle: ein Vorkommen pro Zeile (requirePerLine) bzw. mindestens eines insgesamt.
@@ -153,7 +153,7 @@ final class StringHelper extends BaseStringHelper {
             array_filter([$strictRepeat, $nonStrictRepeat], fn ($v) => $v > 0)
         );
 
-        // Wenn keine Quotes gefunden → Standard leer
+        // Wenn keine Quotes gefunden -> Standard leer
         if (empty($repeats)) {
             return $withDelimiter ? [$delimiter . $delimiter] : [''];
         }
@@ -307,12 +307,12 @@ final class StringHelper extends BaseStringHelper {
             $CSVDataLine = DataLine::fromString($trimmed, $delimiter, $enclosure);
             $rebuilt = $CSVDataLine->toString($delimiter, $enclosure);
 
-            // Wenn gleich → valide CSV-Struktur
+            // Wenn gleich -> valide CSV-Struktur
             if ($trimmed === $rebuilt) {
                 return true;
             }
 
-            // Prüfe auf Excel-Exponentialformat-Manipulation (z.B. "3,21001E+13" → "32100100000000")
+            // Prüfe auf Excel-Exponentialformat-Manipulation (z.B. "3,21001E+13" -> "32100100000000")
             if (self::hasExcelExponentialNotation($trimmed)) {
                 self::logWarning('CSV enthält Excel-Exponentialformat - Daten wurden möglicherweise durch Excel manipuliert: ' . $trimmed);
                 return true;
@@ -359,7 +359,7 @@ final class StringHelper extends BaseStringHelper {
         $escaped = preg_replace('/' . preg_quote($enclosure, '/') . '{2}/', '', $csv) ?? $csv;
         $quoteCount = substr_count($escaped, $enclosure);
 
-        // ungerade Quote-Anzahl ⇒ unvollständig ⇒ Multiline
+        // ungerade Quote-Anzahl => unvollständig => Multiline
         if ($quoteCount % 2 !== 0) {
             return true;
         }
@@ -467,7 +467,7 @@ final class StringHelper extends BaseStringHelper {
                     continue;
                 }
                 // Einzelnes Quote DIREKT nach einem Delimiter im gequoteten Feld,
-                // das KEIN doppeltes Quote ("") einleitet → ungültig (z. B. '"A,"B"').
+                // das KEIN doppeltes Quote ("") einleitet -> ungültig (z. B. '"A,"B"').
                 // Ein doppeltes Quote ("",  next === enclosure) ist hingegen erlaubt:
                 // RFC4180-escaptes Quote bzw. doppelt-gewrappte Felder ("",""…) sowie
                 // Exporte, die einfach- und doppelt-gequotete Felder mischen (PayPal).
@@ -699,10 +699,10 @@ final class StringHelper extends BaseStringHelper {
      * Diese Methode entfernt solche Anführungszeichen, damit der Wert korrekt geparst werden kann.
      *
      * Beispiele:
-     * - `'-902.36'` → `-902.36`
-     * - `'123`      → `123`
-     * - `'-1.234,56'` → `-1.234,56`
-     * - `hello`     → `hello` (unverändert, kein Anführungszeichen)
+     * - `'-902.36'` -> `-902.36`
+     * - `'123`      -> `123`
+     * - `'-1.234,56'` -> `-1.234,56`
+     * - `hello`     -> `hello` (unverändert, kein Anführungszeichen)
      *
      * @param string $value Der zu bereinigende Wert.
      * @return string Der bereinigte Wert oder der Originalwert wenn kein Textpräfix vorhanden.

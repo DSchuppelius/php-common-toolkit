@@ -232,11 +232,11 @@ final class IpLocationHelper {
         self::closeReader();
     }
 
-    // ───────────────────────── intern ──────────────────────────────────
+    // ------------------------- intern ----------------------------------
 
     /**
      * Wählt aus den lokalisierten Namen den bevorzugten aus: konfigurierte
-     * Locale → Englisch → erster verfügbarer.
+     * Locale -> Englisch -> erster verfügbarer.
      *
      * @param array<string, mixed> $names
      */

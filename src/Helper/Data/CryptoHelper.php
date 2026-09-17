@@ -296,7 +296,7 @@ class CryptoHelper extends HelperAbstract {
      * Input ergibt immer denselben Digest — geeignet für Blind-Indizes,
      * Dedupe-Keys und Integritätsprüfungen, NICHT für Passwörter.
      *
-     * @param string|null $data Der zu hashende String (null → null; '' wird regulär gehasht).
+     * @param string|null $data Der zu hashende String (null -> null; '' wird regulär gehasht).
      * @param HashAlgorithm $algorithm Hash-Algorithmus (Default SHA-256).
      * @param bool $binary True für Roh-Bytes statt Hex-Darstellung.
      * @return ($data is null ? null : string) Digest (hex, oder binär bei $binary) bzw. null bei null-Eingabe.

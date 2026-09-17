@@ -75,8 +75,8 @@ class DateHelper {
      * Klemmt einen überlaufenden Kalendertag in einem getrennt formatierten
      * Datums-String auf den letzten gültigen Tag des Monats.
      *
-     * Beispiele: "30.02.2023" → "28.02.2023", "31.04.2024" → "30.04.2024",
-     * "29.02.2023" → "28.02.2023", "2023-02-30" → "2023-02-28".
+     * Beispiele: "30.02.2023" -> "28.02.2023", "31.04.2024" -> "30.04.2024",
+     * "29.02.2023" -> "28.02.2023", "2023-02-30" -> "2023-02-28".
      *
      * Fängt reale Bank-/Export-Fehler ab, bei denen ein ungültiger Tag sonst
      * still auf den Folgemonat überläuft (DateTime::createFromFormat / strtotime
@@ -100,7 +100,7 @@ class DateHelper {
             return $date;
         }
 
-        // Führende 4-stellige Zahl ⇒ ISO-Reihenfolge (JJJJ-MM-TT), sonst TT.MM.JJJJ.
+        // Führende 4-stellige Zahl => ISO-Reihenfolge (JJJJ-MM-TT), sonst TT.MM.JJJJ.
         $isoOrder = strlen($first) === 4;
         $day = (int) ($isoOrder ? $last : $first);
         $year = (int) ($isoOrder ? $first : $last);
@@ -113,10 +113,10 @@ class DateHelper {
 
         $lastDay = self::getLastDay($year, $month);
         if ($lastDay < 1 || $day <= $lastDay) {
-            return $date; // gültiger Tag ⇒ unverändert
+            return $date; // gültiger Tag => unverändert
         }
 
-        // Original-Feldbreite des Tages beibehalten (z.B. "30" → "28", "3" → "…").
+        // Original-Feldbreite des Tages beibehalten (z.B. "30" -> "28", "3" -> "…").
         $dayField = $isoOrder ? $last : $first;
         $clamped = str_pad((string) $lastDay, strlen($dayField), '0', STR_PAD_LEFT);
 
@@ -342,7 +342,7 @@ class DateHelper {
      * Das Ergebnis liegt immer im Bereich [aktuellesJahr - 50, aktuellesJahr + 49].
      *
      * Beispiel bei aktuellem Jahr 2026:
-     * - 26 → 2026, 75 → 2075, 76 → 1976, 99 → 1999
+     * - 26 -> 2026, 75 -> 2075, 76 -> 1976, 99 -> 1999
      *
      * @param int $shortYear Die zweistellige Jahreszahl (0-99).
      * @return int Die vierstellige Jahreszahl.
@@ -360,10 +360,10 @@ class DateHelper {
         $pivot = ($currentTwoDigit + 50) % 100;
 
         if ($pivot > $currentTwoDigit) {
-            // Kein Überlauf: Jahre < pivot → aktuelles Jahrhundert, >= pivot → vorheriges
+            // Kein Überlauf: Jahre < pivot -> aktuelles Jahrhundert, >= pivot -> vorheriges
             return $shortYear < $pivot ? $currentCentury + $shortYear : ($currentCentury - 100) + $shortYear;
         } else {
-            // Überlauf (z.B. 2076): Jahre >= pivot UND < 100 → aktuelles, < pivot → nächstes Jahrhundert
+            // Überlauf (z.B. 2076): Jahre >= pivot UND < 100 -> aktuelles, < pivot -> nächstes Jahrhundert
             return $shortYear >= $pivot ? $currentCentury + $shortYear : ($currentCentury + 100) + $shortYear;
         }
     }
@@ -614,12 +614,12 @@ class DateHelper {
      * setReadDataOnly() verwirft die Zell-Formatierung, sodass Datumsspalten als
      * DateTimeInterface, ISO-String, rohe Excel-Seriennummer oder vorformatierter
      * DE-/Slash-/Dash-String ankommen können. Erkannt werden:
-     *  - DateTimeInterface                       → d.m.Y
-     *  - leerer Wert                             → null
-     *  - Excel-Serial (serialMin..serialMax)     → {@see fromExcelSerial}
-     *  - ISO (JJJJ-MM-TT, opt. Zeit)             → TT.MM.JJJJ
-     *  - TT[./-]MM[./-]JJ(JJ) (opt. Zeit)        → TT.MM.JJJJ
-     *  - sonst                                   → null
+     *  - DateTimeInterface                       -> d.m.Y
+     *  - leerer Wert                             -> null
+     *  - Excel-Serial (serialMin..serialMax)     -> {@see fromExcelSerial}
+     *  - ISO (JJJJ-MM-TT, opt. Zeit)             -> TT.MM.JJJJ
+     *  - TT[./-]MM[./-]JJ(JJ) (opt. Zeit)        -> TT.MM.JJJJ
+     *  - sonst                                   -> null
      *
      * Zweistellige Jahre werden über das 50-Jahr-Fenster von {@see expandYear}
      * aufgelöst (für aktuelle Bankexporte praktisch immer 20JJ).
@@ -725,7 +725,7 @@ class DateHelper {
             }
         }
 
-        // DE oder US → passenden Formatstring bestimmen
+        // DE oder US -> passenden Formatstring bestimmen
         $sepNormalized = str_replace(['.', '/'], '-', $value);
         $colonCount = substr_count($value, ':');
         $hasSeconds = $colonCount === 2;
@@ -1521,11 +1521,11 @@ class DateHelper {
      * Uhrzeit und Zeitzone werden ignoriert, es zählen nur die Kalenderdaten.
      *
      * Beispiele:
-     *   01.01.2025–31.12.2025 → 12    15.12.2025–14.12.2026 → 12
-     *   01.01.2025–31.01.2025 → 1     31.01.2025–28.02.2025 → 1
-     *   01.02.2024–29.02.2024 → 1     (Schaltjahr)
-     *   01.01.2025–15.01.2025 → 0     (15/31 = 0,48 → abgerundet)
-     *   01.01.2025–20.01.2025 → 1     (20/31 = 0,65 → aufgerundet)
+     *   01.01.2025–31.12.2025 -> 12    15.12.2025–14.12.2026 -> 12
+     *   01.01.2025–31.01.2025 -> 1     31.01.2025–28.02.2025 -> 1
+     *   01.02.2024–29.02.2024 -> 1     (Schaltjahr)
+     *   01.01.2025–15.01.2025 -> 0     (15/31 = 0,48 -> abgerundet)
+     *   01.01.2025–20.01.2025 -> 1     (20/31 = 0,65 -> aufgerundet)
      *
      * @param DateTimeInterface $from        Beginn (inklusiv).
      * @param DateTimeInterface $toInclusive Ende (inklusiv); darf nicht vor $from liegen.

@@ -245,7 +245,7 @@ class DataFieldTest extends BaseTestCase {
         $new = $field->withTypedValue(3.14159);
 
         $this->assertEquals(3.14159, $new->getTypedValue());
-        // DataField nutzt standardmäßig CountryCode::Germany → Komma als Dezimaltrennzeichen
+        // DataField nutzt standardmäßig CountryCode::Germany -> Komma als Dezimaltrennzeichen
         $this->assertSame('3,14159', $new->getValue());
     }
 

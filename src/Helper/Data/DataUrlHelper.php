@@ -73,7 +73,7 @@ class DataUrlHelper extends HelperAbstract {
     /**
      * Dekodiert eine Data-URL oder reines Base64 zu Rohbytes.
      *
-     * Base64 wird strikt dekodiert (Zeichen außerhalb des Alphabets → false).
+     * Base64 wird strikt dekodiert (Zeichen außerhalb des Alphabets -> false).
      * Sind erlaubte Typen angegeben, muss der am Inhalt erkannte MIME-Typ
      * darunter sein; nennt die Data-URL selbst einen Typ, muss er außerdem mit
      * dem erkannten übereinstimmen.

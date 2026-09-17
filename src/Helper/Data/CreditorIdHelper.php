@@ -292,7 +292,7 @@ class CreditorIdHelper {
             return self::logErrorAndReturn(null, "Nationale Kennung fehlt");
         }
 
-        // Berechnung: nationale ID + Ländercode + 00 → MOD 97
+        // Berechnung: nationale ID + Ländercode + 00 -> MOD 97
         $checkString = $nationalId . $countryCode . '00';
 
         // Buchstaben in Zahlen umwandeln

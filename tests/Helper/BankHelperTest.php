@@ -410,7 +410,7 @@ class BankHelperTest extends BaseTestCase {
         if (!self::hatSchweizerBankenstamm()) {
             self::markTestSkipped('SIX-Bankenstamm fehlt (kein Netzabruf möglich).');
         }
-        // Die IBAN füllt den Bankcode auf feste Breite auf ("CH32 3000 0…" → IID 30000),
+        // Die IBAN füllt den Bankcode auf feste Breite auf ("CH32 3000 0…" -> IID 30000),
         // die Quellen führen ihn ohne Auffüllung.
         self::assertSame('POFICHBEXXX', BankHelper::bicFromIBAN('CH3230000001876930777'));
     }

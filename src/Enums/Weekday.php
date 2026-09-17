@@ -148,14 +148,14 @@ enum Weekday: int {
     // ==================== ARITHMETIK ====================
 
     /**
-     * Gibt den Folgetag zurück (Samstag → Sonntag).
+     * Gibt den Folgetag zurück (Samstag -> Sonntag).
      */
     public function next(): self {
         return $this->add(1);
     }
 
     /**
-     * Gibt den Vortag zurück (Sonntag → Samstag).
+     * Gibt den Vortag zurück (Sonntag -> Samstag).
      */
     public function previous(): self {
         return $this->add(-1);
@@ -176,7 +176,7 @@ enum Weekday: int {
     }
 
     /**
-     * Gibt den nächsten Werktag zurück (Freitag/Samstag → Montag).
+     * Gibt den nächsten Werktag zurück (Freitag/Samstag -> Montag).
      */
     public function nextWorkday(): self {
         $day = $this->add(1);
@@ -187,7 +187,7 @@ enum Weekday: int {
     }
 
     /**
-     * Gibt den vorherigen Werktag zurück (Sonntag/Montag → Freitag).
+     * Gibt den vorherigen Werktag zurück (Sonntag/Montag -> Freitag).
      */
     public function previousWorkday(): self {
         $day = $this->add(-1);

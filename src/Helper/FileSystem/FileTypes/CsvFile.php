@@ -115,7 +115,7 @@ class CsvFile extends HelperAbstract {
             $lines[] = $line;
         }
 
-        // String-basierte Kernlogik teilen; '' = kein Treffer → dateispezifische Exception.
+        // String-basierte Kernlogik teilen; '' = kein Treffer -> dateispezifische Exception.
         $detectedDelimiter = StringHelper::detectDelimiter(
             implode("\n", $lines),
             self::$commonDelimiters,

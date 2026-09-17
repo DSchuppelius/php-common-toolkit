@@ -38,7 +38,7 @@ class IpLocationHelperTest extends BaseTestCase {
     }
 
     public function test_lookup_returns_null_when_unavailable(): void {
-        // Öffentliche IP, aber keine DB → null (nicht Exception).
+        // Öffentliche IP, aber keine DB -> null (nicht Exception).
         $this->assertNull(IpLocationHelper::lookup('8.8.8.8'));
     }
 

@@ -276,7 +276,7 @@ class ZipFileTest extends BaseTestCase {
      * Baut ein ZIP-Binär direkt über ZipArchive — auch mit bösartigen
      * Eintragsnamen, die createFromStrings() zu Recht ablehnen würde.
      *
-     * @param array<string, string> $entries Eintragsname → Inhalt.
+     * @param array<string, string> $entries Eintragsname -> Inhalt.
      */
     private function buildRawZipBinary(array $entries): string {
         $path = $this->tempDir . DIRECTORY_SEPARATOR . 'raw_' . uniqid() . '.zip';

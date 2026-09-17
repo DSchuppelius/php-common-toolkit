@@ -20,16 +20,16 @@ namespace CommonToolkit\Enums;
  * und der darauf aufbauenden Methoden.
  */
 enum RoundingMode: string {
-    /** Kaufmännisch: bei .5 vom Betrag weg (2,5 → 3; -2,5 → -3). Standard. */
+    /** Kaufmännisch: bei .5 vom Betrag weg (2,5 -> 3; -2,5 -> -3). Standard. */
     case HalfUp = 'half_up';
-    /** Bei .5 zum Betrag hin (2,5 → 2; -2,5 → -2). */
+    /** Bei .5 zum Betrag hin (2,5 -> 2; -2,5 -> -2). */
     case HalfDown = 'half_down';
-    /** Banker's Rounding: bei .5 zur nächsten geraden Ziffer (2,5 → 2; 3,5 → 4). */
+    /** Banker's Rounding: bei .5 zur nächsten geraden Ziffer (2,5 -> 2; 3,5 -> 4). */
     case HalfEven = 'half_even';
-    /** Immer Richtung +∞ (2,1 → 3; -2,9 → -2). */
+    /** Immer Richtung +∞ (2,1 -> 3; -2,9 -> -2). */
     case Ceil = 'ceil';
-    /** Immer Richtung −∞ (2,9 → 2; -2,1 → -3). */
+    /** Immer Richtung −∞ (2,9 -> 2; -2,1 -> -3). */
     case Floor = 'floor';
-    /** Abschneiden Richtung Null, kein Runden (2,9 → 2; -2,9 → -2). */
+    /** Abschneiden Richtung Null, kein Runden (2,9 -> 2; -2,9 -> -2). */
     case Truncate = 'truncate';
 }

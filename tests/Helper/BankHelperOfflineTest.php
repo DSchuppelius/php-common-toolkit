@@ -102,7 +102,7 @@ class BankHelperOfflineTest extends BaseTestCase {
 
     /**
      * Niederländische IBAN: Bankcode = Institutsteil der BIC, Rest aus dem
-     * Zahlungsdienstleister-Verzeichnis (ABNA → ABNANL2A, RABO → RABONL2U).
+     * Zahlungsdienstleister-Verzeichnis (ABNA -> ABNANL2A, RABO -> RABONL2U).
      */
     public function test_dutch_iban_yields_bic_from_psp_directory_offline(): void {
         BankHelper::setNetworkEnabled(false);

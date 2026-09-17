@@ -20,7 +20,7 @@ use CommonToolkit\Helper\Shell;
  * Dokument-Konvertierung via LibreOffice (headless, --convert-to).
  *
  * Generisch für beliebige von LibreOffice unterstützte Zielformate
- * (z.B. txt→docx/odt, docx→pdf, odt→pdf, …). Das Executable wird über
+ * (z.B. txt->docx/odt, docx->pdf, odt->pdf, …). Das Executable wird über
  * office_executables.json aufgelöst.
  */
 final class OfficeHelper extends ConfiguredHelperAbstract {

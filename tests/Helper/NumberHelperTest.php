@@ -135,7 +135,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertSame('0', NumberHelper::normalizeDecimalStringOrNull('0'));
         $this->assertSame('0.00', NumberHelper::normalizeDecimalStringOrNull('0,00'));
 
-        // Nicht deutbar ⇒ null.
+        // Nicht deutbar => null.
         $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('abc'));
         $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('n/a'));
         $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('12abc'));
@@ -184,7 +184,7 @@ final class NumberHelperTest extends TestCase {
     }
 
     public function test_normalize_decimal_string_parentheses_minus(): void {
-        // Accounting-Klammer-Notation ⇒ negativ.
+        // Accounting-Klammer-Notation => negativ.
         $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('(1.234,56)'));
         $this->assertSame('-1234.56', NumberHelper::normalizeDecimalString('(1,234.56)'));
         $this->assertSame('-2000.50', NumberHelper::normalizeDecimalString('(2.000,50)', CountryCode::Germany));
@@ -205,11 +205,11 @@ final class NumberHelperTest extends TestCase {
     }
 
     public function test_divide_or_default(): void {
-        // Positiver Divisor → normale Division.
+        // Positiver Divisor -> normale Division.
         $this->assertSame('2.50', NumberHelper::divideOrDefault('5', '2', 2));
         $this->assertSame('33.33', NumberHelper::divideOrDefault('100', '3', 2));
 
-        // Nicht-positiver Divisor (0 / negativ) → Fallback.
+        // Nicht-positiver Divisor (0 / negativ) -> Fallback.
         $this->assertSame('0', NumberHelper::divideOrDefault('5', '0', 2));
         $this->assertSame('0.0000', NumberHelper::divideOrDefault('5', '0', 4, '0.0000'));
         $this->assertSame('7', NumberHelper::divideOrDefault('5', '-3', 2, '7'));
@@ -332,7 +332,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('-318,00', NumberHelper::toGermanFormatOrNull('-318,00'));
         $this->assertEquals('0,00', NumberHelper::toGermanFormatOrNull('0'));
         $this->assertEquals('1234,56', NumberHelper::toGermanFormatOrNull('1 234,56'));
-        // Leer-/Nicht-Zahlen → null (Header/Freitext nicht zu 0,00 machen).
+        // Leer-/Nicht-Zahlen -> null (Header/Freitext nicht zu 0,00 machen).
         $this->assertNull(NumberHelper::toGermanFormatOrNull(''));
         $this->assertNull(NumberHelper::toGermanFormatOrNull('   '));
         $this->assertNull(NumberHelper::toGermanFormatOrNull('Betrag'));

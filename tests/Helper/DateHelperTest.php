@@ -71,7 +71,7 @@ class DateHelperTest extends BaseTestCase {
         $this->assertEquals('01.06.2025', DateHelper::parseEnglishMonthDate('01 jun 2025')?->format('d.m.Y'));
         $this->assertEquals('01.06.2025', DateHelper::parseEnglishMonthDate('1 June 2025')?->format('d.m.Y'));
         $this->assertEquals('15.12.2024', DateHelper::parseEnglishMonthDate('15-Dec-2024')?->format('d.m.Y'));
-        // Überlauf, unbekannter Monat, unvollständig und Leerwert → null
+        // Überlauf, unbekannter Monat, unvollständig und Leerwert -> null
         $this->assertNull(DateHelper::parseEnglishMonthDate('32 JUN 2025'));
         $this->assertNull(DateHelper::parseEnglishMonthDate('30 XYZ 2025'));
         $this->assertNull(DateHelper::parseEnglishMonthDate('01 JUN'));
@@ -190,7 +190,7 @@ class DateHelperTest extends BaseTestCase {
 
     /**
      * Tag/Monat ohne Nullfüllung: Round-Trip bleibt exakt (auch gemischt gefüllt),
-     * die Länderlogik (Germany → Tag zuerst, USA → Monat zuerst) bleibt erhalten,
+     * die Länderlogik (Germany -> Tag zuerst, USA -> Monat zuerst) bleibt erhalten,
      * und ungültige Kalendertage fallen weiterhin durch.
      */
     public function test_parse_date_time_accepts_time_without_seconds(): void {
@@ -338,7 +338,7 @@ class DateHelperTest extends BaseTestCase {
         // Kompaktes Format ohne Trennzeichen
         $this->assertEquals('20241220', DateHelper::expandShortYear('20241220'));
 
-        // 6 Ziffern: DDMMYY → expandiert
+        // 6 Ziffern: DDMMYY -> expandiert
         $result = DateHelper::expandShortYear('260115');
         $this->assertEquals('26012015', $result);
     }

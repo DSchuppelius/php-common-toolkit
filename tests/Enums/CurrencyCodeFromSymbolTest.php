@@ -97,7 +97,7 @@ final class CurrencyCodeFromSymbolTest extends BaseTestCase {
     }
 
     public function test_rial_symbol_resolves_to_iranian_rial(): void {
-        // mehrere Währungen benutzen ﷼ → Leitwährung: IRR
+        // mehrere Währungen benutzen ﷼ -> Leitwährung: IRR
         $this->assertSame(
             CurrencyCode::IranianRial,
             CurrencyCode::fromSymbol('﷼')

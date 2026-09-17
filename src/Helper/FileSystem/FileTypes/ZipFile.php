@@ -319,7 +319,7 @@ class ZipFile extends HelperAbstract {
     }
 
     /**
-     * Liest ein ZIP-Archiv aus einem Binärstring und liefert Pfad → Inhalt.
+     * Liest ein ZIP-Archiv aus einem Binärstring und liefert Pfad -> Inhalt.
      *
      * Für In-Memory-Verarbeitung (API-Antworten, Datenbank-Blobs, Uploads)
      * ohne eigene Tempdatei-Verwaltung beim Aufrufer. Verzeichniseinträge
@@ -334,7 +334,7 @@ class ZipFile extends HelperAbstract {
      * @param string $zipBinary Das ZIP-Archiv als Binärstring.
      * @param int|null $maxEntries Maximale Anzahl Datei-Einträge (null = unbegrenzt).
      * @param int|null $maxBytes Maximale entpackte Gesamtbytes (null = unbegrenzt).
-     * @return array<string, string> Eintragspfad → Inhalt.
+     * @return array<string, string> Eintragspfad -> Inhalt.
      * @throws InvalidArgumentException Bei unsicheren Eintragspfaden oder ungültigen Limit-Parametern.
      * @throws DocumentLimitExceededException Bei überschrittenem Entry- oder Byte-Limit — Art über getKind().
      * @throws Exception Falls der Binärstring kein lesbares ZIP-Archiv ist.
@@ -358,7 +358,7 @@ class ZipFile extends HelperAbstract {
         try {
             $openResult = $zip->open($tempFile);
             if ($openResult !== true) {
-                // false → 0 (unbekannter Fehler), sonst der ZipArchive-Fehlercode
+                // false -> 0 (unbekannter Fehler), sonst der ZipArchive-Fehlercode
                 self::logErrorAndThrow(Exception::class, "Binärstring ist kein lesbares ZIP-Archiv: " . self::getErrorMessage((int) $openResult));
             }
             $opened = true;
@@ -425,14 +425,14 @@ class ZipFile extends HelperAbstract {
     }
 
     /**
-     * Baut ein ZIP-Archiv als Binärstring aus Pfad → Inhalt.
+     * Baut ein ZIP-Archiv als Binärstring aus Pfad -> Inhalt.
      *
      * Gegenstück zu {@see self::readEntries()} für In-Memory-Erzeugung
      * (z. B. Download-Antworten) ohne Datei-Zwischenschritt beim Aufrufer.
      * Alle Eintragspfade durchlaufen VOR dem Schreiben den Zip-Slip-Guard
      * {@see self::assertSafeEntryPath()}.
      *
-     * @param array<string, string> $entries Eintragspfad → Inhalt (mindestens ein Eintrag).
+     * @param array<string, string> $entries Eintragspfad -> Inhalt (mindestens ein Eintrag).
      * @return string Das ZIP-Archiv als Binärstring.
      * @throws InvalidArgumentException Bei leerer Eintragsliste oder unsicheren Eintragspfaden.
      * @throws Exception Falls das Archiv nicht erzeugt werden kann.

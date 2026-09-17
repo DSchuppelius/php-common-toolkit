@@ -83,7 +83,7 @@ class FileExtensionForMimeTypeTest extends BaseTestCase {
     }
 
     public function test_roundtrip_with_mime_type_detection(): void {
-        // Umkehrhelfer-Eigenschaft: mimeType(datei.pdf) → application/pdf → 'pdf'
+        // Umkehrhelfer-Eigenschaft: mimeType(datei.pdf) -> application/pdf -> 'pdf'
         $tmp = sys_get_temp_dir() . '/ext-for-mime-' . bin2hex(random_bytes(4)) . '.pdf';
         file_put_contents($tmp, "%PDF-1.4\n%%EOF\n");
 

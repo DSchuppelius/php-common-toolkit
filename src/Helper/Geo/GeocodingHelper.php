@@ -17,7 +17,7 @@ use CommonToolkit\Helper\FileSystem\File;
 use ERRORToolkit\Traits\ErrorLog;
 
 /**
- * Reverse Geocoding Helper für Koordinaten → Ortsnamen.
+ * Reverse Geocoding Helper für Koordinaten -> Ortsnamen.
  * Nutzt Nominatim (OpenStreetMap) – konfigurierbar für eigenen Server.
  *
  * Standardmäßig wird das öffentliche Nominatim mit Rate-Limiting verwendet.
@@ -342,7 +342,7 @@ final class GeocodingHelper {
     public static function isAvailable(): bool {
         $config = self::loadConfig();
 
-        // Status-URL ableiten (bei /reverse → /status probieren)
+        // Status-URL ableiten (bei /reverse -> /status probieren)
         $baseUrl = preg_replace('#/reverse$#', '', $config['url']);
         $statusUrl = $baseUrl . '/status';
 

@@ -107,7 +107,7 @@ class NumberHelper {
                     return [$prefix, $suffix];
                 }
             }
-            return ['', $unit]; // Kein Präfix erkannt → gesamte Einheit ist Basiseinheit
+            return ['', $unit]; // Kein Präfix erkannt -> gesamte Einheit ist Basiseinheit
         };
 
         [$fromPrefix, $fromBase] = $getPrefix($fromUnit);
@@ -231,8 +231,8 @@ class NumberHelper {
      * Normalisiert eine Dezimalzahl mit automatischer Format-Erkennung.
      *
      * Unterstützt:
-     * - Deutsches Format: 1.234,56 → 1234.56
-     * - US-Format: 1,234.56 → 1234.56
+     * - Deutsches Format: 1.234,56 -> 1234.56
+     * - US-Format: 1,234.56 -> 1234.56
      * - Einfache Formate: 1,5 oder 1.5
      *
      * Bei Mehrdeutigkeit (nur ein Trenner mit genau 3 Nachkommastellen) wird
@@ -240,7 +240,7 @@ class NumberHelper {
      * (z.B. "1.234,00" oder "1,234.00").
      *
      * Mit CountryCode::Germany wird das deutsche Tausendertrennzeichen-Pattern
-     * eindeutig erkannt: 2.000 → 2000, 1.234.567 → 1234567, 2.000,50 → 2000.50.
+     * eindeutig erkannt: 2.000 -> 2000, 1.234.567 -> 1234567, 2.000,50 -> 2000.50.
      *
      * @param string $value Der zu normalisierende Wert.
      * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
@@ -258,10 +258,10 @@ class NumberHelper {
      *
      * Gleiche Format-Erkennung wie {@see normalizeDecimal()} (deutsche/US-
      * Tausender- und Dezimaltrennzeichen), liefert aber den kanonischen String:
-     * Punkt als Dezimaltrenner, keine Tausendertrenner. Leere Eingabe → "0".
+     * Punkt als Dezimaltrenner, keine Tausendertrenner. Leere Eingabe -> "0".
      *
-     * Beispiele: "1.234,56" → "1234.56", "1,234.56" → "1234.56",
-     * "1234,56" → "1234.56", "1234.56" → "1234.56", "2.000" (DE) → "2000".
+     * Beispiele: "1.234,56" -> "1234.56", "1,234.56" -> "1234.56",
+     * "1234,56" -> "1234.56", "1234.56" -> "1234.56", "2.000" (DE) -> "2000".
      *
      * Nicht interpretierbare Eingaben ergeben "0". Wer zwischen einer echten
      * Null und nicht deutbarem Input unterscheiden muss (Importe: "nicht
@@ -283,8 +283,8 @@ class NumberHelper {
      * etwas anderes bedeutet als der Betrag 0 — etwa ein Gesamtpreis in einem
      * Leistungsverzeichnis oder eine Menge in einem Katalog.
      *
-     * Beispiele: "1.234,56" → "1234.56", "" → null, "abc" → null,
-     * "n/a" → null, "0" → "0" (echte Null).
+     * Beispiele: "1.234,56" -> "1234.56", "" -> null, "abc" -> null,
+     * "n/a" -> null, "0" -> "0" (echte Null).
      *
      * @param string $value Der zu normalisierende Wert.
      * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
@@ -307,7 +307,7 @@ class NumberHelper {
         // --- Vorzeichen-/Kennungs-Erkennung VOR dem Entfernen der Trennzeichen ---
         $negative = false;
 
-        // Accounting-Klammer-Minus: "(1.234,56)" ⇒ negativ.
+        // Accounting-Klammer-Minus: "(1.234,56)" => negativ.
         if (preg_match('/^\((.+)\)$/', $value, $m)) {
             $negative = true;
             $value = trim($m[1]);
@@ -342,7 +342,7 @@ class NumberHelper {
             $normalized = '-' . $normalized;
         }
 
-        // Nicht deutbarer Rest ⇒ null. normalizeDecimalString() macht daraus '0'
+        // Nicht deutbarer Rest => null. normalizeDecimalString() macht daraus '0'
         // und bleibt damit unverändert in seinem Verhalten.
         return is_numeric($normalized) ? $normalized : null;
     }
@@ -357,7 +357,7 @@ class NumberHelper {
     private static function normalizeUnsignedDecimalString(string $value, ?CountryCode $country = null): string {
         // Deutsche/europäische Tausendertrennzeichen eindeutig erkennen:
         // Pattern: 1-3 Ziffern, dann Gruppen von exakt 3 Ziffern nach Punkt, optional Dezimalkomma
-        // Beispiele: 2.000 → 2000, 1.234.567 → 1234567, 2.000,50 → 2000.50
+        // Beispiele: 2.000 -> 2000, 1.234.567 -> 1234567, 2.000,50 -> 2000.50
         // Nicht betroffen: 902.36 (nur 2 Ziffern nach Punkt), 2.5 (nur 1 Ziffer)
         if ($country === CountryCode::Germany && preg_match('/^\d{1,3}(\.\d{3})+(,\d+)?$/', $value)) {
             $value = str_replace('.', '', $value);
@@ -379,7 +379,7 @@ class NumberHelper {
                 $value = str_replace(',', '', $value);
             }
         } elseif ($lastComma !== false) {
-            // Nur Komma vorhanden → immer als Dezimaltrenner behandeln
+            // Nur Komma vorhanden -> immer als Dezimaltrenner behandeln
             // (wie im deutschen Format üblich)
             $value = str_replace(',', '.', $value);
         }
@@ -1576,7 +1576,7 @@ class NumberHelper {
     /**
      * Berechnet den arithmetischen Durchschnitt einer Liste numerischer Strings – präzise.
      *
-     * @param array<array-key, numeric-string|int|float> $numbers Zahlenliste. Leer → "0".
+     * @param array<array-key, numeric-string|int|float> $numbers Zahlenliste. Leer -> "0".
      * @param int                               $scale Nachkommastellen (Standard: 2).
      * @param RoundingMode                      $mode  Rundungsverfahren (Standard: HalfUp).
      * @return numeric-string
@@ -1593,7 +1593,7 @@ class NumberHelper {
     /**
      * Berechnet den Median einer Liste numerischer Strings – präzise.
      *
-     * @param array<array-key, numeric-string|int|float> $numbers Zahlenliste. Leer → "0".
+     * @param array<array-key, numeric-string|int|float> $numbers Zahlenliste. Leer -> "0".
      * @param int                               $scale Nachkommastellen (Standard: 2).
      * @param RoundingMode                      $mode  Rundungsverfahren für den Mittelwert bei gerader Anzahl.
      * @return numeric-string

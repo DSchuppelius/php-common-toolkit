@@ -253,7 +253,7 @@ class StringHelper {
             if (!preg_match('/[\x80-\xFF]/', $data)) {
                 return null; // Reines ASCII
             }
-            // Gültiges UTF-8 mit High-Bytes → UTF-8
+            // Gültiges UTF-8 mit High-Bytes -> UTF-8
             return 'UTF-8';
         }
 
@@ -425,7 +425,7 @@ class StringHelper {
                 if ($consecutiveBox >= 3) {
                     $scores['CP437'] += 2;
                 } else {
-                    // Einzelnes Box-Drawing Zeichen → eher CP850 (dort sind es Buchstaben)
+                    // Einzelnes Box-Drawing Zeichen -> eher CP850 (dort sind es Buchstaben)
                     $scores['CP850'] += 1;
                 }
             }
@@ -438,7 +438,7 @@ class StringHelper {
             // ===== Konflikt-Bytes: 0xE4 = ä (ISO-8859-1) vs ń (CP852) =====
             // In deutschen Texten ist 0xE4 fast immer ä (Latin-1)
             // In polnischen Texten wäre es ń (CP852)
-            // Heuristik: Im Buchstabenkontext mit deutschen Mustern → Latin-1
+            // Heuristik: Im Buchstabenkontext mit deutschen Mustern -> Latin-1
             if (in_array($byte, $conflictBytes, true)) {
                 if ($isLetterContext) {
                     // Prüfe ob andere polnische CP852-Zeichen vorhanden sind
@@ -449,10 +449,10 @@ class StringHelper {
                         }
                     }
                     if ($hasOtherCp852) {
-                        // Andere polnische Zeichen vorhanden → wahrscheinlich CP852
+                        // Andere polnische Zeichen vorhanden -> wahrscheinlich CP852
                         $scores['CP852'] += 2;
                     } else {
-                        // Keine anderen polnischen Zeichen → wahrscheinlich ä (Latin-1)
+                        // Keine anderen polnischen Zeichen -> wahrscheinlich ä (Latin-1)
                         $scores['ISO-8859-1'] += 3;
                         $scores['Windows-1252'] += 3;
                     }
@@ -472,8 +472,8 @@ class StringHelper {
             // 0x86=Ü (in Win-1252: †), 0x8A=ä, 0x9A=ö, 0x9F=ü
             if ($byte === 0x80) {
                 // 0x80 = Ä in MacRoman, € in Windows-1252
-                // Buchstabenkontext (z.B. "Äpfel") → MacRoman
-                // Zahlenkontext (z.B. "€100") → Windows-1252
+                // Buchstabenkontext (z.B. "Äpfel") -> MacRoman
+                // Zahlenkontext (z.B. "€100") -> Windows-1252
                 if ($isLetterContext && !$isDigitContext) {
                     $scores['MacRoman'] += 3;
                 } elseif ($isDigitContext && !$isLetterContext) {
@@ -488,7 +488,7 @@ class StringHelper {
             if (in_array($byte, [0x8A, 0x9A, 0x9F], true)) {
                 // MacRoman: ä, ö, ü
                 // In CP850: è, Ù, ÿ
-                // Im Buchstabenkontext mit deutschen Wörtern → MacRoman
+                // Im Buchstabenkontext mit deutschen Wörtern -> MacRoman
                 if ($isLetterContext) {
                     $scores['MacRoman'] += 2;
                 }
@@ -499,7 +499,7 @@ class StringHelper {
             }
 
             // ===== ISO-8859-1 vs ISO-8859-15 =====
-            // 0xA4: ¤ vs € - wenn es nach Währung aussieht → ISO-8859-15
+            // 0xA4: ¤ vs € - wenn es nach Währung aussieht -> ISO-8859-15
             if ($byte === 0xA4) {
                 // Prüfe ob es im Kontext von Zahlen steht (Preis)
                 $numContext = ($before >= 0x30 && $before <= 0x39) || ($after >= 0x30 && $after <= 0x39);
@@ -553,17 +553,17 @@ class StringHelper {
             return $topKeys[0];
         }
 
-        // CP850 und CP437 gleichauf? → CP850 bevorzugen (häufiger für deutsche Texte)
+        // CP850 und CP437 gleichauf? -> CP850 bevorzugen (häufiger für deutsche Texte)
         if (in_array('CP850', $topKeys, true) && in_array('CP437', $topKeys, true)) {
             return 'CP850';
         }
 
-        // ISO-8859-1 und ISO-8859-15 gleichauf? → ISO-8859-15 bevorzugen (hat €)
+        // ISO-8859-1 und ISO-8859-15 gleichauf? -> ISO-8859-15 bevorzugen (hat €)
         if (in_array('ISO-8859-1', $topKeys, true) && in_array('ISO-8859-15', $topKeys, true)) {
             return 'ISO-8859-15';
         }
 
-        // ISO-8859-1 und Windows-1252 gleichauf? → Windows-1252 bevorzugen (Superset)
+        // ISO-8859-1 und Windows-1252 gleichauf? -> Windows-1252 bevorzugen (Superset)
         if (in_array('ISO-8859-1', $topKeys, true) && in_array('Windows-1252', $topKeys, true)) {
             return 'Windows-1252';
         }
@@ -712,7 +712,7 @@ class StringHelper {
      * Nötig, weil solche Zeichen (z.B. aus fehlerhaften PDF-/CSV-Extraktionen)
      * sonst ungültiges camt-/pain-XML erzeugen.
      *
-     * @param string|null $input Der zu bereinigende String (null → leerer String).
+     * @param string|null $input Der zu bereinigende String (null -> leerer String).
      * @return string Der von XML-invaliden Steuerzeichen bereinigte String.
      */
     public static function stripInvalidXmlChars(?string $input): string {
@@ -729,8 +729,8 @@ class StringHelper {
      * 0–9, A–Z, a–z, Leerzeichen und die Sonderzeichen ' : ? , - ( + . ) /.
      *
      * Vorgehen: (1) Umlaute/ß + Diakritika nach ASCII falten (via {@see toAscii()},
-     * Ä→AE … ß→ss). (2) Die „zu unterstützenden" Zusatzzeichen gemäß der EPC-Best-
-     * Practice-Umsetzung konvertieren: & → +, * → ., $ → ., % → . (3) Alle danach
+     * Ä->AE … ß->ss). (2) Die „zu unterstützenden" Zusatzzeichen gemäß der EPC-Best-
+     * Practice-Umsetzung konvertieren: & -> +, * -> ., $ -> ., % -> . (3) Alle danach
      * noch unzulässigen Zeichen (z.B. < > " @ #) durch ein Leerzeichen ersetzen,
      * Mehrfach-Leerzeichen kollabieren, Ränder trimmen.
      *
@@ -738,7 +738,7 @@ class StringHelper {
      * die erzeugten Nachrichten den geforderten Zeichenvorrat einhalten. Für
      * camt-Reporting NICHT nötig (dort gilt der volle Latin-1-Satz).
      *
-     * @param string|null $input Der Eingabestring (null → leerer String).
+     * @param string|null $input Der Eingabestring (null -> leerer String).
      * @return string Der auf den SEPA-Zeichensatz reduzierte String.
      */
     public static function toSepaRestrictedCharset(?string $input): string {
@@ -767,8 +767,8 @@ class StringHelper {
     /**
      * Transliteriert einen String nach ASCII.
      *
-     * Deutsche Umlaute werden zuerst ausgeschrieben (ä→ae, ö→oe, ü→ue, ß→ss,
-     * Ä→Ae, Ö→Oe, Ü→Ue), restliche diakritische Zeichen via iconv-Transliteration
+     * Deutsche Umlaute werden zuerst ausgeschrieben (ä->ae, ö->oe, ü->ue, ß->ss,
+     * Ä->Ae, Ö->Oe, Ü->Ue), restliche diakritische Zeichen via iconv-Transliteration
      * gefaltet; verbleibende Nicht-ASCII-Zeichen werden entfernt. Anschließend
      * getrimmt. Im Gegensatz zu {@see removeNonAscii()} gehen Umlaute/Akzente
      * nicht verloren, sondern werden sinnvoll ersetzt.
@@ -899,7 +899,7 @@ class StringHelper {
         $name = str_replace("\u{FEFF}", '', self::stripBom($name));
         $collapsed = preg_replace('/[\s\x{00A0}]+/u', ' ', $name);
         if ($collapsed === null) {
-            // Kein gültiges UTF-8 → byteweise kollabieren statt leer zurückzugeben
+            // Kein gültiges UTF-8 -> byteweise kollabieren statt leer zurückzugeben
             $collapsed = preg_replace('/\s+/', ' ', $name) ?? $name;
         }
 
@@ -1227,7 +1227,7 @@ class StringHelper {
 
         $trimmed = trim($value);
 
-        // Excel-Textpräfix entfernen: '-902.36' → -902.36
+        // Excel-Textpräfix entfernen: '-902.36' -> -902.36
         $trimmed = CSV\StringHelper::stripExcelTextPrefix($trimmed);
 
         // Spezialfall: Unix Timestamps (10 Stellen) als DateTime erkennen
@@ -1242,11 +1242,11 @@ class StringHelper {
         }
 
         // Deutsche/europäische Zahlenformatierung: Punkt als Tausendertrennzeichen erkennen
-        // Beispiele: 2.000 → 2000, 1.234.567 → 1234567, -2.000,50 → -2000.50
+        // Beispiele: 2.000 -> 2000, 1.234.567 -> 1234567, -2.000,50 -> -2000.50
         // Nicht betroffen: -902.36 (nur 2 Ziffern nach Punkt), 2.5 (nur 1 Ziffer)
         if ($country === CountryCode::Germany && preg_match('/^[+-]?\d{1,3}(\.\d{3})+(,\d+)?$/', $trimmed)) {
             $normalized = NumberHelper::normalizeDecimal($trimmed, $country);
-            // Ohne Dezimalkomma im Original → int, sonst float
+            // Ohne Dezimalkomma im Original -> int, sonst float
             if (!str_contains($trimmed, ',')) {
                 return (int) $normalized;
             }
@@ -2029,7 +2029,7 @@ class StringHelper {
     /**
      * Ähnlichkeit zweier Strings als Quote von 0.0 bis 1.0 (similar_text-Prozent).
      *
-     * null oder leer auf einer Seite ⇒ 0.0; identische Strings ⇒ exakt 1.0.
+     * null oder leer auf einer Seite => 0.0; identische Strings => exakt 1.0.
      * Byte-basiert wie similar_text() — für Matching-Heuristiken (Dubletten,
      * Vorschlags-Scoring), nicht für linguistische Vergleiche.
      *

@@ -31,7 +31,7 @@ final class AmountToken {
         /** Zeichenposition hinter der letzten Ziffer (rechte Kante – Beträge sind rechtsbündig). */
         public readonly int $end,
         /**
-         * Währung direkt am Betrag als ISO-4217-Code, falls vorhanden ("€" → EUR, "AU$" → AUD);
+         * Währung direkt am Betrag als ISO-4217-Code, falls vorhanden ("€" -> EUR, "AU$" -> AUD);
          * null, wenn der Betrag ohne Währung stand. {@see currencyCode()} liefert sie typisiert.
          */
         public readonly ?string $currency = null,

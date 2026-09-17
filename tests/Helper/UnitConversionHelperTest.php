@@ -289,7 +289,7 @@ final class UnitConversionHelperTest extends TestCase {
     }
 
     public function test_convert_data_size_gibibyte_to_gigabyte(): void {
-        // 1 GiB = 1024³ B = 1.073.741.824 B → in GB (SI): 1.073741824
+        // 1 GiB = 1024³ B = 1.073.741.824 B -> in GB (SI): 1.073741824
         $this->assertEqualsWithDelta(1.073741824, UnitConversionHelper::convertDataSize(1, DataSizeUnit::GIBIBYTE, DataSizeUnit::GIGABYTE), 1e-9);
     }
 

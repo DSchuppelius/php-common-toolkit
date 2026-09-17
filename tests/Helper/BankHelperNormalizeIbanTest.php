@@ -19,7 +19,7 @@ use Tests\Contracts\BaseTestCase;
  * Tests für BankHelper::normalizeIBAN().
  *
  * Das Verhalten ist bewusst NUR Normalisierung (Whitespace strippen + Uppercase,
- * null/leer → null) – keine Validierung, keine Formatierung. Nachgelagerte
+ * null/leer -> null) – keine Validierung, keine Formatierung. Nachgelagerte
  * Blind-Indizes/Hashes hängen am exakten Rückgabeformat.
  */
 class BankHelperNormalizeIbanTest extends BaseTestCase {
