@@ -20,7 +20,7 @@ jobs:
         php-version: ['8.2', '8.3', '8.4', '8.5']
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         submodules: recursive
     - name: Set up PHP
@@ -36,7 +36,7 @@ jobs:
 
     - name: Cache Composer packages
       id: composer-cache
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: vendor
         key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
