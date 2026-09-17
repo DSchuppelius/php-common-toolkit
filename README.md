@@ -15,6 +15,11 @@ General-purpose PHP utility toolkit providing platform-agnostic helpers, CSV pro
 - **Enum Support**: Typed enums with factory methods (CurrencyCode, CountryCode, CreditDebit, LanguageCode)
 - **XML Builders**: Extended DOM document builder for structured XML generation
 - **Bundesbank Data**: Auto-downloading BLZ/BIC data with expiry tracking
+- **Identifier & URL Checks**: `StringHelper::isUuid()`, `WebLinkHelper::isAbsoluteIri()` and `::origin()` for IRI/URL validation
+- **Fuzzy Matching**: `StringHelper::similarity()` returns a normalised similarity score for two strings
+- **ZIP Entry Filtering**: `ZipFile::readEntries()` / `::skipEntry()` — inspect archives entry by entry and skip unsafe or unwanted members before extraction
+- **Value Objects**: typed wrappers such as `WasteCode` (European waste catalogue)
+- **Data URLs**: `DataUrlHelper::decode()` / `::parse()` / `::encode()` — strict RFC 2397 decoding with size limit and content-based type check (e.g. signature images from a canvas)
 
 ---
 
@@ -272,6 +277,30 @@ Magic-Bytes-Tabelle (PDF, PNG, JPEG, GIF, ZIP, TIFF, GZIP, BMP, RIFF/WebP)
 plus Inhaltsheuristik für XML, HTML, JSON und Text. Unbekannter Binärinhalt
 ergibt `application/octet-stream`, ein leerer String `false`.
 
+### Data-URLs (Bilder aus dem Browser)
+
+Eine Zeichenfläche oder ein eingefügter Screenshot kommt als
+`data:image/png;base64,…` beim Server an – also als Eingabe vom Client.
+`DataUrlHelper::decode()` dekodiert streng, begrenzt die Größe und prüft den Typ
+am **Inhalt**, nicht an der Angabe in der URL:
+
+```php
+use CommonToolkit\Helper\Data\DataUrlHelper;
+
+$png = DataUrlHelper::decode($request->input('signature'), ['image/png'], 1_000_000);
+if ($png === false) {
+    // ungültig, zu groß, kein PNG oder Angabe passt nicht zum Inhalt
+}
+
+DataUrlHelper::parse('data:text/html;charset=utf-8,<b>x</b>');
+// ['mime_type' => 'text/html', 'base64' => false, 'data' => '<b>x</b>']
+
+DataUrlHelper::encode($bytes); // "data:image/png;base64,…" (Typ am Inhalt erkannt)
+```
+
+Reines Base64 ohne `data:`-Präfix wird ebenfalls angenommen. Die Fehlermeldung
+bleibt Sache des Aufrufers: `decode()` liefert `false` statt einer Exception.
+
 ### Currency Formatting
 
 ```php
@@ -397,3 +426,7 @@ This project is licensed under the **MIT License**.
 
 **Daniel Joerg Schuppelius**
 📧 <info@schuppelius.org>
+
+## Versions
+
+Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v1.35). There is no separate changelog file — the tags and the commit history are the record.
