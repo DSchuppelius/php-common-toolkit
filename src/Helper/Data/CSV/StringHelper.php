@@ -731,6 +731,39 @@ final class StringHelper extends BaseStringHelper {
     }
 
     /**
+     * Entfernt eine führende Excel-Hinweiszeile `sep=X` (z.B. "sep=;") vom CSV-Rohinhalt.
+     *
+     * Excel (und Exporte wie FRITZ!Box/AnyDesk) stellen dem Header eine Zeile
+     * voran, die das Trennzeichen benennt – generische CSV-Leser hielten sie
+     * sonst für die Kopfzeile. Regeln:
+     * - `sep=` ohne Beachtung der Groß-/Kleinschreibung, X genau ein Zeichen
+     *   (auch ein UTF-8-Mehrbytezeichen oder Tab), danach nur Leerzeichen/Tabs.
+     * - Zeilenende `\r\n`, `\n`, `\r` oder Inhaltsende; direkt folgende
+     *   Leerzeilen sowie Leerraum vor der Hinweiszeile werden mit entfernt.
+     * - Ein UTF-8-BOM vor der Hinweiszeile wird mit entfernt.
+     * - Ohne Hinweiszeile bleibt die Eingabe byte-gleich (inkl. BOM).
+     *
+     * @param string      $raw       Der CSV-Rohinhalt.
+     * @param string|null $delimiter Wird auf das angegebene Trennzeichen X gesetzt, sonst null.
+     * @return string Der Inhalt ohne Hinweiszeile.
+     */
+    public static function stripExcelSeparatorHint(string $raw, ?string &$delimiter = null): string {
+        $delimiter = null;
+
+        $char = '(?:[\xC2-\xDF][\x80-\xBF]|[\xE0-\xEF][\x80-\xBF]{2}|[\xF0-\xF4][\x80-\xBF]{3}|[^\r\n])';
+        $pattern = '/^(?:\xEF\xBB\xBF)?\s*sep=(' . $char . ')[ \t]*(?:\r\n|\n|\r|\z)(?:[ \t]*(?:\r\n|\n|\r))*/i';
+
+        if (preg_match($pattern, $raw, $matches) !== 1) {
+            return $raw;
+        }
+
+        $delimiter = $matches[1];
+        self::logDebug("Excel-Hinweiszeile 'sep=$delimiter' entfernt.");
+
+        return substr($raw, strlen($matches[0]));
+    }
+
+    /**
      * Encodiert einen einzelnen CSV-Feldwert (RFC 4180) für die Ausgabe.
      *
      * Gegenstück zu {@see parseField()}. Das Quoting-Verhalten steuert

@@ -138,6 +138,29 @@ class BankHelper {
     }
 
     /**
+     * Normalisiert einen BIC für Vergleich und Speicherung.
+     *
+     * Gegenstück zu {@see normalizeIBAN()}: entfernt sämtlichen Whitespace
+     * (Unicode-sicher, inkl. geschützter Leerzeichen) und vereinheitlicht auf
+     * Großschreibung. Bewusst KEINE Validierung und KEIN Auffüllen auf
+     * 11 Stellen ("XXX") – ein BIC8 bleibt ein BIC8.
+     *
+     * @param string|null $bic Der BIC (roh, ggf. mit Leerzeichen/gemischter Schreibweise).
+     * @return string|null Der normalisierte BIC oder null bei null/leerer Eingabe.
+     */
+    public static function normalizeBIC(?string $bic): ?string {
+        if ($bic === null) {
+            return null;
+        }
+
+        // Ungültiges UTF-8 lässt /u scheitern → ASCII-Whitespace-Fallback.
+        $stripped = preg_replace('/\s+/u', '', $bic) ?? preg_replace('/\s+/', '', $bic) ?? '';
+        $normalized = strtoupper($stripped);
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    /**
      * Formatiert eine IBAN für die ANZEIGE in Vierergruppen
      * ("DE89 3704 0044 0532 0130 00" — ISO 13616 Papierformat).
      *

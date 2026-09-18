@@ -30,6 +30,12 @@ class StringHelper {
     public const BOM_UTF32_BE = "\x00\x00\xFE\xFF";
     public const BOM_UTF32_LE = "\xFF\xFE\x00\x00";
 
+    /** Standard-Wahrheitswerte für {@see parseBool()} (kleingeschrieben, getrimmt). */
+    public const PARSE_BOOL_TRUTHY = ['1', 'true', 'yes', 'y', 'on', 'ja', 'j', 'wahr', 'x', 'oui', 'si', 'sì', 'sí', 'vero', 'verdadero', 'active', 'aktiv'];
+
+    /** Standard-Falschwerte für {@see parseBool()} (kleingeschrieben, getrimmt). */
+    public const PARSE_BOOL_FALSY = ['0', 'false', 'no', 'n', 'off', 'nein', 'falsch', 'non', 'falso', 'inactive', 'inaktiv'];
+
     /**
      * Prüft ob ein String null oder leer ist.
      *
@@ -855,13 +861,17 @@ class StringHelper {
      * wird hier auch am Anfang und Ende normalisiert.
      *
      * @param string|null $input Der zu normalisierende String (null wird als leerer String behandelt).
+     * @param bool $unicode Unicode-Leerraum (z.B. NBSP U+00A0, U+202F, U+3000) mit einbeziehen (Standard: false).
      * @return string Der normalisierte und getrimmte String.
      * @see collapseWhitespace() Für Kollabieren ohne Trimmen.
      * @see normalizeInlineWhitespace() Für Kollabieren unter Erhalt von Zeilenumbrüchen.
      */
-    public static function normalizeWhitespace(?string $input): string {
+    public static function normalizeWhitespace(?string $input, bool $unicode = false): string {
         if (self::isNullOrEmpty($input)) {
             return '';
+        }
+        if ($unicode) {
+            return trim(self::collapseWhitespace($input, true));
         }
         return preg_replace('/\s+/', ' ', trim($input)) ?? '';
     }
@@ -1329,6 +1339,59 @@ class StringHelper {
     }
 
     /**
+     * Wandelt einen (Import-/Formular-/CSV-)Wert tolerant in einen Boolean um.
+     *
+     * - bool wird durchgereicht; int/float 1 → true, 0 → false, andere Zahlen → $default.
+     * - Strings werden getrimmt und per mb_strtolower verglichen: Standardlisten
+     *   {@see PARSE_BOOL_TRUTHY} / {@see PARSE_BOOL_FALSY} (DE/EN/FR/IT/ES).
+     * - null, Leerstring und unbekannte Werte (auch andere Typen) → $default.
+     *
+     * Eigene Listen ersetzen die jeweilige Standardliste vollständig (Einträge
+     * werden ebenfalls getrimmt/kleingeschrieben).
+     *
+     * @param mixed $value Der zu interpretierende Wert.
+     * @param bool|null $default Rückgabe für leere/unbekannte Werte (Standard: null).
+     * @param list<string>|null $truthy Eigene Wahr-Werte (null = Standardliste).
+     * @param list<string>|null $falsy Eigene Falsch-Werte (null = Standardliste).
+     * @return bool|null Der Boolean oder $default.
+     */
+    public static function parseBool(mixed $value, ?bool $default = null, ?array $truthy = null, ?array $falsy = null): ?bool {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return match (true) {
+                $value == 1 => true,
+                $value == 0 => false,
+                default => $default,
+            };
+        }
+
+        if ($value instanceof \Stringable) {
+            $value = (string) $value;
+        }
+        if (!is_string($value)) {
+            return $default;
+        }
+
+        $normalized = mb_strtolower(trim($value));
+        if ($normalized === '') {
+            return $default;
+        }
+
+        $normalize = static fn (string $entry): string => mb_strtolower(trim($entry));
+        if (in_array($normalized, $truthy === null ? self::PARSE_BOOL_TRUTHY : array_map($normalize, $truthy), true)) {
+            return true;
+        }
+        if (in_array($normalized, $falsy === null ? self::PARSE_BOOL_FALSY : array_map($normalize, $falsy), true)) {
+            return false;
+        }
+
+        return $default;
+    }
+
+    /**
      * Prüft, ob ein String ein gültiges Datum/Zeit ist.
      */
     public static function isDateTime(string $value, ?string $format = null): bool {
@@ -1661,13 +1724,21 @@ class StringHelper {
      * Alle Whitespace-Typen (Leerzeichen, Tabs, Zeilenumbrüche) werden zu einem Leerzeichen.
      *
      * @param string|null $text Der zu bereinigende Text (null wird als leerer String behandelt).
+     * @param bool $unicode Unicode-Leerraum (z.B. NBSP U+00A0, U+202F, U+3000) mit einbeziehen
+     *                      (Standard: false). Bei ungültigem UTF-8 greift die ASCII-Variante.
      * @return string Der bereinigte Text mit einfachen Leerzeichen.
      * @see normalizeWhitespace() Für Kollabieren mit Trimmen.
      * @see normalizeInlineWhitespace() Für Kollabieren unter Erhalt von Zeilenumbrüchen.
      */
-    public static function collapseWhitespace(?string $text): string {
+    public static function collapseWhitespace(?string $text, bool $unicode = false): string {
         if (self::isNullOrEmpty($text)) {
             return '';
+        }
+        if ($unicode) {
+            $collapsed = preg_replace('/\s+/u', ' ', $text);
+            if ($collapsed !== null) {
+                return $collapsed;
+            }
         }
         return preg_replace('/\s+/', ' ', $text) ?? '';
     }

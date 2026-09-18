@@ -619,11 +619,15 @@ class CryptoHelper extends HelperAbstract {
     /**
      * Konvertiert Base64 (URL-safe) zurück zu binären Daten.
      *
-     * @param string $data Base64-kodierte Daten (URL-safe)
+     * Fehlendes '='-Padding wird auf ein Vielfaches von 4 ergänzt.
+     *
+     * @param string $data Base64-kodierte Daten (URL-safe, mit oder ohne Padding)
      * @return string|false Binäre Daten oder false bei Fehler
      */
     public static function base64UrlDecode(string $data): string|false {
-        return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT), true);
+        $pad = (4 - strlen($data) % 4) % 4;
+
+        return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', $pad), true);
     }
 
     /**

@@ -274,6 +274,13 @@ class DecimalTest extends BaseTestCase {
         $this->assertSame('12.345.678.901.234.567.890,12', Decimal::of('12345678901234567890.12')->format());
     }
 
+    public function test_format_with_multibyte_thousands_separator(): void {
+        $this->assertSame("1\u{00A0}234\u{00A0}567,5", Decimal::of('1234567.5')->format(',', "\u{00A0}"));
+        $this->assertSame("-1\u{202F}234", Decimal::of('-1234')->format(',', "\u{202F}"));
+        $this->assertSame('999', Decimal::of('999')->format(',', "\u{00A0}"));
+        $this->assertSame("1'000.25", Decimal::of('1000.25')->format('.', "'"));
+    }
+
     public function test_to_string_returns_canonical_value(): void {
         $this->assertSame('12.34', (string) Decimal::of('12.34'));
         $this->assertSame('-0.5', (string) Decimal::of('-0.5'));

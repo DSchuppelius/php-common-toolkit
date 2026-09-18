@@ -154,9 +154,11 @@ class Files extends HelperAbstract {
      * @param list<string> $fileTypes Ein Array von Dateitypen (z.B. ['txt', 'jpg']), die berücksichtigt werden sollen.
      * @param string|null $regexPattern Ein regulärer Ausdruck, der auf den Dateinamen angewendet wird.
      * @param string|null $contains Ein String, der im Dateinamen enthalten sein muss.
+     * @param bool $followSymlinks Ob rekursiv in verlinkte Verzeichnisse abgestiegen wird
+     *                             (Standard: false; dann mit Schutz gegen Link-Zyklen).
      * @return list<string> Ein Array mit den gefundenen Dateipfaden.
      */
-    public static function get(string $directory, bool $recursive = false, array $fileTypes = [], ?string $regexPattern = null, ?string $contains = null): array {
+    public static function get(string $directory, bool $recursive = false, array $fileTypes = [], ?string $regexPattern = null, ?string $contains = null, bool $followSymlinks = false): array {
         // open_basedir-Prüfung (Logging erfolgt bereits in Folder::isBlockedByOpenBasedir)
         if (Folder::isBlockedByOpenBasedir($directory)) {
             return [];
@@ -166,14 +168,44 @@ class Files extends HelperAbstract {
             return self::logErrorAndReturn([], "Das Verzeichnis $directory existiert nicht");
         }
 
-        $result = [];
-        $files = array_diff(scandir($directory), ['.', '..']);
+        $real = realpath($directory);
+        $visited = $real !== false ? [$real => true] : [];
+        $result = self::collectFiles($directory, $recursive, $fileTypes, $regexPattern, $contains, $followSymlinks, $visited);
 
-        foreach ($files as $file) {
+        if (empty($result)) {
+            self::logDebug("Keine passenden Dateien gefunden im Verzeichnis: $directory");
+        } else {
+            self::logDebug("Es wurden Dateien im Verzeichnis: $directory gefunden");
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param list<string> $fileTypes
+     * @param array<string, true> $visited Bereits besuchte reale Pfade (Zyklusschutz).
+     * @return list<string>
+     */
+    private static function collectFiles(string $directory, bool $recursive, array $fileTypes, ?string $regexPattern, ?string $contains, bool $followSymlinks, array &$visited): array {
+        $entries = scandir($directory);
+        if ($entries === false) {
+            return self::logErrorAndReturn([], "Das Verzeichnis $directory kann nicht gelesen werden");
+        }
+
+        $result = [];
+        foreach (array_diff($entries, ['.', '..']) as $file) {
             $path = $directory . DIRECTORY_SEPARATOR . $file;
 
-            if ($recursive && is_dir($path)) {
-                $result = array_merge($result, self::get($path, true, $fileTypes, $regexPattern, $contains));
+            if (is_dir($path)) {
+                if (!$recursive || (is_link($path) && !$followSymlinks)) {
+                    continue;
+                }
+                $real = realpath($path);
+                if ($real === false || isset($visited[$real])) {
+                    continue;
+                }
+                $visited[$real] = true;
+                $result = array_merge($result, self::collectFiles($path, true, $fileTypes, $regexPattern, $contains, $followSymlinks, $visited));
             } elseif (is_file($path)) {
                 if (empty($fileTypes) || in_array(pathinfo($path, PATHINFO_EXTENSION), $fileTypes)) {
                     // Prüfe auf regulären Ausdruck und ob der Dateiname den String enthält
@@ -184,12 +216,6 @@ class Files extends HelperAbstract {
                     }
                 }
             }
-        }
-
-        if (empty($result)) {
-            self::logDebug("Keine passenden Dateien gefunden im Verzeichnis: $directory");
-        } else {
-            self::logDebug("Es wurden Dateien im Verzeichnis: $directory gefunden");
         }
 
         return $result;

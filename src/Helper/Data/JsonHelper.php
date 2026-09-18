@@ -289,11 +289,14 @@ class JsonHelper extends HelperAbstract {
      * @param list<string> $sensitiveFields Array von Feldnamen die maskiert werden sollen
      * @param string $mask Der Maskierungsstring
      * @return string JSON mit maskierten sensitiven Feldern
+     * @see maskSensitiveArray() Für bereits dekodierte Arrays.
      */
     public static function maskSensitiveData(string $json, array $sensitiveFields = ['password', 'pin', 'cvv', 'token'], string $mask = '***'): string {
         try {
             $data = self::decode($json);
-            self::maskRecursive($data, $sensitiveFields, $mask);
+            if (is_array($data)) {
+                $data = self::maskSensitiveArray($data, $sensitiveFields, $mask);
+            }
             return self::encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } catch (InvalidArgumentException $e) {
             return self::logErrorAndReturn($json, "Fehler beim Maskieren sensitiver Daten: " . $e->getMessage());
@@ -301,21 +304,42 @@ class JsonHelper extends HelperAbstract {
     }
 
     /**
-     * Maskiert sensitive Felder rekursiv.
+     * Maskiert sensible Felder eines Arrays (z.B. Payload/Snapshot vor Log/Audit).
      *
-     * @param mixed &$data Die Daten (by reference)
-     * @param list<string> $sensitiveFields Array von Feldnamen
+     * Der Schlüsselvergleich ist exakt, aber ohne Beachtung der Groß-/Kleinschreibung
+     * ("Password" trifft "password", "password_hint" jedoch nicht). Der Wert eines
+     * Treffers wird – auch wenn er selbst ein Array oder null ist – komplett durch
+     * $mask ersetzt; fehlende Schlüssel werden nicht angelegt.
+     *
+     * @param array<array-key, mixed> $data Die Daten
+     * @param list<string> $fields Zu maskierende Schlüssel
      * @param string $mask Der Maskierungsstring
+     * @param bool $recursive Auch verschachtelte Arrays durchsuchen (Standard: true)
+     * @return array<array-key, mixed> Die Daten mit maskierten Feldern
      */
-    private static function maskRecursive(mixed &$data, array $sensitiveFields, string $mask): void {
-        if (is_array($data)) {
-            foreach ($data as $key => &$value) {
-                if (in_array(strtolower((string) $key), array_map('strtolower', $sensitiveFields), true)) {
-                    $value = $mask;
-                } else {
-                    self::maskRecursive($value, $sensitiveFields, $mask);
-                }
+    public static function maskSensitiveArray(array $data, array $fields = ['password', 'pin', 'cvv', 'token'], string $mask = '***', bool $recursive = true): array {
+        $lowerFields = array_map('mb_strtolower', $fields);
+        self::maskRecursive($data, $lowerFields, $mask, $recursive);
+
+        return $data;
+    }
+
+    /**
+     * Maskiert sensitive Felder (optional rekursiv).
+     *
+     * @param array<array-key, mixed> &$data Die Daten (by reference)
+     * @param list<string> $lowerFields Kleingeschriebene Feldnamen
+     * @param string $mask Der Maskierungsstring
+     * @param bool $recursive Verschachtelte Arrays durchsuchen
+     */
+    private static function maskRecursive(array &$data, array $lowerFields, string $mask, bool $recursive): void {
+        foreach ($data as $key => &$value) {
+            if (in_array(mb_strtolower((string) $key), $lowerFields, true)) {
+                $value = $mask;
+            } elseif ($recursive && is_array($value)) {
+                self::maskRecursive($value, $lowerFields, $mask, true);
             }
         }
+        unset($value);
     }
 }

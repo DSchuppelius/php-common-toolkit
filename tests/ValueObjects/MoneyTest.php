@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Tests\ValueObjects;
 
 use CommonToolkit\Enums\{CountryCode, CurrencyCode, RoundingMode};
+use CommonToolkit\Helper\Data\NumberHelper;
 use CommonToolkit\ValueObjects\Money;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -158,6 +159,53 @@ class MoneyTest extends BaseTestCase {
         $this->assertSame('1.234.567,50 €', Money::of('1234567.5', $this->eur)->format());
         $this->assertSame('1234567,50', Money::of('1234567.5', $this->eur)->format(false, false));
         $this->assertSame('-89,90', Money::of('-89.9', $this->eur)->format(false, false));
+    }
+
+    public function test_format_symbol_before(): void {
+        $usd = CurrencyCode::USDollar;
+        $this->assertSame('$ 1,234.50', Money::of('1234.5', $usd)->format(true, true, '.', ',', true));
+        $this->assertSame('-$ 1,234.50', Money::of('-1234.5', $usd)->format(true, true, '.', ',', true));
+        $this->assertSame('-$1,234.50', Money::of('-1234.5', $usd)->format(true, true, '.', ',', true, ''));
+        $this->assertSame('€ 0,00', Money::zero($this->eur)->format(true, true, ',', '.', true));
+        $this->assertSame('-€ 0,01', Money::of('-0.01', $this->eur)->format(true, true, ',', '.', true));
+        $this->assertSame('CHF 1234,50', Money::of('1234.5', CurrencyCode::SwissFranc)->format(true, false, ',', '.', true));
+    }
+
+    public function test_format_symbol_separator_after_amount(): void {
+        $this->assertSame("-1\u{00A0}234,50\u{00A0}€", Money::of('-1234.5', $this->eur)->format(true, true, ',', "\u{00A0}", false, "\u{00A0}"));
+        $this->assertSame('12,00€', Money::of('12', $this->eur)->format(true, true, ',', '.', false, ''));
+    }
+
+    public function test_format_symbol_options_ignored_without_symbol(): void {
+        $this->assertSame('-1.234,50', Money::of('-1234.5', $this->eur)->format(false, true, ',', '.', true, ''));
+    }
+
+    /**
+     * Parität zu NumberHelper::formatCurrency() für die Belegkonventionen
+     * der App (DocumentNumber::CONVENTIONS), damit sie auf Money umstellen kann.
+     *
+     * @return array<string, array{string, string, bool}>
+     */
+    public static function documentConventionProvider(): array {
+        return [
+            'de' => [',', '.', false],
+            'en' => ['.', ',', true],
+            'fr' => [',', "\u{00A0}", false],
+            'it' => [',', '.', false],
+            'es' => [',', '.', false],
+        ];
+    }
+
+    #[DataProvider('documentConventionProvider')]
+    public function test_format_matches_format_currency_conventions(string $decimal, string $thousands, bool $symbolBefore): void {
+        foreach (['1234567.5', '-1234.56', '0', '-0.5', '999.99'] as $amount) {
+            foreach ([CurrencyCode::Euro, CurrencyCode::USDollar, CurrencyCode::SwissFranc] as $currency) {
+                $this->assertSame(
+                    NumberHelper::formatCurrency((float) $amount, $currency, 2, $decimal, $thousands, $symbolBefore),
+                    Money::of($amount, $currency, 2)->format(true, true, $decimal, $thousands, $symbolBefore),
+                );
+            }
+        }
     }
 
     public function test_to_string_and_json(): void {

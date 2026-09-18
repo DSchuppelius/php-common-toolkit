@@ -150,6 +150,30 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('hello world', StringHelper::collapseWhitespace("hello\t\n  world"));
     }
 
+    public function test_collapse_whitespace_unicode_opt_in(): void {
+        $nbsp = "a\u{00A0}\u{00A0}b\u{202F}c\u{3000} d";
+        // Standard unverändert: NBSP & Co. bleiben stehen.
+        $this->assertSame($nbsp, StringHelper::collapseWhitespace($nbsp));
+        $this->assertSame('a b c d', StringHelper::collapseWhitespace($nbsp, true));
+        $this->assertSame(' a b ', StringHelper::collapseWhitespace("\u{00A0}a\u{2009}\tb\u{2028}", true));
+        $this->assertSame('', StringHelper::collapseWhitespace(null, true));
+        $this->assertSame('', StringHelper::collapseWhitespace('', true));
+        // Kein Leerraum im Unicode-Sinn: ZWSP bleibt erhalten.
+        $this->assertSame("a\u{200B}b", StringHelper::collapseWhitespace("a\u{200B}b", true));
+        // Ungültiges UTF-8 → ASCII-Variante statt Leerstring.
+        $this->assertSame("a b\xFF", StringHelper::collapseWhitespace("a \t b\xFF", true));
+    }
+
+    public function test_normalize_whitespace_unicode_opt_in(): void {
+        $input = "\u{00A0} Preis:\u{00A0}\u{00A0}12\u{202F}€ \u{3000}";
+        // Standard unverändert: NBSP am Rand bleibt, nur ASCII-Leerraum wird behandelt.
+        $this->assertSame("\u{00A0} Preis:\u{00A0}\u{00A0}12\u{202F}€ \u{3000}", StringHelper::normalizeWhitespace($input));
+        $this->assertSame('Preis: 12 €', StringHelper::normalizeWhitespace($input, true));
+        $this->assertSame('', StringHelper::normalizeWhitespace("\u{00A0}\u{3000}\t", true));
+        $this->assertSame('', StringHelper::normalizeWhitespace(null, true));
+        $this->assertSame("a b\xFF", StringHelper::normalizeWhitespace(" a \n b\xFF ", true));
+    }
+
     public function test_wrap(): void {
         $text = 'Dies ist ein langer Text der umgebrochen werden soll.';
         $wrapped = StringHelper::wrap($text, 20);

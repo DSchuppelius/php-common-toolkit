@@ -27,7 +27,8 @@
     "ext-intl": "*",
     "ext-zip": "*",
     "dschuppelius/php-config-toolkit": "^0.5",
-    "maxmind-db/reader": "^1.11"
+    "maxmind-db/reader": "^1.11",
+    "symfony/process": "^6.4 || ^7.0 || ^8.0"
   },
   "autoload-dev": {
     "psr-4": {

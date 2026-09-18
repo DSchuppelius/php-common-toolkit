@@ -89,10 +89,52 @@ class XLSXDocumentParser extends HelperAbstract {
 
         $file = File::resolveFile($file);
 
+        return self::parseWithLimits($file, basename($file), $hasHeader, $sheetIndex, $maxUncompressedBytes, $maxRows);
+    }
+
+    /**
+     * Wie {@see fromFile()}, aber aus einem Binärstring (Upload im Speicher,
+     * Mail-Anhang, API-Antwort) — ohne Temp-Datei-Verwaltung beim Aufrufer.
+     *
+     * @param string $bytes Der XLSX-Inhalt.
+     * @param bool $hasHeader Ob die erste Zeile Spaltenüberschriften enthält.
+     * @param int|null $sheetIndex Index des Arbeitsblatts (null = erstes).
+     * @param int|null $maxUncompressedBytes Obergrenze entpackter Bytes (null = unbegrenzt).
+     * @param int|null $maxRows Obergrenze der Zeilen (null = unbegrenzt).
+     * @param string $documentName Name für Meldungen und Limit-Exceptions.
+     * @throws InvalidArgumentException Bei leerem Inhalt oder ungültigen Limits.
+     */
+    public static function fromString(
+        string $bytes,
+        bool $hasHeader = true,
+        ?int $sheetIndex = null,
+        ?int $maxUncompressedBytes = self::DEFAULT_MAX_UNCOMPRESSED_BYTES,
+        ?int $maxRows = self::DEFAULT_MAX_ROWS,
+        string $documentName = 'upload.xlsx'
+    ): Document {
+        if ($bytes === '') {
+            self::logErrorAndThrow(InvalidArgumentException::class, 'XLSX-Inhalt ist leer.');
+        }
+        if ($maxUncompressedBytes !== null && $maxUncompressedBytes <= 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxUncompressedBytes muss > 0 sein (oder null für unbegrenzt), erhalten: $maxUncompressedBytes");
+        }
+        if ($maxRows !== null && $maxRows <= 0) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "maxRows muss > 0 sein (oder null für unbegrenzt), erhalten: $maxRows");
+        }
+
+        return File::withTemp(
+            $bytes,
+            static fn (string $path): Document => self::parseWithLimits($path, $documentName, $hasHeader, $sheetIndex, $maxUncompressedBytes, $maxRows),
+            'ctk_xlsx_',
+            'xlsx',
+        );
+    }
+
+    private static function parseWithLimits(string $file, string $archiveName, bool $hasHeader, ?int $sheetIndex, ?int $maxUncompressedBytes, ?int $maxRows): Document {
         $parser = new self;
         $parser->maxUncompressedBytes = $maxUncompressedBytes;
         $parser->maxRows = $maxRows;
-        $parser->archiveName = basename($file);
+        $parser->archiveName = $archiveName;
 
         return $parser->parse($file, $hasHeader, $sheetIndex);
     }

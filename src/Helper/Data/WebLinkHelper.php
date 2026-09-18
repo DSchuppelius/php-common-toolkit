@@ -888,6 +888,9 @@ class WebLinkHelper {
      * Sicherheitsscans 2026-08-23). Zugelassen sind Hostnamen und IP-Literale in
      * eckigen Klammern; der Port muss eine gültige Portnummer sein.
      *
+     * Schema und Host werden kleingeschrieben (RFC 6454, Abschnitt 4) – bei
+     * IPv6-Literalen betrifft das nur die Hex-Ziffern ("[FE80::1]" → "[fe80::1]").
+     *
      * @param list<string> $schemes Erlaubte Schemata, kleingeschrieben.
      */
     public static function origin(?string $url, array $schemes = ['http', 'https']): ?string {
@@ -915,7 +918,7 @@ class WebLinkHelper {
             return null;
         }
 
-        $origin = $scheme . '://' . $host;
+        $origin = $scheme . '://' . strtolower($host);
 
         if (!empty($parts['port'])) {
             $port = (string) $parts['port'];

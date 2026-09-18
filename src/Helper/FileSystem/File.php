@@ -487,6 +487,37 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Prüft, ob der Pfad eine reguläre Datei ist — anders als {@see exists()},
+     * das auch für Verzeichnisse true liefert. Symlinks auf Dateien zählen mit.
+     * Pfade außerhalb von open_basedir ergeben false statt einer PHP-Warnung.
+     *
+     * @param string $file Der Pfad zur Datei.
+     * @return bool True, wenn eine reguläre Datei vorliegt.
+     */
+    public static function isFile(string $file): bool {
+        if (self::isWindowsReservedName($file) || Folder::isBlockedByOpenBasedir($file)) {
+            return false;
+        }
+
+        return is_file($file);
+    }
+
+    /**
+     * Prüft, ob der Pfad ein symbolischer Link ist (unabhängig davon, ob sein
+     * Ziel existiert).
+     *
+     * @param string $path Der zu prüfende Pfad.
+     * @return bool True, wenn ein symbolischer Link vorliegt.
+     */
+    public static function isLink(string $path): bool {
+        if (self::isWindowsReservedName($path) || Folder::isBlockedByOpenBasedir($path)) {
+            return false;
+        }
+
+        return is_link($path);
+    }
+
+    /**
      * Liest den Inhalt der angegebenen Datei.
      *
      * @param string $file Der Pfad zur Datei oder eine URL (http/https).
@@ -1223,19 +1254,144 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     /**
      * Schreibt Daten in die angegebene Datei.
      *
+     * Mit `$permissions` hat die Datei die Rechte, bevor ein Byte Inhalt darin
+     * steht — ein nachträgliches chmod ließe z. B. einen Schlüssel kurz mit den
+     * umask-Rechten (oft 0644) lesbar. `$atomic` schreibt in eine Temp-Datei im
+     * Zielordner und benennt sie um: Leser sehen nie eine halb geschriebene Datei.
+     *
      * @param string $file Der Pfad zur Datei.
      * @param string $data Die zu schreibenden Daten.
+     * @param int|null $permissions Dateirechte (z. B. 0600); null = umask bzw. bestehende Rechte.
+     * @param bool $lock Exklusive Sperre beim Schreiben (LOCK_EX).
+     * @param bool $atomic Über Temp-Datei und rename schreiben.
      * @throws FileNotWrittenException Wenn die Datei nicht geschrieben werden kann.
      */
-    public static function write(string $file, string $data): void {
+    public static function write(string $file, string $data, ?int $permissions = null, bool $lock = false, bool $atomic = false): void {
         self::validateNotReservedName($file);
 
         $file = self::getRealPath($file);
-        if (file_put_contents($file, $data) === false) {
-            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Schreiben in die Datei: $file");
+        if ($atomic) {
+            self::writeAtomic($file, $data, $permissions);
+        } else {
+            if ($permissions !== null) {
+                self::prepareWithPermissions($file, $permissions);
+            }
+            if (file_put_contents($file, $data, $lock ? LOCK_EX : 0) === false) {
+                self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Schreiben in die Datei: $file");
+            }
         }
+        // Ältere PHP-Versionen (belegt: 8.2) leeren den Stat-Cache bei chmod
+        // nicht — Folgeabfragen im selben Prozess sähen sonst die alten Rechte.
+        clearstatcache(true, $file);
         unset(self::$mimeTypeCache[$file]);
         self::logDebug("Daten erfolgreich in Datei geschrieben: $file");
+    }
+
+    /**
+     * Legt die Datei leer mit den Rechten an bzw. setzt sie vorab, damit der
+     * Inhalt nie mit weiteren Rechten auf der Platte liegt.
+     *
+     * @throws FileNotWrittenException
+     */
+    private static function prepareWithPermissions(string $file, int $permissions): void {
+        if (!is_file($file)) {
+            $handle = @fopen($file, 'x');
+            if ($handle === false) {
+                self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Anlegen der Datei: $file");
+            }
+            fclose($handle);
+        }
+        if (!chmod($file, $permissions)) {
+            self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Setzen von Rechten (0" . decoct($permissions) . ") für Datei: $file");
+        }
+    }
+
+    /**
+     * @throws FileNotWrittenException
+     */
+    private static function writeAtomic(string $file, string $data, ?int $permissions): void {
+        $temp = @tempnam(dirname($file), '.' . basename($file) . '.');
+        if ($temp === false) {
+            self::logErrorAndThrow(FileNotWrittenException::class, "Temp-Datei für atomares Schreiben nicht anlegbar: $file");
+        }
+
+        try {
+            // tempnam legt 0600 an; ohne Vorgabe erbt die Datei die bisherigen bzw. umask-Rechte.
+            $mode = $permissions ?? (is_file($file) ? (fileperms($file) & 0777) : (0666 & ~umask()));
+            if (!chmod($temp, $mode)
+                || file_put_contents($temp, $data) === false
+                || !rename($temp, $file)) {
+                self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim atomaren Schreiben in die Datei: $file");
+            }
+        } finally {
+            if (is_file($temp)) {
+                @unlink($temp);
+            }
+        }
+    }
+
+    /**
+     * Legt eine neue, exklusiv erzeugte Temp-Datei an und liefert ihren Pfad.
+     *
+     * Anders als `tempnam()` sind Endung (manche Werkzeuge prüfen sie) und
+     * Rechte (Standard 0600) wählbar; die Datei entsteht nie mit weiteren Rechten.
+     * Aufräumen ist Sache des Aufrufers — {@see withTemp()} erledigt das selbst.
+     *
+     * @param string $content Anfangsinhalt.
+     * @param string $prefix Namenspräfix.
+     * @param string|null $extension Dateiendung ohne Punkt.
+     * @param int $permissions Dateirechte (Standard: 0600).
+     * @param string|null $directory Zielordner (Standard: sys_get_temp_dir()).
+     * @return string Pfad der angelegten Datei.
+     * @throws FileNotWrittenException Wenn die Datei nicht angelegt werden kann.
+     */
+    public static function createTemp(string $content = '', string $prefix = 'tmp', ?string $extension = null, int $permissions = 0600, ?string $directory = null): string {
+        $directory = rtrim($directory ?? sys_get_temp_dir(), '/\\');
+        $suffix = $extension !== null && $extension !== '' ? '.' . ltrim($extension, '.') : '';
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $path = $directory . DIRECTORY_SEPARATOR . $prefix . bin2hex(random_bytes(8)) . $suffix;
+            // 'x' legt exklusiv an: kein Überschreiben einer untergeschobenen Datei.
+            $handle = @fopen($path, 'x');
+            if ($handle === false) {
+                continue;
+            }
+
+            $written = chmod($path, $permissions) && fwrite($handle, $content) === strlen($content);
+            fclose($handle);
+            if (!$written) {
+                @unlink($path);
+                self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Schreiben der Temp-Datei: $path");
+            }
+
+            return self::logDebugAndReturn($path, "Temp-Datei angelegt: $path");
+        }
+
+        self::logErrorAndThrow(FileNotWrittenException::class, "Temp-Datei in $directory nicht anlegbar");
+    }
+
+    /**
+     * Legt eine Temp-Datei an, übergibt ihren Pfad an `$callback` und löscht sie
+     * danach — auch wenn der Callback wirft.
+     *
+     * @template T
+     * @param string $content Inhalt der Temp-Datei.
+     * @param callable(string): T $callback Erhält den Pfad.
+     * @param string $prefix Namenspräfix.
+     * @param string|null $extension Dateiendung ohne Punkt.
+     * @param string|null $directory Zielordner (Standard: sys_get_temp_dir()).
+     * @return T Rückgabe des Callbacks.
+     * @throws FileNotWrittenException Wenn die Datei nicht angelegt werden kann.
+     */
+    public static function withTemp(string $content, callable $callback, string $prefix = 'tmp', ?string $extension = null, ?string $directory = null): mixed {
+        $path = self::createTemp($content, $prefix, $extension, 0600, $directory);
+        try {
+            return $callback($path);
+        } finally {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
     }
 
     /**
@@ -1702,6 +1858,108 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * MIME-Typ → übliche Endung. Je Endung steht der kanonische MIME-Typ zuerst;
+     * {@see mimeTypeForExtension()} liest die Tabelle rückwärts.
+     *
+     * @var array<string, string>
+     */
+    private const EXTENSION_BY_MIME = [
+        'application/pdf' => 'pdf',
+        'image/jpeg' => 'jpg',
+        'image/pjpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/tiff' => 'tif',
+        'image/webp' => 'webp',
+        'image/avif' => 'avif',
+        'image/bmp' => 'bmp',
+        'image/x-ms-bmp' => 'bmp',
+        'image/svg+xml' => 'svg',
+        'image/heic' => 'heic',
+        'image/heic-sequence' => 'heic',
+        'image/heif' => 'heif',
+        'image/heif-sequence' => 'heif',
+        'image/x-icon' => 'ico',
+        'image/vnd.microsoft.icon' => 'ico',
+        'application/xml' => 'xml',
+        'text/xml' => 'xml',
+        'application/x-xml' => 'xml',
+        'text/csv' => 'csv',
+        'application/csv' => 'csv',
+        'text/plain' => 'txt',
+        'text/html' => 'html',
+        'application/xhtml+xml' => 'html',
+        'text/css' => 'css',
+        'text/markdown' => 'md',
+        'text/x-markdown' => 'md',
+        'text/calendar' => 'ics',
+        'text/vcard' => 'vcf',
+        'text/x-vcard' => 'vcf',
+        'text/yaml' => 'yaml',
+        'application/yaml' => 'yaml',
+        'application/x-yaml' => 'yaml',
+        'application/json' => 'json',
+        'application/ld+json' => 'jsonld',
+        'application/javascript' => 'js',
+        'text/javascript' => 'js',
+        'application/sql' => 'sql',
+        'application/zip' => 'zip',
+        'application/x-zip' => 'zip',
+        'application/x-zip-compressed' => 'zip',
+        'application/gzip' => 'gz',
+        'application/x-gzip' => 'gz',
+        'application/x-tar' => 'tar',
+        'application/x-7z-compressed' => '7z',
+        'application/vnd.rar' => 'rar',
+        'application/x-rar' => 'rar',
+        'application/x-rar-compressed' => 'rar',
+        'application/x-bzip2' => 'bz2',
+        'application/x-xz' => 'xz',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+        'application/vnd.ms-excel.sheet.macroenabled.12' => 'xlsm',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+        'application/vnd.ms-word.document.macroenabled.12' => 'docm',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+        'application/vnd.ms-powerpoint.presentation.macroenabled.12' => 'pptm',
+        'application/vnd.ms-excel' => 'xls',
+        'application/msword' => 'doc',
+        'application/vnd.ms-powerpoint' => 'ppt',
+        'application/vnd.oasis.opendocument.text' => 'odt',
+        'application/vnd.oasis.opendocument.spreadsheet' => 'ods',
+        'application/vnd.oasis.opendocument.presentation' => 'odp',
+        'application/vnd.oasis.opendocument.graphics' => 'odg',
+        'application/rtf' => 'rtf',
+        'text/rtf' => 'rtf',
+        'application/epub+zip' => 'epub',
+        'message/rfc822' => 'eml',
+        'application/vnd.ms-outlook' => 'msg',
+        'audio/mpeg' => 'mp3',
+        'audio/wav' => 'wav',
+        'audio/vnd.wave' => 'wav',
+        'audio/x-wav' => 'wav',
+        'audio/ogg' => 'ogg',
+        'audio/flac' => 'flac',
+        'audio/x-flac' => 'flac',
+        'audio/aac' => 'aac',
+        'audio/mp4' => 'm4a',
+        'audio/x-m4a' => 'm4a',
+        'audio/opus' => 'opus',
+        'video/mp4' => 'mp4',
+        'video/mpeg' => 'mpeg',
+        'video/webm' => 'webm',
+        'video/quicktime' => 'mov',
+        'video/x-msvideo' => 'avi',
+        'video/x-matroska' => 'mkv',
+        'font/woff' => 'woff',
+        'application/font-woff' => 'woff',
+        'font/woff2' => 'woff2',
+        'font/ttf' => 'ttf',
+        'application/x-font-ttf' => 'ttf',
+        'font/otf' => 'otf',
+        'application/x-font-opentype' => 'otf',
+    ];
+
+    /**
      * Liefert die übliche Dateiendung (ohne Punkt) zu einem MIME-Typ.
      *
      * Umkehrhelfer zu {@see mimeType()}: nützlich, wenn Inhalte ohne Dateinamen
@@ -1716,75 +1974,30 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     public static function extensionForMimeType(string $mimeType): ?string {
         $normalized = strtolower(trim(explode(';', $mimeType, 2)[0]));
 
-        return match ($normalized) {
-            'application/pdf' => 'pdf',
-            'image/jpeg', 'image/pjpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/gif' => 'gif',
-            'image/tiff' => 'tif',
-            'image/webp' => 'webp',
-            'image/avif' => 'avif',
-            'image/bmp', 'image/x-ms-bmp' => 'bmp',
-            'image/svg+xml' => 'svg',
-            'image/heic', 'image/heic-sequence' => 'heic',
-            'image/heif', 'image/heif-sequence' => 'heif',
-            'image/x-icon', 'image/vnd.microsoft.icon' => 'ico',
-            'application/xml', 'text/xml', 'application/x-xml' => 'xml',
-            'text/csv', 'application/csv' => 'csv',
-            'text/plain' => 'txt',
-            'text/html', 'application/xhtml+xml' => 'html',
-            'text/css' => 'css',
-            'text/markdown', 'text/x-markdown' => 'md',
-            'text/calendar' => 'ics',
-            'text/vcard', 'text/x-vcard' => 'vcf',
-            'text/yaml', 'application/yaml', 'application/x-yaml' => 'yaml',
-            'application/json' => 'json',
-            'application/ld+json' => 'jsonld',
-            'application/javascript', 'text/javascript' => 'js',
-            'application/sql' => 'sql',
-            'application/zip', 'application/x-zip', 'application/x-zip-compressed' => 'zip',
-            'application/gzip', 'application/x-gzip' => 'gz',
-            'application/x-tar' => 'tar',
-            'application/x-7z-compressed' => '7z',
-            'application/vnd.rar', 'application/x-rar', 'application/x-rar-compressed' => 'rar',
-            'application/x-bzip2' => 'bz2',
-            'application/x-xz' => 'xz',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
-            'application/vnd.ms-excel.sheet.macroenabled.12' => 'xlsm',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
-            'application/vnd.ms-word.document.macroenabled.12' => 'docm',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
-            'application/vnd.ms-powerpoint.presentation.macroenabled.12' => 'pptm',
-            'application/vnd.ms-excel' => 'xls',
-            'application/msword' => 'doc',
-            'application/vnd.ms-powerpoint' => 'ppt',
-            'application/vnd.oasis.opendocument.text' => 'odt',
-            'application/vnd.oasis.opendocument.spreadsheet' => 'ods',
-            'application/vnd.oasis.opendocument.presentation' => 'odp',
-            'application/vnd.oasis.opendocument.graphics' => 'odg',
-            'application/rtf', 'text/rtf' => 'rtf',
-            'application/epub+zip' => 'epub',
-            'message/rfc822' => 'eml',
-            'application/vnd.ms-outlook' => 'msg',
-            'audio/mpeg' => 'mp3',
-            'audio/wav', 'audio/vnd.wave', 'audio/x-wav' => 'wav',
-            'audio/ogg' => 'ogg',
-            'audio/flac', 'audio/x-flac' => 'flac',
-            'audio/aac' => 'aac',
-            'audio/mp4', 'audio/x-m4a' => 'm4a',
-            'audio/opus' => 'opus',
-            'video/mp4' => 'mp4',
-            'video/mpeg' => 'mpeg',
-            'video/webm' => 'webm',
-            'video/quicktime' => 'mov',
-            'video/x-msvideo' => 'avi',
-            'video/x-matroska' => 'mkv',
-            'font/woff', 'application/font-woff' => 'woff',
-            'font/woff2' => 'woff2',
-            'font/ttf', 'application/x-font-ttf' => 'ttf',
-            'font/otf', 'application/x-font-opentype' => 'otf',
-            default => null,
+        return self::EXTENSION_BY_MIME[$normalized] ?? null;
+    }
+
+    /**
+     * Liefert den kanonischen MIME-Typ zu einer Dateiendung — Umkehrung von
+     * {@see extensionForMimeType()} aus derselben Tabelle. Übliche Nebenformen
+     * (jpeg, tiff, htm, yml) werden erkannt; ein führender Punkt ist erlaubt.
+     *
+     * @param string $extension Die Dateiendung (z. B. "pdf", ".JPEG").
+     * @return string|null Der MIME-Typ oder null bei unbekannter Endung.
+     */
+    public static function mimeTypeForExtension(string $extension): ?string {
+        $extension = strtolower(ltrim(trim($extension), '.'));
+        $extension = match ($extension) {
+            'jpeg', 'jpe' => 'jpg',
+            'tiff' => 'tif',
+            'htm' => 'html',
+            'yml' => 'yaml',
+            default => $extension,
         };
+
+        $mime = array_search($extension, self::EXTENSION_BY_MIME, true);
+
+        return $mime === false ? null : $mime;
     }
 
     /**
@@ -1839,6 +2052,31 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         return $name;
+    }
+
+    /**
+     * Bereinigt einen Dateinamen für Anzeige und Ablage-Metadaten, ohne ihn nach
+     * ASCII zu wandeln (anders als {@see sanitizeFilename()}): „Übersicht März.pdf"
+     * bleibt lesbar. Entfernt wird nur, was einen Pfad oder Steuerbefehl bilden
+     * könnte — Pfadanteile fallen weg, Steuerzeichen und Slashes werden zu `_`.
+     *
+     * Nicht für Dateisystempfade gedacht, deren Namen der Nutzer bestimmt: dort
+     * gehört ein generierter Name hin, der Anzeigename in die Metadaten.
+     *
+     * @param string $name Der ursprüngliche Name (auch mit Pfad).
+     * @param int $maxLength Maximale Länge in Zeichen (Standard: 255).
+     * @param string $fallback Ersatz, wenn nichts übrig bleibt.
+     * @return string Der bereinigte Name.
+     */
+    public static function sanitizeDisplayName(string $name, int $maxLength = 255, string $fallback = 'file'): string {
+        $name = mb_scrub($name, 'UTF-8');
+        // Letzter Pfadanteil — basename() hinge von der Locale ab.
+        $parts = preg_split('#[/\\\\]#u', $name) ?: [$name];
+        $name = (string) end($parts);
+        $name = preg_replace('/[\x00-\x1F\x7F]/u', '_', $name) ?? '';
+        $name = mb_substr($name, 0, max(1, $maxLength));
+
+        return $name === '' || $name === '.' || $name === '..' ? $fallback : $name;
     }
 
     /**

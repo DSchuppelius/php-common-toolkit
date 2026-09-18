@@ -336,6 +336,32 @@ class CryptoHelperTest extends BaseTestCase {
         $this->assertFalse($result);
     }
 
+    public function test_base64_url_decode_pads_unpadded_input(): void {
+        // Länge % 4 == 2 ("a" → "YQ") und == 3 ("ab" → "YWI").
+        $this->assertSame('a', CryptoHelper::base64UrlDecode('YQ'));
+        $this->assertSame('ab', CryptoHelper::base64UrlDecode('YWI'));
+        $this->assertSame('abc', CryptoHelper::base64UrlDecode('YWJj'));
+        // URL-sichere Zeichen mit ungepolstertem Ende: 0xFB 0xFF → "-_8".
+        $this->assertSame("\xFB\xFF", CryptoHelper::base64UrlDecode('-_8'));
+        $this->assertSame("\xFB\xFF\xBF", CryptoHelper::base64UrlDecode('-_-_'));
+        // Bereits gepolsterte Eingaben bleiben gültig.
+        $this->assertSame('a', CryptoHelper::base64UrlDecode('YQ=='));
+        $this->assertSame('ab', CryptoHelper::base64UrlDecode('YWI='));
+        $this->assertSame('', CryptoHelper::base64UrlDecode(''));
+        // Länge % 4 == 1 ist nie gültig.
+        $this->assertFalse(CryptoHelper::base64UrlDecode('Y'));
+        $this->assertFalse(CryptoHelper::base64UrlDecode('YWJjZ'));
+    }
+
+    public function test_base64_url_round_trip_all_lengths(): void {
+        for ($length = 0; $length <= 16; $length++) {
+            $data = $length === 0 ? '' : random_bytes($length);
+            $encoded = CryptoHelper::base64UrlEncode($data);
+            $this->assertStringNotContainsString('=', $encoded);
+            $this->assertSame($data, CryptoHelper::base64UrlDecode($encoded), "Länge $length");
+        }
+    }
+
     public function test_bin_hex_conversion(): void {
         $binaryData = random_bytes(32);
 

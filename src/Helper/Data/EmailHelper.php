@@ -124,7 +124,8 @@ class EmailHelper {
      * Normalisiert eine E-Mail-Adresse.
      *
      * - Entfernt führende/trailing Leerzeichen
-     * - Konvertiert zu Kleinbuchstaben
+     * - Konvertiert zu Kleinbuchstaben (UTF-8-fähig, auch Umlaute im lokalen Teil;
+     *   ungültiges UTF-8 wird nur ASCII-kleingeschrieben)
      * - Entfernt optionale Punkte im lokalen Teil (für Gmail-Kompatibilität)
      *
      * @param string $email Die zu normalisierende E-Mail-Adresse.
@@ -132,7 +133,8 @@ class EmailHelper {
      * @return string Die normalisierte E-Mail-Adresse.
      */
     public static function normalize(string $email, bool $removeDots = false): string {
-        $email = strtolower(trim($email));
+        $email = trim($email);
+        $email = mb_check_encoding($email, 'UTF-8') ? mb_strtolower($email, 'UTF-8') : strtolower($email);
 
         if (!$removeDots) {
             return $email;

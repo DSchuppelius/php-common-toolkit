@@ -374,7 +374,10 @@ final class Decimal implements JsonSerializable, Stringable {
         $fraction = $parts[1] ?? '';
 
         if ($thousandsSeparator !== '') {
-            $integer = strrev(implode($thousandsSeparator, str_split(strrev($integer), 3)));
+            // Gruppen zurückdrehen statt des Gesamtstrings – sonst würden
+            // Mehrbyte-Trenner (z.B. NBSP U+00A0) byteweise umgekehrt.
+            $groups = array_map('strrev', str_split(strrev($integer), 3));
+            $integer = implode($thousandsSeparator, array_reverse($groups));
         }
 
         $result = $integer;

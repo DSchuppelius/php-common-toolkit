@@ -154,22 +154,23 @@ class NumberHelper {
      * @param string|float|int $amount Betrag in beliebigem Format.
      * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
      * @param bool $withThousandsSeparator Tausendertrenner anzeigen (Standard: false).
+     * @param CountryCode|null $country Optionales Land für eindeutige Tausendertrenner-Erkennung.
+     * @param bool $trimTrailingZeros Nachkomma-Nullen entfernen, z.B. "2,50" -> "2,5", "10,00" -> "10" (Standard: false).
      * @return string Betrag im deutschen Format (z.B. "1234,56" oder "1.234,56").
      *
      * @see formatCurrency() Für Anzeige-Formatierung mit Währungssymbol und Tausendertrennern.
      */
-    public static function toGermanFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false, ?CountryCode $country = null): string {
+    public static function toGermanFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false, ?CountryCode $country = null, bool $trimTrailingZeros = false): string {
         if (is_string($amount)) {
             $amount = trim($amount);
-            if ($amount === '') {
-                return number_format(0, $decimals, ',', $withThousandsSeparator ? '.' : '');
-            }
-            $floatVal = self::normalizeDecimal($amount, $country);
+            $floatVal = $amount === '' ? 0.0 : self::normalizeDecimal($amount, $country);
         } else {
             $floatVal = (float) $amount;
         }
 
-        return number_format($floatVal, $decimals, ',', $withThousandsSeparator ? '.' : '');
+        $formatted = number_format($floatVal, $decimals, ',', $withThousandsSeparator ? '.' : '');
+
+        return $trimTrailingZeros ? self::trimTrailingZeros($formatted, ',') : $formatted;
     }
 
     /**
@@ -211,20 +212,62 @@ class NumberHelper {
      * @param int $decimals Anzahl Dezimalstellen (Standard: 2).
      * @param bool $withThousandsSeparator Tausendertrenner anzeigen (Standard: false).
      * @param CountryCode|null $country Optionales Land für eindeutige Tausendertrenner-Erkennung.
+     * @param bool $trimTrailingZeros Nachkomma-Nullen entfernen, z.B. "2.50" -> "2.5", "10.00" -> "10" (Standard: false).
      * @return string Betrag im US-Format (z.B. "1234.56" oder "1,234.56").
      */
-    public static function toUSFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false, ?CountryCode $country = null): string {
+    public static function toUSFormat(string|float|int $amount, int $decimals = 2, bool $withThousandsSeparator = false, ?CountryCode $country = null, bool $trimTrailingZeros = false): string {
         if (is_string($amount)) {
             $amount = trim($amount);
-            if ($amount === '') {
-                return number_format(0, $decimals, '.', $withThousandsSeparator ? ',' : '');
-            }
-            $floatVal = self::normalizeDecimal($amount, $country);
+            $floatVal = $amount === '' ? 0.0 : self::normalizeDecimal($amount, $country);
         } else {
             $floatVal = (float) $amount;
         }
 
-        return number_format($floatVal, $decimals, '.', $withThousandsSeparator ? ',' : '');
+        $formatted = number_format($floatVal, $decimals, '.', $withThousandsSeparator ? ',' : '');
+
+        return $trimTrailingZeros ? self::trimTrailingZeros($formatted, '.') : $formatted;
+    }
+
+    /**
+     * Entfernt nachgestellte Nullen im Nachkommateil und danach den
+     * Dezimaltrenner, falls kein Nachkommateil übrig bleibt.
+     *
+     * Ersetzt das fehleranfällige `rtrim(rtrim($x, '0'), ',')`-Idiom, das aus
+     * "10" eine "1" macht. Der Vorkommateil bleibt immer unangetastet:
+     * - "2.5000" -> "2.5", "100.000" -> "100", "0.000" -> "0", "100" -> "100"
+     * - "1.234,50" (Trenner ",") -> "1.234,5"; "1.000" (Trenner ",") bleibt "1.000"
+     *
+     * Ohne Dezimaltrenner oder bei einem Nachkommateil, der nicht nur aus Ziffern
+     * besteht (z.B. "1.0e10", "2.50 EUR"), wird die Eingabe unverändert zurückgegeben.
+     * Ein Vorzeichen bleibt erhalten ("-0,50" -> "-0,5", "-0,00" -> "-0").
+     *
+     * @param string $number Die formatierte Zahl.
+     * @param string $decimalSeparator Der Dezimaltrenner (Standard: '.').
+     * @return string Die Zahl ohne überflüssige Nachkomma-Nullen.
+     */
+    public static function trimTrailingZeros(string $number, string $decimalSeparator = '.'): string {
+        if ($decimalSeparator === '') {
+            return $number;
+        }
+
+        $position = strrpos($number, $decimalSeparator);
+        if ($position === false) {
+            return $number;
+        }
+
+        $integerPart = substr($number, 0, $position);
+        $fraction = substr($number, $position + strlen($decimalSeparator));
+        if ($fraction !== '' && !ctype_digit($fraction)) {
+            return $number;
+        }
+
+        $fraction = rtrim($fraction, '0');
+        if ($fraction !== '') {
+            return $integerPart . $decimalSeparator . $fraction;
+        }
+
+        // ".000" / "-.00" nicht zu "" bzw. "-" schrumpfen lassen.
+        return in_array($integerPart, ['', '-', '+'], true) ? $integerPart . '0' : $integerPart;
     }
 
     /**

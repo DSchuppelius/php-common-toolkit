@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace CommonToolkit\Enums;
 
 use InvalidArgumentException;
+use Locale;
 
 enum CountryCode: string {
     case Afghanistan = 'AF';
@@ -357,7 +358,30 @@ enum CountryCode: string {
         };
     }
 
-    public function getLabel(): string {
+    /**
+     * Codes, die ICU als Alias eines Nachfolgestaats auflöst (AN → "Curaçao")
+     * und die daher immer das deutsche Label erhalten.
+     */
+    private const INTL_ALIASED_CODES = ['AN'];
+
+    /**
+     * Liefert den Ländernamen.
+     *
+     * Ohne Locale (oder für "de"/"de_DE") das gepflegte deutsche Label. Mit
+     * Locale (z.B. "en", "fr", "de_CH") den ICU-Namen via ext-intl; kennt ICU
+     * den Code nicht (z.B. "XI"), fällt die Methode auf das deutsche Label zurück.
+     *
+     * @param string|null $locale Ziel-Locale (null = deutsches Label).
+     * @return string Der Ländername.
+     */
+    public function getLabel(?string $locale = null): string {
+        if ($locale !== null && !in_array(strtolower(str_replace('-', '_', trim($locale))), ['de', 'de_de'], true) && !in_array($this->value, self::INTL_ALIASED_CODES, true)) {
+            $label = Locale::getDisplayRegion('-' . $this->value, $locale);
+            if (is_string($label) && $label !== '' && $label !== $this->value) {
+                return $label;
+            }
+        }
+
         return match ($this) {
             self::Afghanistan => 'Afghanistan',
             self::ÅlandIslands => 'Ålandinseln',

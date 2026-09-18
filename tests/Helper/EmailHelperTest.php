@@ -59,6 +59,18 @@ class EmailHelperTest extends BaseTestCase {
         $this->assertEquals('user@example.com', EmailHelper::normalize('  user@example.com  '));
     }
 
+    public function test_normalize_lowercases_unicode_local_part(): void {
+        $this->assertSame('äöü@example.com', EmailHelper::normalize('ÄÖÜ@Example.COM'));
+        $this->assertSame('jürgen.müller@bücher.de', EmailHelper::normalize(' Jürgen.Müller@BÜCHER.de '));
+        $this->assertSame('jürgenmüller@bücher.de', EmailHelper::normalize('Jürgen.Müller@Bücher.DE', true));
+        $this->assertSame('', EmailHelper::normalize('   '));
+    }
+
+    public function test_normalize_keeps_invalid_utf8_bytes(): void {
+        // Ungültiges UTF-8 (Latin-1-"Ä") nicht durch "?" ersetzen, nur ASCII kleinschreiben.
+        $this->assertSame("\xC4bc@example.com", EmailHelper::normalize("\xC4BC@Example.com"));
+    }
+
     public function test_normalize_with_dot_removal(): void {
         $this->assertEquals('username@gmail.com', EmailHelper::normalize('user.name@gmail.com', true));
     }

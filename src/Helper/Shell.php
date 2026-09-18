@@ -13,11 +13,76 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper;
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
-use CommonToolkit\Entities\Executables\ShellExecutable;
+use CommonToolkit\Entities\Executables\{ShellExecutable, ShellResult};
 use Exception;
+use InvalidArgumentException;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Component\Process\Process;
 
 class Shell extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../config/common_executables.json';
+
+    /**
+     * Startet ein Programm mit Argumentliste — ohne Shell, daher ohne
+     * Quoting-Probleme und ohne Injektion über Argumente.
+     *
+     * Anders als {@see executeShellCommand()} gibt es Timeout, eigene
+     * Umgebungsvariablen (z. B. ein Passwort, das nicht in der Prozessliste
+     * erscheinen soll) und Streaming der Ausgabe. Geloggt wird nur der
+     * Programmname — Argumente und Umgebung können Geheimnisse enthalten.
+     *
+     * Ein Timeout wirft nicht, sondern steht im Ergebnis (`timedOut`).
+     *
+     * @param list<string> $command Programm und Argumente, z. B. ['tar', '-xf', $archiv].
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt.
+     * @param array<string, string>|null $env Zusätzliche Umgebungsvariablen (ergänzen die geerbten).
+     * @param string|null $cwd Arbeitsverzeichnis.
+     * @param (callable(string $buffer, bool $isErrorOutput): void)|null $onOutput Erhält die Ausgabe
+     *        stückweise; die Standardausgabe landet dann nicht im Ergebnis.
+     * @param string|null $input Daten für die Standardeingabe.
+     * @return ShellResult Exit-Code, Ausgaben, Timeout und Laufzeit.
+     * @throws InvalidArgumentException Wenn keine Programmangabe übergeben wird.
+     */
+    public static function run(array $command, ?float $timeout = 60.0, ?array $env = null, ?string $cwd = null, ?callable $onOutput = null, ?string $input = null): ShellResult {
+        if ($command === [] || trim((string) $command[array_key_first($command)]) === '') {
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Shell::run() braucht mindestens den Programmnamen.');
+        }
+
+        $program = basename((string) $command[array_key_first($command)]);
+        $process = new Process(array_map('strval', $command), $cwd, $env, $input, $timeout);
+        $started = microtime(true);
+        $streamedOutput = $onOutput !== null;
+
+        $callback = $streamedOutput
+            ? static function (string $type, string $buffer) use ($onOutput): void {
+                $onOutput($buffer, $type === Process::ERR);
+            }
+        : null;
+
+        try {
+            $process->run($callback);
+            $timedOut = false;
+        } catch (ProcessTimedOutException) {
+            $timedOut = true;
+        }
+
+        $duration = microtime(true) - $started;
+        $result = new ShellResult(
+            $timedOut ? null : $process->getExitCode(),
+            $streamedOutput ? '' : $process->getOutput(),
+            $process->getErrorOutput(),
+            $timedOut,
+            $duration,
+        );
+
+        if ($timedOut) {
+            self::logWarning(sprintf('Prozess %s nach %.1f s abgebrochen (Timeout)', $program, $duration));
+        } else {
+            self::logDebug(sprintf('Prozess %s beendet: Exit %d nach %.1f s', $program, (int) $result->exitCode, $duration));
+        }
+
+        return $result;
+    }
 
     /**
      * Führt einen Shell-Befehl aus und gibt den Exit-Code zurück.

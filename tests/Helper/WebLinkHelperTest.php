@@ -360,4 +360,14 @@ class WebLinkHelperTest extends BaseTestCase {
 
         $this->assertSame('ftp://example.org', \CommonToolkit\Helper\Data\WebLinkHelper::origin('ftp://example.org/datei', ['ftp']));
     }
+
+    public function test_origin_lowercases_scheme_and_host(): void {
+        $this->assertSame('https://work.example.org', \CommonToolkit\Helper\Data\WebLinkHelper::origin('HTTPS://Work.EXAMPLE.org/Pfad/Bleibt'));
+        $this->assertSame('http://localhost:8080', \CommonToolkit\Helper\Data\WebLinkHelper::origin('http://LocalHost:8080'));
+        $this->assertSame('http://192.168.0.1:81', \CommonToolkit\Helper\Data\WebLinkHelper::origin('http://192.168.0.1:81/'));
+        $this->assertSame('http://[fe80::1]', \CommonToolkit\Helper\Data\WebLinkHelper::origin('http://[FE80::1]/'));
+        $this->assertSame('https://[2001:db8::abcd]:8443', \CommonToolkit\Helper\Data\WebLinkHelper::origin('https://[2001:DB8::ABCD]:8443/x'));
+        $this->assertSame('http://[::ffff:192.0.2.1]', \CommonToolkit\Helper\Data\WebLinkHelper::origin('http://[::FFFF:192.0.2.1]'));
+        $this->assertNull(\CommonToolkit\Helper\Data\WebLinkHelper::origin('https://Exämple.org/'));
+    }
 }

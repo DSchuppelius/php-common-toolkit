@@ -239,12 +239,22 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     /**
      * Löscht ein Verzeichnis und alle darin enthaltenen Dateien und Unterverzeichnisse.
      *
+     * Symbolische Links werden als Eintrag entfernt, ihr Ziel bleibt unberührt —
+     * auch wenn `$directory` selbst ein Link ist. Sonst löschte ein Link auf
+     * `/` oder ein Nachbarverzeichnis Daten außerhalb des gewünschten Bereichs.
+     *
      * @param string $directory Das zu löschende Verzeichnis.
      * @param bool $recursive Ob rekursiv gelöscht werden soll.
      * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
      * @throws Exception Wenn ein Fehler beim Löschen auftritt.
      */
     public static function delete(string $directory, bool $recursive = false): void {
+        // `@`: is_link warnt auf Pfaden außerhalb von open_basedir; die Prüfung übernimmt exists().
+        if (@is_link($directory)) {
+            self::removeLink($directory);
+            return;
+        }
+
         $directory = self::getRealPath($directory);
 
         if (!self::exists($directory)) {
@@ -252,13 +262,16 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         }
 
         if ($recursive) {
-            $files = array_diff(scandir($directory), ['.', '..']);
-            foreach ($files as $file) {
+            foreach (self::entries($directory) as $file) {
                 $path = $directory . DIRECTORY_SEPARATOR . $file;
-                if (is_dir($path)) {
-                    self::delete($path, $recursive);
+                if (is_link($path)) {
+                    self::removeLink($path);
+                } elseif (is_dir($path)) {
+                    self::delete($path, true);
                 } else {
-                    unlink($path);
+                    if (!unlink($path)) {
+                        self::logErrorAndThrow(Exception::class, "Fehler beim Löschen der Datei $path");
+                    }
                     self::logDebug("Datei gelöscht: $path");
                 }
             }
@@ -269,6 +282,36 @@ class Folder extends HelperAbstract implements FileSystemInterface {
         }
 
         self::logDebug("Verzeichnis gelöscht: $directory");
+    }
+
+    /**
+     * Entfernt einen symbolischen Link, ohne sein Ziel anzufassen.
+     *
+     * @throws Exception Wenn der Link nicht entfernt werden kann.
+     */
+    private static function removeLink(string $link): void {
+        // Unter Windows lassen sich Verzeichnis-Links nur per rmdir entfernen.
+        $removed = DIRECTORY_SEPARATOR === '\\' && is_dir($link) ? rmdir($link) : unlink($link);
+        if (!$removed) {
+            self::logErrorAndThrow(Exception::class, "Fehler beim Entfernen des Links $link");
+        }
+
+        self::logDebug("Link entfernt, Ziel unberührt: $link");
+    }
+
+    /**
+     * Einträge eines Verzeichnisses ohne `.` und `..`.
+     *
+     * @return list<string>
+     * @throws Exception Wenn das Verzeichnis nicht gelesen werden kann.
+     */
+    private static function entries(string $directory): array {
+        $entries = scandir($directory);
+        if ($entries === false) {
+            self::logErrorAndThrow(Exception::class, "Das Verzeichnis $directory kann nicht gelesen werden");
+        }
+
+        return array_values(array_diff($entries, ['.', '..']));
     }
 
     /**
@@ -299,28 +342,49 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     /**
      * Gibt alle Unterverzeichnisse eines Verzeichnisses zurück.
      *
+     * Verlinkte Verzeichnisse werden aufgeführt; rekursiv abgestiegen wird in
+     * sie nur mit `$followSymlinks` — dann mit Schutz gegen Link-Zyklen.
+     *
      * @param string $directory Das Verzeichnis, in dem nach Unterverzeichnissen gesucht werden soll.
      * @param bool $recursive Ob rekursiv in Unterverzeichnissen gesucht werden soll.
+     * @param bool $followSymlinks Ob in verlinkte Verzeichnisse abgestiegen wird (Standard: false).
      * @return list<string> Ein Array mit den gefundenen Unterverzeichnissen.
      */
-    public static function get(string $directory, bool $recursive = false): array {
+    public static function get(string $directory, bool $recursive = false, bool $followSymlinks = false): array {
         $directory = self::getRealPath($directory);
 
         if (!self::exists($directory)) {
             return self::logErrorAndReturn([], "Das Verzeichnis $directory existiert nicht");
         }
 
-        $result = [];
-        $files = array_diff(scandir($directory), ['.', '..']);
+        $visited = [$directory => true];
+        return self::collectDirectories($directory, $recursive, $followSymlinks, $visited);
+    }
 
-        foreach ($files as $file) {
+    /**
+     * @param array<string, true> $visited Bereits besuchte reale Pfade (Zyklusschutz).
+     * @return list<string>
+     */
+    private static function collectDirectories(string $directory, bool $recursive, bool $followSymlinks, array &$visited): array {
+        $result = [];
+
+        foreach (self::entries($directory) as $file) {
             $path = $directory . DIRECTORY_SEPARATOR . $file;
-            if (is_dir($path)) {
-                $result[] = $path;
-                if ($recursive) {
-                    $result = array_merge($result, self::get($path, true));
-                }
+            if (!is_dir($path)) {
+                continue;
             }
+
+            $result[] = $path;
+            if (!$recursive || (is_link($path) && !$followSymlinks)) {
+                continue;
+            }
+
+            $real = realpath($path);
+            if ($real === false || isset($visited[$real])) {
+                continue;
+            }
+            $visited[$real] = true;
+            $result = array_merge($result, self::collectDirectories($path, true, $followSymlinks, $visited));
         }
 
         return $result;
@@ -334,6 +398,44 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      */
     public static function isAbsolutePath(string $path): bool {
         return File::isAbsolutePath($path);
+    }
+
+    /**
+     * Löst einen Pfad auf und liefert ihn nur, wenn er innerhalb von `$base`
+     * liegt — Schutz gegen `../`-Traversal und Symlink-Ausbrüche.
+     *
+     * Beide Seiten werden per realpath aufgelöst, verglichen wird mit
+     * Trennzeichen (`/data` enthält nicht `/data2`). Relative Pfade gelten
+     * relativ zu `$base`, absolute werden unverändert geprüft. Ob Datei oder
+     * Verzeichnis gefordert ist, prüft der Aufrufer am Ergebnis.
+     *
+     * @param string $base Das erlaubte Basisverzeichnis.
+     * @param string $path Relativer oder absoluter Pfad.
+     * @param bool $allowBase Ob `$base` selbst ein zulässiges Ergebnis ist (Standard: false).
+     * @return string|null Der aufgelöste Pfad oder null bei Ausbruch, Fehlen oder open_basedir-Sperre.
+     */
+    public static function resolveWithin(string $base, string $path, bool $allowBase = false): ?string {
+        if (trim($base) === '' || trim($path) === '' || self::isBlockedByOpenBasedir($base)) {
+            return null;
+        }
+
+        // `@`: realpath warnt, wenn ein Link aus open_basedir herauszeigt.
+        $realBase = @realpath($base);
+        if ($realBase === false) {
+            return null;
+        }
+
+        $candidate = File::isAbsolutePath($path) ? $path : $realBase . DIRECTORY_SEPARATOR . $path;
+        $real = @realpath($candidate);
+        if ($real === false) {
+            return null;
+        }
+
+        if ($real === $realBase) {
+            return $allowBase ? $real : null;
+        }
+
+        return str_starts_with($real, rtrim($realBase, '/\\') . DIRECTORY_SEPARATOR) ? $real : null;
     }
 
     /**
@@ -390,6 +492,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     /**
      * Leert ein Verzeichnis (löscht alle Inhalte, behält das Verzeichnis).
      *
+     * Symbolische Links werden als Eintrag entfernt, ihr Ziel bleibt unberührt.
+     *
      * @param string $directory Der Pfad des Verzeichnisses.
      * @param bool $recursive Unterverzeichnisse rekursiv leeren (Standard: true).
      * @throws FolderNotFoundException Wenn das Verzeichnis nicht existiert.
@@ -408,7 +512,9 @@ class Folder extends HelperAbstract implements FileSystemInterface {
             }
 
             $path = $item->getPathname();
-            if ($item->isDir()) {
+            if ($item->isLink()) {
+                self::removeLink($path);
+            } elseif ($item->isDir()) {
                 if ($recursive) {
                     self::delete($path, true);
                 }

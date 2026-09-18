@@ -334,32 +334,83 @@ class ZipFile extends HelperAbstract {
      * @param string $zipBinary Das ZIP-Archiv als Binärstring.
      * @param int|null $maxEntries Maximale Anzahl Datei-Einträge (null = unbegrenzt).
      * @param int|null $maxBytes Maximale entpackte Gesamtbytes (null = unbegrenzt).
+     * @param (callable(string): bool)|null $skipEntry Liefert true für Einträge, die nicht gelesen werden sollen;
+     *        sie zählen nicht gegen die Limits, die Zip-Slip-Prüfung gilt trotzdem.
      * @return array<string, string> Eintragspfad -> Inhalt.
      * @throws InvalidArgumentException Bei unsicheren Eintragspfaden oder ungültigen Limit-Parametern.
      * @throws DocumentLimitExceededException Bei überschrittenem Entry- oder Byte-Limit — Art über getKind().
      * @throws Exception Falls der Binärstring kein lesbares ZIP-Archiv ist.
      */
-    public static function readEntries(string $zipBinary, ?int $maxEntries = null, ?int $maxBytes = null): array {
+    public static function readEntries(string $zipBinary, ?int $maxEntries = null, ?int $maxBytes = null, ?callable $skipEntry = null): array {
         self::checkZipExtension();
+        self::assertReadLimits($maxEntries, $maxBytes);
 
+        $tempFile = self::createTempZipFile($zipBinary);
+        try {
+            $entries = self::readEntriesFromPath($tempFile, $maxEntries, $maxBytes, $skipEntry, null);
+        } finally {
+            @unlink($tempFile);
+        }
+
+        return self::logDebugAndReturn($entries, "ZIP-Binär gelesen: " . count($entries) . " Einträge");
+    }
+
+    /**
+     * Wie {@see self::readEntries()}, liest aber direkt aus einer ZIP-Datei —
+     * große Uploads müssen nicht erst als String in den Speicher.
+     *
+     * @param string $file Pfad der ZIP-Datei.
+     * @param int|null $maxEntries Maximale Anzahl Datei-Einträge (null = unbegrenzt).
+     * @param int|null $maxBytes Maximale entpackte Gesamtbytes (null = unbegrenzt).
+     * @param (callable(string): bool)|null $skipEntry Liefert true für Einträge, die nicht gelesen werden sollen.
+     * @return array<string, string> Eintragspfad -> Inhalt.
+     * @throws FileNotFoundException Falls die Datei nicht existiert.
+     * @throws InvalidArgumentException Bei unsicheren Eintragspfaden oder ungültigen Limit-Parametern.
+     * @throws DocumentLimitExceededException Bei überschrittenem Entry- oder Byte-Limit — Art über getKind().
+     * @throws Exception Falls die Datei kein lesbares ZIP-Archiv ist.
+     */
+    public static function readEntriesFromFile(string $file, ?int $maxEntries = null, ?int $maxBytes = null, ?callable $skipEntry = null): array {
+        self::checkZipExtension();
+        self::assertReadLimits($maxEntries, $maxBytes);
+
+        if (!File::isFile($file)) {
+            self::logErrorAndThrow(FileNotFoundException::class, "ZIP-Datei nicht gefunden: $file");
+        }
+
+        $entries = self::readEntriesFromPath($file, $maxEntries, $maxBytes, $skipEntry, basename($file));
+
+        return self::logDebugAndReturn($entries, "ZIP-Datei gelesen: $file (" . count($entries) . " Einträge)");
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private static function assertReadLimits(?int $maxEntries, ?int $maxBytes): void {
         if ($maxEntries !== null && $maxEntries < 1) {
             self::logErrorAndThrow(InvalidArgumentException::class, "maxEntries muss mindestens 1 sein: $maxEntries");
         }
         if ($maxBytes !== null && $maxBytes < 1) {
             self::logErrorAndThrow(InvalidArgumentException::class, "maxBytes muss mindestens 1 sein: $maxBytes");
         }
+    }
 
-        $tempFile = self::createTempZipFile($zipBinary);
-
+    /**
+     * Gemeinsamer Lesekern für {@see readEntries()} und {@see readEntriesFromFile()}.
+     *
+     * @param (callable(string): bool)|null $skipEntry
+     * @return array<string, string>
+     * @throws Exception
+     */
+    private static function readEntriesFromPath(string $path, ?int $maxEntries, ?int $maxBytes, ?callable $skipEntry, ?string $document): array {
         $zip = new ZipArchive;
         $opened = false;
         $entries = [];
 
         try {
-            $openResult = $zip->open($tempFile);
+            $openResult = $zip->open($path);
             if ($openResult !== true) {
                 // false -> 0 (unbekannter Fehler), sonst der ZipArchive-Fehlercode
-                self::logErrorAndThrow(Exception::class, "Binärstring ist kein lesbares ZIP-Archiv: " . self::getErrorMessage((int) $openResult));
+                self::logErrorAndThrow(Exception::class, "Kein lesbares ZIP-Archiv: " . self::getErrorMessage((int) $openResult));
             }
             $opened = true;
 
@@ -373,8 +424,12 @@ class ZipFile extends HelperAbstract {
 
                 self::assertSafeEntryPath($entryName);
 
+                if ($skipEntry !== null && $skipEntry($entryName) === true) {
+                    continue;
+                }
+
                 if ($maxEntries !== null && count($entries) >= $maxEntries) {
-                    self::throwLimitExceeded(DocumentLimitExceededException::KIND_ENTRIES, $maxEntries, "ZIP-Archiv überschreitet das Entry-Limit von $maxEntries Datei-Einträgen.", count($entries) + 1);
+                    self::throwLimitExceeded(DocumentLimitExceededException::KIND_ENTRIES, $maxEntries, "ZIP-Archiv überschreitet das Entry-Limit von $maxEntries Datei-Einträgen.", count($entries) + 1, $document);
                 }
 
                 // Deklarierte Größe vorab prüfen, damit eine Zip-Bombe gar
@@ -382,7 +437,7 @@ class ZipFile extends HelperAbstract {
                 if ($maxBytes !== null) {
                     $stat = $zip->statIndex($i);
                     if ($stat !== false && $totalBytes + (int) $stat['size'] > $maxBytes) {
-                        self::throwLimitExceeded(DocumentLimitExceededException::KIND_BYTES, $maxBytes, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).", $totalBytes + (int) $stat['size']);
+                        self::throwLimitExceeded(DocumentLimitExceededException::KIND_BYTES, $maxBytes, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).", $totalBytes + (int) $stat['size'], $document);
                     }
                 }
 
@@ -394,7 +449,7 @@ class ZipFile extends HelperAbstract {
                 // … und zusätzlich die tatsächliche Größe zählen.
                 $totalBytes += strlen($content);
                 if ($maxBytes !== null && $totalBytes > $maxBytes) {
-                    self::throwLimitExceeded(DocumentLimitExceededException::KIND_BYTES, $maxBytes, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).", $totalBytes);
+                    self::throwLimitExceeded(DocumentLimitExceededException::KIND_BYTES, $maxBytes, "ZIP-Archiv überschreitet das Byte-Limit von $maxBytes Bytes (entpackt).", $totalBytes, $document);
                 }
 
                 $entries[$entryName] = $content;
@@ -406,10 +461,9 @@ class ZipFile extends HelperAbstract {
             if ($opened) {
                 $zip->close();
             }
-            @unlink($tempFile);
         }
 
-        return self::logDebugAndReturn($entries, "ZIP-Binär gelesen: " . count($entries) . " Einträge");
+        return $entries;
     }
 
     /**
@@ -486,6 +540,91 @@ class ZipFile extends HelperAbstract {
         }
 
         return self::logDebugAndReturn($binary, "ZIP-Binär erzeugt: " . count($entries) . " Einträge (" . strlen($binary) . " Bytes)");
+    }
+
+    /**
+     * Ob diese PHP/libzip-Installation ZIP-Einträge mit AES-256 verschlüsseln kann.
+     */
+    public static function supportsEncryption(): bool {
+        return class_exists(ZipArchive::class) && defined('ZipArchive::EM_AES_256');
+    }
+
+    /**
+     * Baut ein ZIP-Archiv aus gemischten Einträgen — Dateien von der Platte und
+     * Inhalte aus Strings — und schreibt es nach `$destination`.
+     *
+     * Jeder Eintrag nennt `archiveName` und genau eines von `path` (Datei) oder
+     * `content` (String). Alle Namen durchlaufen vorab den Zip-Slip-Guard. Mit
+     * Passwort werden ALLE Einträge per AES-256 verschlüsselt; fehlt dafür die
+     * Unterstützung ({@see supportsEncryption()}), wirft die Methode — ein
+     * Archiv, das stillschweigend unverschlüsselt bleibt, entsteht nie.
+     * Scheitert der Aufbau, bleibt keine halbe Datei zurück.
+     *
+     * @param list<array{archiveName: string, path?: string, content?: string}> $entries
+     * @param string $destination Zielpfad des Archivs (wird überschrieben).
+     * @param string|null $password Passwort für AES-256; null/leer = unverschlüsselt.
+     * @throws InvalidArgumentException Bei leerer Liste, ungültigen Einträgen oder unsicheren Namen.
+     * @throws FileNotFoundException Wenn eine Quelldatei fehlt.
+     * @throws Exception Wenn Verschlüsselung fehlt oder das Archiv nicht geschrieben werden kann.
+     */
+    public static function createFromEntries(array $entries, string $destination, ?string $password = null): void {
+        self::checkZipExtension();
+
+        if ($entries === []) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "createFromEntries() verlangt mindestens einen Eintrag.");
+        }
+
+        $encrypt = $password !== null && $password !== '';
+        if ($encrypt && !self::supportsEncryption()) {
+            self::logErrorAndThrow(Exception::class, "AES-256-Verschlüsselung für ZIP-Archive ist auf diesem System nicht verfügbar.");
+        }
+
+        // Alles vorab prüfen, bevor irgendetwas geschrieben wird.
+        /** @var list<array{string, ?string, ?string}> $checked Name, Pfad, Inhalt */
+        $checked = [];
+        foreach ($entries as $entry) {
+            $name = $entry['archiveName'];
+            self::assertSafeEntryPath($name);
+            $path = $entry['path'] ?? null;
+            $content = $entry['content'] ?? null;
+            if (($path === null) === ($content === null)) {
+                self::logErrorAndThrow(InvalidArgumentException::class, "Eintrag '$name' braucht genau eines von 'path' oder 'content'.");
+            }
+            if ($path !== null && !File::isFile($path)) {
+                self::logErrorAndThrow(FileNotFoundException::class, "Quelldatei für Eintrag '$name' nicht gefunden: $path");
+            }
+            $checked[] = [$name, $path, $content];
+        }
+
+        $zip = new ZipArchive;
+        $openResult = $zip->open($destination, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        if ($openResult !== true) {
+            self::logErrorAndThrow(Exception::class, "Fehler beim Erstellen des ZIP-Archivs $destination: " . self::getErrorMessage((int) $openResult));
+        }
+
+        try {
+            foreach ($checked as [$name, $path, $content]) {
+                $added = $path !== null
+                    ? $zip->addFile($path, $name)
+                    : $zip->addFromString($name, (string) $content);
+                if (!$added || ($encrypt && !$zip->setEncryptionName($name, ZipArchive::EM_AES_256, $password))) {
+                    self::logErrorAndThrow(Exception::class, "Fehler beim Hinzufügen des Eintrags: $name");
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ohne unchangeAll() schriebe close() bzw. der Destruktor ein Teilarchiv.
+            $zip->unchangeAll();
+            $zip->close();
+            @unlink($destination);
+            throw $e;
+        }
+
+        if (!$zip->close()) {
+            @unlink($destination);
+            self::logErrorAndThrow(Exception::class, "Fehler beim Abschließen des ZIP-Archivs: $destination");
+        }
+
+        self::logDebug("ZIP-Archiv erstellt: $destination (" . count($entries) . " Einträge" . ($encrypt ? ', AES-256' : '') . ')');
     }
 
     /**

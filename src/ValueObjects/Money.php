@@ -530,12 +530,21 @@ final class Money implements JsonSerializable, Stringable {
      * Formatiert den Betrag präzise (ohne float-Zwischenschritt), delegiert an
      * {@see Decimal::format()}.
      *
-     * @param bool $withSymbol             Währungssymbol anhängen (Standard: true).
+     * Symbolstellung (Minus steht immer ganz vorn, wie bei
+     * {@see NumberHelper::formatCurrency()}):
+     * - Standard:              "-1.234,50 €"
+     * - $symbolBefore:         "-€ 1,234.50"
+     * - $symbolBefore, '':     "-€1,234.50"
+     *
+     * @param bool $withSymbol             Währungssymbol ausgeben (Standard: true).
      * @param bool $withThousandsSeparator Tausendertrenner (Standard: true).
      * @param string $decimalSeparator     Dezimaltrenner (Standard: ',').
      * @param string $thousandsSeparator   Tausendertrenner-Zeichen (Standard: '.').
+     * @param bool $symbolBefore           Symbol vor statt hinter den Betrag (Standard: false).
+     * @param string $symbolSeparator      Zeichen zwischen Symbol und Betrag (Standard: ' ', z.B. '' oder "\u{00A0}").
+     * @return string Der formatierte Betrag.
      */
-    public function format(bool $withSymbol = true, bool $withThousandsSeparator = true, string $decimalSeparator = ',', string $thousandsSeparator = '.'): string {
+    public function format(bool $withSymbol = true, bool $withThousandsSeparator = true, string $decimalSeparator = ',', string $thousandsSeparator = '.', bool $symbolBefore = false, string $symbolSeparator = ' '): string {
         $formatted = $this->amount->format($decimalSeparator, $withThousandsSeparator ? $thousandsSeparator : '');
 
         if (!$withSymbol) {
@@ -547,7 +556,13 @@ final class Money implements JsonSerializable, Stringable {
             $symbol = $this->currency->value;
         }
 
-        return $formatted . ' ' . $symbol;
+        if (!$symbolBefore) {
+            return $formatted . $symbolSeparator . $symbol;
+        }
+
+        $sign = str_starts_with($formatted, '-') ? '-' : '';
+
+        return $sign . $symbol . $symbolSeparator . substr($formatted, strlen($sign));
     }
 
     /**
