@@ -15,6 +15,7 @@ namespace Tests\Helper;
 use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix};
 use CommonToolkit\Enums\Units\TemperatureUnit;
 use CommonToolkit\Helper\Data\NumberHelper;
+use CommonToolkit\ValueObjects\{Decimal, Money};
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -150,6 +151,22 @@ final class NumberHelperTest extends TestCase {
         $this->assertSame('-123.45', NumberHelper::normalizeDecimalStringOrNull('123,45 S'));
         $this->assertSame('99.90', NumberHelper::normalizeDecimalStringOrNull('€ 99,90'));
         $this->assertSame('2000.50', NumberHelper::normalizeDecimalStringOrNull('2.000,50', CountryCode::Germany));
+    }
+
+    /** Exponentialschreibweise wird exakt ausgeschrieben — nie als nicht-kanonischer String an bcmath. */
+    public function test_normalize_decimal_string_expands_exponent_notation(): void {
+        $this->assertSame('1000', NumberHelper::normalizeDecimalStringOrNull('1e3'));
+        $this->assertSame('1500', NumberHelper::normalizeDecimalStringOrNull('1.5E3'));
+        $this->assertSame('-0.0025', NumberHelper::normalizeDecimalStringOrNull('-2.5E-3'));
+        $this->assertSame('0.0000001', NumberHelper::normalizeDecimalStringOrNull((string) 1.0E-7));
+        $this->assertSame('123000000000', NumberHelper::normalizeDecimalStringOrNull('1,23E+11', CountryCode::Germany));
+        $this->assertSame('15', NumberHelper::normalizeDecimalStringOrNull('1.50e1'));
+        $this->assertSame('0', NumberHelper::normalizeDecimalStringOrNull('-0e5'));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('1e309'));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('e3'));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('(1e3)'));
+        $this->assertSame('1000.00', Decimal::of('1e3', 2)->getValue());
+        $this->assertSame('1000.00', (string) Money::of('1e3', CurrencyCode::Euro)->getAmount());
     }
 
     /**

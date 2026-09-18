@@ -347,6 +347,21 @@ class NumberHelper {
             return null;
         }
 
+        // Exponentialschreibweise („1e3", „-2.5E-3", Excel-DE „1,23E+11"): Mantisse
+        // wie jeden Wert normalisieren, dann das Komma exakt im String verschieben —
+        // nie über float. Jenseits des float-Bereichs ist es keine Zahl mehr.
+        if (preg_match('/^([+-]?[\d.,]+)[eE]([+-]?\d{1,3})$/', $value, $m)) {
+            $mantissa = self::normalizeDecimalStringOrNull($m[1], $country);
+            $exponent = (int) $m[2];
+
+            if ($mantissa === null || abs($exponent) > 308) {
+                return null;
+            }
+            $shifted = self::shiftDecimalPoint($mantissa, $exponent);
+
+            return is_numeric($shifted) ? $shifted : null;
+        }
+
         // --- Vorzeichen-/Kennungs-Erkennung VOR dem Entfernen der Trennzeichen ---
         $negative = false;
 
@@ -389,8 +404,35 @@ class NumberHelper {
         }
 
         // Nicht deutbarer Rest => null. normalizeDecimalString() macht daraus '0'
-        // und bleibt damit unverändert in seinem Verhalten.
-        return is_numeric($normalized) ? $normalized : null;
+        // und bleibt damit unverändert in seinem Verhalten. Ein verbliebenes „e"
+        // („(1e3)") ist nicht kanonisch — bcmath wiese es mit ValueError ab.
+        return is_numeric($normalized) && stripos($normalized, 'e') === false ? $normalized : null;
+    }
+
+    /**
+     * Verschiebt das Komma eines kanonischen Dezimal-Strings um $exponent Stellen
+     * (10^$exponent) — reine String-Arithmetik, nachlaufende Nachkomma-Nullen entfallen.
+     *
+     * @param numeric-string $canonical
+     */
+    private static function shiftDecimalPoint(string $canonical, int $exponent): string {
+        $negative = str_starts_with($canonical, '-');
+        [$integer, $fraction] = array_pad(explode('.', ltrim($canonical, '-'), 2), 2, '');
+        $digits = $integer . $fraction;
+        $point = strlen($integer) + $exponent;
+
+        if ($point <= 0) {
+            $digits = str_repeat('0', 1 - $point) . $digits;
+            $point = 1;
+        } elseif ($point > strlen($digits)) {
+            $digits .= str_repeat('0', $point - strlen($digits));
+        }
+
+        $integer = ltrim(substr($digits, 0, $point), '0');
+        $fraction = rtrim(substr($digits, $point), '0');
+        $result = ($integer === '' ? '0' : $integer) . ($fraction === '' ? '' : '.' . $fraction);
+
+        return $negative && preg_match('/[1-9]/', $result) === 1 ? '-' . $result : $result;
     }
 
     /**

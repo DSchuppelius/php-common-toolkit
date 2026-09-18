@@ -164,6 +164,17 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertSame("a b\xFF", StringHelper::collapseWhitespace("a \t b\xFF", true));
     }
 
+    public function test_remove_whitespace(): void {
+        $this->assertSame('DE123456789', StringHelper::removeWhitespace("DE 123\t456\n789"));
+        $this->assertSame('', StringHelper::removeWhitespace(null));
+        $this->assertSame('', StringHelper::removeWhitespace(" \t "));
+        // NBSP nur mit $unicode.
+        $this->assertSame("12\u{00A0}345", StringHelper::removeWhitespace("12\u{00A0}345"));
+        $this->assertSame('12345', StringHelper::removeWhitespace("12\u{00A0}3\u{202F}45", true));
+        // Ungültiges UTF-8 → ASCII-Variante statt Leerstring.
+        $this->assertSame("ab\xFF", StringHelper::removeWhitespace("a b\xFF", true));
+    }
+
     public function test_normalize_whitespace_unicode_opt_in(): void {
         $input = "\u{00A0} Preis:\u{00A0}\u{00A0}12\u{202F}€ \u{3000}";
         // Standard unverändert: NBSP am Rand bleibt, nur ASCII-Leerraum wird behandelt.

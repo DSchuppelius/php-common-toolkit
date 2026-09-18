@@ -1744,6 +1744,29 @@ class StringHelper {
     }
 
     /**
+     * Entfernt jeglichen Leerraum (Leerzeichen, Tabs, Zeilenumbrüche) — für
+     * Kennungen, Nummern und PLZ, die gegeneinander verglichen werden.
+     *
+     * @param string|null $text Der zu bereinigende Text (null wird als leerer String behandelt).
+     * @param bool $unicode Unicode-Leerraum (z.B. NBSP U+00A0, U+202F, U+3000) mit entfernen
+     *                      (Standard: false). Bei ungültigem UTF-8 greift die ASCII-Variante.
+     * @return string Der Text ohne Leerraum.
+     * @see collapseWhitespace() Für Kollabieren auf ein Leerzeichen.
+     */
+    public static function removeWhitespace(?string $text, bool $unicode = false): string {
+        if (self::isNullOrEmpty($text)) {
+            return '';
+        }
+        if ($unicode) {
+            $removed = preg_replace('/\s+/u', '', $text);
+            if ($removed !== null) {
+                return $removed;
+            }
+        }
+        return preg_replace('/\s+/', '', $text) ?? '';
+    }
+
+    /**
      * Kehrt einen UTF-8 String um.
      *
      * @param string|null $text Der umzukehrende Text (null wird als leerer String behandelt).

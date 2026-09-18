@@ -84,8 +84,54 @@ class FolderSymlinkTest extends BaseTestCase {
         $dirs = Folder::get($this->base . '/work', true);
         sort($dirs);
 
-        $work = realpath($this->base . '/work');
-        $this->assertSame([$work . '/link', $work . '/sub'], $dirs);
+        $this->assertSame([$this->base . '/work/link', $this->base . '/work/sub'], $dirs);
+    }
+
+    /** Ab v1.37: Pfade wie übergeben — ein Präfix-Vergleich unter einem Link-Pfad (Deploy über Symlink) bleibt gültig. */
+    public function test_folder_get_keeps_the_given_path_prefix(): void {
+        symlink($this->base . '/work', $this->base . '/current');
+
+        $this->assertSame([$this->base . '/current/sub'], Folder::get($this->base . '/current/'));
+        $this->assertSame([$this->base . '/current/sub/own.txt'], Files::get($this->base . '/current', true));
+    }
+
+    public function test_folder_get_skip_prunes_the_whole_subtree(): void {
+        mkdir($this->base . '/work/vendor/pkg/src', 0755, true);
+        $seen = [];
+
+        $dirs = Folder::get($this->base . '/work', true, skip: static function (string $path) use (&$seen): bool {
+            $seen[] = basename($path);
+
+            return basename($path) === 'vendor';
+        });
+
+        $this->assertSame([$this->base . '/work/sub'], $dirs);
+        $this->assertNotContains('pkg', $seen, 'Ein ausgelassenes Verzeichnis darf nicht betreten werden.');
+    }
+
+    public function test_files_get_skip_prunes_directories_and_drops_files(): void {
+        mkdir($this->base . '/work/cache', 0755, true);
+        file_put_contents($this->base . '/work/cache/big.bin', 'x');
+        file_put_contents($this->base . '/work/sub/skip.log', 'x');
+        $seen = [];
+
+        $files = Files::get($this->base . '/work', true, skip: static function (string $path) use (&$seen): bool {
+            $seen[] = $path;
+
+            return basename($path) === 'cache' || str_ends_with($path, '.log');
+        });
+
+        $this->assertSame([$this->base . '/work/sub/own.txt'], $files);
+        $this->assertNotContains($this->base . '/work/cache/big.bin', $seen);
+    }
+
+    public function test_is_directory_answers_without_following_files(): void {
+        symlink($this->base . '/outside', $this->base . '/work/link');
+
+        $this->assertTrue(Folder::isDirectory($this->base . '/work/sub'));
+        $this->assertTrue(Folder::isDirectory($this->base . '/work/link'));
+        $this->assertFalse(Folder::isDirectory($this->base . '/work/sub/own.txt'));
+        $this->assertFalse(Folder::isDirectory($this->base . '/missing'));
     }
 
     public function test_get_follows_links_on_request_and_survives_cycles(): void {

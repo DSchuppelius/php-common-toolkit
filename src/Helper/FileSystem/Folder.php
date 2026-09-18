@@ -306,7 +306,8 @@ class Folder extends HelperAbstract implements FileSystemInterface {
      * @throws Exception Wenn das Verzeichnis nicht gelesen werden kann.
      */
     private static function entries(string $directory): array {
-        $entries = scandir($directory);
+        // @: unter strengen Error-Handlern (Laravel) wirft sonst schon die Warnung.
+        $entries = @scandir($directory);
         if ($entries === false) {
             self::logErrorAndThrow(Exception::class, "Das Verzeichnis $directory kann nicht gelesen werden");
         }
@@ -342,35 +343,63 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     /**
      * Gibt alle Unterverzeichnisse eines Verzeichnisses zurück.
      *
-     * Verlinkte Verzeichnisse werden aufgeführt; rekursiv abgestiegen wird in
-     * sie nur mit `$followSymlinks` — dann mit Schutz gegen Link-Zyklen.
+     * Die Pfade beginnen mit `$directory` wie übergeben (ab v1.37 nicht mehr
+     * per realpath aufgelöst — wie bei {@see Files::get()}); so bleiben
+     * Präfix-Vergleiche auch unter einem verlinkten Pfad (Deploy über Symlink)
+     * gültig. Verlinkte Verzeichnisse werden aufgeführt; rekursiv abgestiegen
+     * wird in sie nur mit `$followSymlinks` — dann mit Schutz gegen Link-Zyklen.
      *
      * @param string $directory Das Verzeichnis, in dem nach Unterverzeichnissen gesucht werden soll.
      * @param bool $recursive Ob rekursiv in Unterverzeichnissen gesucht werden soll.
      * @param bool $followSymlinks Ob in verlinkte Verzeichnisse abgestiegen wird (Standard: false).
+     * @param (callable(string): bool)|null $skip Erhält den Pfad jedes Unterverzeichnisses; true
+     *                                            lässt es samt Inhalt aus (kein Abstieg).
      * @return list<string> Ein Array mit den gefundenen Unterverzeichnissen.
      */
-    public static function get(string $directory, bool $recursive = false, bool $followSymlinks = false): array {
-        $directory = self::getRealPath($directory);
-
+    public static function get(string $directory, bool $recursive = false, bool $followSymlinks = false, ?callable $skip = null): array {
         if (!self::exists($directory)) {
             return self::logErrorAndReturn([], "Das Verzeichnis $directory existiert nicht");
         }
 
-        $visited = [$directory => true];
-        return self::collectDirectories($directory, $recursive, $followSymlinks, $visited);
+        $directory = self::withoutTrailingSeparator($directory);
+        $real = realpath($directory);
+        $visited = $real !== false ? [$real => true] : [];
+
+        return self::collectDirectories($directory, $recursive, $followSymlinks, $skip, $visited);
     }
 
     /**
+     * Wie {@see exists()}, aber ohne Log-Eintrag bei Fehlanzeige — für Prüfungen
+     * in heißen Pfaden (je Request, je Ereignis). Gegenstück zu {@see File::isFile()}.
+     */
+    public static function isDirectory(string $path): bool {
+        if (File::isWindowsReservedName($path) || self::isBlockedByOpenBasedir($path)) {
+            return false;
+        }
+
+        return is_dir($path);
+    }
+
+    /**
+     * Entfernt nachlaufende Trennzeichen („dir/" → „dir"), das Wurzelverzeichnis bleibt.
+     */
+    private static function withoutTrailingSeparator(string $directory): string {
+        $trimmed = rtrim($directory, '/\\');
+
+        return $trimmed === '' ? $directory : $trimmed;
+    }
+
+    /**
+     * @param (callable(string): bool)|null $skip
      * @param array<string, true> $visited Bereits besuchte reale Pfade (Zyklusschutz).
      * @return list<string>
      */
-    private static function collectDirectories(string $directory, bool $recursive, bool $followSymlinks, array &$visited): array {
+    private static function collectDirectories(string $directory, bool $recursive, bool $followSymlinks, ?callable $skip, array &$visited): array {
         $result = [];
 
         foreach (self::entries($directory) as $file) {
             $path = $directory . DIRECTORY_SEPARATOR . $file;
-            if (!is_dir($path)) {
+            if (!is_dir($path) || ($skip !== null && $skip($path))) {
                 continue;
             }
 
@@ -384,7 +413,7 @@ class Folder extends HelperAbstract implements FileSystemInterface {
                 continue;
             }
             $visited[$real] = true;
-            $result = array_merge($result, self::collectDirectories($path, true, $followSymlinks, $visited));
+            $result = array_merge($result, self::collectDirectories($path, true, $followSymlinks, $skip, $visited));
         }
 
         return $result;
