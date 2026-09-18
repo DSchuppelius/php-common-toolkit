@@ -17,7 +17,7 @@ use CommonToolkit\Helper\FileSystem\{File, Folder};
 use CommonToolkit\Helper\FileSystem\FileTypes\ZipFile;
 use CommonToolkit\Helper\Shell;
 use CommonToolkit\Parsers\XLSXDocumentParser;
-use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
+use ERRORToolkit\Exceptions\FileSystem\{FileNotFoundException, FileNotWrittenException};
 use InvalidArgumentException;
 use RuntimeException;
 use Tests\Contracts\BaseTestCase;
@@ -81,6 +81,31 @@ class FileSystemExtensionsTest extends BaseTestCase {
         File::write($file, 'x', permissions: 0600, atomic: true);
 
         $this->assertSame('0600', sprintf('%04o', fileperms($file) & 0777));
+    }
+
+    public function test_write_failures_raise_the_documented_exception_even_under_a_strict_error_handler(): void {
+        // Wie Laravels HandleExceptions: error_reporting(-1), und jede nicht per `@`
+        // unterdrückte Warnung wird zur ErrorException.
+        $previousReporting = error_reporting(E_ALL);
+        set_error_handler(static function (int $severity, string $message): bool {
+            if ((error_reporting() & $severity) === 0) {
+                return false;
+            }
+            throw new \ErrorException($message, 0, $severity);
+        });
+        try {
+            foreach ([[], ['permissions' => 0600], ['atomic' => true]] as $options) {
+                try {
+                    File::write($this->dir . '/fehlt/key.env', 'x', ...$options);
+                    $this->fail('Exception erwartet für ' . json_encode($options));
+                } catch (FileNotWrittenException) {
+                    $this->addToAssertionCount(1);
+                }
+            }
+        } finally {
+            restore_error_handler();
+            error_reporting($previousReporting);
+        }
     }
 
     // --- Temp-Dateien --------------------------------------------------------

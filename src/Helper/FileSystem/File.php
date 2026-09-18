@@ -1276,7 +1276,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if ($permissions !== null) {
                 self::prepareWithPermissions($file, $permissions);
             }
-            if (file_put_contents($file, $data, $lock ? LOCK_EX : 0) === false) {
+            if (@file_put_contents($file, $data, $lock ? LOCK_EX : 0) === false) {
                 self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Schreiben in die Datei: $file");
             }
         }
@@ -1301,7 +1301,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             }
             fclose($handle);
         }
-        if (!chmod($file, $permissions)) {
+        // `@`: Warnungen (z. B. chmod als Nicht-Eigentümer) würden in Frameworks zur
+        // ErrorException, bevor die dokumentierte FileNotWrittenException greift.
+        if (!@chmod($file, $permissions)) {
             self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim Setzen von Rechten (0" . decoct($permissions) . ") für Datei: $file");
         }
     }
@@ -1318,9 +1320,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         try {
             // tempnam legt 0600 an; ohne Vorgabe erbt die Datei die bisherigen bzw. umask-Rechte.
             $mode = $permissions ?? (is_file($file) ? (fileperms($file) & 0777) : (0666 & ~umask()));
-            if (!chmod($temp, $mode)
-                || file_put_contents($temp, $data) === false
-                || !rename($temp, $file)) {
+            if (!@chmod($temp, $mode)
+                || @file_put_contents($temp, $data) === false
+                || !@rename($temp, $file)) {
                 self::logErrorAndThrow(FileNotWrittenException::class, "Fehler beim atomaren Schreiben in die Datei: $file");
             }
         } finally {
@@ -1357,7 +1359,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 continue;
             }
 
-            $written = chmod($path, $permissions) && fwrite($handle, $content) === strlen($content);
+            $written = @chmod($path, $permissions) && @fwrite($handle, $content) === strlen($content);
             fclose($handle);
             if (!$written) {
                 @unlink($path);
