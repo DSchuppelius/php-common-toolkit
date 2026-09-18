@@ -176,6 +176,11 @@ class DateHelper {
      * @return bool True, wenn der Wert ein gültiges Datum ist, andernfalls false.
      */
     public static function isDate(string $value, ?DateTimeFormat &$format = null, DateTimeFormat $preferredFormat = DateTimeFormat::DE): bool {
+        if (self::parseRfc3339($value) !== null) {
+            $format = DateTimeFormat::ISO;
+            return true;
+        }
+
         $len = strlen($value);
         if ($len < 6 || $len > 19) {
             return false;
@@ -694,13 +699,42 @@ class DateHelper {
     }
 
     /**
+     * RFC-3339-Zeitstempel (ISO 8601 mit `T` und Zone), z. B. aus API-Exporten.
+     * Ungültige Kalenderdaten werden abgelehnt statt überzulaufen.
+     */
+    private static function parseRfc3339(string $value): ?DateTimeImmutable {
+        $value = trim($value);
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:?\d{2})$/i', $value, $m) !== 1) {
+            return null;
+        }
+
+        $date = date_create_immutable($value);
+        if ($date === false || $date->format('Y-m-d') !== $m[1] || $date->format('H:i') !== $m[2]) {
+            return null;
+        }
+
+        return $date;
+    }
+
+    /**
      * Normalisiert ein Datum in ISO-Format (YYYY-MM-DD) und gibt es zurück.
+     *
+     * Mit Uhrzeit kommt `YYYY-MM-DD HH:MM:SS`; RFC-3339-Zeitstempel mit Zone
+     * (`2026-02-01T10:00:00Z`, `…+02:00`) kommen als `DATE_ATOM` zurück, die
+     * Zone bleibt erhalten. Überläufe wie der 31.02. ergeben null.
      *
      * @param string $value Das Datum, das normalisiert werden soll.
      * @param DateTimeFormat $preferredFormat Bevorzugtes Format (DE oder US).
      * @return string|null Das normalisierte Datum im ISO-Format oder null, wenn ungültig.
      */
     public static function normalizeToIso(string $value, DateTimeFormat $preferredFormat = DateTimeFormat::DE): ?string {
+        // RFC-3339-Zeitstempel (API-Exporte) behalten ihre Zone: ohne sie wäre
+        // die Uhrzeit mehrdeutig.
+        $rfc3339 = self::parseRfc3339($value);
+        if ($rfc3339 !== null) {
+            return $rfc3339->format(DATE_ATOM);
+        }
+
         $detectedFormat = null;
 
         if (!self::isDate($value, $detectedFormat, $preferredFormat)) {

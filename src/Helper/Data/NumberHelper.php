@@ -374,8 +374,11 @@ class NumberHelper {
         // ASCII-Space, geschütztes (U+00A0) und schmales (U+202F) Leerzeichen sowie
         // Schweizer Apostroph (gerade ' und typografisch ’). Vorzeichen separat behandelt.
         // (Währungssymbole werden bereits oben vor der Vorzeichenerkennung entfernt.)
-        $value = str_replace([' ', "\u{00A0}", "\u{202F}", "'", "\u{2019}", '+', '-'], '', $value);
-        if ($value === '') {
+        // Vorzeichen stehen nur am Anfang oder Ende; ein Minus mittendrin
+        // („2026-06", „12-34") macht aus dem Wert keine Zahl.
+        $value = preg_replace('/^\s*[+-]|[+-]\s*$/', '', $value) ?? $value;
+        $value = str_replace([' ', "\u{00A0}", "\u{202F}", "'", "\u{2019}"], '', $value);
+        if ($value === '' || strpbrk($value, '+-') !== false) {
             return null;
         }
 

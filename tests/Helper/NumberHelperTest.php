@@ -384,4 +384,13 @@ final class NumberHelperTest extends TestCase {
         $this->assertEquals('+1.000,00 ¥', NumberHelper::formatCurrencyWithSign(1000, CurrencyCode::JapaneseYen));
         $this->assertEquals('-500,00 CHF', NumberHelper::formatCurrencyWithSign(-500, CurrencyCode::SwissFranc));
     }
+
+    public function test_decimal_string_rejects_signs_inside_the_value(): void {
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('2026-06', CountryCode::Germany));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('12-34'));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('+-5'));
+        $this->assertSame('-45.10', NumberHelper::normalizeDecimalStringOrNull('45,10-', CountryCode::Germany));
+        $this->assertSame('-12.50', NumberHelper::normalizeDecimalStringOrNull('- 12,50', CountryCode::Germany));
+        $this->assertSame('12.5', NumberHelper::normalizeDecimalStringOrNull('+12.5'));
+    }
 }

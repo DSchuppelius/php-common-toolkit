@@ -427,4 +427,19 @@ class DateHelperTest extends BaseTestCase {
         $this->assertSame('m/d/Y', DateHelper::detectDateTimeFormat('03/07/2026', CountryCode::UnitedStatesOfAmerica));
         $this->assertSame('d/m/Y', DateHelper::detectDateTimeFormat('03/07/2026', CountryCode::Germany));
     }
+
+    public function test_normalize_to_iso_keeps_rfc3339_timestamps_with_their_zone(): void {
+        $this->assertSame('2026-02-01T10:00:00+02:00', DateHelper::normalizeToIso('2026-02-01T10:00:00+02:00'));
+        $this->assertSame('2026-02-01T10:00:00+00:00', DateHelper::normalizeToIso('2026-02-01T10:00:00Z'));
+        $this->assertSame('2026-02-01T10:00:00+02:00', DateHelper::normalizeToIso('2026-02-01T10:00:00.5+0200'));
+        $this->assertTrue(DateHelper::isDate('2026-02-01T10:00Z'));
+    }
+
+    public function test_normalize_to_iso_rejects_overflow_and_relative_dates(): void {
+        $this->assertNull(DateHelper::normalizeToIso('2026-02-31T10:00:00Z'));
+        $this->assertNull(DateHelper::normalizeToIso('2026-02-01T24:30:00Z'));
+        $this->assertNull(DateHelper::normalizeToIso('31.02.2026'));
+        $this->assertNull(DateHelper::normalizeToIso('next monday'));
+        $this->assertSame('2026-02-01', DateHelper::normalizeToIso('01/02/2026', DateTimeFormat::DE));
+    }
 }
