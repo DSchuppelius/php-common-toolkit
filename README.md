@@ -137,6 +137,11 @@ $vat->addTo(Money::of('100.00', CurrencyCode::Euro))->getAmount();  // "119.00"
 $hours = Quantity::of('2,5', 'h')->plus(Quantity::of('0.25', 'h'));
 $hours->format(); // "2,75 h"
 
+// Eigene Textform ist lesbar (Rundreise über __toString()/format())
+Money::of('12.34 EUR', CurrencyCode::Euro)->getAmount();   // "12.34"
+Percentage::of('19.00 %')->getNumericValue();              // "19.00"
+Quantity::of('2.500 Stk', 'Stk')->getNumericValue();       // "2.500"
+
 // ExchangeRate: eindeutige Kursrichtung, ISO-Zielskala
 $rate = ExchangeRate::of(CurrencyCode::Euro, CurrencyCode::SwissFranc, '0.9385');
 $rate->convert(Money::of('100.00', CurrencyCode::Euro))->getAmount(); // "93.85"
@@ -429,4 +434,20 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
-Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v1.35). There is no separate changelog file — the tags and the commit history are the record.
+### 2.0 — `Money::of()` ist streng
+
+- `Money::of()` wirft jetzt eine `InvalidArgumentException` bei Leerstring und
+  nicht deutbarer Eingabe. Bis 1.x ergab das still `0.00` — ein falsch
+  gelesenes Betragsfeld fiel so nie auf. Für „nicht angegeben“ gibt es
+  `Money::ofNullable()` (liefert `null`, unverändert nachsichtig).
+- Ein Währungscode in der Eingabe muss zur angeforderten Währung passen
+  (`Money::of('12.34 USD', CurrencyCode::Euro)` wirft).
+- Neu: `Money`, `Percentage` und `Quantity` lesen ihre eigene Textform
+  (`"12.34 EUR"`, `"19.00 %"`, `"2.500 Stk"`) in `of()`/`ofNullable()`/`tryFrom()`.
+  Eine fremde Einheit (`"2.5 kg"` für `Stk`) gilt als nicht deutbar.
+
+Migration: Aufrufer, die leere oder fremde Strings an `Money::of()` geben,
+auf `Money::ofNullable()` umstellen oder den Fall vorher behandeln.
+
+
+Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.0). There is no separate changelog file — the tags and the commit history are the record.

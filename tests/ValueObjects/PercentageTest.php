@@ -158,4 +158,13 @@ class PercentageTest extends BaseTestCase {
         $restored = Percentage::of($data['value'], $data['scale']);
         $this->assertTrue($restored->equals($value));
     }
+
+    public function test_own_text_form_round_trips(): void {
+        $percentage = Percentage::of('19.00');
+
+        $this->assertSame('19.00', Percentage::of((string) $percentage)->getNumericValue(), '__toString-Rundreise');
+        $this->assertSame('19.00', Percentage::of($percentage->format())->getNumericValue(), 'format()-Rundreise');
+        $this->assertSame('7.5', Percentage::tryFrom('7,5%')?->getNumericValue());
+        $this->assertNull(Percentage::tryFrom('%'));
+    }
 }

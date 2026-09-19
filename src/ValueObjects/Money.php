@@ -69,27 +69,34 @@ final class Money implements JsonSerializable, Stringable {
      * Erzeugt einen Betrag aus einem Dezimal-String oder einer Ganzzahl.
      *
      * Akzeptiert deutsche/US-Formate ("1.234,56", "1,234.56", "1234.56") via
-     * {@see NumberHelper::normalizeDecimalString()} und rundet auf die
-     * Nachkommastellen der Währung (bzw. $scale).
+     * {@see NumberHelper::normalizeDecimalStringOrNull()}, anhaftende Symbole
+     * ("12,34 €") und die eigene Textform aus {@see __toString()} ("12.34 EUR").
+     * Gerundet wird auf die Nachkommastellen der Währung (bzw. $scale).
+     *
+     * Seit 2.0 streng: Leerstring und nicht deutbare Eingaben werfen, statt
+     * still 0 zu ergeben — für "nicht angegeben" gibt es {@see ofNullable()}.
      *
      * @param string|int       $amount   Betrag (Dezimal-String oder Ganzzahl in Haupteinheiten).
      * @param int|null         $scale    Nachkommastellen (null = Währungs-Standard).
      * @param RoundingMode     $mode     Rundung, falls $amount mehr Stellen hat (Standard: HalfUp).
      * @param CountryCode|null $country  Land für eindeutige Tausendertrenner-Erkennung ("2.000" = 2000 statt 2,0).
+     * @throws InvalidArgumentException Bei nicht deutbarem Betrag oder abweichendem Währungscode.
      */
     public static function of(string|int $amount, CurrencyCode $currency, ?int $scale = null, RoundingMode $mode = RoundingMode::HalfUp, ?CountryCode $country = null): self {
         $scale = self::assertScale($scale, $currency);
 
-        // normalizeDecimalString liefert per Vertrag stets einen numeric-string
-        // (nicht deutbare Eingaben werden zu "0" — bewusst nachsichtig).
-        $canonical = NumberHelper::normalizeDecimalString((string) $amount, $country);
+        $canonical = self::parseAmount($amount, $currency, $country);
+        if ($canonical === null) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Kein deutbarer Geldbetrag: '{$amount}'");
+        }
 
         return new self(Decimal::of($canonical, $scale, $mode), $currency);
     }
 
     /**
      * Wie {@see of()}, unterscheidet aber "nicht angegeben" von der echten Null:
-     * `null`, Leerstring und nicht deutbare Eingaben ergeben `null` statt 0.
+     * `null`, Leerstring und nicht deutbare Eingaben ergeben `null` statt einer
+     * Exception. Ein abweichender Währungscode ("12.34 USD" für EUR) wirft auch hier.
      *
      * Gedacht für Importe, Parser und nullable Datenbankspalten.
      */
@@ -98,9 +105,9 @@ final class Money implements JsonSerializable, Stringable {
             return null;
         }
 
-        $decimal = Decimal::ofNullable((string) $amount, self::assertScale($scale, $currency), $mode, $country);
+        $canonical = self::parseAmount($amount, $currency, $country);
 
-        return $decimal === null ? null : new self($decimal, $currency);
+        return $canonical === null ? null : new self(Decimal::of($canonical, self::assertScale($scale, $currency), $mode), $currency);
     }
 
     /**
@@ -585,6 +592,30 @@ final class Money implements JsonSerializable, Stringable {
     // ========================================================================
     // Intern
     // ========================================================================
+
+    /**
+     * Kanonischer Dezimal-String oder null (nicht deutbar). Neben Zahlformaten
+     * wird die eigene Textform "12.34 EUR" gelesen; ein abweichender
+     * Währungscode ist ein Fehler, keine stille Umdeutung.
+     *
+     * @return numeric-string|null
+     */
+    private static function parseAmount(string|int $amount, CurrencyCode $currency, ?CountryCode $country): ?string {
+        if (is_int($amount)) {
+            return (string) $amount;
+        }
+
+        $value = trim($amount);
+        if (preg_match('/^(.*\S)\s+([A-Za-z]{3})$/', $value, $match) === 1) {
+            $code = strtoupper($match[2]);
+            if ($code !== $currency->value) {
+                self::logErrorAndThrow(InvalidArgumentException::class, "Währungscode {$code} passt nicht zu {$currency->value}: '{$amount}'");
+            }
+            $value = $match[1];
+        }
+
+        return NumberHelper::normalizeDecimalStringOrNull($value, $country);
+    }
 
     /**
      * Prüft die Skala und löst den Währungs-Standard auf (ISO-4217-Exponent).

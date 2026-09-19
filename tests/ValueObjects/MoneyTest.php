@@ -359,4 +359,43 @@ class MoneyTest extends BaseTestCase {
         $this->assertTrue(Money::of('1.00', $this->eur)->isSameCurrency(Money::of('2.00', $this->eur)));
         $this->assertFalse(Money::of('1.00', $this->eur)->isSameCurrency(Money::of('1.00', CurrencyCode::from('USD'))));
     }
+
+    // ========================================================================
+    // 2.0: streng statt still 0, eigene Textform lesbar
+    // ========================================================================
+
+    public function test_of_rejects_unparseable_input_instead_of_silent_zero(): void {
+        foreach (['', '   ', 'abc', 'n/a', '12.34.56,7x'] as $input) {
+            try {
+                Money::of($input, $this->eur);
+                $this->fail("Money::of('{$input}') hätte werfen müssen.");
+            } catch (InvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_of_reads_its_own_text_form_and_formatted_output(): void {
+        $money = Money::of('1234.5', $this->eur);
+
+        $this->assertSame('1234.50', Money::of((string) $money, $this->eur)->getAmount(), '__toString-Rundreise');
+        $this->assertSame('1234.50', Money::of($money->format(), $this->eur)->getAmount(), 'format()-Rundreise');
+        $this->assertSame('12.34', Money::of(' 12.34 eur ', $this->eur)->getAmount());
+    }
+
+    public function test_foreign_currency_code_in_text_form_is_rejected(): void {
+        $this->expectException(InvalidArgumentException::class);
+        Money::of('12.34 USD', $this->eur);
+    }
+
+    public function test_of_nullable_reads_own_text_form_and_keeps_null_for_garbage(): void {
+        $this->assertSame('12.34', Money::ofNullable('12.34 EUR', $this->eur)?->getAmount());
+        $this->assertNull(Money::ofNullable('', $this->eur));
+        $this->assertNull(Money::ofNullable('abc', $this->eur));
+        $this->assertNull(Money::ofNullable(null, $this->eur));
+    }
+
+    public function test_from_array_without_amount_stays_zero(): void {
+        $this->assertTrue(Money::fromArray(['currency' => 'EUR'])->isZero());
+    }
 }

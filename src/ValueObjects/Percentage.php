@@ -54,7 +54,8 @@ final class Percentage implements JsonSerializable, Stringable {
 
     /**
      * Erzeugt einen Prozentwert (19 = 19 %). Negative Werte und Werte über 100
-     * sind zulässig. Nicht deutbare Eingaben werfen eine Exception.
+     * sind zulässig. Die eigene Textform ("19.00 %", auch "19,5 %") wird gelesen;
+     * nicht deutbare Eingaben werfen eine Exception.
      *
      * @param string|int       $value   Prozentwert (Dezimal-String oder Ganzzahl).
      * @param int|null         $scale   Nachkommastellen (null = aus der Eingabe übernehmen).
@@ -63,7 +64,7 @@ final class Percentage implements JsonSerializable, Stringable {
      * @throws InvalidArgumentException Bei nicht deutbarer Eingabe oder negativer Skala.
      */
     public static function of(string|int $value, ?int $scale = null, RoundingMode $mode = RoundingMode::HalfUp, ?CountryCode $country = null): self {
-        return new self(Decimal::of($value, $scale, $mode, $country));
+        return new self(Decimal::of(is_string($value) ? self::withoutPercentSign($value) : $value, $scale, $mode, $country));
     }
 
     /**
@@ -71,7 +72,7 @@ final class Percentage implements JsonSerializable, Stringable {
      * Eingabe `null` statt einer Exception.
      */
     public static function tryFrom(string|int|null $value, ?int $scale = null, RoundingMode $mode = RoundingMode::HalfUp, ?CountryCode $country = null): ?self {
-        $decimal = Decimal::ofNullable($value, $scale, $mode, $country);
+        $decimal = Decimal::ofNullable(is_string($value) ? self::withoutPercentSign($value) : $value, $scale, $mode, $country);
 
         return $decimal === null ? null : new self($decimal);
     }
@@ -214,5 +215,10 @@ final class Percentage implements JsonSerializable, Stringable {
      */
     public function jsonSerialize(): array {
         return $this->value->jsonSerialize();
+    }
+
+    /** Eigene Textform aus {@see __toString()}/{@see format()}: nachgestelltes "%" entfernen. */
+    private static function withoutPercentSign(string $value): string {
+        return (string) preg_replace('/\s*%\s*$/u', '', $value);
     }
 }

@@ -57,6 +57,8 @@ final class Quantity implements JsonSerializable, Stringable {
     /**
      * Erzeugt eine Menge. Negative Werte sind zulässig (z.B. Lagerbewegungen);
      * für Constraints siehe {@see positive()} und {@see zeroOrPositive()}.
+     * Die eigene Textform ("2.500 Stk") wird gelesen, sofern die Einheit passt;
+     * eine andere Einheit ("2.5 kg" für Stk) gilt als nicht deutbar.
      *
      * @param string|int|Decimal $value   Menge (Dezimal-String, Ganzzahl oder Decimal).
      * @param string|BackedEnum  $unit    Einheitencode (String oder string-backed Enum).
@@ -66,7 +68,9 @@ final class Quantity implements JsonSerializable, Stringable {
      * @throws InvalidArgumentException Bei ungültigem Wert oder ungültiger Einheit.
      */
     public static function of(string|int|Decimal $value, string|BackedEnum $unit, ?int $scale = null, RoundingMode $mode = RoundingMode::HalfUp, ?CountryCode $country = null): self {
-        return new self(self::toDecimal($value, $scale, $mode, $country), self::normalizeUnit($unit));
+        $normalizedUnit = self::normalizeUnit($unit);
+
+        return new self(self::toDecimal(is_string($value) ? self::withoutOwnUnit($value, $normalizedUnit) : $value, $scale, $mode, $country), $normalizedUnit);
     }
 
     /**
@@ -81,7 +85,7 @@ final class Quantity implements JsonSerializable, Stringable {
             return new self($scale === null ? $value : $value->withScale($scale), $normalizedUnit);
         }
 
-        $decimal = Decimal::ofNullable($value, $scale);
+        $decimal = Decimal::ofNullable(is_string($value) ? self::withoutOwnUnit($value, $normalizedUnit) : $value, $scale);
 
         return $decimal === null ? null : new self($decimal, $normalizedUnit);
     }
@@ -335,5 +339,15 @@ final class Quantity implements JsonSerializable, Stringable {
         if ($this->unit !== $other->unit) {
             self::logErrorAndThrow(InvalidArgumentException::class, "Einheiten unterscheiden sich: '{$this->unit}' vs. '{$other->unit}'");
         }
+    }
+
+    /**
+     * Eigene Textform aus {@see __toString()}/{@see format()}: die nachgestellte
+     * Einheit abtrennen — nur wenn sie zur angeforderten passt.
+     */
+    private static function withoutOwnUnit(string $value, string $unit): string {
+        $trimmed = trim($value);
+
+        return str_ends_with($trimmed, ' ' . $unit) ? rtrim(substr($trimmed, 0, -strlen($unit))) : $value;
     }
 }

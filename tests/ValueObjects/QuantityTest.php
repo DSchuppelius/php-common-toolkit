@@ -228,4 +228,19 @@ class QuantityTest extends BaseTestCase {
         $restored = Quantity::of($data['value'], $data['unit'], $data['scale']);
         $this->assertTrue($restored->equals($quantity));
     }
+
+    public function test_own_text_form_round_trips_for_matching_unit(): void {
+        $quantity = Quantity::of('2.500', 'Stk');
+
+        $this->assertSame('2.500', Quantity::of((string) $quantity, 'Stk')->getNumericValue(), '__toString-Rundreise');
+        $this->assertSame('2.500', Quantity::of($quantity->format(), 'Stk')->getNumericValue(), 'format()-Rundreise');
+        $this->assertSame('3.5', Quantity::tryFrom('3.5 lfd. m', 'lfd. m')?->getNumericValue(), 'Einheit mit Leerzeichen');
+    }
+
+    public function test_foreign_unit_in_text_form_is_not_parseable(): void {
+        $this->assertNull(Quantity::tryFrom('2.5 kg', 'Stk'));
+
+        $this->expectException(InvalidArgumentException::class);
+        Quantity::of('2.5 kg', 'Stk');
+    }
 }
