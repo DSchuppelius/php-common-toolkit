@@ -1,14 +1,21 @@
 {
   "name": "dschuppelius/php-common-toolkit",
   "description": "Project description.",
+  "homepage": "https://github.com/DSchuppelius/php-common-toolkit",
   "type": "library",
   "license": "MIT",
   "authors": [
     {
       "name": "Daniel Joerg Schuppelius",
-      "email": "info@schuppelius.org"
+      "email": "info@schuppelius.org",
+      "homepage": "https://schuppelius.org",
+      "role": "Developer"
     }
   ],
+  "support": {
+    "issues": "https://github.com/DSchuppelius/php-common-toolkit/issues",
+    "source": "https://github.com/DSchuppelius/php-common-toolkit"
+  },
   "autoload": {
     "psr-4": {
       "CommonToolkit\\": "src/"
