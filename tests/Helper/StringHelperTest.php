@@ -14,6 +14,7 @@ namespace Tests\Helper;
 
 use CommonToolkit\Enums\CaseType;
 use CommonToolkit\Helper\Data\StringHelper;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Contracts\BaseTestCase;
 
 class StringHelperTest extends BaseTestCase {
@@ -75,6 +76,102 @@ class StringHelperTest extends BaseTestCase {
         $this->assertSame('', StringHelper::toAscii(null));
         // Reiner ASCII-Text bleibt unverändert.
         $this->assertSame('Hello World 123', StringHelper::toAscii('Hello World 123'));
+    }
+
+    /**
+     * Charakterisierung: Ausgaben der bisherigen iconv-Implementierung (unter der
+     * PHP-Standard-Locale C.UTF-8), die byte-gleich erhalten bleiben muessen.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function asciiCharacterizationProvider(): array {
+        return [
+            'Umlaute klein' => ['aeoeue', "\u{00E4}\u{00F6}\u{00FC}"],
+            'Umlaute gross' => ['AeOeUe', "\u{00C4}\u{00D6}\u{00DC}"],
+            'Eszett' => ['Strasse', "Stra\u{00DF}e"],
+            'Versal-Eszett' => ['SS', "\u{1E9E}"],
+            'Euro' => ['10 EUR', "10 \u{20AC}"],
+            'Pfund' => ['GBP', "\u{00A3}"],
+            'Anfuehrungszeichen deutsch' => [',,Zitat"', "\u{201E}Zitat\u{201C}"],
+            'Anfuehrungszeichen einfach' => [",x'", "\u{201A}x\u{2018}"],
+            'Guillemets' => ['<<y>>', "\u{00AB}y\u{00BB}"],
+            'Gerade Zeichen' => ['"z" \'q\'', '"z" \'q\''],
+            'Halbgeviertstrich' => ['A - B', "A \u{2013} B"],
+            'Geviertstrich' => ['A -- B', "A \u{2014} B"],
+            'Auslassung' => ['...', "\u{2026}"],
+            'Akzente' => ['Cafe Resume', "Caf\u{00E9} R\u{00E9}sum\u{00E9}"],
+            'Ligaturen' => ['ae oe', "\u{00E6} \u{0153}"],
+            'Nordisch' => ['o O a', "\u{00F8} \u{00D8} \u{00E5}"],
+            'Tilde' => ['n', "\u{00F1}"],
+            'Copyright/Trademark' => ['(C) (TM)', "\u{00A9} \u{2122}"],
+            'Bruch' => ['1 1/2', "1\u{00BD}"],
+            'Mal-Zeichen' => ['2x3', "2\u{00D7}3"],
+            'Aufzaehlungspunkt' => ['o Punkt', "\u{2022} Punkt"],
+            'Mikro' => ['ug', "\u{00B5}g"],
+            'Geschuetztes Leerzeichen' => ['A B', "A\u{00A0}B"],
+            'Nullbreite' => ['ZeroWidth', "Zero\u{200B}Width"],
+            'Variantenwaehler' => ['I', "I\u{FE0F}"],
+            'Kombinierendes Trema' => ['Tast', "Ta\u{0308}st"],
+            'ASCII-Fragezeichen bleibt' => ['Was?', 'Was?'],
+            'ASCII-Sonderzeichen' => ['x & y * $ % <> "@#', 'x & y * $ % <> "@#'],
+            'Steuerzeichen im ASCII bleiben' => ["a\tb", "a\tb"],
+            'Trim' => ['Gruesse', "  Gr\u{00FC}\u{00DF}e  "],
+        ];
+    }
+
+    #[DataProvider('asciiCharacterizationProvider')]
+    public function test_to_ascii_characterization(string $expected, string $input): void {
+        $this->assertSame($expected, StringHelper::toAscii($input));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function asciiFoldingProvider(): array {
+        return [
+            'Tuerkisch' => ['Yatirim Islemleri sg', "Yat\u{0131}r\u{0131}m \u{0130}\u{015F}lemleri \u{015F}\u{011F}"],
+            'Polnisch' => ['Lodz l', "\u{0141}\u{00F3}d\u{017A} \u{0142}"],
+            'Franzoesisch' => ['Ca va, ete', "\u{00C7}a va, \u{00E9}t\u{00E9}"],
+            'Kyrillisch' => ['Z', "\u{0416}"],
+            'Rahmenlinie' => ['Rosenmontag', "Rosenmontag\u{2500}\u{2500}\u{2500}\u{2500}"],
+            'Block und Dingbat' => ['ab', "a\u{2588}\u{2714}b"],
+            'Emoji' => ['Party  ok', "Party \u{1F389} ok"],
+            'Emoji mit ZWJ' => ['xy', "x\u{1F468}\u{200D}\u{1F469}y"],
+            'Unabbildbare Symbole' => ['Nr. 5', "Nr.\u{00A7} 5\u{00B0}"],
+        ];
+    }
+
+    #[DataProvider('asciiFoldingProvider')]
+    public function test_to_ascii_folds_foreign_letters_and_drops_symbols(string $expected, string $input): void {
+        $this->assertSame($expected, StringHelper::toAscii($input));
+    }
+
+    public function test_to_ascii_is_locale_independent_and_never_emits_question_marks(): void {
+        $previous = setlocale(LC_CTYPE, '0');
+        try {
+            setlocale(LC_CTYPE, 'C');
+            $input = "Yat\u{0131}r\u{0131}m \u{00E9} \u{0142} \u{2500} \u{1F389} \u{4E2D} \u{00A7} Gr\u{00FC}\u{00DF}e 10 \u{20AC} \u{201E}x\u{201C} \u{2014}";
+            $result = StringHelper::toAscii($input);
+            $this->assertSame('Yatirim e l   zhong  Gruesse 10 EUR ,,x" --', $result);
+            $this->assertStringNotContainsString('?', $result);
+            // Die Locale des Aufrufers bleibt unangetastet.
+            $this->assertSame('C', setlocale(LC_CTYPE, '0'));
+        } finally {
+            if (is_string($previous)) {
+                setlocale(LC_CTYPE, $previous);
+            }
+        }
+    }
+
+    public function test_to_ascii_drops_invalid_utf8_bytes(): void {
+        $this->assertSame("ab\tc e", StringHelper::toAscii("a\xFFb\tc \u{00E9}"));
+    }
+
+    public function test_to_sepa_restricted_charset_characterization(): void {
+        $this->assertSame(',,Zitat ,x\' y z \'q\'', StringHelper::toSepaRestrictedCharset("\u{201E}Zitat\u{201C} \u{201A}x\u{2018} \u{00AB}y\u{00BB} \"z\" 'q'"));
+        $this->assertSame('10 EUR - A -- B ...', StringHelper::toSepaRestrictedCharset("10 \u{20AC} \u{2013} A \u{2014} B \u{2026}"));
+        $this->assertSame('x + y . . .', StringHelper::toSepaRestrictedCharset('x & y * $ % <> "@#'));
+        $this->assertSame('Strasse 1 1/2', StringHelper::toSepaRestrictedCharset("Stra\u{00DF}e 1\u{00BD}"));
     }
 
     public function test_truncate(): void {

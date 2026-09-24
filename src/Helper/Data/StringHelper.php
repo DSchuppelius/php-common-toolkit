@@ -774,10 +774,14 @@ class StringHelper {
      * Transliteriert einen String nach ASCII.
      *
      * Deutsche Umlaute werden zuerst ausgeschrieben (ä->ae, ö->oe, ü->ue, ß->ss,
-     * Ä->Ae, Ö->Oe, Ü->Ue), restliche diakritische Zeichen via iconv-Transliteration
-     * gefaltet; verbleibende Nicht-ASCII-Zeichen werden entfernt. Anschließend
-     * getrimmt. Im Gegensatz zu {@see removeNonAscii()} gehen Umlaute/Akzente
-     * nicht verloren, sondern werden sinnvoll ersetzt.
+     * Ä->Ae, Ö->Oe, Ü->Ue). Reiner ASCII-Text bleibt unverändert (bis auf Trim).
+     * Sonst wird jedes Nicht-ASCII-Zeichen einzeln gefaltet (siehe
+     * {@see foldNonAsciiChar()}): Zeichen ohne Buchstabenwert (Rahmenlinien,
+     * Blöcke, Dingbats, Emoji, Nullbreite) fallen weg, Buchstaben anderer Schriften
+     * und Sprachen werden romanisiert (ı->i, İ->I, ş->s, ł->l, é->e), was sich nicht
+     * nach ASCII abbilden lässt, wird weggelassen - nie ein '?'. Ungültige
+     * UTF-8-Bytes werden entfernt. Anschließend getrimmt. Das Ergebnis hängt nicht
+     * von der Prozess-Locale ab.
      *
      * @param string|null $value Der Eingabestring (null wird als leerer String behandelt).
      * @return string Der ASCII-transliterierte, getrimmte String.
@@ -793,12 +797,79 @@ class StringHelper {
             $value
         );
 
-        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
-        if ($ascii === false) {
-            $ascii = preg_replace('/[^\x20-\x7E]/', '', $value) ?? $value;
+        if (preg_match('/[^\x00-\x7F]/', $value) !== 1) {
+            return trim($value);
+        }
+
+        if (!mb_check_encoding($value, 'UTF-8')) {
+            $scrubbed = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+            $value = is_string($scrubbed) && mb_check_encoding($scrubbed, 'UTF-8')
+                ? $scrubbed
+                : (preg_replace('/[\x80-\xFF]/', '', $value) ?? '');
+        }
+
+        $ascii = preg_replace_callback(
+            '/[^\x00-\x7F]/u',
+            static fn (array $m): string => self::foldNonAsciiChar($m[0]),
+            $value
+        );
+        if ($ascii === null) {
+            $ascii = preg_replace('/[\x80-\xFF]/', '', $value) ?? '';
         }
 
         return trim($ascii);
+    }
+
+    /**
+     * Faltet ein einzelnes Nicht-ASCII-Zeichen nach ASCII (Baustein von {@see toAscii()}).
+     *
+     * Reihenfolge: (1) Zeichen ohne Buchstabenwert (Rahmen, Blöcke, Formen,
+     * Dingbats, Emoji samt Variantenwähler, Nullbreiten) fallen weg. (2) iconv
+     * //TRANSLIT unter fest gesetzter UTF-8-Locale: hält die bisherigen Ausgaben
+     * byte-gleich (€->EUR, „->,,, —->--, ×->x, ½->1/2, ™->(TM)); ein '?' von iconv
+     * gilt als Fehlschlag. (3) ICU-Romanisierung "Any-Latin; NFD; [:Nonspacing Mark:]
+     * Remove; NFC; Latin-ASCII" (falls ext-intl vorhanden) für alles, was iconv nicht
+     * kennt oder das locale-abhängig war (ı, İ, ş, ł, é unter LC_CTYPE 'C'; Ж).
+     * (4) Was danach noch kein ASCII ist, fällt weg. Ergebnis je Zeichen gecacht.
+     */
+    private static function foldNonAsciiChar(string $char): string {
+        static $cache = [];
+        static $transliterator = false;
+
+        if (isset($cache[$char])) {
+            return $cache[$char];
+        }
+
+        if (preg_match('/^[\x{200B}-\x{200D}\x{2060}\x{2500}-\x{27BF}\x{2B00}-\x{2BFF}\x{FE00}-\x{FE0F}\x{1F000}-\x{1FAFF}]$/u', $char) === 1) {
+            return $cache[$char] = '';
+        }
+
+        $isAscii = static fn (mixed $s): bool => is_string($s) && $s !== '' && preg_match('/[^\x20-\x7E]/', $s) !== 1;
+
+        $previousLocale = setlocale(LC_CTYPE, '0');
+        setlocale(LC_CTYPE, 'C.UTF-8', 'C.utf8', 'en_US.UTF-8', 'en_US.utf8');
+        $folded = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $char);
+        if (is_string($previousLocale)) {
+            setlocale(LC_CTYPE, $previousLocale);
+        }
+
+        if (!$isAscii($folded) || str_contains((string) $folded, '?')) {
+            if ($transliterator === false) {
+                $transliterator = class_exists(\Transliterator::class)
+                    ? (\Transliterator::create('Any-Latin; NFD; [:Nonspacing Mark:] Remove; NFC; Latin-ASCII'))
+                    : null;
+            }
+            $folded = $transliterator instanceof \Transliterator ? $transliterator->transliterate($char) : false;
+            if (!$isAscii($folded)) {
+                $folded = '';
+            }
+        }
+
+        if (count($cache) >= 4096) {
+            $cache = [];
+        }
+
+        return $cache[$char] = (string) $folded;
     }
 
     /**
