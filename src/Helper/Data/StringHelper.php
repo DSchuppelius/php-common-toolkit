@@ -776,7 +776,7 @@ class StringHelper {
      * Deutsche Umlaute werden zuerst ausgeschrieben (ä->ae, ö->oe, ü->ue, ß->ss,
      * Ä->Ae, Ö->Oe, Ü->Ue). Reiner ASCII-Text bleibt unverändert (bis auf Trim).
      * Sonst wird jedes Nicht-ASCII-Zeichen einzeln gefaltet (siehe
-     * {@see foldNonAsciiChar()}): Zeichen ohne Buchstabenwert (Rahmenlinien,
+     * {@see foldCharToAscii()}): Zeichen ohne Buchstabenwert (Rahmenlinien,
      * Blöcke, Dingbats, Emoji, Nullbreite) fallen weg, Buchstaben anderer Schriften
      * und Sprachen werden romanisiert (ı->i, İ->I, ş->s, ł->l, é->e), was sich nicht
      * nach ASCII abbilden lässt, wird weggelassen - nie ein '?'. Ungültige
@@ -810,7 +810,7 @@ class StringHelper {
 
         $ascii = preg_replace_callback(
             '/[^\x00-\x7F]/u',
-            static fn (array $m): string => self::foldNonAsciiChar($m[0]),
+            static fn (array $m): string => self::foldCharToAscii($m[0]),
             $value
         );
         if ($ascii === null) {
@@ -821,7 +821,13 @@ class StringHelper {
     }
 
     /**
-     * Faltet ein einzelnes Nicht-ASCII-Zeichen nach ASCII (Baustein von {@see toAscii()}).
+     * Faltet ein einzelnes Nicht-ASCII-Zeichen nach ASCII.
+     *
+     * Die EINE Faltung fuer alle Aufrufer: {@see toAscii()}, die DATEV-Textfelder
+     * in php-financial-formats und die Ziel-Encoding-Anpassung in ckonverter-core
+     * nutzen sie, damit dasselbe Zeichen ueberall gleich romanisiert wird.
+     * Umlaute schreiben die Aufrufer vorher aus (ae/oe/ue/ss); hier ankommende
+     * Umlaute fallen auf ihren Grundbuchstaben (iconv) zurueck.
      *
      * Reihenfolge: (1) Zeichen ohne Buchstabenwert (Rahmen, Blöcke, Formen,
      * Dingbats, Emoji samt Variantenwähler, Nullbreiten) fallen weg. (2) iconv
@@ -832,7 +838,7 @@ class StringHelper {
      * kennt oder das locale-abhängig war (ı, İ, ş, ł, é unter LC_CTYPE 'C'; Ж).
      * (4) Was danach noch kein ASCII ist, fällt weg. Ergebnis je Zeichen gecacht.
      */
-    private static function foldNonAsciiChar(string $char): string {
+    public static function foldCharToAscii(string $char): string {
         static $cache = [];
         static $transliterator = false;
 

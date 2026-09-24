@@ -419,4 +419,18 @@ class StringHelperTest extends BaseTestCase {
         $this->assertFalse(\CommonToolkit\Helper\Data\StringHelper::isUuid(' 9fe4b3f2-6b1e-4c2a-8f1d-2a3b4c5d6e7f'));
         $this->assertFalse(\CommonToolkit\Helper\Data\StringHelper::isUuid("9fe4b3f2-6b1e-4c2a-8f1d-2a3b4c5d6e7f\n"), 'Ein abschließender Zeilenumbruch darf nicht durchrutschen.');
     }
+
+    /** Die gemeinsame Einzelzeichen-Faltung: Buchstaben romanisiert, Zeichen ohne Buchstabenwert weg, nie "?". */
+    public function test_fold_char_to_ascii(): void {
+        $this->assertSame('i', StringHelper::foldCharToAscii('ı'));
+        $this->assertSame('I', StringHelper::foldCharToAscii('İ'));
+        $this->assertSame('s', StringHelper::foldCharToAscii('ş'));
+        $this->assertSame('l', StringHelper::foldCharToAscii('ł'));
+        $this->assertSame('e', StringHelper::foldCharToAscii('é'));
+        $this->assertSame('EUR', StringHelper::foldCharToAscii('€'));
+        $this->assertSame('x', StringHelper::foldCharToAscii('×'));
+        $this->assertSame('--', StringHelper::foldCharToAscii('—'));
+        $this->assertSame('', StringHelper::foldCharToAscii('─'));
+        $this->assertSame('', StringHelper::foldCharToAscii('🎉'));
+    }
 }
