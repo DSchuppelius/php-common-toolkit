@@ -52,6 +52,45 @@ abstract class ConfiguredHelperAbstract extends HelperAbstract {
     }
 
     /**
+     * Programm und Argumente eines konfigurierten Kommandos als Argumentliste fuer
+     * {@see \CommonToolkit\Helper\Shell::run()} bzw. {@see \CommonToolkit\Helper\Shell::execute()}.
+     *
+     * Ohne Shell braucht es kein Escaping: jedes Konfigurationsargument wird nach
+     * der Platzhalter-Ersetzung unveraendert zu einem Argument. Ein Argument, das
+     * nur aus einem Platzhalter mit leerem Wert besteht, entfaellt (wie bei
+     * getConfiguredCommand()). Shell-Operatoren in der Konfiguration (Pipes,
+     * Umleitungen) funktionieren auf diesem Weg nicht.
+     *
+     * @param string $commandName Der Name des Kommandos.
+     * @param array<string, string> $params Die Platzhalter-Ersetzungen (z. B. ['[INPUT]' => $datei]).
+     * @param string $type Der Typ der Konfiguration (z.B. 'shellExecutables').
+     * @return list<string>|null Programm und Argumente oder null, wenn das Kommando nicht konfiguriert oder nicht verfuegbar ist.
+     */
+    protected static function getConfiguredArgv(string $commandName, array $params = [], string $type = 'shellExecutables'): ?array {
+        $config = self::getCommandBuilder()->getExecutableConfig($commandName, $type);
+        $path = $config['path'] ?? null;
+        if (!is_string($path) || trim($path) === '') {
+            self::logDebug("Kein Pfad fuer '$commandName' in '$type' konfiguriert");
+            return null;
+        }
+
+        $argv = [$path];
+        $arguments = $config['arguments'] ?? [];
+        foreach (is_array($arguments) ? $arguments : [] as $argument) {
+            $argument = (string) $argument;
+            $resolved = $params === [] ? $argument : str_replace(array_keys($params), array_values($params), $argument);
+            if (array_key_exists($argument, $params) && trim($resolved) === '') {
+                continue;
+            }
+            $argv[] = $resolved;
+        }
+
+        self::logDebug("Argumentliste generiert fuer '$commandName': " . implode(' ', $argv));
+
+        return $argv;
+    }
+
+    /**
      * Gibt den vollständigen Java-Befehl zurück (java -jar ...).
      *
      * @param string $commandName Der Name des Java-Executables.

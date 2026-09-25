@@ -3,11 +3,11 @@
         "libreoffice": {
             "path": "libreoffice",
             "required": false,
-            "description": "LibreOffice headless Dokument-Konverter (--convert-to)",
+            "description": "LibreOffice headless Dokument-Konverter (--convert-to); [PROFILE_URI] fuellt der OfficeHelper je Aufruf mit einem eigenen Profilverzeichnis",
             "package": "libreoffice",
             "arguments": [
                 "--headless",
-                "-env:UserInstallation=file:///tmp/libreoffice-user",
+                "-env:UserInstallation=[PROFILE_URI]",
                 "--convert-to",
                 "[FORMAT]",
                 "--outdir",

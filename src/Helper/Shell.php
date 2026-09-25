@@ -22,6 +22,9 @@ use Symfony\Component\Process\Process;
 class Shell extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../config/common_executables.json';
 
+    /** Exit-Code, den {@see execute()} bei Zeitueberschreitung meldet (wie GNU timeout). */
+    public const EXIT_TIMEOUT = 124;
+
     /**
      * Startet ein Programm mit Argumentliste — ohne Shell, daher ohne
      * Quoting-Probleme und ohne Injektion über Argumente.
@@ -82,6 +85,67 @@ class Shell extends ConfiguredHelperAbstract {
         }
 
         return $result;
+    }
+
+    /**
+     * Fuehrt eine Argumentliste ohne Shell aus und liefert das Ergebnis in der Form
+     * von {@see executeShellCommand()}: Ausgabezeilen, Exit-Code und Erfolg als bool.
+     *
+     * Bruecke fuer Helper, die bisher exec() ohne Zeitgrenze nutzten: stdout und
+     * stderr landen in Ankunftsreihenfolge in $output (wie bei `2>&1`), Zeilen ohne
+     * Zeilenende, angehaengt an vorhandene Eintraege (wie exec()). Bei
+     * Zeitueberschreitung ist das Ergebnis false, $resultCode ist EXIT_TIMEOUT und
+     * $output endet mit "Zeitgrenze N s ueberschritten".
+     *
+     * @param list<string> $command Programm und Argumente, z. B. ['ffmpeg', '-i', $datei].
+     * @param list<string> $output Referenz: Ausgabezeilen (stdout + stderr).
+     * @param int $resultCode Referenz: Exit-Code bzw. EXIT_TIMEOUT.
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt.
+     * @param string|null $input Daten fuer die Standardeingabe.
+     * @param string|null $cwd Arbeitsverzeichnis.
+     * @return bool True bei Exit-Code 0 ohne Zeitueberschreitung.
+     * @throws InvalidArgumentException Wenn keine Programmangabe uebergeben wird.
+     */
+    public static function execute(array $command, array &$output = [], int &$resultCode = 0, ?float $timeout = null, ?string $input = null, ?string $cwd = null): bool {
+        $buffer = '';
+        $result = self::run(
+            $command,
+            $timeout,
+            null,
+            $cwd,
+            static function (string $chunk) use (&$buffer): void {
+                $buffer .= $chunk;
+            },
+            $input,
+        );
+
+        $trimmed = rtrim($buffer, "\r\n");
+        if ($trimmed !== '') {
+            foreach (preg_split('/\r\n|\n|\r/', $trimmed) ?: [] as $line) {
+                $output[] = rtrim($line);
+            }
+            self::logDebug("Befehlsausgabe: $trimmed");
+        }
+
+        if ($result->timedOut) {
+            $resultCode = self::EXIT_TIMEOUT;
+            $output[] = self::timeoutMessage((float) $timeout);
+            return false;
+        }
+
+        $resultCode = (int) $result->exitCode;
+
+        return $result->isSuccessful();
+    }
+
+    /**
+     * Einheitlicher Hinweistext fuer eine ueberschrittene Zeitgrenze, z. B.
+     * "Zeitgrenze 0.5 s ueberschritten" oder "Zeitgrenze 60 s ueberschritten".
+     */
+    public static function timeoutMessage(float $timeout): string {
+        $seconds = rtrim(rtrim(sprintf('%.3f', $timeout), '0'), '.');
+
+        return sprintf('Zeitgrenze %s s ueberschritten', $seconds);
     }
 
     /**

@@ -63,6 +63,41 @@ class AmountTokenizerTest extends BaseTestCase {
         $this->assertSame($currency, $tokens[0]->currency);
     }
 
+    public function test_soll_haben_marker_direkt_am_betrag(): void {
+        // SFirm-Kontoumsaetze und HVB haengen S/H ohne Leerzeichen an den Betrag.
+        $tokens = AmountTokenizer::tokens('8,21S EUR 8,21S');
+        $this->assertCount(2, $tokens);
+        foreach ($tokens as $token) {
+            $this->assertSame(-8.21, $token->value);
+            $this->assertTrue($token->hasSign);
+        }
+
+        $haben = AmountTokenizer::first('12,00H');
+        $this->assertNotNull($haben);
+        $this->assertSame(12.0, $haben->value);
+        $this->assertTrue($haben->hasSign);
+
+        $tausender = AmountTokenizer::first('1.234,56H');
+        $this->assertNotNull($tausender);
+        $this->assertSame(1234.56, $tausender->value);
+        $this->assertTrue($tausender->hasSign);
+
+        // Frei stehendes S bleibt Soll (Bestand)
+        $bestand = AmountTokenizer::first('100,00 S');
+        $this->assertNotNull($bestand);
+        $this->assertSame(-100.0, $bestand->value);
+        $this->assertTrue($bestand->hasSign);
+    }
+
+    public function test_woerter_mit_s_oder_h_sind_keine_marker(): void {
+        foreach (['5,00 SEPA-Lastschrift', '10,00 Haben', '5,00 Soll', '7,50Stk'] as $line) {
+            $token = AmountTokenizer::first($line);
+            $this->assertNotNull($token, $line);
+            $this->assertFalse($token->hasSign, $line);
+            $this->assertGreaterThan(0, $token->value, $line);
+        }
+    }
+
     public function test_keine_betraege(): void {
         $this->assertSame([], AmountTokenizer::tokens('Ab 01.10.2023 neuer Zinssatz  9,9000 v.H. für'));
         $this->assertSame([], AmountTokenizer::tokens('Kurs 1,0842 EUR/USD'));

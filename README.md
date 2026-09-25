@@ -418,6 +418,7 @@ Das Toolkit nutzt JSON-Konfigurationsdateien für externe Tools. Die Konfigurati
 | Methode | Beschreibung |
 | ------- | ------------ |
 | `getConfiguredCommand($name, $params)` | Baut einen Shell-Befehl mit Platzhalter-Ersetzung |
+| `getConfiguredArgv($name, $params)` | Liefert Programm und Argumente als Liste fuer `Shell::run()`/`Shell::execute()` (ohne Shell, mit Zeitgrenze) |
 | `getConfiguredJavaCommand($name, $params)` | Baut einen Java-Befehl (java -jar ...) |
 | `isExecutableAvailable($name)` | Prüft ob ein Tool verfügbar ist |
 | `getExecutablePath($name)` | Gibt den konfigurierten Pfad zurück |

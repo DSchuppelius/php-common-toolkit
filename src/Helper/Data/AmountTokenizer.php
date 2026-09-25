@@ -137,7 +137,12 @@ final class AmountTokenizer {
         usort($tokens, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
         $cur = '(?:' . implode('|', array_map(static fn (string $t): string => preg_quote($t, '/'), $tokens)) . ')';
 
-        return self::$amountRe = '/(?<![\d.,\'])([-+−–]?)\s?(' . $cur . ')?\s?(' . self::AMT . ')\s?(' . $cur . ')?\s{0,16}([-+−–]|\b[SH]\b|\bDR\b|\bCR\b|\bAf\b|\bBij\b)?(?![\d.,])/u';
+        // Soll/Haben-Marker: frei stehend ("100,00 S") oder direkt an die Ziffer
+        // angehaengt ("8,21S", SFirm/HVB) - dann aber ohne weiteren Buchstaben dahinter,
+        // damit "5,00 SEPA" oder "10,00 Haben" kein Marker sind.
+        $sollHaben = '\b[SH]\b|(?<=\d)[SH](?![\p{L}\p{N}])';
+
+        return self::$amountRe = '/(?<![\d.,\'])([-+−–]?)\s?(' . $cur . ')?\s?(' . self::AMT . ')\s?(' . $cur . ')?\s{0,16}([-+−–]|' . $sollHaben . '|\bDR\b|\bCR\b|\bAf\b|\bBij\b)?(?![\d.,])/u';
     }
 
     /** Symbol oder Code am Betrag -> ISO-4217-Code ({@see CurrencyCode}); null, wenn keine Währung dastand. */

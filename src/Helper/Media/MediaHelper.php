@@ -65,35 +65,29 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      * werden einzeln escaped; der Aufrufer ist für deren inhaltliche Gültigkeit zuständig.
      *
      * @param string[] $codecArgs Codec-/Filter-Argumente in der Reihenfolge für FFmpeg
-     * @param array $output Referenz: Shell-Ausgabe (stdout+stderr)
+     * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr)
      * @param bool $stripVideo true entfernt den Videostream (-vn, Audio-Konvertierung);
      *                         false behält ihn (Video-Konvertierung)
-     * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr).
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei
+     *                            Ueberschreitung false, $output endet mit "Zeitgrenze N s ueberschritten".
      * @return bool true bei Erfolg (Exit 0 und Ausgabedatei vorhanden)
      */
-    public static function convert(string $input, string $outputFile, array $codecArgs, array &$output = [], int &$returnCode = 0, bool $stripVideo = true): bool {
+    public static function convert(string $input, string $outputFile, array $codecArgs, array &$output = [], int &$returnCode = 0, bool $stripVideo = true, ?float $timeout = null): bool {
         $path = self::getExecutablePath('ffmpeg');
         if ($path === null) {
             return self::logErrorAndReturn(false, 'FFmpeg ist nicht verfügbar (media_executables.json).');
         }
 
-        $parts = [escapeshellarg($path)];
-        foreach (self::FFMPEG_BASE_FLAGS as $flag) {
-            $parts[] = $flag;
-        }
-        $parts[] = '-i';
-        $parts[] = escapeshellarg($input);
+        $argv = [$path, ...self::FFMPEG_BASE_FLAGS, '-i', $input];
         if ($stripVideo) {
-            $parts[] = '-vn';
+            $argv[] = '-vn';
         }
         foreach ($codecArgs as $arg) {
-            $parts[] = escapeshellarg((string) $arg);
+            $argv[] = (string) $arg;
         }
-        $parts[] = escapeshellarg($outputFile);
+        $argv[] = $outputFile;
 
-        $command = implode(' ', $parts);
-
-        if (!Shell::executeShellCommand($command, $output, $returnCode)) {
+        if (!Shell::execute($argv, $output, $returnCode, $timeout)) {
             return self::logErrorAndReturn(false, 'FFmpeg-Konvertierung fehlgeschlagen: ' . implode("\n", $output));
         }
 
@@ -102,31 +96,39 @@ final class MediaHelper extends ConfiguredHelperAbstract {
 
     /**
      * Führt eine FFmpeg-Probe aus und liefert die (stderr-)Ausgabe als String.
+     *
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei Ueberschreitung null.
      */
-    private static function probe(string $file): ?string {
+    private static function probe(string $file, ?float $timeout = null): ?string {
         if (!File::exists($file) || !self::isFfmpegAvailable()) {
             return null;
         }
 
-        $command = self::getConfiguredCommand('ffmpeg-info', ['[INPUT]' => $file]);
-        if ($command === null) {
+        $argv = self::getConfiguredArgv('ffmpeg-info', ['[INPUT]' => $file]);
+        if ($argv === null) {
             return null;
         }
 
         $output = [];
         $returnCode = 0;
-        // FFmpeg gibt Metadaten auf stderr aus; Shell leitet stderr standardmäßig nach stdout um.
-        Shell::executeShellCommand($command, $output, $returnCode);
+        // FFmpeg gibt Metadaten auf stderr aus und beendet sich ohne Ausgabedatei mit Exit 1;
+        // Shell::execute() sammelt stdout und stderr gemeinsam, der Exit-Code ist hier unerheblich.
+        Shell::execute($argv, $output, $returnCode, $timeout);
+        if ($returnCode === Shell::EXIT_TIMEOUT) {
+            return self::logErrorAndReturn(null, 'FFmpeg-Probe abgebrochen: ' . Shell::timeoutMessage((float) $timeout));
+        }
+
         return implode("\n", $output);
     }
 
     /**
      * Liest Audio-Metadaten via FFmpeg aus.
      *
+     * @param float|null $timeout Sekunden bis zum Abbruch der Probe; null = unbegrenzt. Bei Ueberschreitung null.
      * @return array{duration?: float, sample_rate?: int, channels?: int, codec?: string, bitrate?: int}|null
      */
-    public static function getAudioInfo(string $file): ?array {
-        $outputStr = self::probe($file);
+    public static function getAudioInfo(string $file, ?float $timeout = null): ?array {
+        $outputStr = self::probe($file, $timeout);
         if ($outputStr === null) {
             return null;
         }
@@ -161,10 +163,11 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     /**
      * Liest Video-Metadaten via FFmpeg aus.
      *
+     * @param float|null $timeout Sekunden bis zum Abbruch der Probe; null = unbegrenzt. Bei Ueberschreitung null.
      * @return array{duration?: float, width?: int, height?: int, codec?: string, fps?: float}|null
      */
-    public static function getVideoInfo(string $file): ?array {
-        $outputStr = self::probe($file);
+    public static function getVideoInfo(string $file, ?float $timeout = null): ?array {
+        $outputStr = self::probe($file, $timeout);
         if ($outputStr === null) {
             return null;
         }
@@ -203,6 +206,8 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      * @param string $language Sprachcode oder 'auto' für automatische Erkennung
      * @param string $task 'transcribe' oder 'translate'
      * @param string $outputFormat Eines aus WHISPER_FORMATS ('txt', 'vtt', 'srt', 'tsv', 'json')
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei Ueberschreitung null
+     *                            mit Fehlerlog "Zeitgrenze N s ueberschritten".
      * @return string|null Inhalt der Ausgabedatei oder null bei Fehler
      */
     public static function transcribeWhisper(
@@ -213,7 +218,8 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         string $language = 'auto',
         string $task = 'transcribe',
         string $device = 'cpu',
-        string $outputFormat = 'txt'
+        string $outputFormat = 'txt',
+        ?float $timeout = null
     ): ?string {
         $outputFormat = strtolower(trim($outputFormat));
         if (!in_array($outputFormat, self::WHISPER_FORMATS, true)) {
@@ -231,32 +237,20 @@ final class MediaHelper extends ConfiguredHelperAbstract {
 
         Folder::create($outputDir);
 
-        $parts = [
-            escapeshellarg($path),
-            escapeshellarg($input),
-            '--model', escapeshellarg($model),
-        ];
+        $argv = [$path, $input, '--model', $model];
         if ($modelDir !== '') {
-            $parts[] = '--model_dir';
-            $parts[] = escapeshellarg($modelDir);
+            $argv[] = '--model_dir';
+            $argv[] = $modelDir;
         }
-        $parts[] = '--device';
-        $parts[] = escapeshellarg($device);
-        $parts[] = '--output_dir';
-        $parts[] = escapeshellarg($outputDir);
-        $parts[] = '--output_format';
-        $parts[] = escapeshellarg($outputFormat);
-        $parts[] = '--task';
-        $parts[] = escapeshellarg($task);
+        array_push($argv, '--device', $device, '--output_dir', $outputDir, '--output_format', $outputFormat, '--task', $task);
         if ($language !== 'auto') {
-            $parts[] = '--language';
-            $parts[] = escapeshellarg($language);
+            $argv[] = '--language';
+            $argv[] = $language;
         }
 
-        $command = implode(' ', $parts);
         $output = [];
         $returnCode = 0;
-        if (!Shell::executeShellCommand($command, $output, $returnCode)) {
+        if (!Shell::execute($argv, $output, $returnCode, $timeout)) {
             return self::logErrorAndReturn(null, sprintf('Whisper-Transkription fehlgeschlagen (Code %d): %s', $returnCode, implode("\n", $output)));
         }
 
@@ -279,24 +273,20 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      *
      * @param string $modelPath Vollständiger Pfad zur .onnx-Stimmdatei (deployment-spezifisch)
      * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr).
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei
+     *                            Ueberschreitung false, $output endet mit "Zeitgrenze N s ueberschritten".
      * @return bool true bei Erfolg (Ausgabedatei vorhanden)
      */
-    public static function synthesizePiper(string $text, string $outputWav, string $modelPath, array &$output = [], int &$returnCode = 0): bool {
+    public static function synthesizePiper(string $text, string $outputWav, string $modelPath, array &$output = [], int &$returnCode = 0, ?float $timeout = null): bool {
         $path = self::getExecutablePath('piper-tts');
         if ($path === null) {
             return self::logErrorAndReturn(false, 'Piper ist nicht verfügbar (media_executables.json).');
         }
 
-        // Piper liest den Text von stdin.
-        $command = sprintf(
-            'echo %s | %s --model %s --output_file %s',
-            escapeshellarg($text),
-            escapeshellarg($path),
-            escapeshellarg($modelPath),
-            escapeshellarg($outputWav)
-        );
+        // Piper liest den Text von stdin (frueher per `echo | piper`, jetzt direkt als Standardeingabe).
+        $argv = [$path, '--model', $modelPath, '--output_file', $outputWav];
 
-        if (!Shell::executeShellCommand($command, $output, $returnCode)) {
+        if (!Shell::execute($argv, $output, $returnCode, $timeout, $text . "\n")) {
             return self::logErrorAndReturn(false, 'Piper TTS fehlgeschlagen: ' . implode("\n", $output));
         }
 
@@ -308,24 +298,19 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      *
      * @param string $textPath Pfad zur Textdatei mit dem zu sprechenden Inhalt
      * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr).
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei
+     *                            Ueberschreitung false, $output endet mit "Zeitgrenze N s ueberschritten".
      * @return bool true bei Erfolg (Ausgabedatei vorhanden)
      */
-    public static function synthesizeEspeak(string $textPath, string $outputWav, string $voice = 'de', string $speed = '150', array &$output = [], int &$returnCode = 0): bool {
+    public static function synthesizeEspeak(string $textPath, string $outputWav, string $voice = 'de', string $speed = '150', array &$output = [], int &$returnCode = 0, ?float $timeout = null): bool {
         $path = self::getExecutablePath('espeak-ng');
         if ($path === null) {
             return self::logErrorAndReturn(false, 'eSpeak-NG ist nicht verfügbar (media_executables.json).');
         }
 
-        $command = sprintf(
-            '%s -v %s -s %s -w %s -f %s',
-            escapeshellarg($path),
-            escapeshellarg($voice),
-            escapeshellarg($speed),
-            escapeshellarg($outputWav),
-            escapeshellarg($textPath)
-        );
+        $argv = [$path, '-v', $voice, '-s', $speed, '-w', $outputWav, '-f', $textPath];
 
-        if (!Shell::executeShellCommand($command, $output, $returnCode)) {
+        if (!Shell::execute($argv, $output, $returnCode, $timeout)) {
             return self::logErrorAndReturn(false, 'eSpeak-NG TTS fehlgeschlagen: ' . implode("\n", $output));
         }
 
