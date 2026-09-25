@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\Helper\Data;
 
-use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, RoundingMode};
+use CommonToolkit\Enums\{CountryCode, CurrencyCode, MetricPrefix, PercentileMethod, RoundingMode};
 use CommonToolkit\Enums\Units\TemperatureUnit;
 use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
@@ -964,6 +964,57 @@ class NumberHelper {
         }
 
         return $numbers[$middle];
+    }
+
+    /**
+     * Perzentil einer Zahlenliste (Reihenfolge beliebig).
+     *
+     * @param array<array-key, int|float> $numbers Array von Zahlen.
+     * @param float $percent Perzentil zwischen 0 und 100.
+     * @param PercentileMethod $method Linear (interpoliert) oder NearestRank (ein Wert der Liste).
+     * @return float Das Perzentil oder 0 wenn leer.
+     */
+    public static function percentile(array $numbers, float $percent, PercentileMethod $method = PercentileMethod::Linear): float {
+        if (empty($numbers)) {
+            return 0.0;
+        }
+        if ($percent < 0.0 || $percent > 100.0) {
+            throw new InvalidArgumentException('Perzentil muss zwischen 0 und 100 liegen.');
+        }
+
+        $sorted = array_values($numbers);
+        sort($sorted);
+        $count = count($sorted);
+
+        if ($method === PercentileMethod::NearestRank) {
+            return (float) $sorted[max(0, (int) ceil($percent / 100 * $count) - 1)];
+        }
+
+        $index = ($count - 1) * $percent / 100;
+        $low = (int) floor($index);
+        $high = (int) ceil($index);
+
+        return (float) ($sorted[$low] + ($sorted[$high] - $sorted[$low]) * ($index - $low));
+    }
+
+    /**
+     * Fünf-Punkte-Zusammenfassung für Boxplots (Quartile linear interpoliert).
+     *
+     * @param array<array-key, int|float> $numbers Array von Zahlen.
+     * @return array{min: float, q1: float, median: float, q3: float, max: float}|null null bei leerer Liste.
+     */
+    public static function quartiles(array $numbers): ?array {
+        if (empty($numbers)) {
+            return null;
+        }
+
+        return [
+            'min' => (float) min($numbers),
+            'q1' => self::percentile($numbers, 25),
+            'median' => self::percentile($numbers, 50),
+            'q3' => self::percentile($numbers, 75),
+            'max' => (float) max($numbers),
+        ];
     }
 
     /**

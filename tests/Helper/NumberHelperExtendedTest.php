@@ -10,7 +10,7 @@
 
 namespace Tests\Helper;
 
-use CommonToolkit\Enums\CurrencyCode;
+use CommonToolkit\Enums\{CurrencyCode, PercentileMethod};
 use CommonToolkit\Helper\Data\NumberHelper;
 use Tests\Contracts\BaseTestCase;
 
@@ -85,6 +85,27 @@ class NumberHelperExtendedTest extends BaseTestCase {
         $this->assertEquals(5.0, NumberHelper::median([1, 5, 9]));
         $this->assertEquals(3.0, NumberHelper::median([1, 2, 4, 5]));
         $this->assertEquals(0.0, NumberHelper::median([]));
+    }
+
+    public function test_percentile_linear_and_nearest_rank(): void {
+        $values = [15, 20, 35, 40, 50];
+        $this->assertEquals(35.0, NumberHelper::percentile($values, 50));
+        $this->assertEqualsWithDelta(29.0, NumberHelper::percentile([50, 15, 40, 20, 35], 40), 0.0001);
+        $this->assertEquals(15.0, NumberHelper::percentile($values, 0));
+        $this->assertEquals(50.0, NumberHelper::percentile($values, 100));
+        $this->assertEquals(20.0, NumberHelper::percentile($values, 30, PercentileMethod::NearestRank));
+        $this->assertEquals(50.0, NumberHelper::percentile($values, 95, PercentileMethod::NearestRank));
+        $this->assertEquals(0.0, NumberHelper::percentile([], 50));
+    }
+
+    public function test_percentile_rejects_out_of_range(): void {
+        $this->expectException(\InvalidArgumentException::class);
+        NumberHelper::percentile([1, 2], 101);
+    }
+
+    public function test_quartiles(): void {
+        $this->assertSame(['min' => 1.0, 'q1' => 2.0, 'median' => 3.0, 'q3' => 4.0, 'max' => 5.0], NumberHelper::quartiles([5, 1, 4, 2, 3]));
+        $this->assertNull(NumberHelper::quartiles([]));
     }
 
     public function test_sign(): void {
