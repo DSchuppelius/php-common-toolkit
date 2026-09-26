@@ -241,4 +241,12 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('', StringHelper::repeat('abc', 0));
         $this->assertEquals('', StringHelper::repeat('abc', -1));
     }
+
+    public function test_repair_invalid_utf8_keeps_valid_characters_and_maps_invalid_bytes(): void {
+        $this->assertSame('abc', StringHelper::repairInvalidUtf8('abc'));
+        $this->assertSame("G\u{00DC}NTER", StringHelper::repairInvalidUtf8("G\xDCNTER"));
+        // gemischt: gueltiges UTF-8 bleibt, nur das einzelne Latin-1-Byte wird umgedeutet
+        $this->assertSame("\u{00DC}\u{00E4}x", StringHelper::repairInvalidUtf8("\xDC\xC3\xA4x"));
+        $this->assertSame("B\u{00F6}ke \u{20AC} \u{20AC}", StringHelper::repairInvalidUtf8("B\xF6ke \xE2\x82\xAC \x80"));
+    }
 }

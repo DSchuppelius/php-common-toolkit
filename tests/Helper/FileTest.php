@@ -223,6 +223,26 @@ class FileTest extends BaseTestCase {
         $this->assertStringContainsString('Straße', $content, 'Straße muss korrekt konvertiert sein');
     }
 
+    public function test_read_as_utf8_repairs_latin1_byte_behind_the_encoding_sample(): void {
+        // chardet prueft nur die ersten 4 KB: ein Latin-1-Umlaut dahinter liess
+        // die Datei als ASCII gelten, das rohe Byte wurde spaeter zum "?"
+        $file = tempnam(sys_get_temp_dir(), 'latin1late');
+        file_put_contents($file, str_repeat("Zeile ohne Sonderzeichen;1,00\r\n", 200) . "\"G\xDCNTER STEINDORF\";400,00\r\n");
+        File::clearChardetCache();
+
+        try {
+            $content = File::readAsUtf8($file);
+            $this->assertTrue(mb_check_encoding($content, 'UTF-8'));
+            $this->assertStringContainsString("G\u{00DC}NTER STEINDORF", $content);
+
+            $lines = iterator_to_array(File::readLinesAsUtf8($file), false);
+            $this->assertSame("\"G\u{00DC}NTER STEINDORF\";400,00", end($lines));
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
     public function test_read_lines_as_utf8_with_ansi_csv(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
         $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');

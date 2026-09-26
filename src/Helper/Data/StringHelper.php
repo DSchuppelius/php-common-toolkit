@@ -195,6 +195,38 @@ class StringHelper {
     }
 
     /**
+     * Repariert ungueltige UTF-8-Bytefolgen in einem sonst als UTF-8/ASCII
+     * gelesenen Text: jedes Byte, das keine gueltige UTF-8-Folge bildet, wird
+     * als Zeichen des Legacy-Encodings (Standard Windows-1252) gelesen.
+     * Gueltige UTF-8-Zeichen bleiben unveraendert, auch in gemischten Dateien.
+     *
+     * Hintergrund: die Encoding-Erkennung prueft nur den Dateianfang. Eine
+     * Latin-1-Datei, deren erstes Sonderzeichen hinter dieser Stichprobe steht,
+     * galt als ASCII; das rohe Byte (z. B. 0xDC fuer "Ue") wurde spaeter beim
+     * Umkodieren zu "?" (agree21-Export: "G?NTER" statt "GUENTER").
+     *
+     * @param string $text Der zu pruefende Text
+     * @param string $legacyEncoding Encoding fuer die ungueltigen Bytes
+     * @return string Gueltiges UTF-8
+     */
+    public static function repairInvalidUtf8(string $text, string $legacyEncoding = 'Windows-1252'): string {
+        if ($text === '' || mb_check_encoding($text, 'UTF-8')) {
+            return $text;
+        }
+
+        $valid = '(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}'
+            . '|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})';
+
+        $repaired = preg_replace_callback(
+            '/(' . $valid . '+)|([\x80-\xFF])/s',
+            static fn (array $m): string => isset($m[2]) ? self::convertToUtf8($m[2], $legacyEncoding) : $m[1],
+            $text
+        );
+
+        return ($repaired !== null && mb_check_encoding($repaired, 'UTF-8')) ? $repaired : mb_scrub($text, 'UTF-8');
+    }
+
+    /**
      * Konvertiert Text von einem Encoding nach UTF-8.
      * Verwendet iconv für Encodings die mb_* nicht unterstützt.
      *

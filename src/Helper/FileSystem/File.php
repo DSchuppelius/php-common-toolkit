@@ -591,6 +591,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         $encoding = self::chardet($file);
 
         if ($encoding === false || $encoding === 'UTF-8' || $encoding === 'ASCII') {
+            // chardet prueft nur den Dateianfang (readPartial): steht das erste
+            // Legacy-Sonderzeichen dahinter, galt die Datei als ASCII/UTF-8 und
+            // das rohe Byte blieb ungueltiges UTF-8 (spaeter ein "?")
+            if (!mb_check_encoding($content, 'UTF-8')) {
+                return self::logInfoAndReturn(StringHelper::repairInvalidUtf8($content), "Ungueltiges UTF-8 hinter der Encoding-Stichprobe repariert (Windows-1252): $file");
+            }
             return self::logDebugAndReturn($content, "Keine Konvertierung nötig für $file (Encoding: " . ($encoding ?: 'unbekannt') . ")");
         }
 
@@ -1095,6 +1101,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             // Konvertierung nur wenn nötig - verwendet iconv für DOS-Codepages
             if ($needsConversion) {
                 $line = StringHelper::convertToUtf8($line, $encoding);
+            } elseif (!mb_check_encoding($line, 'UTF-8')) {
+                // Legacy-Byte hinter der Encoding-Stichprobe (wie readAsUtf8)
+                $line = StringHelper::repairInvalidUtf8($line);
             }
             if ($trimLines) {
                 $line = trim($line);
