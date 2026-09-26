@@ -1018,6 +1018,89 @@ class NumberHelper {
     }
 
     /**
+     * Nachschüssige Annuitätenrate (gleichbleibende Rate aus Zins und Tilgung).
+     *
+     * Bei 0 % Zins wird linear getilgt. Ein Restwert (z. B. Leasing-Restwert,
+     * Schlussrate) wird am Ende fällig und nicht über die Raten getilgt.
+     *
+     * @param numeric-string $principal Darlehens- bzw. Finanzierungsbetrag.
+     * @param numeric-string $ratePercent Nominalzins pro Jahr in Prozent.
+     * @param int $periods Anzahl der Raten.
+     * @param int $periodsPerYear Raten pro Jahr (12 = monatlich).
+     * @param numeric-string $residual Restwert am Ende der Laufzeit.
+     * @param int $scale Nachkommastellen der Rate (HalfUp).
+     * @return numeric-string Die Rate.
+     */
+    public static function annuityPayment(string $principal, string $ratePercent, int $periods, int $periodsPerYear = 12, string $residual = '0', int $scale = 2): string {
+        return self::roundPrecise(self::rawAnnuity($principal, $ratePercent, $periods, $periodsPerYear, $residual), $scale, RoundingMode::HalfUp);
+    }
+
+    /**
+     * Tilgungsplan einer Annuität: je Periode Rate, Zins, Tilgung und Restschuld.
+     *
+     * Zins je Periode wird auf `$scale` gerundet (HalfUp); die letzte Rate gleicht
+     * die Rundung aus, sodass die Restschuld genau beim Restwert endet.
+     *
+     * @param numeric-string $principal Darlehens- bzw. Finanzierungsbetrag.
+     * @param numeric-string $ratePercent Nominalzins pro Jahr in Prozent.
+     * @param int $periods Anzahl der Raten.
+     * @param int $periodsPerYear Raten pro Jahr (12 = monatlich).
+     * @param numeric-string $residual Restwert am Ende der Laufzeit.
+     * @param int $scale Nachkommastellen (HalfUp).
+     * @return list<array{period: int, payment: numeric-string, interest: numeric-string, principal: numeric-string, balance: numeric-string}>
+     */
+    public static function amortizationSchedule(string $principal, string $ratePercent, int $periods, int $periodsPerYear = 12, string $residual = '0', int $scale = 2): array {
+        $payment = self::annuityPayment($principal, $ratePercent, $periods, $periodsPerYear, $residual, $scale);
+        $rate = self::periodRate($ratePercent, $periodsPerYear);
+        $balance = self::roundPrecise($principal, $scale, RoundingMode::HalfUp);
+        $rows = [];
+        for ($period = 1; $period <= $periods; $period++) {
+            $interest = self::roundPrecise(bcmul($balance, $rate, $scale + 10), $scale, RoundingMode::HalfUp);
+            $repayment = $period === $periods
+                ? bcsub($balance, $residual, $scale)
+                : bcsub($payment, $interest, $scale);
+            $balance = bcsub($balance, $repayment, $scale);
+            $rows[] = [
+                'period' => $period,
+                'payment' => bcadd($interest, $repayment, $scale),
+                'interest' => $interest,
+                'principal' => $repayment,
+                'balance' => $balance,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param numeric-string $principal
+     * @param numeric-string $ratePercent
+     * @param numeric-string $residual
+     * @return numeric-string Ungerundete Annuitätenrate.
+     */
+    private static function rawAnnuity(string $principal, string $ratePercent, int $periods, int $periodsPerYear, string $residual): string {
+        if ($periods < 1 || $periodsPerYear < 1) {
+            throw new InvalidArgumentException('Laufzeit und Raten pro Jahr müssen mindestens 1 sein.');
+        }
+        $rate = self::periodRate($ratePercent, $periodsPerYear);
+        if (bccomp($rate, '0', 20) === 0) {
+            return bcdiv(bcsub($principal, $residual, 20), (string) $periods, 20);
+        }
+        $factor = bcpow(bcadd('1', $rate, 20), (string) $periods, 20);
+
+        // A = (P·qⁿ − R) · r / (qⁿ − 1)
+        return bcdiv(bcmul(bcsub(bcmul($principal, $factor, 20), $residual, 20), $rate, 20), bcsub($factor, '1', 20), 20);
+    }
+
+    /**
+     * @param numeric-string $ratePercent
+     * @return numeric-string Zinssatz je Periode als Dezimalbruch.
+     */
+    private static function periodRate(string $ratePercent, int $periodsPerYear): string {
+        return bcdiv($ratePercent, (string) (100 * $periodsPerYear), 20);
+    }
+
+    /**
      * Gibt das Vorzeichen einer Zahl zurück.
      *
      * @param float|int $number Die Zahl.

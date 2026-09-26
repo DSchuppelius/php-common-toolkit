@@ -155,4 +155,26 @@ class NumberHelperExtendedTest extends BaseTestCase {
         $this->assertEquals(75, NumberHelper::lcm(15, 25));
         $this->assertEquals(0, NumberHelper::lcm(0, 5));
     }
+
+    public function test_annuity_payment_standard_zero_rate_and_residual(): void {
+        $this->assertSame('299.71', NumberHelper::annuityPayment('10000', '5', 36));
+        $this->assertSame('1000.00', NumberHelper::annuityPayment('12000', '0', 12));
+        $this->assertSame('500.00', NumberHelper::annuityPayment('16000', '0', 20, 12, '6000'));
+        $this->assertSame('2309.75', NumberHelper::annuityPayment('10000', '5', 5, 1));
+
+        $this->expectException(\InvalidArgumentException::class);
+        NumberHelper::annuityPayment('1000', '5', 0);
+    }
+
+    public function test_amortization_schedule_ends_exactly_on_residual(): void {
+        $plan = NumberHelper::amortizationSchedule('10000', '5', 36);
+        $this->assertCount(36, $plan);
+        $this->assertSame(['period' => 1, 'payment' => '299.71', 'interest' => '41.67', 'principal' => '258.04', 'balance' => '9741.96'], $plan[0]);
+        $this->assertSame('0.00', $plan[35]['balance']);
+        $this->assertSame('10000.00', array_reduce($plan, static fn (string $sum, array $row): string => bcadd($sum, $row['principal'], 2), '0'));
+
+        $lease = NumberHelper::amortizationSchedule('30000', '3', 36, 12, '10000');
+        $this->assertSame('10000.00', $lease[35]['balance']);
+        $this->assertSame('20000.00', array_reduce($lease, static fn (string $sum, array $row): string => bcadd($sum, $row['principal'], 2), '0'));
+    }
 }
