@@ -17,6 +17,7 @@ General-purpose PHP utility toolkit providing platform-agnostic helpers, CSV pro
 - **Bundesbank Data**: Auto-downloading BLZ/BIC data with expiry tracking
 - **Identifier & URL Checks**: `StringHelper::isUuid()`, `WebLinkHelper::isAbsoluteIri()` and `::origin()` for IRI/URL validation
 - **Fuzzy Matching**: `StringHelper::similarity()` returns a normalised similarity score for two strings
+- **iCalendar**: `ICalendarParser` reads `.ics` data (folding, escapes, TZID incl. Windows names, all-day, DURATION); `Document::expand()` resolves series (RRULE DAILY/WEEKLY/MONTHLY/YEARLY with BYDAY/BYMONTHDAY/BYMONTH/BYSETPOS, EXDATE, RECURRENCE-ID)
 - **ZIP Entry Filtering**: `ZipFile::readEntries()` / `::skipEntry()` — inspect archives entry by entry and skip unsafe or unwanted members before extraction
 - **Value Objects**: typed wrappers such as `WasteCode` (European waste catalogue)
 - **Data URLs**: `DataUrlHelper::decode()` / `::parse()` / `::encode()` — strict RFC 2397 decoding with size limit and content-based type check (e.g. signature images from a canvas)
@@ -189,6 +190,22 @@ $work = Duration::of(8, 30);
 $work->toClock();                          // "8:30"
 $work->minus(Duration::ofHours(9))->toClock(); // "-0:30"
 Duration::fromIso8601('PT8H30M')->equals($work); // true
+```
+
+### iCalendar
+
+```php
+use CommonToolkit\Entities\ICalendar\Document;
+use CommonToolkit\Parsers\ICalendarParser;
+
+$zone = new DateTimeZone('Europe/Berlin');
+$document = ICalendarParser::fromString($ics);
+foreach ($document->getSeries() as $series) {
+    foreach (Document::expand($series, $from, $until, $zone) as $occurrence) {
+        $occurrence->getStart();                 // wall-clock kept across DST
+        $occurrence->getEvent()->getSummary();   // override (RECURRENCE-ID) if present
+    }
+}
 ```
 
 ### CSV Processing
