@@ -18,6 +18,8 @@ General-purpose PHP utility toolkit providing platform-agnostic helpers, CSV pro
 - **Identifier & URL Checks**: `StringHelper::isUuid()`, `WebLinkHelper::isAbsoluteIri()` and `::origin()` for IRI/URL validation
 - **Fuzzy Matching**: `StringHelper::similarity()` returns a normalised similarity score for two strings
 - **iCalendar**: `ICalendarParser` reads `.ics` data (folding, escapes, TZID incl. Windows names, all-day, DURATION); `Document::expand()` resolves series (RRULE DAILY/WEEKLY/MONTHLY/YEARLY with BYDAY/BYMONTHDAY/BYMONTH/BYSETPOS, EXDATE, RECURRENCE-ID)
+- **Creditor Reference (ISO 11649)**: `CreditorReferenceHelper::create()` / `::isValid()` / `::format()` / `::extract()` — build RF references from an identifier, check MOD 97-10 digits, print in groups of four and find them in remittance text
+- **CEF (SIEM)**: `CEFGenerator::line()` writes Common Event Format lines with header and extension escaping
 - **ZIP Entry Filtering**: `ZipFile::readEntries()` / `::skipEntry()` — inspect archives entry by entry and skip unsafe or unwanted members before extraction
 - **Value Objects**: typed wrappers such as `WasteCode` (European waste catalogue)
 - **Data URLs**: `DataUrlHelper::decode()` / `::parse()` / `::encode()` — strict RFC 2397 decoding with size limit and content-based type check (e.g. signature images from a canvas)
@@ -237,6 +239,26 @@ $isValid = BankHelper::isValidBIC('COBADEFFXXX'); // true
 
 // Get Bank Name by BLZ
 $bankName = BankHelper::getBankNameByBLZ('37040044'); // "Commerzbank"
+```
+
+### Creditor Reference (RF, ISO 11649)
+
+```php
+use CommonToolkit\Helper\Data\CreditorReferenceHelper;
+
+CreditorReferenceHelper::create('539007547034');          // "RF18539007547034"
+CreditorReferenceHelper::format('RF18539007547034');      // "RF18 5390 0754 7034"
+CreditorReferenceHelper::isValid('RF18 5390 0754 7034');  // true
+CreditorReferenceHelper::extract('Zahlung RF18 5390 0754 7034'); // ["RF18539007547034"]
+```
+
+### CEF Lines (SIEM)
+
+```php
+use CommonToolkit\Generators\CEF\CEFGenerator;
+
+CEFGenerator::line('Acme', 'App', '1.0', 'auth.failed', 'Login failed', 5, ['src' => '203.0.113.7']);
+// "CEF:0|Acme|App|1.0|auth.failed|Login failed|5|src=203.0.113.7"
 ```
 
 ### Bankleitzahl-/BIC-Daten (BLZ/BIC data)
