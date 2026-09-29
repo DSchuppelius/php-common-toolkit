@@ -37,7 +37,6 @@ class BankHelperOfflineTest extends BaseTestCase {
      */
     private function callLoadDataFile(string $path, ?string $url, int $expiry, bool $networkEnabled): array {
         $method = new ReflectionMethod(BankHelper::class, 'loadDataFile');
-        $method->setAccessible(true);
         $result = $method->invoke(null, $path, $url, $expiry, $networkEnabled);
         if (!is_array($result)) {
             self::fail('loadDataFile sollte ein Array liefern');

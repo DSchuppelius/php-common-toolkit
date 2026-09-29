@@ -95,7 +95,6 @@ class JavaTest extends BaseTestCase {
 
         $ref = new ReflectionClass(ConfiguredHelperAbstract::class);
         $prop = $ref->getProperty('configLoader');
-        $prop->setAccessible(true);
         $prop->setValue(null, null); // static::$configLoader = null;
 
         $loader = ConfigLoader::getInstance();
@@ -108,7 +107,6 @@ class JavaTest extends BaseTestCase {
         $executable = $executables['echoTest'];
         $executableReflection = new ReflectionClass($executable);
         $pathProperty = $executableReflection->getProperty('path');
-        $pathProperty->setAccessible(true);
         $pathProperty->setValue($executable, realpath(__DIR__ . '/../../.samples/echoargs.jar'));
 
         $output = $executable->execute(['[INPUT]' => 'Hallo Welt']);
