@@ -207,21 +207,27 @@ class DateHelper {
             $a = (int) $m[1];
             $b = (int) $m[2];
             $hasTime = str_contains($value, ':');
+            // "Y" läse "26" als Jahr 0026; zweistellige Jahre brauchen "y", dreistellige sind kein Datum.
+            $year = self::yearFormatChar($m[3]);
+            if ($year === null) {
+                $format = null;
+                return false;
+            }
 
             // Entscheide Format nach Zahlenlogik
             $isAmbiguous = $a <= 12 && $b <= 12;
             $detected = null;
 
             if ($a > 12) {
-                $detected = 'd-m-Y';
+                $detected = 'd-m-' . $year;
                 $format = DateTimeFormat::DE;
             } elseif ($b > 12) {
-                $detected = 'm-d-Y';
+                $detected = 'm-d-' . $year;
                 $format = DateTimeFormat::US;
             } elseif ($isAmbiguous) {
                 // Fallback auf preferredFormat
                 $format = $preferredFormat;
-                $detected = $preferredFormat === DateTimeFormat::US ? 'm-d-Y' : 'd-m-Y';
+                $detected = ($preferredFormat === DateTimeFormat::US ? 'm-d-' : 'd-m-') . $year;
             }
 
             // Zeit prüfen
@@ -765,9 +771,13 @@ class DateHelper {
         $hasSeconds = $colonCount === 2;
         $hasTime = $colonCount > 0;
 
+        // Zweistelliges Jahr ("15.06.26") über "y" lesen — "Y" ergäbe das Jahr 0026.
+        $year = preg_match('#^\d{1,2}-\d{1,2}-(\d{2,4})#', $sepNormalized, $parts) === 1 ? (self::yearFormatChar($parts[1]) ?? 'Y') : 'Y';
+        $time = $hasTime ? ($hasSeconds ? ' H:i:s' : ' H:i') : '';
+
         $formatString = match ($detectedFormat) {
-            DateTimeFormat::DE => $hasTime ? ($hasSeconds ? 'd-m-Y H:i:s' : 'd-m-Y H:i') : 'd-m-Y',
-            DateTimeFormat::US => $hasTime ? ($hasSeconds ? 'm-d-Y H:i:s' : 'm-d-Y H:i') : 'm-d-Y',
+            DateTimeFormat::DE => 'd-m-' . $year . $time,
+            DateTimeFormat::US => 'm-d-' . $year . $time,
             default => 'Y-m-d',
         };
 
@@ -1736,5 +1746,18 @@ class DateHelper {
         }
 
         return [$hour, $minute];
+    }
+
+    /**
+     * Formatzeichen für die Jahresangabe eines Trennzeichen-Datums: vier
+     * Stellen "Y", zwei Stellen "y" (00–69 → 20xx, 70–99 → 19xx, wie PHP).
+     * Ein- und dreistellige Jahre sind kein Datum.
+     */
+    private static function yearFormatChar(string $yearDigits): ?string {
+        return match (strlen($yearDigits)) {
+            4 => 'Y',
+            2 => 'y',
+            default => null,
+        };
     }
 }

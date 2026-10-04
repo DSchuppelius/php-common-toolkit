@@ -442,4 +442,17 @@ class DateHelperTest extends BaseTestCase {
         $this->assertNull(DateHelper::normalizeToIso('next monday'));
         $this->assertSame('2026-02-01', DateHelper::normalizeToIso('01/02/2026', DateTimeFormat::DE));
     }
+
+    public function test_two_digit_years_are_read_as_this_century_not_as_year_zero(): void {
+        $this->assertSame('2026-06-15', DateHelper::normalizeToIso('15.06.26'));
+        $this->assertSame('2026-02-01', DateHelper::normalizeToIso('1.2.26'));
+        $this->assertSame('2028-06-30 14:30:00', DateHelper::normalizeToIso('30.06.28 14:30'));
+        $this->assertSame('2026-06-15', DateHelper::normalizeToIso('06/15/26'));
+        $this->assertSame('1975-06-15', DateHelper::normalizeToIso('15.06.75'));
+        $this->assertNull(DateHelper::normalizeToIso('31.02.26'));
+
+        // Dreistellige Jahre sind kein Datum.
+        $this->assertFalse(DateHelper::isDate('15.06.202'));
+        $this->assertNull(DateHelper::normalizeToIso('15.06.202'));
+    }
 }

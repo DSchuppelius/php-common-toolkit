@@ -49,6 +49,18 @@ class NumberHelperExtendedTest extends BaseTestCase {
         $this->assertEquals('eine Million', NumberHelper::toWords(1000000));
         $this->assertEquals('minus fünf', NumberHelper::toWords(-5));
         $this->assertEquals('Zehn', NumberHelper::toWords(10, true));
+
+        // Gruppen, die auf "eins" enden, und die Wortgrenze nach Million/Milliarde.
+        $this->assertEquals('eintausendeins', NumberHelper::toWords(1001));
+        $this->assertEquals('einundzwanzigtausend', NumberHelper::toWords(21000));
+        $this->assertEquals('einhunderteintausend', NumberHelper::toWords(101000));
+        $this->assertEquals('zweihunderteintausendeins', NumberHelper::toWords(201001));
+        $this->assertEquals('eine Million eins', NumberHelper::toWords(1000001));
+        $this->assertEquals('zwei Millionen dreihunderttausend', NumberHelper::toWords(2300000));
+        $this->assertEquals('einundzwanzig Millionen', NumberHelper::toWords(21000000));
+        $this->assertEquals('einhunderteine Million', NumberHelper::toWords(101000000));
+        $this->assertEquals('eine Milliarde eintausendeins', NumberHelper::toWords(1000001001));
+        $this->assertEquals('minus eintausendeins', NumberHelper::toWords(-1001));
     }
 
     public function test_is_even_and_odd(): void {

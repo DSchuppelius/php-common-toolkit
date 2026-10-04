@@ -847,35 +847,48 @@ class NumberHelper {
             return $result;
         };
 
+        // Eine Gruppe, die auf "eins" endet (1, 101, 201 …), wird vor "tausend" zu "…ein"
+        // und vor Million/Milliarde zu "…eine" mit dem Substantiv in der Einzahl.
+        $endsInOne = static fn (int $group): bool => $group % 100 === 1;
+        $withoutS = static fn (string $words): string => substr($words, 0, -1);
+
+        // Millionen und Milliarden sind Substantive und stehen als eigene Wörter.
         $parts = [];
 
         // Milliarden
         if ($number >= 1_000_000_000) {
             $billions = (int) ($number / 1_000_000_000);
-            $parts[] = ($billions === 1 ? 'eine Milliarde' : $convertBelow1000($billions) . ' Milliarden');
+            $parts[] = $endsInOne($billions)
+                ? $withoutS($convertBelow1000($billions)) . 'e Milliarde'
+                : $convertBelow1000($billions) . ' Milliarden';
             $number %= 1_000_000_000;
         }
 
         // Millionen
         if ($number >= 1_000_000) {
             $millions = (int) ($number / 1_000_000);
-            $parts[] = ($millions === 1 ? 'eine Million' : $convertBelow1000($millions) . ' Millionen');
+            $parts[] = $endsInOne($millions)
+                ? $withoutS($convertBelow1000($millions)) . 'e Million'
+                : $convertBelow1000($millions) . ' Millionen';
             $number %= 1_000_000;
         }
 
-        // Tausend
+        // Tausender und Rest bilden ein Wort.
+        $below = '';
         if ($number >= 1000) {
             $thousands = (int) ($number / 1000);
-            $parts[] = ($thousands === 1 ? 'ein' : $convertBelow1000($thousands)) . 'tausend';
+            $words = $convertBelow1000($thousands);
+            $below .= ($endsInOne($thousands) ? $withoutS($words) : $words) . 'tausend';
             $number %= 1000;
         }
-
-        // Rest unter 1000
         if ($number > 0) {
-            $parts[] = $convertBelow1000($number);
+            $below .= $convertBelow1000($number);
+        }
+        if ($below !== '') {
+            $parts[] = $below;
         }
 
-        $result = implode('', $parts);
+        $result = implode(' ', $parts);
         $result = ($isNegative ? 'minus ' : '') . $result;
 
         return $capitalize ? ucfirst($result) : $result;
