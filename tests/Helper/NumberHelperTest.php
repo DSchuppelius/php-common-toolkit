@@ -141,6 +141,7 @@ final class NumberHelperTest extends TestCase {
         $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('n/a'));
         $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('12abc'));
         $this->assertNull(NumberHelper::normalizeDecimalStringOrNull(''));
+        $this->assertNull(NumberHelper::normalizeDecimalStringOrNull(null));
         $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('   '));
         $this->assertNull(NumberHelper::normalizeDecimalStringOrNull('-'));
 

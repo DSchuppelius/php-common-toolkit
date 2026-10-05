@@ -327,13 +327,16 @@ class NumberHelper {
      * Leistungsverzeichnis oder eine Menge in einem Katalog.
      *
      * Beispiele: "1.234,56" -> "1234.56", "" -> null, "abc" -> null,
-     * "n/a" -> null, "0" -> "0" (echte Null).
+     * "n/a" -> null, "0" -> "0" (echte Null), null -> null.
      *
-     * @param string $value Der zu normalisierende Wert.
+     * @param string|null $value Der zu normalisierende Wert; null (Feld fehlt) bleibt null.
      * @param CountryCode|null $country Optionales Land für länder-spezifische Erkennung.
      * @return numeric-string|null Kanonischer Punkt-Dezimal-String oder null.
      */
-    public static function normalizeDecimalStringOrNull(string $value, ?CountryCode $country = null): ?string {
+    public static function normalizeDecimalStringOrNull(?string $value, ?CountryCode $country = null): ?string {
+        if ($value === null) {
+            return null;
+        }
         $value = trim($value);
         if ($value === '') {
             return null;
