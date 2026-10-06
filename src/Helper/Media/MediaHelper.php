@@ -34,6 +34,16 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     /** Invariante FFmpeg-Flags für Konvertierungen. */
     private const FFMPEG_BASE_FLAGS = ['-hide_banner', '-loglevel', 'error'];
 
+    /** FFmpeg-Option, die die Protokolle einer Eingabe begrenzt. */
+    private const FFMPEG_PROTOCOL_OPTION = '-protocol_whitelist';
+
+    /**
+     * Eingabe-Optionen (vor -i): nur lokale Dateien. Eine praeparierte Eingabe
+     * (Playlist, Container mit Verweisen) kann damit weder Netz- noch
+     * Fremdprotokolle (http, tcp, concat, subfile, crypto, data, ...) oeffnen.
+     */
+    private const FFMPEG_INPUT_FLAGS = [self::FFMPEG_PROTOCOL_OPTION, 'file,pipe'];
+
     /**
      * Whisper-Ausgabeformate, die genau eine Datei erzeugen.
      *
@@ -60,9 +70,13 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     /**
      * Konvertiert eine Mediendatei mit FFmpeg.
      *
-     * Baut `ffmpeg -hide_banner -loglevel error -i <input> [-vn] <codecArgs…> <output>`.
+     * Baut `ffmpeg -hide_banner -loglevel error -protocol_whitelist file,pipe -i <input> [-vn] <codecArgs...> <output>`.
      * Die Codec-Argumente (z.B. ['-c:a','libmp3lame','-q:a','2'] bzw. ['-c:v','libx264',…])
      * werden einzeln escaped; der Aufrufer ist für deren inhaltliche Gültigkeit zuständig.
+     *
+     * Die Eingabe ist eine lokale Datei: FFmpeg oeffnet fuer sie nur die Protokolle
+     * file und pipe. Eine Netzadresse als $input wird damit abgelehnt, ebenso Verweise
+     * auf Netz- oder Fremdprotokolle im Inhalt der Datei.
      *
      * @param string[] $codecArgs Codec-/Filter-Argumente in der Reihenfolge für FFmpeg
      * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr)
@@ -78,7 +92,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
             return self::logErrorAndReturn(false, 'FFmpeg ist nicht verfügbar (media_executables.json).');
         }
 
-        $argv = [$path, ...self::FFMPEG_BASE_FLAGS, '-i', $input];
+        $argv = [$path, ...self::FFMPEG_BASE_FLAGS, ...self::FFMPEG_INPUT_FLAGS, '-i', $input];
         if ($stripVideo) {
             $argv[] = '-vn';
         }
@@ -108,6 +122,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         if ($argv === null) {
             return null;
         }
+        $argv = self::withInputProtocolLimit($argv);
 
         $output = [];
         $returnCode = 0;
@@ -119,6 +134,29 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         }
 
         return implode("\n", $output);
+    }
+
+    /**
+     * Setzt die Protokollgrenze der Eingabe durch: Traegt ein konfiguriertes
+     * Kommando (z. B. aus einer ueberschreibenden Konfiguration) keine eigene
+     * `-protocol_whitelist`, kommt die Vorgabe vor das erste `-i`.
+     *
+     * @param list<string> $argv
+     * @return list<string>
+     */
+    private static function withInputProtocolLimit(array $argv): array {
+        if (in_array(self::FFMPEG_PROTOCOL_OPTION, $argv, true)) {
+            return $argv;
+        }
+
+        $input = array_search('-i', $argv, true);
+        if (!is_int($input)) {
+            return $argv;
+        }
+
+        array_splice($argv, $input, 0, self::FFMPEG_INPUT_FLAGS);
+
+        return $argv;
     }
 
     /**

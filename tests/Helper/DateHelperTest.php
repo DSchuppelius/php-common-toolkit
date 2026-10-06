@@ -420,10 +420,11 @@ class DateHelperTest extends BaseTestCase {
     }
 
     public function test_detect_date_time_format_is_stable_across_repeated_calls(): void {
-        $this->assertSame('d.m.Y', DateHelper::detectDateTimeFormat('07.03.2026'));
-        $this->assertSame('d.m.Y', DateHelper::detectDateTimeFormat('07.03.2026'));
-        $this->assertNull(DateHelper::detectDateTimeFormat('07.03.2026x'));
-        $this->assertNull(DateHelper::detectDateTimeFormat('07.03.2026x'));
+        // Zweiter Durchlauf: dieselben Werte kommen aus dem Format-Cache.
+        foreach ([1, 2] as $run) {
+            $this->assertSame('d.m.Y', DateHelper::detectDateTimeFormat('07.03.2026'), "Durchlauf $run");
+            $this->assertNull(DateHelper::detectDateTimeFormat('07.03.2026x'), "Durchlauf $run");
+        }
         $this->assertSame('m/d/Y', DateHelper::detectDateTimeFormat('03/07/2026', CountryCode::UnitedStatesOfAmerica));
         $this->assertSame('d/m/Y', DateHelper::detectDateTimeFormat('03/07/2026', CountryCode::Germany));
     }

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Gehaertete Registry-Eintraege fuer LibreOffice-Headless (php-common-toolkit).
+
+  Der OfficeHelper wandelt Dateien, die der Aufrufer liefert - im Zweifel
+  hochgeladene, also nicht vertrauenswuerdige Dokumente. Er legt diese
+  Eintraege in jedes Profil, mit dem ein Aufruf startet; ohne die Datei startet
+  er LibreOffice nicht. Die Reihenfolge ist die der Schutzschichten:
+
+  1. Verknuepfte Inhalte (Bilder, Abschnitte, Tabellen, OLE) aus Dokumenten
+     ausserhalb vertrauenswuerdiger Orte werden nicht geladen, und es gibt
+     keine vertrauenswuerdigen Orte. Das ist der Riegel gegen das Lesen
+     lokaler Dateien und gegen ausgehende Abrufe (file:, http:, https:).
+  2. Verknuepfungen werden beim Laden nie aktualisiert (Writer und Calc),
+     Formeln fremder Dateien nie neu berechnet, DDE/OLE bleibt aus.
+  3. Makros sind abgeschaltet (alle Sprachen), hoechste Sicherheitsstufe.
+  4. Die Inhaltsanbieter fuer Netzadressen (WebDAV/http/https, CMIS, GIO)
+     sind aus dem Profil entfernt: selbst ein Abruf an Schicht 1 vorbei
+     faende keinen Anbieter. Fehlt ein Knoten in einer LibreOffice-Version
+     (GIO gibt es nur mit libreoffice-gnome), bleibt der Eintrag wirkungslos.
+  5. Kein Update-Abruf, kein Absturzbericht.
+
+  Was sich so NICHT abstellen laesst (Netzwerk-Egress des Prozesses an sich),
+  gehoert in den Betrieb: Egress des ausfuehrenden Benutzers sperren.
+
+  Der Helper haengt genau die Eintraege dieser Datei (je einer pro Zeile) an
+  die Registry-Datei des Profils an; Kommentare uebernimmt er nicht.
+-->
+<oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="BlockUntrustedRefererLinks" oor:op="fuse"><value>true</value></prop></item>
+<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="SecureURL" oor:op="fuse"><value/></prop></item>
+<item oor:path="/org.openoffice.Office.Writer/Content/Update"><prop oor:name="Link" oor:op="fuse"><value>0</value></prop></item>
+<item oor:path="/org.openoffice.Office.Calc/Content/Update"><prop oor:name="Link" oor:op="fuse"><value>1</value></prop></item>
+<item oor:path="/org.openoffice.Office.Calc/Formula/Load"><prop oor:name="ODFRecalcMode" oor:op="fuse"><value>1</value></prop></item>
+<item oor:path="/org.openoffice.Office.Calc/Formula/Load"><prop oor:name="OOXMLRecalcMode" oor:op="fuse"><value>1</value></prop></item>
+<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="DisableActiveContent" oor:op="fuse"><value>true</value></prop></item>
+<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="DisableOLEAutomation" oor:op="fuse"><value>true</value></prop></item>
+<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="DisableMacrosExecution" oor:op="fuse"><value>true</value></prop></item>
+<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item>
+<item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="DisablePythonRuntime" oor:op="fuse"><value>true</value></prop></item>
+<item oor:path="/org.openoffice.ucb.Configuration/ContentProviders/Local/SecondaryKeys/Office/ProviderData"><node oor:name="Provider3" oor:op="remove"/></item>
+<item oor:path="/org.openoffice.ucb.Configuration/ContentProviders/Local/SecondaryKeys/Office/ProviderData"><node oor:name="Provider4" oor:op="remove"/></item>
+<item oor:path="/org.openoffice.ucb.Configuration/ContentProviders/Local/SecondaryKeys/Office/ProviderData"><node oor:name="Provider12" oor:op="remove"/></item>
+<item oor:path="/org.openoffice.ucb.Configuration/ContentProviders/Local/SecondaryKeys/Office/ProviderData"><node oor:name="Provider43" oor:op="remove"/></item>
+<item oor:path="/org.openoffice.ucb.Configuration/ContentProviders/Local/SecondaryKeys/Office/ProviderData"><node oor:name="Provider999" oor:op="remove"/></item>
+<item oor:path="/org.openoffice.Office.Update/Update"><prop oor:name="Enabled" oor:op="fuse"><value>false</value></prop></item>
+<item oor:path="/org.openoffice.Office.Common/Misc"><prop oor:name="CrashReport" oor:op="fuse"><value>false</value></prop></item>
+</oor:items>

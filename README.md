@@ -465,6 +465,93 @@ Das Toolkit nutzt JSON-Konfigurationsdateien für externe Tools. Die Konfigurati
 
 ---
 
+## Externe Programme und nicht vertrauenswürdige Dateien
+
+`MediaHelper`, `OfficeHelper`, `ImageCropHelper` und `TifFile` reichen Dateien des Aufrufers an FFmpeg,
+LibreOffice und ImageMagick weiter. Diese Programme folgen von sich aus Verweisen im Dateiinhalt. Stammt die
+Datei von Dritten (Upload), kann sie den Rechner so eine eigene Datei lesen oder eine ausgehende Anfrage
+stellen lassen. Die Helper begrenzen das wie folgt:
+
+### FFmpeg (`MediaHelper`)
+
+`convert()`, `getAudioInfo()` und `getVideoInfo()` starten FFmpeg mit `-protocol_whitelist file,pipe` vor `-i`.
+Die Eingabe ist damit eine lokale Datei: eine präparierte Playlist oder ein Container mit Verweisen öffnet weder
+Netz- noch Fremdprotokolle (http, tcp, concat, subfile, crypto, data …), und eine Netzadresse als `$input` wird
+abgelehnt. Wer `ffmpeg-info` in einer eigenen Konfiguration überschreibt, bekommt die Grenze trotzdem (eine
+eigene `-protocol_whitelist` bleibt stehen).
+
+`transcribeWhisper()` reicht die Datei an Whisper weiter; Whisper startet sein eigenes FFmpeg ohne diese Grenze.
+Fremde Dateien deshalb vorher mit `MediaHelper::convert()` in WAV wandeln und die WAV-Datei transkribieren.
+
+### LibreOffice (`OfficeHelper`)
+
+Jeder Aufruf startet mit einem eigenen Profil, das die Einträge aus `config/libreoffice/registrymodifications.xcu`
+trägt, und mit `--norestore --nolockcheck --nodefault`:
+
+- Verknüpfte Inhalte (Bilder, Abschnitte, Tabellen, OLE) aus dem Dokument werden nicht geladen, es gibt keine
+  vertrauenswürdigen Orte, Verknüpfungen werden nie aktualisiert.
+- Makros sind abgeschaltet, die Inhaltsanbieter für Netzadressen (http/https/WebDAV, CMIS, GIO) entfernt.
+
+Folge für die Ausgabe: **verknüpfte** Inhalte fehlen, eingebettete bleiben. Ohne die mitgelieferte Datei startet
+kein Aufruf (`convert()` liefert `false`). Den Netzwerk-Egress des Prozesses selbst kann ein Profil nicht
+sperren — das gehört in den Betrieb (z. B. systemd `IPAddressDeny=`).
+
+### ImageMagick (`ImageCropHelper`, `TifFile`)
+
+ImageMagick wählt den Coder aus Inhalt und Endung der Datei. Eine Datei mit Bild-Endung kann so als Zeichen-,
+Skript- oder Dokumentformat gelesen werden (SVG/MVG mit Verweisen auf andere Dateien, PostScript über
+Ghostscript). Zwei Maßnahmen gehören zusammen:
+
+**1. Coder festnageln.** Die `crop*`-Methoden und `getImageDimensions()` nehmen als letzten Parameter den Coder
+der Eingabe (`"png"` oder `"png:"`); ImageMagick liest die Datei dann ausschließlich als dieses Format. Der
+Coder kommt aus dem **geprüften Typ** der Datei, nicht aus ihrem Namen:
+
+```php
+use CommonToolkit\Helper\FileSystem\File;
+use CommonToolkit\Helper\FileSystem\FileTypes\ImageCropHelper;
+
+$coder = match (File::mimeType($upload)) {
+    'image/png' => 'png',
+    'image/jpeg' => 'jpeg',
+    'image/gif' => 'gif',
+    'image/webp' => 'webp',
+    'image/tiff' => 'tiff',
+    default => null,
+};
+if ($coder === null) {
+    throw new RuntimeException('Kein unterstütztes Rasterbild');
+}
+
+ImageCropHelper::cropUpperHalf($upload, $target, $coder);
+```
+
+Ohne den Parameter bleibt das Verhalten wie bisher (ImageMagick wählt selbst) — das ist nur für Dateien aus
+eigener Quelle gedacht. `TifFile::repair()` setzt den Coder selbst (`jpeg:` bzw. `tiff:`), weil die Methode den
+MIME-Typ ohnehin prüft.
+
+**2. Restriktive `policy.xml`.** Der Coder schützt nur die Eingabe selbst. Was ImageMagick darüber hinaus darf
+(Fremdprogramme starten, Netzadressen abrufen, Dateien per `@datei` oder `text:` lesen), regelt die Policy.
+Eine eigene Datei in einem eigenen Ordner ablegen und den Ordner vor dem Aufruf über `MAGICK_CONFIGURE_PATH`
+bekannt machen — die Helper starten ImageMagick über die Shell, die Umgebung des PHP-Prozesses gilt also:
+
+```xml
+<policymap>
+  <policy domain="path" rights="none" pattern="@*"/>
+  <policy domain="delegate" rights="none" pattern="*"/>
+  <policy domain="coder" rights="none" pattern="{URL,HTTP,HTTPS,FTP,FILE,EPHEMERAL,MSL,SCRIPT,TEXT,LABEL,CAPTION,PANGO}"/>
+</policymap>
+```
+
+```php
+putenv('MAGICK_CONFIGURE_PATH=/pfad/zum/ordner/mit/policy.xml');
+ImageCropHelper::cropUpperHalf($upload, $target, $coder);
+```
+
+ImageMagick liest diese Datei zusätzlich zur `policy.xml` des Systems; gibt die System-Policy einen dieser Coder
+ausdrücklich frei, gewinnt sie. Prüfen: `MAGICK_CONFIGURE_PATH=/pfad/zum/ordner convert -list policy`.
+
+---
+
 ## License
 
 This project is licensed under the **MIT License**.
@@ -473,6 +560,20 @@ This project is licensed under the **MIT License**.
 📧 <info@schuppelius.org>
 
 ## Versions
+
+### 2.6 — Externe Programme gehärtet (FFmpeg, LibreOffice, ImageMagick)
+
+- `MediaHelper`: FFmpeg öffnet für die Eingabe nur noch lokale Dateien (`-protocol_whitelist file,pipe`).
+  Eine Netzadresse als Eingabe von `convert()` wird abgelehnt.
+- `OfficeHelper`: jeder Aufruf läuft mit einem gehärteten Profil (`config/libreoffice/registrymodifications.xcu`)
+  und `--norestore --nolockcheck --nodefault`. **Verknüpfte** Inhalte eines Dokuments (Bilder, Abschnitte,
+  Tabellen) werden nicht mehr geladen, Makros nicht ausgeführt; eingebettete Inhalte bleiben. Die Profilvorlage
+  liegt jetzt unter `<tmp>/commontoolkit-lo-template-<uid>-<fingerabdruck>` — das alte Verzeichnis ohne
+  Fingerabdruck wird nicht mehr benutzt und kann gelöscht werden.
+- `ImageCropHelper`: optionaler letzter Parameter `$coder` in den `crop*`-Methoden und `getImageDimensions()`;
+  ohne ihn unverändert. `TifFile::repair()` liest die Eingabe mit dem Coder ihres geprüften MIME-Typs.
+- Signaturen bleiben kompatibel. Einzelheiten und die empfohlene ImageMagick-Policy stehen unter
+  „Externe Programme und nicht vertrauenswürdige Dateien“.
 
 ### 2.0 — `Money::of()` ist streng
 
@@ -490,4 +591,4 @@ Migration: Aufrufer, die leere oder fremde Strings an `Money::of()` geben,
 auf `Money::ofNullable()` umstellen oder den Fall vorher behandeln.
 
 
-Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.0). There is no separate changelog file — the tags and the commit history are the record.
+Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.6.0). There is no separate changelog file — the tags and the commit history are the record.

@@ -23,8 +23,19 @@ class TifFile extends ConfiguredHelperAbstract {
 
     private const FILE_EXTENSION_PATTERN = "/\.tif{1,2}$/i";
 
+    /** ImageMagick-Coder einer Eingabe, deren MIME-Typ image/jpeg ist. */
+    private const CODER_JPEG = 'jpeg:';
+
+    /** ImageMagick-Coder einer Eingabe, deren MIME-Typ image/tiff ist. */
+    private const CODER_TIFF = 'tiff:';
+
     /**
      * Repariert eine TIFF-Datei, indem sie in ein JPEG-Bild konvertiert wird.
+     *
+     * ImageMagick liest die Eingabe mit dem Coder des zuvor geprueften MIME-Typs
+     * ("jpeg:<datei>" bzw. "tiff:<datei>") und waehlt ihn nicht selbst aus Inhalt
+     * und Endung - eine Datei, die sich nur als TIFF/JPEG ausgibt, wird so nicht
+     * als anderes Format (Zeichen-, Skript- oder Dokumentsprache) gelesen.
      *
      * @param string $file Der Pfad zur TIFF-Datei.
      * @param bool $forceRepair Gibt an, ob die Reparatur erzwungen werden soll.
@@ -38,7 +49,8 @@ class TifFile extends ConfiguredHelperAbstract {
         if ($mimeType === 'image/jpeg' && preg_match(self::FILE_EXTENSION_PATTERN, $file)) {
             $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".jpg", $file) ?? $file;
 
-            $command = self::getConfiguredCommand("tiffconvert", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
+            // Das Kommando liest [OUTPUT] (die umbenannte Quelle) und schreibt [INPUT] (den urspruenglichen Namen).
+            $command = self::getConfiguredCommand("tiffconvert", ["[OUTPUT]" => self::CODER_JPEG . $newFilename, "[INPUT]" => $file]);
             if (empty($command)) {
                 self::logErrorAndThrow(Exception::class, "ImageMagick wurde nicht konfiguriert oder ist nicht installiert.");
             }
@@ -64,7 +76,7 @@ class TifFile extends ConfiguredHelperAbstract {
                 self::logNotice("Erzwinge Reparatur der TIFF-Datei: $file");
                 $newFilename = preg_replace(self::FILE_EXTENSION_PATTERN, ".original.tif", $file) ?? $file;
 
-                $command = self::getConfiguredCommand("tiffconvert-monochrome", ["[OUTPUT]" => $newFilename, "[INPUT]" => $file]);
+                $command = self::getConfiguredCommand("tiffconvert-monochrome", ["[OUTPUT]" => self::CODER_TIFF . $newFilename, "[INPUT]" => $file]);
                 if (empty($command)) {
                     self::logErrorAndThrow(Exception::class, "ImageMagick wurde nicht konfiguriert oder ist nicht installiert.");
                 }

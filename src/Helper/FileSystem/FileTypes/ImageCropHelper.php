@@ -24,12 +24,24 @@ use CommonToolkit\Helper\Shell;
  *
  * Koordinatensystem: Ursprung oben links (ImageMagick-Standard).
  * Geometrie-Format: WxH+X+Y (Width x Height + X-Offset + Y-Offset)
+ *
+ * Dateien aus nicht vertrauenswuerdiger Quelle: Ohne Vorgabe waehlt ImageMagick
+ * den Coder aus Inhalt und Endung der Datei - eine Datei mit Bild-Endung kann so
+ * als Zeichen-, Skript- oder Dokumentformat gelesen werden. Der optionale
+ * Parameter $coder (z. B. "png") nagelt das Format fest: die Eingabe geht als
+ * "png:<pfad>" an ImageMagick und wird ausschliesslich als dieses Format gelesen.
+ * Der Aufrufer bestimmt den Coder aus dem geprueften Typ der Datei (nicht aus
+ * ihrem Namen) und setzt zusaetzlich eine restriktive policy.xml
+ * (MAGICK_CONFIGURE_PATH), siehe README.
  */
 class ImageCropHelper extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../../../config/image_executables.json';
 
     /** Unterstützte Bildformate für Crop-Operationen */
     private const SUPPORTED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tif', 'tiff', 'webp'];
+
+    /** Schlichter ImageMagick-Formatname ("png", "JPEG", "tiff64"); alles andere ist kein Coder. */
+    private const CODER_PATTERN = '/^[A-Za-z0-9]{1,16}$/';
 
     /**
      * Schneidet ein Bild auf einen definierten Bereich zu.
@@ -42,6 +54,9 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
      * @param int $y Obere Kante in Pixeln
      * @param int $width Breite in Pixeln
      * @param int $height Höhe in Pixeln
+     * @param string|null $coder ImageMagick-Coder der Eingabe ("png" oder "png:"); null = ImageMagick
+     *                           waehlt den Coder selbst (bisheriges Verhalten). Ein ungueltiger Coder
+     *                           fuehrt zu false, es wird nichts ausgefuehrt.
      * @return bool true bei Erfolg
      */
     public static function cropToBox(
@@ -50,10 +65,16 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
         int $x,
         int $y,
         int $width,
-        int $height
+        int $height,
+        ?string $coder = null
     ): bool {
         if (!File::exists($inputPath)) {
             self::logError('Bilddatei nicht gefunden', ['path' => $inputPath]);
+            return false;
+        }
+
+        $input = self::inputArgument($inputPath, $coder);
+        if ($input === null) {
             return false;
         }
 
@@ -65,7 +86,7 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
         $geometry = sprintf('%dx%d+%d+%d', $width, $height, $x, $y);
 
         $command = self::getConfiguredCommand('image-crop', [
-            '[INPUT]' => $inputPath,
+            '[INPUT]' => $input,
             '[GEOMETRY]' => $geometry,
             '[OUTPUT]' => $outputPath,
         ]);
@@ -101,16 +122,20 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
 
     /**
      * Schneidet die obere Hälfte eines Bildes aus.
+     *
+     * @param string|null $coder ImageMagick-Coder der Eingabe, siehe {@see cropToBox()}
      */
-    public static function cropUpperHalf(string $inputPath, string $outputPath): bool {
-        return self::cropUpperPercent($inputPath, $outputPath, 50.0);
+    public static function cropUpperHalf(string $inputPath, string $outputPath, ?string $coder = null): bool {
+        return self::cropUpperPercent($inputPath, $outputPath, 50.0, $coder);
     }
 
     /**
      * Schneidet die untere Hälfte eines Bildes aus.
+     *
+     * @param string|null $coder ImageMagick-Coder der Eingabe, siehe {@see cropToBox()}
      */
-    public static function cropLowerHalf(string $inputPath, string $outputPath): bool {
-        return self::cropLowerPercent($inputPath, $outputPath, 50.0);
+    public static function cropLowerHalf(string $inputPath, string $outputPath, ?string $coder = null): bool {
+        return self::cropLowerPercent($inputPath, $outputPath, 50.0, $coder);
     }
 
     /**
@@ -119,21 +144,23 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
      * @param string $inputPath Pfad zur Quell-Bilddatei
      * @param string $outputPath Pfad zur Ziel-Bilddatei
      * @param float $percent Prozent der Bildhöhe von oben (z.B. 50.0 = obere Hälfte)
+     * @param string|null $coder ImageMagick-Coder der Eingabe, siehe {@see cropToBox()}
      * @return bool true bei Erfolg
      */
     public static function cropUpperPercent(
         string $inputPath,
         string $outputPath,
-        float $percent
+        float $percent,
+        ?string $coder = null
     ): bool {
-        $dimensions = self::getImageDimensions($inputPath);
+        $dimensions = self::getImageDimensions($inputPath, $coder);
         if ($dimensions === null) {
             return false;
         }
 
         $cropHeight = (int) round($dimensions['height'] * ($percent / 100));
 
-        return self::cropToBox($inputPath, $outputPath, 0, 0, $dimensions['width'], $cropHeight);
+        return self::cropToBox($inputPath, $outputPath, 0, 0, $dimensions['width'], $cropHeight, $coder);
     }
 
     /**
@@ -142,14 +169,16 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
      * @param string $inputPath Pfad zur Quell-Bilddatei
      * @param string $outputPath Pfad zur Ziel-Bilddatei
      * @param float $percent Prozent der Bildhöhe von unten (z.B. 50.0 = untere Hälfte)
+     * @param string|null $coder ImageMagick-Coder der Eingabe, siehe {@see cropToBox()}
      * @return bool true bei Erfolg
      */
     public static function cropLowerPercent(
         string $inputPath,
         string $outputPath,
-        float $percent
+        float $percent,
+        ?string $coder = null
     ): bool {
-        $dimensions = self::getImageDimensions($inputPath);
+        $dimensions = self::getImageDimensions($inputPath, $coder);
         if ($dimensions === null) {
             return false;
         }
@@ -157,7 +186,7 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
         $cropHeight = (int) round($dimensions['height'] * ($percent / 100));
         $yOffset = $dimensions['height'] - $cropHeight;
 
-        return self::cropToBox($inputPath, $outputPath, 0, $yOffset, $dimensions['width'], $cropHeight);
+        return self::cropToBox($inputPath, $outputPath, 0, $yOffset, $dimensions['width'], $cropHeight, $coder);
     }
 
     /**
@@ -166,11 +195,18 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
      * Nutzt PHP's getimagesize() für Standard-Formate.
      * Fällt auf ImageMagick identify zurück wenn nötig.
      *
+     * @param string|null $coder ImageMagick-Coder der Eingabe fuer den identify-Rueckfall,
+     *                           siehe {@see cropToBox()}; getimagesize() startet kein ImageMagick.
      * @return array{width: int, height: int}|null null bei Fehler
      */
-    public static function getImageDimensions(string $inputPath): ?array {
+    public static function getImageDimensions(string $inputPath, ?string $coder = null): ?array {
         if (!File::exists($inputPath)) {
             self::logError('Bilddatei nicht gefunden', ['path' => $inputPath]);
+            return null;
+        }
+
+        $input = self::inputArgument($inputPath, $coder);
+        if ($input === null) {
             return null;
         }
 
@@ -186,7 +222,7 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
         // Fallback: ImageMagick identify
         $command = self::getConfiguredCommand('image-identify', [
             '[FORMAT]' => '%w %h',
-            '[INPUT]' => $inputPath,
+            '[INPUT]' => $input,
         ]);
 
         if ($command !== null) {
@@ -205,6 +241,29 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
 
         self::logError('Konnte Bilddimensionen nicht ermitteln', ['path' => $inputPath]);
         return null;
+    }
+
+    /**
+     * Eingabe-Argument fuer ImageMagick: mit Coder "<coder>:<pfad>" (ImageMagick liest
+     * die Datei dann nur als dieses Format), ohne Coder der Pfad wie uebergeben.
+     *
+     * @return string|null null bei einem Coder, der kein schlichter Formatname ist
+     */
+    private static function inputArgument(string $inputPath, ?string $coder): ?string {
+        if ($coder === null) {
+            return $inputPath;
+        }
+
+        $name = trim($coder);
+        if (str_ends_with($name, ':')) {
+            $name = substr($name, 0, -1);
+        }
+        if (preg_match(self::CODER_PATTERN, $name) !== 1) {
+            self::logError('Ungueltiger ImageMagick-Coder', ['coder' => $coder, 'path' => $inputPath]);
+            return null;
+        }
+
+        return $name . ':' . $inputPath;
     }
 
     /**
