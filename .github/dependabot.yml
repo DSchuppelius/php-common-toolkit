@@ -13,4 +13,17 @@ updates:
       interval: "weekly"
     labels:
       - "submodule"
-    open-pull-requests-limit: 5 
+    open-pull-requests-limit: 5
+
+  # Die Actions in .github/workflows sind per Commit-SHA gepinnt (Befund
+  # S8-07). Dependabot hebt SHA und Versionskommentar gemeinsam an, alle
+  # Actions zusammen in einem PR pro Woche.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns:
+          - "*"
