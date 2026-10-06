@@ -591,4 +591,4 @@ Migration: Aufrufer, die leere oder fremde Strings an `Money::of()` geben,
 auf `Money::ofNullable()` umstellen oder den Fall vorher behandeln.
 
 
-Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.6.0). There is no separate changelog file — the tags and the commit history are the record.
+Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.6.1). There is no separate changelog file — the tags and the commit history are the record.

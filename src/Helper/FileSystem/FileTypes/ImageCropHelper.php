@@ -210,9 +210,12 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
             return null;
         }
 
-        // Standard-Formate: PHP getimagesize() (schnell, kein externes Tool)
+        // Standard-Formate: PHP getimagesize() (schnell, kein externes Tool).
+        // getimagesize() kennt keinen Coder und erkennt je nach PHP-Version auch
+        // Vektorformate (SVG ab 8.5) - mit Coder zaehlt das Ergebnis nur, wenn
+        // das erkannte Format zum Coder passt.
         $size = @getimagesize($inputPath);
-        if ($size !== false) {
+        if ($size !== false && ($coder === null || self::imageTypeMatchesCoder((int) $size[2], $coder))) {
             return [
                 'width' => $size[0],
                 'height' => $size[1],
@@ -264,6 +267,25 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
         }
 
         return $name . ':' . $inputPath;
+    }
+
+    /**
+     * Passt der von getimagesize() erkannte Bildtyp zum Coder? Namensvarianten
+     * (jpg/jpeg, tif/tiff) zaehlen als dasselbe Format.
+     */
+    private static function imageTypeMatchesCoder(int $imageType, string $coder): bool {
+        $normalize = static fn (string $name): string => match ($name) {
+            'jpg', 'jpe' => 'jpeg',
+            'tif' => 'tiff',
+            default => $name,
+        };
+
+        $detected = image_type_to_extension($imageType, false);
+        if ($detected === false) {
+            return false;
+        }
+
+        return $normalize(strtolower($detected)) === $normalize(strtolower(rtrim(trim($coder), ':')));
     }
 
     /**
