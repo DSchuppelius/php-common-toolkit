@@ -63,8 +63,8 @@ final class StringHelper extends BaseStringHelper {
 
         $counts = array_fill_keys($candidates, 0);
         foreach ($lines as $line) {
-            foreach ($candidates as $delimiter) {
-                $counts[$delimiter] += substr_count($line, $delimiter);
+            foreach (self::delimiterCountsForLine($line, $candidates) as $delimiter => $count) {
+                $counts[$delimiter] += $count;
             }
         }
 
@@ -76,6 +76,130 @@ final class StringHelper extends BaseStringHelper {
         $threshold = $requirePerLine ? max(1, count($lines)) : 1;
 
         return $counts[$best] >= $threshold ? (string) $best : $default;
+    }
+
+    /**
+     * Erkennt das Spaltentrennzeichen an der GLEICHMÄSSIGEN Spaltenzahl statt an
+     * der Häufigkeit.
+     *
+     * {@see detectDelimiter()} zählt Vorkommen. Das kippt, sobald ein anderes
+     * Kandidatenzeichen im Inhalt häufiger ist als das Trennzeichen — typisch:
+     * ein Semikolon-CSV mit ungequoteten deutschen Beträgen ("1.597,50") enthält
+     * mehr Kommas als Semikolons. Entscheidend ist hier, welcher Kandidat die
+     * meisten Zeilen in dieselbe Spaltenzahl (> 1) zerlegt; gezählt wird über
+     * {@see parseLineToValues()}, also mit Enclosures. Eine Zeile, die unter einem
+     * Kandidaten kein gültiges CSV ist, stimmt nicht für ihn.
+     *
+     * @param string   $content     CSV-Inhalt
+     * @param string[] $candidates  Kandidaten; die Reihenfolge entscheidet bei Gleichstand
+     * @param int      $sampleLines Anzahl nicht-leerer Zeilen, die geprüft werden (<=0 = alle)
+     * @param string   $default     Rückgabe ohne Treffer (z. B. einspaltiger Inhalt)
+     * @param string   $enclosure   Enclosure-Zeichen
+     */
+    public static function detectDelimiterByConsistency(
+        string $content,
+        array $candidates = self::DEFAULT_DELIMITERS,
+        int $sampleLines = 50,
+        string $default = ';',
+        string $enclosure = '"'
+    ): string {
+        $sample = [];
+        foreach (preg_split('/\r\n|\r|\n/', $content) ?: [] as $line) {
+            if (trim($line) === '') {
+                continue;
+            }
+            $sample[] = $line;
+            if ($sampleLines > 0 && count($sample) >= $sampleLines) {
+                break;
+            }
+        }
+
+        $best = $default;
+        $bestScore = 0;
+        foreach ($candidates as $candidate) {
+            $candidate = (string) $candidate;
+            $fieldCounts = [];
+            foreach ($sample as $line) {
+                try {
+                    $count = count(self::parseLineToValues($line, $candidate, $enclosure));
+                } catch (RuntimeException) {
+                    continue;
+                }
+                if ($count > 1) {
+                    $fieldCounts[$count] = ($fieldCounts[$count] ?? 0) + 1;
+                }
+            }
+            $score = $fieldCounts === [] ? 0 : max($fieldCounts);
+            if ($score > $bestScore) {
+                $best = $candidate;
+                $bestScore = $score;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Trennzeichen-Vorkommen EINER Zeile je Kandidat, für {@see detectDelimiter()}.
+     *
+     * Gezählt wird außerhalb der Enclosures ({@see countOutsideEnclosure()}).
+     * Ausnahme: zeilenweise umwickelte Exporte, in denen die GANZE Zeile ein
+     * gequotetes Feld ist und das eigentliche CSV darin steht
+     * (`"Datum,""Empfänger"",""Betrag"""`, N26/Penta; SumUp hängt noch ein
+     * `;` an, Stripe-Mischdateien 16 leere Excel-Zellen). Außerhalb steht dort
+     * kein Kandidat — gezählt wird dann wie bis v2.6.1 über die GANZE Zeile samt
+     * angehängter Trennzeichen, sonst kippt die Erkennung auf den Vorgabewert
+     * bzw. bei Mischdateien auf das innere Trennzeichen.
+     *
+     * @param string[] $candidates
+     * @return array<string, int>
+     */
+    private static function delimiterCountsForLine(string $line, array $candidates, string $enclosure = '"'): array {
+        $counts = [];
+        foreach ($candidates as $candidate) {
+            $counts[(string) $candidate] = self::countOutsideEnclosure($line, (string) $candidate, $enclosure);
+        }
+
+        $core = rtrim($line, implode('', array_map('strval', $candidates)) . " \t");
+        if (strlen($core) >= 2 && str_starts_with($core, $enclosure) && str_ends_with($core, $enclosure)) {
+            $outside = 0;
+            foreach ($candidates as $candidate) {
+                $outside += self::countOutsideEnclosure($core, (string) $candidate, $enclosure);
+            }
+            if ($outside === 0) {
+                foreach ($candidates as $candidate) {
+                    $counts[(string) $candidate] = substr_count($line, (string) $candidate);
+                }
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Zählt ein Zeichen nur AUSSERHALB von Enclosures: Ein Komma in "1.234,56"
+     * ist Feldinhalt, kein Trennzeichen. Zeilen mit ungerader Enclosure-Zahl
+     * (ein literales " in einem ungequoteten Feld, z. B. 5" Zoll) werden
+     * schlicht gezählt — ein Umschalten würde dort alles Folgende verschlucken.
+     */
+    private static function countOutsideEnclosure(string $line, string $needle, string $enclosure = '"'): int {
+        if ($needle === '') {
+            return 0;
+        }
+        if ($enclosure === '' || !str_contains($line, $enclosure) || substr_count($line, $enclosure) % 2 !== 0) {
+            return substr_count($line, $needle);
+        }
+
+        $count = 0;
+        foreach (explode($enclosure, $line) as $index => $part) {
+            // Gerade Teile liegen außerhalb, ungerade innerhalb der Enclosures;
+            // ein verdoppeltes "" ergibt einen leeren Teil und kippt nichts.
+            if ($index % 2 === 0) {
+                $count += substr_count($part, $needle);
+            }
+        }
+
+        return $count;
     }
 
     /**
@@ -355,17 +479,81 @@ final class StringHelper extends BaseStringHelper {
      * @return bool                       True, wenn Multiline-Felder erkannt wurden, sonst false
      */
     public static function hasMultilineFields(string $csv, string $delimiter = ',', string $enclosure = '"', bool $allowWithoutQuotes = false): bool {
-        // Prüfe auf Multiline innerhalb von Enclosures durch Zählung statt Regex
-        $escaped = preg_replace('/' . preg_quote($enclosure, '/') . '{2}/', '', $csv) ?? $csv;
-        $quoteCount = substr_count($escaped, $enclosure);
-
-        // ungerade Quote-Anzahl => unvollständig => Multiline
-        if ($quoteCount % 2 !== 0) {
+        if (self::endsInsideQuotedField($csv, $delimiter, $enclosure)) {
             return true;
         }
 
         // Optional: erkenne Multiline auch ohne Quotes (unsicher)
         return $allowWithoutQuotes && str_contains($csv, "\n");
+    }
+
+    /**
+     * Endet der Text innerhalb eines gequoteten Feldes (der Datensatz geht also
+     * in der nächsten physischen Zeile weiter)?
+     *
+     * Ein gequotetes Feld beginnt nur am FELDANFANG: nach Zeilenanfang oder
+     * einem Trennzeichen, Leerraum davor erlaubt. Ein Quote direkt nach Text
+     * ist Inhalt — `Monitor;27"` oder `5" Diskette`. Bis v2.6.1 zählte diese
+     * Prüfung alle Quotes: Ein einzelnes Zoll-Zeichen galt als offenes Feld
+     * und zog die Folgezeilen in denselben Datensatz.
+     *
+     * Als Feldanfang zählt JEDES gängige Trennzeichen ({@see DEFAULT_DELIMITERS}),
+     * nicht nur das übergebene: Formate prüfen in der Erkennung fremde Dateien
+     * mit ihrem festen Trennzeichen. Die alte Zählung war davon unabhängig, und
+     * das bleibt so — `;"Text\nweiter"` ist auch mit "," ein offenes Feld.
+     * Im gequoteten Feld ist "" ein escaptes Quote, ein einzelnes Quote
+     * schließt; was danach folgt, zählt als ungequotet.
+     */
+    private static function endsInsideQuotedField(string $csv, string $delimiter, string $enclosure): bool {
+        if ($enclosure === '' || !str_contains($csv, $enclosure)) {
+            return false;
+        }
+
+        $encLen = strlen($enclosure);
+        $delimLen = strlen($delimiter);
+        $len = strlen($csv);
+        $inQuotes = false;
+        $atFieldStart = true;
+
+        for ($i = 0; $i < $len;) {
+            if ($inQuotes) {
+                if (substr($csv, $i, $encLen) === $enclosure) {
+                    if (substr($csv, $i + $encLen, $encLen) === $enclosure) {
+                        $i += 2 * $encLen; // escaptes Quote
+                        continue;
+                    }
+                    $inQuotes = false;
+                    $i += $encLen;
+                    continue;
+                }
+                $i++;
+                continue;
+            }
+
+            if ($delimLen > 0 && substr($csv, $i, $delimLen) === $delimiter) {
+                $atFieldStart = true;
+                $i += $delimLen;
+                continue;
+            }
+            $char = $csv[$i];
+            if ($char === "\n" || $char === "\r" || in_array($char, self::DEFAULT_DELIMITERS, true)) {
+                $atFieldStart = true;
+                $i++;
+                continue;
+            }
+            if ($atFieldStart && substr($csv, $i, $encLen) === $enclosure) {
+                $inQuotes = true;
+                $atFieldStart = false;
+                $i += $encLen;
+                continue;
+            }
+            if ($char !== ' ' && $char !== "\t") {
+                $atFieldStart = false;
+            }
+            $i++;
+        }
+
+        return $inQuotes;
     }
 
     /**
@@ -422,7 +610,16 @@ final class StringHelper extends BaseStringHelper {
     }
 
     /**
-     * Parst eine CSV-Zeile in Felder.
+     * Zerlegt eine CSV-Zeile in ROHE Felder.
+     *
+     * Die Felder bleiben, wie sie in der Zeile stehen — samt Enclosures und
+     * verdoppelten Quotes ("" bleibt ""), passend zum Round-Trip-Modell von
+     * {@see \CommonToolkit\Entities\CSV\DataField}. Den Inhalt nach RFC 4180
+     * liefert {@see parseLineToValues()} bzw. {@see decodeField()}.
+     *
+     * Leerraum zwischen Trennzeichen und Enclosure ist erlaubt (`a, "b"` und
+     * `"a"  ;b`): Das Feldmodell ignoriert ihn ohnehin ("Whitespace außerhalb
+     * der Quotes"), nur dieser Tokenizer warf bis v2.6.1 an solchen Zeilen.
      *
      * @param string $line          Eingabezeile (z. B. aus einer CSV-Datei)
      * @param string $delimiter     Das Trennzeichen.
@@ -435,7 +632,10 @@ final class StringHelper extends BaseStringHelper {
         $current = '';
         $inQuotes = false;
         $quoteRun = 0;
+        $openedAt = -1;
         $len = strlen($line);
+        // Leerraum außerhalb der Enclosures — ohne das Trennzeichen selbst (Tab-CSV).
+        $outerSpace = str_replace($delimiter, '', " \t");
 
         for ($i = 0; $i < $len; $i++) {
             $char = $line[$i];
@@ -446,9 +646,11 @@ final class StringHelper extends BaseStringHelper {
 
             if ($char === $enclosure) {
                 $quoteRun++;
-                if (!$inQuotes && ($prev === '' || $prev === $delimiter)) {
+                $onlySpaceBefore = $outerSpace !== '' && trim(substr($current, 0, -1), $outerSpace) === '';
+                if (!$inQuotes && ($prev === '' || $prev === $delimiter || $onlySpaceBefore)) {
                     $inQuotes = true;
                     $quoteRun = 1;
+                    $openedAt = $i;
                     continue;
                 }
                 // Ein Zeilenumbruch schließt das Feld nur, wenn danach nichts
@@ -459,7 +661,8 @@ final class StringHelper extends BaseStringHelper {
                 // gilt der Rest dann als unquotiert und die Zeile als ungültig.
                 $closesField = $next === $delimiter
                     || $next === ''
-                    || (($next === "\r" || $next === "\n") && trim(substr($line, $i + 1)) === '');
+                    || (($next === "\r" || $next === "\n") && trim(substr($line, $i + 1)) === '')
+                    || ($inQuotes && self::closesBeforeOuterSpace($line, $i, $openedAt, $delimiter, $enclosure, $outerSpace));
 
                 if ($inQuotes && $closesField) {
                     $inQuotes = false;
@@ -501,6 +704,105 @@ final class StringHelper extends BaseStringHelper {
         }
 
         return $result;
+    }
+
+    /**
+     * Schließt das Enclosure bei $i das Feld, obwohl bis zum Trennzeichen
+     * (bzw. Zeilenende) noch Leerraum folgt (`"a"  ;b`)?
+     *
+     * Nur bei ungerader Quote-Folge seit dem öffnenden Enclosure: Das zweite
+     * Quote eines escapten Paares ("") steht an gerader Stelle und bleibt
+     * Inhalt — `"Er sagte ""Hallo"" , dann"` ist EIN Feld. Doppelt gewrappte
+     * Felder (`""60,00""`) schließen unverändert über das unmittelbar folgende
+     * Trennzeichen.
+     */
+    private static function closesBeforeOuterSpace(string $line, int $i, int $openedAt, string $delimiter, string $enclosure, string $outerSpace): bool {
+        $next = $line[$i + 1] ?? '';
+        if ($outerSpace === '' || $next === '' || !str_contains($outerSpace, $next)) {
+            return false;
+        }
+
+        $rest = ltrim(substr($line, $i + 1), $outerSpace);
+        if ($rest !== '' && !str_starts_with($rest, $delimiter) && trim($rest) !== '') {
+            return false;
+        }
+
+        $run = 0;
+        for ($j = $i; $j > $openedAt && $line[$j] === $enclosure; $j--) {
+            $run++;
+        }
+
+        return $run % 2 === 1;
+    }
+
+    /**
+     * Zerlegt eine CSV-Zeile in die Feld-INHALTE nach RFC 4180: ohne
+     * Enclosures, "" als ", Leerraum außerhalb der Enclosures entfernt.
+     *
+     * Gegenstück zu {@see parseLineToFields()} (rohe Felder) und zu
+     * {@see extractFields()} (Werte des Feldmodells, typisiert und in der
+     * escapten Round-Trip-Form). Gedacht für Aufrufer, die den Text einer Zelle
+     * brauchen — Tabellen-Ausgabe, JSON in einer Zelle, Freitext mit Zitaten.
+     * Die Toleranzen des Tokenizers gelten unverändert (doppelt gewrappte und
+     * gemischt gequotete Felder); was er ablehnt, lehnt auch diese Funktion ab.
+     *
+     * @return list<string>
+     * @throws RuntimeException Wenn die CSV-Zeile ungültig ist.
+     */
+    public static function parseLineToValues(string $line, string $delimiter, string $enclosure = '"'): array {
+        return array_map(
+            static fn (string $field): string => self::decodeField($field, $enclosure),
+            self::parseLineToFields($line, $delimiter, $enclosure)
+        );
+    }
+
+    /**
+     * Inhalt EINES rohen CSV-Feldes (wie {@see parseLineToFields()} es liefert).
+     *
+     * - Ungequotet: unverändert, samt Leerraum (er ist dort Inhalt).
+     * - RFC-4180-gequotet (`"a ""b"" c"`, `"""abc"""`): äußeres Enclosure-Paar
+     *   ab, jedes "" im Inneren wird zu ". Erkennbar daran, dass im Inneren
+     *   nur verdoppelte Enclosures stehen.
+     * - Mehrfach gewrappt (`""60,00""`, `"""Muster"" GmbH"` mit ungleichen
+     *   Läufen): wie das Feldmodell — die gemeinsame Lauflänge ab, der
+     *   Überschuss einer Seite ist Inhalt, verbleibende "" werden zu ".
+     * - Nur Enclosures (`""`, `""""`): leer, wie im Feldmodell; `""""` ist bei
+     *   doppelt gewrappten Exporten das leere Feld, nicht ein einzelnes ".
+     */
+    public static function decodeField(string $raw, string $enclosure = '"'): string {
+        if ($enclosure === '') {
+            return $raw;
+        }
+
+        $trimmed = trim($raw, " \t\r\n");
+        $encLen = strlen($enclosure);
+        if (strlen($trimmed) < 2 * $encLen || !str_starts_with($trimmed, $enclosure) || !str_ends_with($trimmed, $enclosure)) {
+            return $raw;
+        }
+
+        $doubled = $enclosure . $enclosure;
+        $stripped = str_replace($enclosure, '', $trimmed);
+        if ($stripped === '') {
+            return '';
+        }
+
+        $inner = substr($trimmed, $encLen, -$encLen);
+        if (str_replace($doubled, '', $inner) === str_replace($enclosure, '', $inner)) {
+            return str_replace($doubled, $enclosure, $inner);
+        }
+
+        $startRun = 0;
+        while (substr($trimmed, $startRun * $encLen, $encLen) === $enclosure) {
+            $startRun++;
+        }
+        $endRun = 0;
+        while (substr($trimmed, -($endRun + 1) * $encLen, $encLen) === $enclosure) {
+            $endRun++;
+        }
+        $common = min($startRun, $endRun);
+        $inner = substr($trimmed, $common * $encLen, strlen($trimmed) - 2 * $common * $encLen);
+
+        return str_replace($doubled, $enclosure, $inner);
     }
 
     /**
