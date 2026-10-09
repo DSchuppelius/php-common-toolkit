@@ -8,6 +8,7 @@
             "package": "imagemagick",
             "arguments": [
                 "[INPUT]",
+                "-auto-orient",
                 "-crop",
                 "[GEOMETRY]",
                 "+repage",

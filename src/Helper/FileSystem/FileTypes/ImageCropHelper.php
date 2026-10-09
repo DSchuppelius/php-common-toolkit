@@ -25,6 +25,13 @@ use CommonToolkit\Helper\Shell;
  * Koordinatensystem: Ursprung oben links (ImageMagick-Standard).
  * Geometrie-Format: WxH+X+Y (Width x Height + X-Offset + Y-Offset)
  *
+ * Ausrichtung: Gezaehlt wird im Bild, wie es angezeigt wird. Ein hochkant
+ * gehaltenes Handyfoto liegt quer in der Datei und traegt die Drehung nur als
+ * EXIF-Orientierung; der Zuschnitt richtet es vorher auf (-auto-orient), und
+ * getImageDimensions() meldet die Masse in dieser Ausrichtung. "Obere Haelfte"
+ * ist damit die obere Haelfte, die der Betrachter sieht. Das Ergebnis traegt
+ * keine Drehung mehr.
+ *
  * Dateien aus nicht vertrauenswuerdiger Quelle: Ohne Vorgabe waehlt ImageMagick
  * den Coder aus Inhalt und Endung der Datei - eine Datei mit Bild-Endung kann so
  * als Zeichen-, Skript- oder Dokumentformat gelesen werden. Der optionale
@@ -43,10 +50,26 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
     /** Schlichter ImageMagick-Formatname ("png", "JPEG", "tiff64"); alles andere ist kein Coder. */
     private const CODER_PATTERN = '/^[A-Za-z0-9]{1,16}$/';
 
+    /** EXIF-Orientierungen, bei denen das Bild um 90 Grad gedreht angezeigt wird */
+    private const TURNED_ORIENTATIONS = [5, 6, 7, 8];
+
+    /** EXIF-Orientierung nach ImageMagick-Namen (%[orientation]) */
+    private const ORIENTATION_NAMES = [
+        'TopLeft' => 1,
+        'TopRight' => 2,
+        'BottomRight' => 3,
+        'BottomLeft' => 4,
+        'LeftTop' => 5,
+        'RightTop' => 6,
+        'RightBottom' => 7,
+        'LeftBottom' => 8,
+    ];
+
     /**
      * Schneidet ein Bild auf einen definierten Bereich zu.
      *
-     * Koordinatenursprung ist oben links (ImageMagick-Standard).
+     * Koordinatenursprung ist oben links (ImageMagick-Standard), im
+     * aufgerichteten Bild (EXIF-Orientierung angewandt, siehe Klassenkommentar).
      *
      * @param string $inputPath Pfad zur Quell-Bilddatei
      * @param string $outputPath Pfad zur Ziel-Bilddatei
@@ -190,7 +213,10 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
     }
 
     /**
-     * Ermittelt die Dimensionen einer Bilddatei.
+     * Ermittelt die Dimensionen einer Bilddatei, wie sie angezeigt wird: Bei
+     * EXIF-Orientierung 5-8 (gedreht um 90 Grad) sind Breite und Hoehe
+     * gegenueber den Rohpixeln getauscht - dieselben Masse, in denen der
+     * Zuschnitt zaehlt.
      *
      * Nutzt PHP's getimagesize() für Standard-Formate.
      * Fällt auf ImageMagick identify zurück wenn nötig.
@@ -216,15 +242,12 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
         // das erkannte Format zum Coder passt.
         $size = @getimagesize($inputPath);
         if ($size !== false && ($coder === null || self::imageTypeMatchesCoder((int) $size[2], $coder))) {
-            return [
-                'width' => $size[0],
-                'height' => $size[1],
-            ];
+            return self::asDisplayed((int) $size[0], (int) $size[1], self::orientation($inputPath, $input, (int) $size[2]));
         }
 
         // Fallback: ImageMagick identify
         $command = self::getConfiguredCommand('image-identify', [
-            '[FORMAT]' => '%w %h',
+            '[FORMAT]' => '%w %h %[orientation]',
             '[INPUT]' => $input,
         ]);
 
@@ -233,17 +256,62 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
             $returnCode = 0;
             if (Shell::executeShellCommand($command . ' 2>/dev/null', $output, $returnCode) && !empty($output)) {
                 $parts = explode(' ', trim($output[0]));
-                if (count($parts) === 2) {
-                    return [
-                        'width' => (int) $parts[0],
-                        'height' => (int) $parts[1],
-                    ];
+                if (count($parts) === 3) {
+                    return self::asDisplayed((int) $parts[0], (int) $parts[1], self::ORIENTATION_NAMES[$parts[2]] ?? 1);
                 }
             }
         }
 
         self::logError('Konnte Bilddimensionen nicht ermitteln', ['path' => $inputPath]);
         return null;
+    }
+
+    /**
+     * EXIF-Orientierung der Datei (1 = wie gespeichert). JPEG und TIFF liest
+     * PHP selbst, wenn ext-exif geladen ist; andere Formate, die eine
+     * Orientierung tragen koennen (PNG, WebP, ...), fragt ImageMagick - nach
+     * derselben Angabe dreht -auto-orient beim Zuschnitt.
+     *
+     * @param string $input Eingabe-Argument fuer ImageMagick, siehe {@see inputArgument()}
+     */
+    private static function orientation(string $inputPath, string $input, int $imageType): int {
+        if (in_array($imageType, [IMAGETYPE_GIF, IMAGETYPE_BMP, IMAGETYPE_ICO], true)) {
+            return 1;
+        }
+
+        if (function_exists('exif_read_data') && in_array($imageType, [IMAGETYPE_JPEG, IMAGETYPE_TIFF_II, IMAGETYPE_TIFF_MM], true)) {
+            $exif = @exif_read_data($inputPath, 'IFD0');
+            $value = is_array($exif) ? ($exif['Orientation'] ?? 1) : 1;
+
+            return is_numeric($value) ? (int) $value : 1;
+        }
+
+        $command = self::getConfiguredCommand('image-identify', [
+            '[FORMAT]' => '%[orientation]',
+            '[INPUT]' => $input,
+        ]);
+        if ($command === null) {
+            return 1;
+        }
+
+        $output = [];
+        $returnCode = 0;
+        if (!Shell::executeShellCommand($command . ' 2>/dev/null', $output, $returnCode) || $output === []) {
+            return 1;
+        }
+
+        return self::ORIENTATION_NAMES[trim($output[0])] ?? 1;
+    }
+
+    /**
+     * Masse in Anzeigeausrichtung.
+     *
+     * @return array{width: int, height: int}
+     */
+    private static function asDisplayed(int $width, int $height, int $orientation): array {
+        return in_array($orientation, self::TURNED_ORIENTATIONS, true)
+            ? ['width' => $height, 'height' => $width]
+            : ['width' => $width, 'height' => $height];
     }
 
     /**
