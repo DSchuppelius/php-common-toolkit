@@ -483,6 +483,19 @@ Shell::setDefaultTimeout(3600.0);   // prozessweit, z. B. im Worker für lange O
 Nach Ablauf liefert der Aufruf `false`, `$code` ist `Shell::EXIT_TIMEOUT` (124), die letzte Zeile von `$output`
 lautet `Zeitgrenze N s ueberschritten`; mit `$throwException` gibt es eine Exception. Eine Einstellung
 „unbegrenzt“ gibt es für diese Wege bewusst nicht — wer länger braucht, gibt eine große Zahl an.
+`Shell::getDefaultTimeout()` liefert den gerade geltenden Standard.
+
+Für unabhängige Arbeit je Datei oder Seite (z. B. OCR je Seite) startet `executeParallel()` mehrere Befehle
+nebenläufig, jeden mit eigener Zeitgrenze:
+
+```php
+$codes = Shell::executeParallel(['s1' => $cmd1, 's2' => $cmd2], maxParallel: 4, timeout: 120.0);
+// ['s1' => 0, 's2' => Shell::EXIT_TIMEOUT]
+```
+
+Zurück kommt der Exit-Code je Schlüssel (`Shell::EXIT_TIMEOUT` bei Zeitüberschreitung, `-1`, wenn ein Befehl
+nicht startet); die Ausgaben werden verworfen, Ergebnisse gehören in Dateien. Ohne `maxParallel` gilt die
+Kernzahl, höchstens 16.
 
 Unter Linux läuft der Befehl dazu unter GNU `timeout` (coreutils) in einer eigenen Prozessgruppe: Beim Abbruch
 endet der **ganze Prozessbaum** (Pipelines wie `a | b`, Kinder von `sh -c`), nach einer Nachfrist von höchstens
