@@ -254,7 +254,7 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
         if ($command !== null) {
             $output = [];
             $returnCode = 0;
-            if (Shell::executeShellCommand($command . ' 2>/dev/null', $output, $returnCode) && !empty($output)) {
+            if (Shell::executeShellCommand($command . ' 2>/dev/null', $output, $returnCode, timeout: Shell::TIMEOUT_PROBE) && !empty($output)) {
                 $parts = explode(' ', trim($output[0]));
                 if (count($parts) === 3) {
                     return self::asDisplayed((int) $parts[0], (int) $parts[1], self::ORIENTATION_NAMES[$parts[2]] ?? 1);
@@ -296,7 +296,7 @@ class ImageCropHelper extends ConfiguredHelperAbstract {
 
         $output = [];
         $returnCode = 0;
-        if (!Shell::executeShellCommand($command . ' 2>/dev/null', $output, $returnCode) || $output === []) {
+        if (!Shell::executeShellCommand($command . ' 2>/dev/null', $output, $returnCode, timeout: Shell::TIMEOUT_PROBE) || $output === []) {
             return 1;
         }
 

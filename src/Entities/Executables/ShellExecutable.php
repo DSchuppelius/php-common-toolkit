@@ -13,12 +13,21 @@ declare(strict_types=1);
 namespace CommonToolkit\Entities\Executables;
 
 use CommonToolkit\Contracts\Abstracts\ExecutableAbstract;
+use CommonToolkit\Helper\Shell;
 
 class ShellExecutable extends ExecutableAbstract {
+    /**
+     * Startet das Programm ohne Shell (Argumente einzeln, kein Escaping noetig)
+     * mit der Standard-Zeitgrenze und liefert die Standardausgabe; leer, wenn es
+     * nichts ausgibt, nicht startet oder abgebrochen wird.
+     */
     public function execute(array $overrideArgs = []): string {
-        $args = $this->prepareArguments($overrideArgs);
-        $cmd = escapeshellcmd($this->path) . ' ' . implode(' ', array_map('escapeshellarg', $args));
-        $result = shell_exec($cmd);
-        return is_string($result) ? $result : '';
+        if (trim($this->path) === '') {
+            return '';
+        }
+
+        $result = Shell::run([$this->path, ...$this->prepareArguments($overrideArgs)], Shell::getDefaultTimeout());
+
+        return $result->timedOut ? '' : $result->output;
     }
 }

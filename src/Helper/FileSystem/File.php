@@ -89,8 +89,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return self::logErrorAndReturn(false, "Kein Befehl für $commandName gefunden.");
         }
 
+        // MIME-Proben lesen nur den Dateikopf; chardet liest die ganze Datei
+        $timeout = in_array($commandName, ['chardet', 'uchardet'], true) ? null : Shell::TIMEOUT_PROBE;
         $output = [];
-        if (!Shell::executeShellCommand($command, $output) || empty($output)) {
+        if (!Shell::executeShellCommand($command, $output, timeout: $timeout) || empty($output)) {
             return self::logErrorAndReturn(false, "Fehler beim $commandName-Aufruf für $file");
         }
 

@@ -192,7 +192,11 @@ class TifFile extends ConfiguredHelperAbstract {
             self::logErrorAndThrow(Exception::class, "tiffcp wurde nicht konfiguriert oder ist nicht installiert.");
         }
 
-        Shell::executeShellCommand($command);
+        if (!Shell::executeShellCommand($command)) {
+            // Abbruch oder Fehler: keine halbe Ausgabe als Ergebnis stehen lassen
+            File::delete($mergedFile);
+            self::logErrorAndThrow(Exception::class, "Fehler beim Zusammenführen der TIFF-Dateien: $mergedFile");
+        }
 
         self::logInfo("TIFF-Dateien erfolgreich zusammengeführt: $mergedFile");
 
@@ -218,7 +222,7 @@ class TifFile extends ConfiguredHelperAbstract {
 
             if (empty($command)) {
                 self::logErrorAndThrow(Exception::class, "tiffinfo wurde nicht konfiguriert oder ist nicht installiert.");
-            } elseif (Shell::executeShellCommand($command, $output)) {
+            } elseif (Shell::executeShellCommand($command, $output, timeout: Shell::TIMEOUT_PROBE)) {
                 if (str_contains(strtolower(implode($output)), "not a tiff")) {
                     return self::logWarningAndReturn(false, "TIFF-Datei ist ungültig: $file");
                 }

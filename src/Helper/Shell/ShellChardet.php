@@ -2,142 +2,57 @@
 
 namespace CommonToolkit\Helper\Shell;
 
+use CommonToolkit\Helper\Shell;
 use ERRORToolkit\Traits\ErrorLog;
-use RuntimeException;
 
+/**
+ * Zeichensatzerkennung über das Kommandozeilenwerkzeug chardet.
+ *
+ * Jeder Aufruf startet chardet neu (über {@see Shell::run()}, also mit
+ * Zeitgrenze) und gibt den Text über die Standardeingabe. Einen dauerhaften
+ * Prozess gibt es nicht mehr: chardet antwortet erst, wenn es sich sicher ist
+ * oder die Eingabe endet, und beendet sich nach der ersten Antwort - ein
+ * zweiter Aufruf lief ins Leere, ein unklarer Text hielt den Aufrufer
+ * unbegrenzt fest.
+ */
 class ShellChardet {
     use ErrorLog;
 
-    /** @var resource|null */
-    private static $process = null;
-    /** @var resource|null */
-    private static $stdin = null;
-    /** @var resource|null */
-    private static $stdout = null;
-    /** @var resource|null */
-    private static $stderr = null;
+    /** Zeitgrenze je Erkennung in Sekunden. */
+    private const TIMEOUT = Shell::TIMEOUT_PROBE;
 
     /**
-     * Startet den chardet-Prozess und öffnet die Pipes.
+     * Früher: startete den dauerhaften chardet-Prozess. Heute ohne Wirkung.
      *
-     * @throws RuntimeException Wenn der Prozess nicht gestartet werden kann.
+     * @deprecated Jeder Aufruf von {@see detect()} startet chardet selbst.
      */
-    public static function start(): void {
-        if (self::$process !== null) {
-            return;
-        }
-
-        $descriptorspec = [
-            0 => ['pipe', 'r'], // stdin
-            1 => ['pipe', 'w'], // stdout
-            2 => ['pipe', 'w'], // stderr
-        ];
-
-        $process = proc_open('chardet -', $descriptorspec, $pipes);
-        if (!is_resource($process)) {
-            self::logErrorAndThrow(RuntimeException::class, "Konnte chardet-Prozess nicht starten.");
-        }
-
-        self::$process = $process;
-        self::$stdin = $pipes[0];
-        self::$stdout = $pipes[1];
-        self::$stderr = $pipes[2];
-    }
+    public static function start(): void {}
 
     /**
-     * Stoppt den chardet-Prozess und schließt die Pipes.
+     * Früher: beendete den dauerhaften chardet-Prozess. Heute ohne Wirkung.
+     *
+     * @deprecated Jeder Aufruf von {@see detect()} startet chardet selbst.
      */
-    public static function stop(): void {
-        if (self::$process !== null) {
-            if (is_resource(self::$stdin)) {
-                @fclose(self::$stdin);
-            }
-            if (is_resource(self::$stdout)) {
-                @fclose(self::$stdout);
-            }
-            if (is_resource(self::$stderr)) {
-                @fclose(self::$stderr);
-            }
-            @proc_terminate(self::$process);
-            @proc_close(self::$process);
-            self::$stdin = null;
-            self::$stdout = null;
-            self::$stderr = null;
-            self::$process = null;
-        }
-    }
+    public static function stop(): void {}
 
     /**
      * Detects the encoding of the given text using chardet.
      *
      * @param string $text The text to detect the encoding for.
-     * @param bool $usePersistent Whether to use a persistent chardet process.
+     * @param bool $usePersistent Ohne Wirkung (frueher: dauerhafter Prozess), siehe Klassenbeschreibung.
      * @return string|false The detected encoding or false on failure.
      */
     public static function detect(string $text, bool $usePersistent = false): string|false {
-        if ($usePersistent) {
-            return self::detectWithPersistentProcess($text);
-        } else {
-            return self::detectWithTemporaryProcess($text);
+        $result = Shell::run(['chardet', '-'], self::TIMEOUT, null, null, null, $text);
+
+        if ($result->timedOut) {
+            return self::logErrorAndReturn(false, 'chardet abgebrochen: ' . Shell::timeoutMessage(self::TIMEOUT));
         }
-    }
-
-    /**
-     * Detects the encoding of the given text using a temporary chardet process.
-     *
-     * @param string $text The text to detect the encoding for.
-     * @return string|false The detected encoding or false on failure.
-     */
-    private static function detectWithTemporaryProcess(string $text): string|false {
-        $descriptorspec = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-
-        $process = proc_open('chardet -', $descriptorspec, $pipes);
-        if (!is_resource($process)) {
-            return self::logErrorAndReturn(false, "Konnte temporären chardet-Prozess nicht starten.");
+        if (!$result->isSuccessful() || trim($result->output) === '') {
+            return self::logErrorAndReturn(false, "chardet lieferte keinen Output.");
         }
 
-        fwrite($pipes[0], $text);
-        fclose($pipes[0]);
-
-        $result = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-
-        $exitCode = proc_close($process);
-        if ($exitCode !== 0 || $result === false) {
-            return self::logErrorAndReturn(false, "Temporärer chardet-Prozess lieferte keinen Output.");
-        }
-
-        return self::normalizeEncoding(trim($result));
-    }
-
-    /**
-     * Detects the encoding of the given text using a persistent chardet process.
-     *
-     * @param string $text The text to detect the encoding for.
-     * @return string|false The detected encoding or false on failure.
-     */
-    private static function detectWithPersistentProcess(string $text): string|false {
-        self::start();
-
-        if (!is_resource(self::$stdin) || !is_resource(self::$stdout)) {
-            return self::logErrorAndReturn(false, "Persistente chardet-Streams sind nicht verfügbar.");
-        }
-
-        fwrite(self::$stdin, $text . "\n");
-        fflush(self::$stdin);
-
-        // Lese eine Zeile vom Output
-        $result = fgets(self::$stdout);
-        if ($result === false) {
-            return self::logErrorAndReturn(false, "Persistente chardet-Instanz hat nichts zurückgegeben.");
-        }
-
-        return self::normalizeEncoding(trim($result));
+        return self::normalizeEncoding(trim($result->output));
     }
 
     /**
@@ -153,9 +68,5 @@ class ShellChardet {
             'NONE' => 'UTF-8',
             default => $result
         };
-    }
-
-    public function __destruct() {
-        self::stop();
     }
 }

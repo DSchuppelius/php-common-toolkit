@@ -25,10 +25,11 @@ class Java extends ConfiguredHelperAbstract {
      *
      * @param string $path Der Pfad zur JAR-Datei.
      * @param array<int|string, string> $args Zusätzliche Argumente für die Ausführung.
-     * @return string Die Ausgabe der Ausführung.
+     * @param float|null $timeout Zeitgrenze in Sekunden; null = {@see Shell::getDefaultTimeout()}.
+     * @return string Die Ausgabe der Ausführung; leer bei Fehlschlag oder Zeitüberschreitung.
      * @throws Exception Wenn ein Fehler auftritt.
      */
-    public static function execute(string $path, array $args = []): string {
+    public static function execute(string $path, array $args = [], ?float $timeout = null): string {
         if (empty($path)) {
             self::logErrorAndThrow(Exception::class, "Für JAVA-Ausführung muss der Pfad zur JAR-Datei gesetzt sein.");
         } elseif (File::exists($path) === false) {
@@ -39,7 +40,7 @@ class Java extends ConfiguredHelperAbstract {
         if (empty($command)) {
             self::logErrorAndThrow(Exception::class, "JAVA-Ausführung benötigt eine JAVA-Runtime. Bitte installieren Sie eine JAVA-Runtime.");
         }
-        return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)));
+        return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)), timeout: $timeout);
     }
 
     /**
@@ -49,10 +50,11 @@ class Java extends ConfiguredHelperAbstract {
      * @param string $mainClass Der Hauptklasse-Pfad.
      * @param string $runClass Der Klassenname, der ausgeführt werden soll.
      * @param array<int|string, string> $args Zusätzliche Argumente für die Ausführung.
-     * @return string Die Ausgabe der Ausführung.
+     * @param float|null $timeout Zeitgrenze in Sekunden; null = {@see Shell::getDefaultTimeout()}.
+     * @return string Die Ausgabe der Ausführung; leer bei Fehlschlag oder Zeitüberschreitung.
      * @throws Exception Wenn ein Fehler auftritt.
      */
-    public static function executeClass(string $classPath, string $mainClass, string $runClass, array $args = []): string {
+    public static function executeClass(string $classPath, string $mainClass, string $runClass, array $args = [], ?float $timeout = null): string {
         if (empty($classPath) || empty($mainClass) || empty($runClass)) {
             self::logErrorAndThrow(Exception::class, "Für CLASS-Ausführung müssen classpath, mainClass und runClass gesetzt sein.");
         }
@@ -61,7 +63,7 @@ class Java extends ConfiguredHelperAbstract {
         if (empty($command)) {
             self::logErrorAndThrow(Exception::class, "JAVA Klassen-Ausführung benötigt eine JAVA-Runtime. Bitte installieren Sie eine JAVA-Runtime.");
         }
-        return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)));
+        return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)), timeout: $timeout);
     }
 
     /**
@@ -74,7 +76,7 @@ class Java extends ConfiguredHelperAbstract {
         $command = self::getConfiguredCommand("java") . " -version 2>&1";
         $output = [];
 
-        if (Shell::executeShellCommand($command, $output)) {
+        if (Shell::executeShellCommand($command, $output, timeout: Shell::TIMEOUT_PROBE)) {
             return self::logDebugAndReturn(true, "Java ist verfügbar: " . implode("\n", $output));
         }
 
