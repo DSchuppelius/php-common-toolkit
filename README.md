@@ -466,6 +466,63 @@ Das Toolkit nutzt JSON-Konfigurationsdateien für externe Tools. Die Konfigurati
 
 ---
 
+## Zeitgrenze für externe Programme
+
+Jeder Prozessaufruf über `Shell` hat eine Zeitgrenze. `executeShellCommand()`, `executeShell()` und
+`executeParallel()` nehmen sie als letzten Parameter `$timeout` (Sekunden); ohne Angabe gilt
+`Shell::DEFAULT_TIMEOUT` (180 s). Für kurze Proben (pdfinfo, identify, file) gibt es `Shell::TIMEOUT_PROBE` (30 s).
+
+```php
+use CommonToolkit\Helper\Shell;
+
+Shell::executeShellCommand($command, $output, $code);                                   // höchstens 180 s
+Shell::executeShellCommand($command, $output, $code, timeout: Shell::TIMEOUT_PROBE);    // höchstens 30 s
+Shell::setDefaultTimeout(3600.0);   // prozessweit, z. B. im Worker für lange OCR-Läufe; null = wieder 180 s
+```
+
+Nach Ablauf liefert der Aufruf `false`, `$code` ist `Shell::EXIT_TIMEOUT` (124), die letzte Zeile von `$output`
+lautet `Zeitgrenze N s ueberschritten`; mit `$throwException` gibt es eine Exception. Eine Einstellung
+„unbegrenzt“ gibt es für diese Wege bewusst nicht — wer länger braucht, gibt eine große Zahl an.
+
+Unter Linux läuft der Befehl dazu unter GNU `timeout` (coreutils) in einer eigenen Prozessgruppe: Beim Abbruch
+endet der **ganze Prozessbaum** (Pipelines wie `a | b`, Kinder von `sh -c`), nach einer Nachfrist von höchstens
+5 s auch Prozesse, die SIGTERM ignorieren — und zwar auch dann, wenn der aufrufende PHP-Prozess vorher stirbt
+(FPM-`request_terminate_timeout`, `kill -9`). Die Gruppe bleibt in der Sitzung des Aufrufers: Wer einen Job in
+einer eigenen Sitzung startet (`setsid`), beendet mit `pkill -s <sid>` auch alle seine Werkzeuge. Ohne GNU
+`timeout` (z. B. macOS, BusyBox) greift die Zeitgrenze weiterhin, beendet aber nur den direkten Kindprozess;
+unter Windows beendet Symfony Process den Baum (`taskkill /T`).
+
+`Shell::run()`/`Shell::execute()` (Argumentliste ohne Shell) behalten ihre Signatur: `$timeout = null` heißt dort
+weiterhin „ohne Grenze“; mit Zeitgrenze endet ebenfalls der ganze Baum. Die Umgebung des PHP-Prozesses gilt auf
+allen Wegen samt `putenv()`-Änderungen, wie bei `exec()`.
+
+### PHPStan-Regel: Prozesse nur über `Shell`
+
+`exec()`, `shell_exec()`, `system()`, `passthru()`, `popen()`, `proc_open()`, `pcntl_exec()`, der
+Backtick-Operator und Symfony Process außerhalb von `CommonToolkit\Helper\Shell` umgehen die Zeitgrenze. Die
+mitgelieferte Regel meldet sie (Kennung `commonToolkit.processCall`):
+
+```neon
+includes:
+    - vendor/dschuppelius/php-common-toolkit/phpstan-rules.neon
+
+parameters:
+    processCallAllowedClasses:      # optional: eigene Prozess-Wrapper zusätzlich erlauben
+        - App\Helper\MeinWrapper
+```
+
+Dynamische Aufrufe (`$f = 'exec'; $f()`) erkennt die Regel nicht.
+
+### Passwörter für qpdf (`PdfFile`)
+
+`PdfFile::decrypt()`, `encrypt()` und `getMetaData($datei, $passwort)` geben Passwörter nie auf der Befehlszeile
+weiter (dort stünden sie für jeden lokalen Nutzer lesbar in der Prozessliste), sondern über eine qpdf-Argumentdatei
+(`@datei`, Rechte 0600, privater Temp-Ordner, sofort gelöscht; qpdf ≥ 7.0). pdfinfo kennt nur `-opw`/`-upw` —
+geschützte Metadaten liest `getMetaData()` deshalb aus einer mit qpdf entschlüsselten Kopie im selben privaten
+Ordner (`Encrypted` ist dann `yes`).
+
+---
+
 ## Externe Programme und nicht vertrauenswürdige Dateien
 
 `MediaHelper`, `OfficeHelper`, `ImageCropHelper` und `TifFile` reichen Dateien des Aufrufers an FFmpeg,
@@ -562,6 +619,26 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
+### 2.9 — Zeitgrenze für jeden Prozessaufruf
+
+- `Shell::executeShellCommand()`/`executeShell()` laufen über Symfony Process statt `exec()` und haben eine
+  Zeitgrenze: neuer letzter Parameter `?float $timeout` (Standard `Shell::DEFAULT_TIMEOUT` = 180 s, prozessweit
+  über `Shell::setDefaultTimeout()`), `Shell::TIMEOUT_PROBE` (30 s) für Proben. Ausgabe, Exit-Code, `2>&1`,
+  `$expectedResultCode`, `$throwException`, PowerShell und Logging bleiben wie bei `exec()`; neu ist nur der
+  Abbruch (`Shell::EXIT_TIMEOUT`). Die Standardeingabe ist leer statt geerbt.
+- Beim Abbruch endet der ganze Prozessbaum (GNU `timeout`, eigene Prozessgruppe) — auch bei `Shell::run()`
+  mit Zeitgrenze und auch, wenn der PHP-Prozess vorher stirbt. Siehe „Zeitgrenze für externe Programme“.
+- Neu: `Shell::executeParallel()` (mehrere Befehle nebenläufig, Zeitgrenze je Befehl).
+- Neu: PHPStan-Regel `CommonToolkit\PHPStan\NoDirectProcessCallRule` mit `phpstan-rules.neon`.
+- `PdfFile`: Passwörter über eine qpdf-Argumentdatei statt auf der Befehlszeile; ein leeres Passwort bei
+  `encrypt()` ist jetzt wirklich leer.
+- `ShellChardet`: jeder Aufruf startet chardet mit Zeitgrenze; `start()`/`stop()` sind ohne Wirkung und
+  `@deprecated` (der dauerhafte Prozess beendete sich nach der ersten Antwort und konnte bei unklarem Text
+  hängen bleiben). `ShellExecutable::execute()` startet ohne Shell mit Standard-Zeitgrenze.
+- `TifFile::merge()` wirft bei Fehlschlag oder Abbruch und löscht die halbe Ausgabe, statt Erfolg zu melden.
+- `Java::execute()`/`executeClass()`: optionaler letzter Parameter `$timeout`.
+- Signaturen bleiben kompatibel (neue Parameter nur am Ende, mit Vorgabewert).
+
 ### 2.6 — Externe Programme gehärtet (FFmpeg, LibreOffice, ImageMagick)
 
 - `MediaHelper`: FFmpeg öffnet für die Eingabe nur noch lokale Dateien (`-protocol_whitelist file,pipe`).
@@ -592,4 +669,4 @@ Migration: Aufrufer, die leere oder fremde Strings an `Money::of()` geben,
 auf `Money::ofNullable()` umstellen oder den Fall vorher behandeln.
 
 
-Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.6.1). There is no separate changelog file — the tags and the commit history are the record.
+Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.9.0). There is no separate changelog file — the tags and the commit history are the record.

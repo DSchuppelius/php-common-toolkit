@@ -13,34 +13,48 @@ declare(strict_types=1);
 namespace CommonToolkit\Helper\FileSystem\FileTypes;
 
 use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
-use CommonToolkit\Helper\FileSystem\File;
-use CommonToolkit\Helper\Shell;
+use CommonToolkit\Helper\FileSystem\{File, Folder};
+use CommonToolkit\Helper\{Platform, Shell};
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use ERRORToolkit\Exceptions\InvalidPasswordException;
 use Exception;
+use InvalidArgumentException;
 
+/**
+ * PDF-Metadaten, Prüfung und Passwortschutz über pdfinfo, mutool und qpdf.
+ *
+ * Passwörter gehen nie über die Befehlszeile (dort stünden sie für jeden
+ * lokalen Nutzer lesbar in der Prozessliste): qpdf bekommt sie über eine
+ * Argumentdatei (`@datei`, Rechte 0600, privater Temp-Ordner, sofort wieder
+ * gelöscht). pdfinfo kennt nur `-opw`/`-upw`; geschützte Metadaten liest
+ * {@see getMetaData()} deshalb aus einer mit qpdf entschlüsselten Kopie.
+ */
 class PdfFile extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../../../config/pdf_executables.json';
 
     /**
      * Gibt die Metadaten einer PDF-Datei zurück.
      *
+     * Mit Passwort: Öffnet pdfinfo die Datei ohne Passwort (ungeschützt oder nur
+     * Besitzerpasswort), kommen die Metadaten von dort. Sonst liest pdfinfo eine
+     * mit qpdf entschlüsselte Kopie in einem privaten Temp-Ordner; `Encrypted`
+     * ist dann `yes`. Dieser Weg braucht qpdf.
+     *
      * @param string $file Der Pfad zur PDF-Datei.
+     * @param string|null $password Benutzer- oder Besitzerpasswort.
      * @return array<string, mixed> Ein Array mit den Metadaten der PDF-Datei.
      * @throws FileNotFoundException Wenn die Datei nicht gefunden wird.
+     * @throws InvalidPasswordException Wenn das Passwort nicht passt.
      * @throws Exception Wenn ein Fehler beim Abrufen der Metadaten auftritt.
      */
     public static function getMetaData(string $file, ?string $password = null): array {
         $file = self::resolveFile($file);
 
-        // Wähle den richtigen Befehl basierend auf dem Passwort
-        $commandName = $password !== null && $password !== '' ? 'pdfinfo-password' : 'pdfinfo';
-        $args = [
-            "[INPUT]" => $file,
-            "[PASSWORD]" => $password ?? '',
-        ];
+        if ($password !== null && $password !== '') {
+            return self::getProtectedMetaData($file, $password);
+        }
 
-        $command = self::getConfiguredCommand($commandName, $args);
+        $command = self::getConfiguredCommand('pdfinfo', ["[INPUT]" => $file]);
         $output = [];
         $resultCode = 0;
 
@@ -48,7 +62,7 @@ class PdfFile extends ConfiguredHelperAbstract {
             self::logErrorAndThrow(Exception::class, "pdfinfo wurde nicht konfiguriert oder ist nicht installiert.");
         }
 
-        Shell::executeShellCommand($command, $output, $resultCode);
+        Shell::executeShellCommand($command, $output, $resultCode, timeout: Shell::TIMEOUT_PROBE);
 
         if ($resultCode !== 0) {
             foreach ($output as $line) {
@@ -170,22 +184,8 @@ class PdfFile extends ConfiguredHelperAbstract {
     public static function decrypt(string $inputFile, string $outputFile, ?string $password = null): bool {
         $inputFile = self::resolveFile($inputFile);
 
-        $command = self::getConfiguredCommand(
-            "pdf-decrypt",
-            [
-                "[INPUT]" => $inputFile,
-                "[OUTPUT]" => $outputFile,
-                "[PASS]" => $password ?? '',
-            ]
-        );
-
-        if (empty($command)) {
-            self::logErrorAndThrow(Exception::class, "pdf-decrypt wurde nicht konfiguriert oder ist nicht installiert.");
-        }
-
         $output = [];
-        $resultCode = 0;
-        if (!Shell::executeShellCommand($command, $output, $resultCode)) {
+        if (!self::runDecrypt($inputFile, $outputFile, $password, $output)) {
             return self::logErrorAndReturn(false, "Fehler beim Entschlüsseln der PDF-Datei $inputFile.");
         }
 
@@ -207,26 +207,120 @@ class PdfFile extends ConfiguredHelperAbstract {
     public static function encrypt(string $inputFile, string $outputFile, ?string $userPass = null, ?string $ownerPass = null, ?string $permissions = null): bool {
         $inputFile = self::resolveFile($inputFile);
 
-        $params = [
-            "[INPUT]" => $inputFile,
-            "[OUTPUT]" => $outputFile,
-            // Bei qpdf müssen leere Passwörter explizit als leerer escaped String übergeben werden
-            "[UPASS]" => $userPass !== null && $userPass !== '' ? $userPass : "''",
-            "[OPASS]" => ($ownerPass ?? $userPass) !== null && ($ownerPass ?? $userPass) !== '' ? ($ownerPass ?? $userPass) : "''",
-            "[PERM]" => trim((string) ($permissions ?? '')),
-        ];
-
-        $command = self::getConfiguredCommand("pdf-encrypt", $params);
-        if (empty($command)) {
-            self::logErrorAndThrow(Exception::class, "pdf-encrypt wurde nicht konfiguriert oder ist nicht installiert.");
+        // Leere Passwörter sind leere Zeilen der Argumentdatei
+        $owner = $ownerPass ?? $userPass;
+        $arguments = ['--encrypt', $userPass ?? '', $owner ?? '', '256'];
+        $permissionText = trim((string) ($permissions ?? ''));
+        if ($permissionText !== '') {
+            array_push($arguments, ...(preg_split('/\s+/', $permissionText) ?: []));
         }
+        $arguments[] = '--';
 
-        $output = [];
-        $resultCode = 0;
-        if (!Shell::executeShellCommand($command, $output, $resultCode)) {
-            return self::logErrorAndReturn(false, "Fehler beim Verschlüsseln der PDF-Datei $inputFile.");
+        $dir = self::privateTempDir();
+        try {
+            $command = self::getConfiguredCommand("pdf-encrypt", [
+                "[ARGFILE]" => '@' . self::writeArgumentFile($dir, $arguments),
+                "[INPUT]" => $inputFile,
+                "[OUTPUT]" => $outputFile,
+            ]);
+            if (empty($command)) {
+                self::logErrorAndThrow(Exception::class, "pdf-encrypt wurde nicht konfiguriert oder ist nicht installiert.");
+            }
+
+            $output = [];
+            $resultCode = 0;
+            if (!Shell::executeShellCommand($command, $output, $resultCode)) {
+                return self::logErrorAndReturn(false, "Fehler beim Verschlüsseln der PDF-Datei $inputFile.");
+            }
+        } finally {
+            Folder::delete($dir, true);
         }
 
         return File::exists($outputFile);
+    }
+
+    /**
+     * Metadaten einer geschützten Datei, ohne das Passwort auf die Befehlszeile zu legen.
+     *
+     * @return array<string, mixed>
+     */
+    private static function getProtectedMetaData(string $file, string $password): array {
+        try {
+            return self::getMetaData($file);
+        } catch (InvalidPasswordException) {
+            // Benutzerpasswort nötig: entschlüsselte Kopie lesen
+        }
+
+        $dir = self::privateTempDir();
+        try {
+            $copy = $dir . DIRECTORY_SEPARATOR . 'entschluesselt.pdf';
+            $output = [];
+            if (!self::runDecrypt($file, $copy, $password, $output) || !File::exists($copy)) {
+                if (stripos(implode("\n", $output), 'invalid password') !== false) {
+                    self::logErrorAndThrow(InvalidPasswordException::class, "Falsches Passwort für PDF-Datei: $file");
+                }
+                self::logErrorAndThrow(Exception::class, "Geschützte PDF-Metadaten nicht lesbar (qpdf nötig): $file");
+            }
+
+            $metadata = self::getMetaData($copy);
+            $metadata['Encrypted'] = 'yes';
+
+            return $metadata;
+        } finally {
+            Folder::delete($dir, true);
+        }
+    }
+
+    /**
+     * qpdf --decrypt; ein Passwort reist in einer Argumentdatei.
+     *
+     * @param list<string> $output Ausgabezeilen von qpdf.
+     */
+    private static function runDecrypt(string $inputFile, string $outputFile, ?string $password, array &$output): bool {
+        $dir = $password !== null && $password !== '' ? self::privateTempDir() : null;
+        try {
+            $command = self::getConfiguredCommand("pdf-decrypt", [
+                "[ARGFILE]" => $dir !== null ? '@' . self::writeArgumentFile($dir, ['--password=' . $password]) : '',
+                "[INPUT]" => $inputFile,
+                "[OUTPUT]" => $outputFile,
+            ]);
+            if (empty($command)) {
+                self::logErrorAndThrow(Exception::class, "pdf-decrypt wurde nicht konfiguriert oder ist nicht installiert.");
+            }
+
+            $resultCode = 0;
+
+            return Shell::executeShellCommand($command, $output, $resultCode);
+        } finally {
+            if ($dir !== null) {
+                Folder::delete($dir, true);
+            }
+        }
+    }
+
+    /**
+     * Privater Temp-Ordner (zufälliger Name, 0700) für Argumentdateien und Kopien.
+     */
+    private static function privateTempDir(): string {
+        $dir = Platform::getTempDirectory() . DIRECTORY_SEPARATOR . 'pdffile_' . bin2hex(random_bytes(8));
+        Folder::create($dir, 0700);
+
+        return $dir;
+    }
+
+    /**
+     * Schreibt qpdf-Argumente zeilenweise in eine Datei mit Rechten 0600.
+     *
+     * @param list<string> $arguments
+     * @throws InvalidArgumentException Wenn ein Argument einen Zeilenumbruch enthält.
+     */
+    private static function writeArgumentFile(string $dir, array $arguments): string {
+        foreach ($arguments as $argument) {
+            if (strpbrk($argument, "\r\n\0") !== false) {
+                self::logErrorAndThrow(InvalidArgumentException::class, 'Passwörter und Argumente für qpdf dürfen keinen Zeilenumbruch enthalten.');
+            }
+        }
+
+        return File::createTemp(implode("\n", $arguments) . "\n", 'qpdf-args-', null, 0600, $dir);
     }
 }

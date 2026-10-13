@@ -8,14 +8,6 @@
             "arguments": ["[INPUT]", "2>&1"],
             "debugArguments": ["[INPUT]", "2>&1"]
         },
-        "pdfinfo-password": {
-            "path": "pdfinfo",
-            "required": true,
-            "package": "poppler-utils",
-            "description": "Metadaten aus PDF-Datei mit Passwort",
-            "arguments": ["-opw", "[PASSWORD]", "[INPUT]", "2>&1"],
-            "debugArguments": ["-opw", "[PASSWORD]", "[INPUT]", "2>&1"]
-        },
         "valid-pdf": {
             "linuxPath": "mutool",
             "windowsPath": "pdfinfo",
@@ -30,20 +22,20 @@
             "windowsPath": "qpdf.exe",
             "package": "qpdf",
             "required": false,
-            "description": "Entschlüsselt eine geschützte PDF-Datei",
-            "linuxArguments": ["--password=[PASS]", "--decrypt", "[INPUT]", "[OUTPUT]"],
-            "windowsArguments": ["--password=[PASS]", "--decrypt", "[INPUT]", "[OUTPUT]"],
-            "debugArguments": ["--password=[PASS]", "--decrypt", "[INPUT]", "[OUTPUT]"]
+            "description": "Entschlüsselt eine geschützte PDF-Datei; [ARGFILE] = @Argumentdatei mit --password=... (nie auf der Befehlszeile) oder leer",
+            "linuxArguments": ["[ARGFILE]", "--decrypt", "[INPUT]", "[OUTPUT]"],
+            "windowsArguments": ["[ARGFILE]", "--decrypt", "[INPUT]", "[OUTPUT]"],
+            "debugArguments": ["[ARGFILE]", "--decrypt", "[INPUT]", "[OUTPUT]"]
         },
         "pdf-encrypt": {
             "linuxPath": "qpdf",
             "windowsPath": "qpdf.exe",
             "package": "qpdf",
             "required": false,
-            "description": "Verschlüsselt eine PDF-Datei mit Passwortschutz",
-            "linuxArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"],
-            "windowsArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"],
-            "debugArguments": ["--encrypt", "[UPASS]", "[OPASS]", "256", "[PERM]", "--", "[INPUT]", "[OUTPUT]"]
+            "description": "Verschlüsselt eine PDF-Datei mit Passwortschutz; [ARGFILE] = @Argumentdatei mit --encrypt ... -- (Passwörter nie auf der Befehlszeile)",
+            "linuxArguments": ["[ARGFILE]", "[INPUT]", "[OUTPUT]"],
+            "windowsArguments": ["[ARGFILE]", "[INPUT]", "[OUTPUT]"],
+            "debugArguments": ["[ARGFILE]", "[INPUT]", "[OUTPUT]"]
         },
         "pdf-check": {
             "linuxPath": "qpdf",
