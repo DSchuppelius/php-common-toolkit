@@ -18,8 +18,10 @@ require dirname(__DIR__, 2) . '/vendor/autoload.php';
 
 use CommonToolkit\Helper\FileSystem\FileTypes\PdfFile;
 
-[, $case, $input, $outputFile, $password] = $argv + [null, '', '', '', ''];
-$owner = $argv[5] ?? null;
+// Ab PHP 8.5 ist $argv nicht in jeder Konfiguration gesetzt (register_argc_argv)
+$args = is_array($_SERVER['argv'] ?? null) ? array_values($_SERVER['argv']) : [];
+[, $case, $input, $outputFile, $password] = $args + [null, '', '', '', ''];
+$owner = $args[5] ?? null;
 
 $metadata = $case === 'metadata' ? PdfFile::getMetaData($input, $password) : null;
 $result = match ($case) {
