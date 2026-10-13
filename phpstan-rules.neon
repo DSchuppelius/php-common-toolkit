@@ -1,0 +1,28 @@
+# PHPStan-Regel des common-toolkit: Prozesse startet nur CommonToolkit\Helper\Shell
+# (Zeitgrenze, Abbruch des ganzen Prozessbaums). Einbinden in der phpstan.neon:
+#
+#   includes:
+#       - vendor/dschuppelius/php-common-toolkit/phpstan-rules.neon
+#
+# Eigene Prozess-Wrapper als erlaubte Klassen ergaenzen (die Liste wird erweitert):
+#
+#   parameters:
+#       processCallAllowedClasses:
+#           - Mein\Namespace\Wrapper
+#
+# Fehlerkennung zum gezielten Ignorieren: commonToolkit.processCall
+
+parametersSchema:
+    processCallAllowedClasses: listOf(string())
+
+parameters:
+    processCallAllowedClasses:
+        - CommonToolkit\Helper\Shell
+
+services:
+    -
+        class: CommonToolkit\PHPStan\NoDirectProcessCallRule
+        arguments:
+            allowedClasses: %processCallAllowedClasses%
+        tags:
+            - phpstan.rules.rule

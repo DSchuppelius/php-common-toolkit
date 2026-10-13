@@ -1,3 +1,7 @@
+includes:
+    # Prozesse startet nur CommonToolkit\Helper\Shell (Zeitgrenze, Abbruch des Prozessbaums)
+    - phpstan-rules.neon
+
 parameters:
     level: 8
     # Gegen die gesamte unterstützte PHP-Spanne (composer: >=8.1 <8.6) analysieren,
@@ -10,7 +14,14 @@ parameters:
         - src
         - tests
     tmpDir: var/phpstan
+    excludePaths:
+        # Absichtlich verbotene Aufrufe als Eingabe fuer NoDirectProcessCallRuleTest
+        - tests/PHPStan/data/*
     ignoreErrors:
+        # Tests starten Hilfsprozesse bewusst direkt (Kindprozess-Proben, Aufraeumen per rm -rf).
+        -
+            identifier: commonToolkit.processCall
+            path: tests/*
         # Öffentlicher Library-Trait für externe Sperr-Enums – wird im Toolkit selbst nicht verwendet.
         -
             message: '#Trait CommonToolkit\\Traits\\LockFlagTrait is used zero times and is not analysed\.#'
