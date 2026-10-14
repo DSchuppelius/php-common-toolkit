@@ -4,24 +4,24 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2cf4130613968a742bf41488ffc66bb2",
+    "content-hash": "2cf5dbe870c5990cc86e39af36e593a7",
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.5.10",
+            "version": "v0.5.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "405236ec4135ea577b7910244ae9ab6b9f9e4e81"
+                "reference": "47b1ae4626f3057f89624bc91851669495d4d3a6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/405236ec4135ea577b7910244ae9ab6b9f9e4e81",
-                "reference": "405236ec4135ea577b7910244ae9ab6b9f9e4e81",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/47b1ae4626f3057f89624bc91851669495d4d3a6",
+                "reference": "47b1ae4626f3057f89624bc91851669495d4d3a6",
                 "shasum": ""
             },
             "require": {
-                "dschuppelius/php-error-toolkit": "^2.1",
+                "dschuppelius/php-error-toolkit": "^2.8.1",
                 "php": ">=8.0 <8.6"
             },
             "require-dev": {
@@ -53,20 +53,20 @@
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
                 "source": "https://github.com/DSchuppelius/php-config-toolkit"
             },
-            "time": "2026-09-25T12:33:25+00:00"
+            "time": "2026-10-14T07:26:12+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.7.3",
+            "version": "v2.8.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "c0e815416a986fa73ea2ed99c74704420b84f484"
+                "reference": "148eece946d9d327c14dd604489da46d275d9034"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/c0e815416a986fa73ea2ed99c74704420b84f484",
-                "reference": "c0e815416a986fa73ea2ed99c74704420b84f484",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/148eece946d9d327c14dd604489da46d275d9034",
+                "reference": "148eece946d9d327c14dd604489da46d275d9034",
                 "shasum": ""
             },
             "require": {
@@ -104,15 +104,18 @@
             "authors": [
                 {
                     "name": "Daniel Joerg Schuppelius",
-                    "email": "info@schuppelius.org"
+                    "email": "info@schuppelius.org",
+                    "homepage": "https://schuppelius.org",
+                    "role": "Developer"
                 }
             ],
             "description": "Logging and error handling foundation for the Schuppelius PHP toolkits (PSR-3 loggers, global error handler, LoggerRegistry, Laravel bridge)",
+            "homepage": "https://github.com/DSchuppelius/php-error-toolkit",
             "support": {
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
-                "source": "https://github.com/DSchuppelius/php-error-toolkit/tree/v2.7.3"
+                "source": "https://github.com/DSchuppelius/php-error-toolkit"
             },
-            "time": "2026-09-16T08:41:01+00:00"
+            "time": "2026-10-14T07:25:17+00:00"
         },
         {
             "name": "maxmind-db/reader",
@@ -2211,5 +2214,5 @@
     "platform-overrides": {
         "php": "8.2.0"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }
