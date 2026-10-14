@@ -19,6 +19,22 @@ use Generator;
 use RuntimeException;
 use Throwable;
 
+/**
+ * CSV-Zeichenkettenhilfen: Trennzeichen-Erkennung, logische Zeilen, Zerlegen
+ * und Kodieren von Zeilen.
+ *
+ * Zerlegt wird eine Zeile immer von EINEM Tokenizer, {@see parseLineToFields()}
+ * (rohe Felder, Round-Trip-Form). Die übrigen Einstiege dekodieren nur anders:
+ * {@see parseLineToValues()} gibt jedes rohe Feld durch {@see decodeField()}
+ * (RFC 4180), {@see extractFields()} liefert die Werte des Feldmodells
+ * ({@see DataLine::fromString()} über denselben Tokenizer; "" bleibt "",
+ * ungequoteter Leerraum getrimmt, gemischt gewrappte Zeilen abgelehnt).
+ *
+ * Bewusst eigene, tolerantere Zähler: {@see countOutsideEnclosure()} für die
+ * Trennzeichen-Erkennung und {@see endsInsideQuotedField()} für logische
+ * Zeilen (jedes gängige Trennzeichen beginnt ein Feld) - sie dürfen an
+ * Zeilen nicht scheitern, die der Tokenizer ablehnt.
+ */
 final class StringHelper extends BaseStringHelper {
     /** Standard-Kandidaten für die Trennzeichen-Erkennung (Reihenfolge = Tie-Priorität). */
     public const DEFAULT_DELIMITERS = [';', ',', "\t", '|'];
