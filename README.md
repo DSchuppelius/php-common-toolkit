@@ -658,6 +658,14 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
+### 2.10.1 — Whisper nur mit geprüfter WAV
+
+- `MediaHelper::transcribeWhisper()` gibt Whisper nicht mehr die Rohdatei: Erst wandelt das eigene FFmpeg mit
+  Protokollgrenze (`-protocol_whitelist file,pipe`) die Quelle in eine WAV (16 kHz mono), nur sie geht an Whisper.
+  Whispers internes FFmpeg kennt diese Grenze nicht; eine präparierte Playlist oder ein Container mit Verweisen
+  scheitert jetzt an der Wandlung, statt nach außen zu greifen. Die Zeitgrenze gilt für Wandlung und Whisper
+  zusammen.
+
 ### 2.10 — Nichts läuft mehr unbegrenzt
 
 - `Shell::run()` und `Shell::execute()`: `$timeout = null` heißt jetzt Standard-Zeitgrenze
@@ -728,4 +736,4 @@ Migration: Aufrufer, die leere oder fremde Strings an `Money::of()` geben,
 auf `Money::ofNullable()` umstellen oder den Fall vorher behandeln.
 
 
-Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.10.0). There is no separate changelog file — the tags and the commit history are the record.
+Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.10.1). There is no separate changelog file — the tags and the commit history are the record.

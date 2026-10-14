@@ -344,6 +344,54 @@ final class MediaHelper extends ConfiguredHelperAbstract {
 
         Folder::create($outputDir);
 
+        // Eine Frist fuer beides: die Wandlung nach WAV und Whisper selbst.
+        $started = microtime(true);
+        $wav = self::whisperInput($input, $outputDir, $timeout);
+        if ($wav === null) {
+            return self::logErrorAndReturn(null, 'Whisper: Die Eingabe liess sich nicht nach WAV wandeln (FFmpeg).');
+        }
+
+        try {
+            $remaining = $timeout - (microtime(true) - $started);
+            if ($remaining <= 0.0) {
+                return self::logErrorAndReturn(null, 'Whisper-Transkription: ' . Shell::timeoutMessage($timeout));
+            }
+
+            return self::runWhisper($path, $wav, $outputDir, $model, $modelDir, $language, $task, $device, $outputFormat, $remaining);
+        } finally {
+            File::delete($wav);
+        }
+    }
+
+    /**
+     * Whisper dekodiert seine Eingabe mit einem eigenen ffmpeg-Aufruf - ohne die
+     * Protokollgrenze aus {@see FFMPEG_INPUT_FLAGS}. Eine praeparierte
+     * Mediendatei (Playlist, Container mit Verweisen) koennte dieses ffmpeg zu
+     * Netz- oder Fremdprotokollen bewegen. Deshalb wandelt erst das eigene,
+     * begrenzte ffmpeg die Quelle in eine schlichte WAV (16 kHz mono, Whispers
+     * Arbeitsformat), und nur sie geht an Whisper (Scan 13.10.2026, S4-07).
+     *
+     * @return string|null Pfad der WAV im Ausgabeverzeichnis, null bei Fehler
+     */
+    private static function whisperInput(string $input, string $outputDir, ?float $timeout = null): ?string {
+        $wav = $outputDir . '/' . pathinfo($input, PATHINFO_FILENAME) . '.wav';
+        if (File::exists($wav)) {
+            $wav = $outputDir . '/' . pathinfo($input, PATHINFO_FILENAME) . '-' . bin2hex(random_bytes(4)) . '.wav';
+        }
+
+        $output = [];
+        $returnCode = 0;
+        if (!self::convert($input, $wav, ['-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le'], $output, $returnCode, true, $timeout)) {
+            return null;
+        }
+
+        return $wav;
+    }
+
+    /**
+     * Startet Whisper auf der vorbereiteten WAV und liest die Ausgabedatei.
+     */
+    private static function runWhisper(string $path, string $input, string $outputDir, string $model, string $modelDir, string $language, string $task, string $device, string $outputFormat, float $timeout): ?string {
         $argv = [$path, $input, '--model', $model];
         if ($modelDir !== '') {
             $argv[] = '--model_dir';
