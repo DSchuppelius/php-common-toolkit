@@ -471,6 +471,8 @@ Das Toolkit nutzt JSON-Konfigurationsdateien für externe Tools. Die Konfigurati
 Jeder Prozessaufruf über `Shell` hat eine Zeitgrenze. `executeShellCommand()`, `executeShell()` und
 `executeParallel()` nehmen sie als letzten Parameter `$timeout` (Sekunden); ohne Angabe gilt
 `Shell::DEFAULT_TIMEOUT` (180 s). Für kurze Proben (pdfinfo, identify, file) gibt es `Shell::TIMEOUT_PROBE` (30 s).
+Seit 2.10 gilt das auch für `run()` und `execute()`: `null` heißt dort ebenfalls Standard-Zeitgrenze, nicht mehr
+„unbegrenzt“.
 
 ```php
 use CommonToolkit\Helper\Shell;
@@ -484,6 +486,27 @@ Nach Ablauf liefert der Aufruf `false`, `$code` ist `Shell::EXIT_TIMEOUT` (124),
 lautet `Zeitgrenze N s ueberschritten`; mit `$throwException` gibt es eine Exception. Eine Einstellung
 „unbegrenzt“ gibt es für diese Wege bewusst nicht — wer länger braucht, gibt eine große Zahl an.
 `Shell::getDefaultTimeout()` liefert den gerade geltenden Standard.
+
+Wächst die Arbeit mit der Eingabe, liefert `Shell::scaledTimeout()` eine Frist: Grundwert plus Zuschlag je Einheit
+(MB, Sekunde Medienlänge, Zeichen, Seite), höchstens `Shell::MAX_SCALED_TIMEOUT` (4 h) und nie unter der
+Standard-Zeitgrenze — wer die prozessweit hochsetzt, hebt damit auch die skalierten Fristen an:
+
+```php
+$timeout = Shell::scaledTimeout($megabytes, perUnit: 10.0);               // 180 s + 10 s je MB
+$timeout = Shell::scaledTimeout($pages, perUnit: 60.0, base: 300.0);      // 300 s + 60 s je Seite
+```
+
+Die Helper des Pakets nutzen das, wenn der Aufrufer keine Zeitgrenze angibt: `MediaHelper` nach der Medienlänge
+(`MediaHelper::mediaTimeout()`, eine kurze Probe vorab; Whisper mit eigenem Faktor und 600 s Anlauf), die
+Sprachsynthese nach der Textlänge, `OfficeHelper` nach der Dateigröße (`OfficeHelper::convertTimeout()`: 300 s +
+60 s je MB), chardet nach der Dateigröße; FFmpeg-Proben (`getAudioInfo()`/`getVideoInfo()`) bekommen
+`Shell::TIMEOUT_PROBE`.
+
+Warnungen, Fehler und Exceptions nennen nur den Programmnamen, nie die Befehlszeile — sie trägt Pfade und Inhalte,
+und Anwendungen reichen Exception-Meldungen oft bis zum Kunden durch. Bei unerwartetem Exit-Code lautet die
+Warnung z. B. `pdftotext endete mit Exit-Code 1 (erwartet 0)`; die Exception (`$throwException`) hängt die letzten
+fünf Ausgabezeilen an (je Zeile höchstens 300 Zeichen). Startet ein Programm nicht, nennt die Meldung nur den Grund.
+Die ganze Befehlszeile steht im DEBUG-Log.
 
 Für unabhängige Arbeit je Datei oder Seite (z. B. OCR je Seite) startet `executeParallel()` mehrere Befehle
 nebenläufig, jeden mit eigener Zeitgrenze:
@@ -505,9 +528,9 @@ einer eigenen Sitzung startet (`setsid`), beendet mit `pkill -s <sid>` auch alle
 `timeout` (z. B. macOS, BusyBox) greift die Zeitgrenze weiterhin, beendet aber nur den direkten Kindprozess;
 unter Windows beendet Symfony Process den Baum (`taskkill /T`).
 
-`Shell::run()`/`Shell::execute()` (Argumentliste ohne Shell) behalten ihre Signatur: `$timeout = null` heißt dort
-weiterhin „ohne Grenze“; mit Zeitgrenze endet ebenfalls der ganze Baum. Die Umgebung des PHP-Prozesses gilt auf
-allen Wegen samt `putenv()`-Änderungen, wie bei `exec()`.
+`Shell::run()`/`Shell::execute()` (Argumentliste ohne Shell) behalten ihre Signatur (`run()` mit 60 s als Vorgabe,
+`execute()` mit `null` = Standard-Zeitgrenze); auch dort endet beim Abbruch der ganze Baum. Die Umgebung des
+PHP-Prozesses gilt auf allen Wegen samt `putenv()`-Änderungen, wie bei `exec()`.
 
 ### PHPStan-Regel: Prozesse nur über `Shell`
 
@@ -632,6 +655,26 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
+### 2.10 — Nichts läuft mehr unbegrenzt
+
+- `Shell::run()` und `Shell::execute()`: `$timeout = null` heißt jetzt Standard-Zeitgrenze
+  (`Shell::getDefaultTimeout()`, 180 s), nicht mehr „unbegrenzt“. `0`, negative Werte, `INF` und `NAN` werfen
+  wie bei `executeShellCommand()` eine `InvalidArgumentException` (bis 2.9 hießen `0`/`INF` „ohne Grenze“).
+  Startet ein Programm nicht, wirft `run()` eine `RuntimeException` ohne Argumente in der Meldung (statt der
+  Symfony-Exception mit der ganzen Befehlszeile).
+- Neu: `Shell::scaledTimeout()` und `Shell::MAX_SCALED_TIMEOUT` (4 h) für Fristen, die mit der Eingabe wachsen.
+- `MediaHelper`, `OfficeHelper` und die chardet-Erkennung in `File` leiten ohne eigene Angabe eine skalierte
+  Frist ab (Medienlänge, Textlänge, Dateigröße), FFmpeg-Proben nehmen `Shell::TIMEOUT_PROBE`. Neu dafür:
+  `MediaHelper::mediaTimeout()` mit `TRANSCODE_SECONDS_PER_MEDIA_SECOND`, `TRANSCRIBE_SECONDS_PER_MEDIA_SECOND`,
+  `TRANSCRIBE_TIMEOUT_BASE`, `SPEECH_SECONDS_PER_CHARACTER`; `OfficeHelper::convertTimeout()` mit `TIMEOUT_BASE`
+  und `TIMEOUT_PER_MEGABYTE`.
+- `executeShellCommand()`: Warnung und Exception nennen nur Programmname und Exit-Code, die Exception zusätzlich
+  die letzten fünf Ausgabezeilen — nie mehr die Befehlszeile (vorher „Fehler bei der Ausführung des Kommandos:
+  <Befehlszeile>“ und die ganze Ausgabe). Startfehler setzen `$resultCode` auf `-1` und folgen `$throwException`.
+- Migration: Wer `null`, `0` oder `INF` an `run()`/`execute()` gab, um bewusst ohne Grenze zu laufen, gibt
+  eine große, endliche Zahl an. Wer Meldungen nach der Befehlszeile durchsucht hat, liest den Programmnamen.
+- Signaturen bleiben unverändert.
+
 ### 2.9 — Zeitgrenze für jeden Prozessaufruf
 
 - `Shell::executeShellCommand()`/`executeShell()` laufen über Symfony Process statt `exec()` und haben eine
@@ -682,4 +725,4 @@ Migration: Aufrufer, die leere oder fremde Strings an `Money::of()` geben,
 auf `Money::ofNullable()` umstellen oder den Fall vorher behandeln.
 
 
-Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.9.0). There is no separate changelog file — the tags and the commit history are the record.
+Releases are tagged in Git; `git tag --sort=-v:refname` lists them (latest: v2.10.0). There is no separate changelog file — the tags and the commit history are the record.

@@ -27,9 +27,10 @@ trait TimeoutProbeTrait {
     private static array $fakeExecutables = ['ffmpeg', 'whisper', 'piper', 'espeak-ng', 'libreoffice'];
 
     /**
+     * @param bool $asDefault Zeitgrenze als prozessweiten Standard setzen und die Methode ohne Angabe rufen.
      * @return array{result: mixed, output: list<string>, returnCode: int, duration: float}
      */
-    protected function runTimeoutProbe(string $case, float $timeout = 0.5): array {
+    protected function runTimeoutProbe(string $case, float $timeout = 0.5, bool $asDefault = false): array {
         if (Platform::isWindows()) {
             $this->markTestSkipped('Die Attrappen sind sh-Skripte; die Probe laeuft nur unter Unix.');
         }
@@ -46,7 +47,7 @@ trait TimeoutProbeTrait {
 
         try {
             $process = new Process(
-                [PHP_BINARY, dirname(__DIR__) . '/scripts/timeout_probe.php', $case, (string) $timeout, $workDir],
+                [PHP_BINARY, dirname(__DIR__) . '/scripts/timeout_probe.php', $case, (string) $timeout, $workDir, $asDefault ? 'standard' : ''],
                 null,
                 ['PATH' => $binDir . PATH_SEPARATOR . (getenv('PATH') ?: '/usr/bin:/bin')],
                 null,

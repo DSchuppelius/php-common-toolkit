@@ -30,8 +30,23 @@ class OfficeHelperTest extends BaseTestCase {
     }
 
     protected function tearDown(): void {
+        Shell::setDefaultTimeout(null);
         $this->removeProbeDir($this->dir);
         parent::tearDown();
+    }
+
+    public function test_zeitgrenze_ohne_angabe_waechst_mit_der_dateigroesse(): void {
+        $file = $this->dir . '/zwei-mb.csv';
+        file_put_contents($file, str_repeat('x', 2 * 1048576));
+
+        // 300 s Grundwert + 60 s je MB
+        $this->assertSame(420.0, OfficeHelper::convertTimeout($file));
+        // Fehlende Datei: Grundwert
+        $this->assertSame(OfficeHelper::TIMEOUT_BASE, OfficeHelper::convertTimeout($this->dir . '/fehlt.docx'));
+        // Nie unter der prozessweiten Standard-Zeitgrenze, hoechstens der Deckel
+        Shell::setDefaultTimeout(1000.0);
+        $this->assertSame(1000.0, OfficeHelper::convertTimeout($file));
+        $this->assertSame(Shell::MAX_SCALED_TIMEOUT, Shell::scaledTimeout(1.0e6, OfficeHelper::TIMEOUT_PER_MEGABYTE, OfficeHelper::TIMEOUT_BASE));
     }
 
     public function test_zeitgrenze_bricht_langsame_konvertierung_ab(): void {

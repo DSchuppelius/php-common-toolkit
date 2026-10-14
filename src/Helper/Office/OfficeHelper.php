@@ -76,11 +76,28 @@ final class OfficeHelper extends ConfiguredHelperAbstract {
     /** Zeitgrenze fuer die einmalige Initialisierung der Profilvorlage. */
     private const TEMPLATE_INIT_TIMEOUT = 120.0;
 
+    /** Grundwert der Zeitgrenze einer Konvertierung: Start, Profil, kleine Dokumente. */
+    public const TIMEOUT_BASE = 300.0;
+
+    /** Zuschlag je MB Eingabe: grosse Tabellen und bilderreiche Dokumente brauchen Minuten. */
+    public const TIMEOUT_PER_MEGABYTE = 60.0;
+
     /** true, wenn die Vorlage in diesem Prozess nicht angelegt werden konnte (kein erneuter Versuch). */
     private static bool $templateUnavailable = false;
 
     public static function isAvailable(): bool {
         return self::isExecutableAvailable('libreoffice');
+    }
+
+    /**
+     * Zeitgrenze einer Konvertierung nach der Groesse der Eingabe: TIMEOUT_BASE
+     * plus TIMEOUT_PER_MEGABYTE je MB, hoechstens {@see Shell::MAX_SCALED_TIMEOUT},
+     * nie unter {@see Shell::getDefaultTimeout()}.
+     */
+    public static function convertTimeout(string $inputFile): float {
+        $megabytes = File::exists($inputFile) ? File::size($inputFile) / 1048576 : 0.0;
+
+        return Shell::scaledTimeout($megabytes, self::TIMEOUT_PER_MEGABYTE, self::TIMEOUT_BASE);
     }
 
     /**
@@ -98,14 +115,16 @@ final class OfficeHelper extends ConfiguredHelperAbstract {
      * @param string $targetFormat LibreOffice-Zielformat (z.B. 'docx', 'odt', 'pdf')
      * @param string $outputDir    Ausgabeverzeichnis
      * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr)
-     * @param float|null $timeout  Sekunden bis zum Abbruch; null = unbegrenzt. Bei
-     *                             Ueberschreitung false, $output endet mit "Zeitgrenze N s ueberschritten".
+     * @param float|null $timeout  Sekunden bis zum Abbruch; null = nach der Dateigroesse
+     *                             ({@see convertTimeout()}). Bei Ueberschreitung false,
+     *                             $output endet mit "Zeitgrenze N s ueberschritten".
      * @return bool true bei Erfolg (Exit 0)
      */
     public static function convert(string $inputFile, string $targetFormat, string $outputDir, array &$output = [], int &$returnCode = 0, ?float $timeout = null): bool {
         if (!self::isAvailable()) {
             return self::logErrorAndReturn(false, 'LibreOffice ist nicht verfügbar (office_executables.json).');
         }
+        $timeout ??= self::convertTimeout($inputFile);
 
         $hardening = self::hardeningItems();
         if ($hardening === null) {
@@ -140,7 +159,7 @@ final class OfficeHelper extends ConfiguredHelperAbstract {
     /**
      * Konvertiert und liefert den vollständigen Pfad der erzeugten Datei zurück.
      *
-     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt.
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = nach der Dateigroesse ({@see convertTimeout()}).
      * @return string|null Pfad zur Ausgabedatei oder null bei Fehler
      */
     public static function convertToFile(string $inputFile, string $targetFormat, string $outputDir, ?float $timeout = null): ?string {

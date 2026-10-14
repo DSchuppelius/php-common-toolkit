@@ -37,6 +37,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     private const INCONCLUSIVE_MIME_TYPES = ['application/x-empty', 'application/octet-stream'];
 
+    /** Zuschlag je MB auf die Zeitgrenze von chardet/uchardet, die die ganze Datei lesen. */
+    private const CHARDET_SECONDS_PER_MEGABYTE = 30.0;
+
     /**
      * @var array<string, string> Magic-Bytes-Signatur (Präfix) => MIME-Typ, längste Signatur zuerst.
      */
@@ -90,7 +93,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         // MIME-Proben lesen nur den Dateikopf; chardet liest die ganze Datei
-        $timeout = in_array($commandName, ['chardet', 'uchardet'], true) ? null : Shell::TIMEOUT_PROBE;
+        $timeout = in_array($commandName, ['chardet', 'uchardet'], true)
+            ? Shell::scaledTimeout((self::exists($file) ? self::size($file) : 0) / 1048576, self::CHARDET_SECONDS_PER_MEGABYTE)
+            : Shell::TIMEOUT_PROBE;
         $output = [];
         if (!Shell::executeShellCommand($command, $output, timeout: $timeout) || empty($output)) {
             return self::logErrorAndReturn(false, "Fehler beim $commandName-Aufruf für $file");

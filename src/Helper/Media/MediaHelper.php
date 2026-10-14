@@ -27,6 +27,11 @@ use CommonToolkit\Helper\Shell;
  *
  * Deployment-spezifische Pfade (Whisper-/Piper-Modellverzeichnisse) werden als
  * Parameter übergeben; dieser Helper kennt keine anwendungsspezifischen Pfade.
+ *
+ * Jeder Aufruf hat eine Zeitgrenze. Ohne eigene Angabe waechst sie mit der
+ * Arbeit: Proben bekommen {@see Shell::TIMEOUT_PROBE}, Wandlungen und Whisper
+ * eine Frist nach der Medienlaenge ({@see mediaTimeout()}), die Sprachsynthese
+ * eine nach der Textlaenge.
  */
 final class MediaHelper extends ConfiguredHelperAbstract {
     protected const CONFIG_FILE = __DIR__ . '/../../../config/media_executables.json';
@@ -51,6 +56,21 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      */
     public const WHISPER_FORMATS = ['txt', 'vtt', 'srt', 'tsv', 'json'];
 
+    /**
+     * Sekunden Laufzeit je Sekunde Medienlaenge fuer FFmpeg-Wandlungen
+     * (Software-Encoding von HD liegt etwa bei 1-2x Realzeit).
+     */
+    public const TRANSCODE_SECONDS_PER_MEDIA_SECOND = 4.0;
+
+    /** Sekunden Laufzeit je Sekunde Medienlaenge fuer Whisper auf der CPU (base/small um 1x, medium deutlich langsamer). */
+    public const TRANSCRIBE_SECONDS_PER_MEDIA_SECOND = 10.0;
+
+    /** Grundwert der Whisper-Zeitgrenze: Anlauf und Laden des Modells. */
+    public const TRANSCRIBE_TIMEOUT_BASE = 600.0;
+
+    /** Sekunden Laufzeit je Zeichen fuer die Sprachsynthese (gesprochen etwa 15 Zeichen je Sekunde). */
+    public const SPEECH_SECONDS_PER_CHARACTER = 0.1;
+
     public static function isFfmpegAvailable(): bool {
         return self::isExecutableAvailable('ffmpeg');
     }
@@ -68,6 +88,25 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     }
 
     /**
+     * Zeitgrenze fuer einen Lauf, dessen Dauer mit der Medienlaenge waechst
+     * (FFmpeg-Wandlung, Einzelbilder, Whisper): $base plus $secondsPerMediaSecond
+     * je Sekunde Medienlaenge, hoechstens {@see Shell::MAX_SCALED_TIMEOUT}, nie
+     * unter {@see Shell::getDefaultTimeout()}. Ohne bekannte Laenge (Probe
+     * fehlgeschlagen) gilt der Deckel.
+     *
+     * @param float|null $durationSeconds Medienlaenge, z. B. 'duration' aus getAudioInfo()/getVideoInfo().
+     * @param float $secondsPerMediaSecond Realzeit-Faktor (TRANSCODE_... bzw. TRANSCRIBE_SECONDS_PER_MEDIA_SECOND).
+     * @param float|null $base Grundwert in Sekunden; null = {@see Shell::getDefaultTimeout()}.
+     */
+    public static function mediaTimeout(?float $durationSeconds, float $secondsPerMediaSecond = self::TRANSCODE_SECONDS_PER_MEDIA_SECOND, ?float $base = null): float {
+        if ($durationSeconds === null || !is_finite($durationSeconds) || $durationSeconds <= 0.0) {
+            return max(Shell::getDefaultTimeout(), Shell::MAX_SCALED_TIMEOUT);
+        }
+
+        return Shell::scaledTimeout($durationSeconds, $secondsPerMediaSecond, $base);
+    }
+
+    /**
      * Konvertiert eine Mediendatei mit FFmpeg.
      *
      * Baut `ffmpeg -hide_banner -loglevel error -protocol_whitelist file,pipe -i <input> [-vn] <codecArgs...> <output>`.
@@ -82,7 +121,8 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr)
      * @param bool $stripVideo true entfernt den Videostream (-vn, Audio-Konvertierung);
      *                         false behält ihn (Video-Konvertierung)
-     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = nach der Medienlaenge
+     *                            ({@see mediaTimeout()}, vorher eine Probe). Bei
      *                            Ueberschreitung false, $output endet mit "Zeitgrenze N s ueberschritten".
      * @return bool true bei Erfolg (Exit 0 und Ausgabedatei vorhanden)
      */
@@ -91,6 +131,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         if ($path === null) {
             return self::logErrorAndReturn(false, 'FFmpeg ist nicht verfügbar (media_executables.json).');
         }
+        $timeout ??= self::mediaTimeout(self::probeDuration($input));
 
         $argv = [$path, ...self::FFMPEG_BASE_FLAGS, ...self::FFMPEG_INPUT_FLAGS, '-i', $input];
         if ($stripVideo) {
@@ -111,12 +152,13 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     /**
      * Führt eine FFmpeg-Probe aus und liefert die (stderr-)Ausgabe als String.
      *
-     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei Ueberschreitung null.
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = {@see Shell::TIMEOUT_PROBE}. Bei Ueberschreitung null.
      */
     private static function probe(string $file, ?float $timeout = null): ?string {
         if (!File::exists($file) || !self::isFfmpegAvailable()) {
             return null;
         }
+        $timeout ??= Shell::TIMEOUT_PROBE;
 
         $argv = self::getConfiguredArgv('ffmpeg-info', ['[INPUT]' => $file]);
         if ($argv === null) {
@@ -130,10 +172,31 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         // Shell::execute() sammelt stdout und stderr gemeinsam, der Exit-Code ist hier unerheblich.
         Shell::execute($argv, $output, $returnCode, $timeout);
         if ($returnCode === Shell::EXIT_TIMEOUT) {
-            return self::logErrorAndReturn(null, 'FFmpeg-Probe abgebrochen: ' . Shell::timeoutMessage((float) $timeout));
+            return self::logErrorAndReturn(null, 'FFmpeg-Probe abgebrochen: ' . Shell::timeoutMessage($timeout));
         }
 
         return implode("\n", $output);
+    }
+
+    /**
+     * Medienlaenge in Sekunden aus der Probe-Ausgabe ("Duration: 00:01:02.50").
+     */
+    private static function parseDuration(string $probeOutput): ?float {
+        if (preg_match('/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/', $probeOutput, $matches) !== 1) {
+            return null;
+        }
+
+        return (float) $matches[1] * 3600 + (float) $matches[2] * 60 + (float) $matches[3];
+    }
+
+    /**
+     * Medienlaenge einer Datei per Probe (Zeitgrenze {@see Shell::TIMEOUT_PROBE});
+     * null, wenn sie sich nicht bestimmen laesst.
+     */
+    private static function probeDuration(string $file): ?float {
+        $probeOutput = self::probe($file);
+
+        return $probeOutput === null ? null : self::parseDuration($probeOutput);
     }
 
     /**
@@ -162,7 +225,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     /**
      * Liest Audio-Metadaten via FFmpeg aus.
      *
-     * @param float|null $timeout Sekunden bis zum Abbruch der Probe; null = unbegrenzt. Bei Ueberschreitung null.
+     * @param float|null $timeout Sekunden bis zum Abbruch der Probe; null = {@see Shell::TIMEOUT_PROBE}. Bei Ueberschreitung null.
      * @return array{duration?: float, sample_rate?: int, channels?: int, codec?: string, bitrate?: int}|null
      */
     public static function getAudioInfo(string $file, ?float $timeout = null): ?array {
@@ -173,8 +236,9 @@ final class MediaHelper extends ConfiguredHelperAbstract {
 
         $info = [];
 
-        if (preg_match('/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/', $outputStr, $matches)) {
-            $info['duration'] = (float) $matches[1] * 3600 + (float) $matches[2] * 60 + (float) $matches[3];
+        $duration = self::parseDuration($outputStr);
+        if ($duration !== null) {
+            $info['duration'] = $duration;
         }
         if (preg_match('/(\d+)\s*Hz/', $outputStr, $matches)) {
             $info['sample_rate'] = (int) $matches[1];
@@ -201,7 +265,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
     /**
      * Liest Video-Metadaten via FFmpeg aus.
      *
-     * @param float|null $timeout Sekunden bis zum Abbruch der Probe; null = unbegrenzt. Bei Ueberschreitung null.
+     * @param float|null $timeout Sekunden bis zum Abbruch der Probe; null = {@see Shell::TIMEOUT_PROBE}. Bei Ueberschreitung null.
      * @return array{duration?: float, width?: int, height?: int, codec?: string, fps?: float}|null
      */
     public static function getVideoInfo(string $file, ?float $timeout = null): ?array {
@@ -212,8 +276,9 @@ final class MediaHelper extends ConfiguredHelperAbstract {
 
         $info = [];
 
-        if (preg_match('/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/', $outputStr, $matches)) {
-            $info['duration'] = (float) $matches[1] * 3600 + (float) $matches[2] * 60 + (float) $matches[3];
+        $duration = self::parseDuration($outputStr);
+        if ($duration !== null) {
+            $info['duration'] = $duration;
         }
         // Auflösung: \d{2,5}-Grenzen überspringen den Codec-FourCC-Hex (z.B. "0x31637661")
         // und treffen die echte Auflösung ("1920x1080").
@@ -244,8 +309,10 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      * @param string $language Sprachcode oder 'auto' für automatische Erkennung
      * @param string $task 'transcribe' oder 'translate'
      * @param string $outputFormat Eines aus WHISPER_FORMATS ('txt', 'vtt', 'srt', 'tsv', 'json')
-     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei Ueberschreitung null
-     *                            mit Fehlerlog "Zeitgrenze N s ueberschritten".
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = nach der Medienlaenge
+     *                            ({@see mediaTimeout()} mit TRANSCRIBE_SECONDS_PER_MEDIA_SECOND und
+     *                            TRANSCRIBE_TIMEOUT_BASE). Bei Ueberschreitung null mit Fehlerlog
+     *                            "Zeitgrenze N s ueberschritten".
      * @return string|null Inhalt der Ausgabedatei oder null bei Fehler
      */
     public static function transcribeWhisper(
@@ -272,6 +339,8 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         if ($path === null) {
             return self::logErrorAndReturn(null, 'Whisper ist nicht verfügbar (media_executables.json).');
         }
+
+        $timeout ??= self::mediaTimeout(self::probeDuration($input), self::TRANSCRIBE_SECONDS_PER_MEDIA_SECOND, self::TRANSCRIBE_TIMEOUT_BASE);
 
         Folder::create($outputDir);
 
@@ -311,8 +380,9 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      *
      * @param string $modelPath Vollständiger Pfad zur .onnx-Stimmdatei (deployment-spezifisch)
      * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr).
-     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei
-     *                            Ueberschreitung false, $output endet mit "Zeitgrenze N s ueberschritten".
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = nach der Textlaenge
+     *                            (SPEECH_SECONDS_PER_CHARACTER). Bei Ueberschreitung false,
+     *                            $output endet mit "Zeitgrenze N s ueberschritten".
      * @return bool true bei Erfolg (Ausgabedatei vorhanden)
      */
     public static function synthesizePiper(string $text, string $outputWav, string $modelPath, array &$output = [], int &$returnCode = 0, ?float $timeout = null): bool {
@@ -320,6 +390,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         if ($path === null) {
             return self::logErrorAndReturn(false, 'Piper ist nicht verfügbar (media_executables.json).');
         }
+        $timeout ??= Shell::scaledTimeout((float) mb_strlen($text), self::SPEECH_SECONDS_PER_CHARACTER);
 
         // Piper liest den Text von stdin (frueher per `echo | piper`, jetzt direkt als Standardeingabe).
         $argv = [$path, '--model', $modelPath, '--output_file', $outputWav];
@@ -336,8 +407,9 @@ final class MediaHelper extends ConfiguredHelperAbstract {
      *
      * @param string $textPath Pfad zur Textdatei mit dem zu sprechenden Inhalt
      * @param list<string> $output Referenz: Shell-Ausgabe (stdout+stderr).
-     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt. Bei
-     *                            Ueberschreitung false, $output endet mit "Zeitgrenze N s ueberschritten".
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = nach der Dateigroesse
+     *                            (ein Byte zaehlt wie ein Zeichen, SPEECH_SECONDS_PER_CHARACTER).
+     *                            Bei Ueberschreitung false, $output endet mit "Zeitgrenze N s ueberschritten".
      * @return bool true bei Erfolg (Ausgabedatei vorhanden)
      */
     public static function synthesizeEspeak(string $textPath, string $outputWav, string $voice = 'de', string $speed = '150', array &$output = [], int &$returnCode = 0, ?float $timeout = null): bool {
@@ -345,6 +417,7 @@ final class MediaHelper extends ConfiguredHelperAbstract {
         if ($path === null) {
             return self::logErrorAndReturn(false, 'eSpeak-NG ist nicht verfügbar (media_executables.json).');
         }
+        $timeout ??= Shell::scaledTimeout(File::exists($textPath) ? (float) File::size($textPath) : 0.0, self::SPEECH_SECONDS_PER_CHARACTER);
 
         $argv = [$path, '-v', $voice, '-s', $speed, '-w', $outputWav, '-f', $textPath];
 

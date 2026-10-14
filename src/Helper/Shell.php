@@ -16,7 +16,8 @@ use CommonToolkit\Contracts\Abstracts\ConfiguredHelperAbstract;
 use CommonToolkit\Entities\Executables\{ShellExecutable, ShellResult};
 use Exception;
 use InvalidArgumentException;
-use Symfony\Component\Process\Exception\{ProcessSignaledException, ProcessTimedOutException};
+use RuntimeException;
+use Symfony\Component\Process\Exception\{ProcessSignaledException, ProcessStartFailedException, ProcessTimedOutException};
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -30,6 +31,14 @@ use Throwable;
  * Gruppe bleibt in der Sitzung des Aufrufers - wer den Aufrufer samt Sitzung
  * beendet (`pkill -s`, systemd), trifft die Werkzeuge mit. Unter Windows
  * beendet Symfony Process den Prozessbaum (taskkill /T).
+ *
+ * Unbegrenzt laeuft nichts: ohne Angabe gilt {@see getDefaultTimeout()}, auch
+ * bei run() und execute(). Waechst die Arbeit mit der Eingabe (Dateigroesse,
+ * Medienlaenge, Seitenzahl), liefert {@see scaledTimeout()} eine passende Frist.
+ *
+ * Warnungen, Fehler und Exceptions nennen nur den Programmnamen, nie die
+ * Befehlszeile: sie traegt Pfade und Inhalte, und Aufrufer reichen Meldungen
+ * bis zum Kunden durch. Die ganze Zeile steht nur im DEBUG-Log.
  *
  * Direkte Prozessaufrufe (exec, proc_open, Backticks ...) gehoeren nur in
  * diese Klasse; die PHPStan-Regel {@see \CommonToolkit\PHPStan\NoDirectProcessCallRule}
@@ -50,6 +59,15 @@ class Shell extends ConfiguredHelperAbstract {
 
     /** Deckel fuer kurze Proben und Infoabfragen (pdfinfo, identify, file, --version). */
     public const TIMEOUT_PROBE = 30.0;
+
+    /** Obergrenze jeder skalierten Zeitgrenze ({@see scaledTimeout()}): 4 Stunden. */
+    public const MAX_SCALED_TIMEOUT = 14400.0;
+
+    /** Ausgabezeilen, die eine Exception bei unerwartetem Exit-Code hoechstens mitnimmt. */
+    private const ERROR_TAIL_LINES = 5;
+
+    /** Zeichen je Ausgabezeile in dieser Exception. */
+    private const ERROR_TAIL_LINE_LENGTH = 300;
 
     /** Laengste Nachfrist zwischen SIGTERM und SIGKILL beim Abbruch. */
     private const KILL_GRACE = 5.0;
@@ -95,6 +113,33 @@ class Shell extends ConfiguredHelperAbstract {
     }
 
     /**
+     * Zeitgrenze fuer Arbeit, die mit der Eingabe waechst: $base plus $perUnit je
+     * Einheit (MB Eingabe, Sekunde Medienlaenge, Zeichen Text, Seite ...),
+     * hoechstens $cap und nie unter der prozessweiten Standard-Zeitgrenze - wer
+     * die fuer lange Laeufe hochsetzt ({@see setDefaultTimeout()}), hebt damit
+     * auch die skalierten Grenzen an.
+     *
+     * Die Grenze faengt Haenger ab und ist deshalb grosszuegig zu waehlen, damit
+     * legitime grosse Eingaben durchlaufen.
+     *
+     * @param float $units Menge der Arbeit (negativ zaehlt wie 0).
+     * @param float $perUnit Sekunden je Einheit.
+     * @param float|null $base Grundwert in Sekunden; null = {@see getDefaultTimeout()}.
+     * @param float $cap Obergrenze in Sekunden.
+     * @throws InvalidArgumentException Bei nicht endlichen Angaben oder nicht positivem Grund-/Deckelwert.
+     */
+    public static function scaledTimeout(float $units, float $perUnit, ?float $base = null, float $cap = self::MAX_SCALED_TIMEOUT): float {
+        if (!is_finite($units) || !is_finite($perUnit)) {
+            self::logErrorAndThrow(InvalidArgumentException::class, 'Menge und Sekunden je Einheit muessen endliche Zahlen sein.');
+        }
+
+        $base = $base === null ? self::getDefaultTimeout() : self::validTimeout($base);
+        $cap = self::validTimeout($cap);
+
+        return max(self::getDefaultTimeout(), min($cap, $base + max(0.0, $units * $perUnit)));
+    }
+
+    /**
      * Startet ein Programm mit Argumentliste — ohne Shell, daher ohne
      * Quoting-Probleme und ohne Injektion über Argumente.
      *
@@ -104,33 +149,32 @@ class Shell extends ConfiguredHelperAbstract {
      * Programmname — Argumente und Umgebung können Geheimnisse enthalten.
      *
      * Ein Timeout wirft nicht, sondern steht im Ergebnis (`timedOut`); beendet
-     * wird dann der ganze Prozessbaum des Programms.
+     * wird dann der ganze Prozessbaum des Programms. Unbegrenzt laeuft nichts.
      *
      * @param list<string> $command Programm und Argumente, z. B. ['tar', '-xf', $archiv].
-     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt.
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = {@see getDefaultTimeout()}
+     *        (bis 2.9 hiess null "unbegrenzt").
      * @param array<string, string>|null $env Zusätzliche Umgebungsvariablen (ergänzen die geerbten).
      * @param string|null $cwd Arbeitsverzeichnis.
      * @param (callable(string $buffer, bool $isErrorOutput): void)|null $onOutput Erhält die Ausgabe
      *        stückweise; die Standardausgabe landet dann nicht im Ergebnis.
      * @param string|null $input Daten für die Standardeingabe.
      * @return ShellResult Exit-Code, Ausgaben, Timeout und Laufzeit.
-     * @throws InvalidArgumentException Wenn keine Programmangabe übergeben wird.
+     * @throws InvalidArgumentException Wenn keine Programmangabe übergeben wird oder die
+     *         Zeitgrenze nicht positiv und endlich ist (0 und INF hiessen bis 2.9 "unbegrenzt").
+     * @throws RuntimeException Wenn das Programm nicht gestartet werden kann (Meldung ohne Argumente).
      */
     public static function run(array $command, ?float $timeout = 60.0, ?array $env = null, ?string $cwd = null, ?callable $onOutput = null, ?string $input = null): ShellResult {
         if ($command === [] || trim((string) $command[array_key_first($command)]) === '') {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Shell::run() braucht mindestens den Programmnamen.');
         }
 
+        $timeout = self::resolveTimeout($timeout);
         $argv = array_map('strval', $command);
         $program = basename((string) $command[array_key_first($command)]);
-        // 0 und unendlich hiessen bei Symfony schon immer "ohne Grenze"
-        $bounded = $timeout !== null && is_finite($timeout) && $timeout > 0.0;
-        $wrapped = false;
-        if ($bounded) {
-            [$argv, $wrapped] = self::boundArgv($argv, $timeout);
-        }
+        [$argv, $wrapped] = self::boundArgv($argv, $timeout);
 
-        $process = new Process($argv, $cwd, self::inheritedEnv($env), $input, $wrapped ? self::safetyTimeout((float) $timeout) : $timeout);
+        $process = new Process($argv, $cwd, self::inheritedEnv($env), $input, $wrapped ? self::safetyTimeout($timeout) : $timeout);
         $started = microtime(true);
         $streamedOutput = $onOutput !== null;
 
@@ -140,7 +184,12 @@ class Shell extends ConfiguredHelperAbstract {
             }
         : null;
 
-        $timedOut = self::runBounded($process, $wrapped, $bounded ? $timeout : null, $callback, true);
+        try {
+            $timedOut = self::runBounded($process, $wrapped, $timeout, $callback, true);
+        } catch (ProcessStartFailedException $e) {
+            self::logDebug('Startfehler: ' . $e->getMessage());
+            self::logErrorAndThrow(RuntimeException::class, sprintf('Prozess %s nicht startbar: %s', $program, self::startFailureReason($e)));
+        }
 
         $duration = microtime(true) - $started;
         $result = new ShellResult(
@@ -173,13 +222,17 @@ class Shell extends ConfiguredHelperAbstract {
      * @param list<string> $command Programm und Argumente, z. B. ['ffmpeg', '-i', $datei].
      * @param list<string> $output Referenz: Ausgabezeilen (stdout + stderr).
      * @param int $resultCode Referenz: Exit-Code bzw. EXIT_TIMEOUT.
-     * @param float|null $timeout Sekunden bis zum Abbruch; null = unbegrenzt.
+     * @param float|null $timeout Sekunden bis zum Abbruch; null = {@see getDefaultTimeout()}
+     *        (bis 2.9 hiess null "unbegrenzt").
      * @param string|null $input Daten fuer die Standardeingabe.
      * @param string|null $cwd Arbeitsverzeichnis.
      * @return bool True bei Exit-Code 0 ohne Zeitueberschreitung.
-     * @throws InvalidArgumentException Wenn keine Programmangabe uebergeben wird.
+     * @throws InvalidArgumentException Wenn keine Programmangabe uebergeben wird oder die
+     *         Zeitgrenze nicht positiv und endlich ist.
+     * @throws RuntimeException Wenn das Programm nicht gestartet werden kann (Meldung ohne Argumente).
      */
     public static function execute(array $command, array &$output = [], int &$resultCode = 0, ?float $timeout = null, ?string $input = null, ?string $cwd = null): bool {
+        $timeout = self::resolveTimeout($timeout);
         $buffer = '';
         $result = self::run(
             $command,
@@ -202,7 +255,7 @@ class Shell extends ConfiguredHelperAbstract {
 
         if ($result->timedOut) {
             $resultCode = self::EXIT_TIMEOUT;
-            $output[] = self::timeoutMessage((float) $timeout);
+            $output[] = self::timeoutMessage($timeout);
             return false;
         }
 
@@ -235,6 +288,10 @@ class Shell extends ConfiguredHelperAbstract {
      * {@see EXIT_TIMEOUT} und die letzte Zeile von $output ist
      * {@see timeoutMessage()}.
      *
+     * Warnung und Exception nennen nur den Programmnamen, den Exit-Code und
+     * (nur die Exception) die letzten Ausgabezeilen - nie die Befehlszeile; die
+     * steht im DEBUG-Log. Startet die Shell nicht, ist $resultCode -1.
+     *
      * @param string $command Der auszuführende Befehl.
      * @param list<string> $output Referenz auf ein Array, in dem die Ausgabe des Befehls gespeichert wird.
      * @param int $resultCode Referenz auf eine Variable, in der der Exit-Code gespeichert wird.
@@ -248,16 +305,19 @@ class Shell extends ConfiguredHelperAbstract {
      * @throws InvalidArgumentException Bei nicht positiver oder nicht endlicher Zeitgrenze.
      */
     public static function executeShellCommand(string $command, array &$output = [], int &$resultCode = 0, bool $throwException = false, int $expectedResultCode = 0, bool $usePowerShell = false, bool $captureStderr = true, ?float $timeout = null): bool {
+        // Nur der Programmname fuer Meldungen: die Befehlszeile kann Pfade und Inhalte tragen
+        $program = self::programName($command);
+
         // Vorabprüfung
         if (!function_exists('proc_open')) {
-            self::logErrorAndThrow(Exception::class, "proc_open() ist deaktiviert. Der Befehl kann nicht ausgeführt werden. Befehl: $command");
+            self::logErrorAndThrow(Exception::class, "proc_open() ist deaktiviert. $program kann nicht ausgeführt werden.");
         }
 
         if (trim($command) === '') {
             self::logErrorAndThrow(Exception::class, "Es wurde kein Befehl übergeben. Bitte einen gültigen Befehl angeben.");
         }
 
-        $timeout = $timeout === null ? self::getDefaultTimeout() : self::validTimeout($timeout);
+        $timeout = self::resolveTimeout($timeout);
 
         // Plattformabhängige Shell-Vorbereitung
         $command = self::buildPlatformCommand($command, $usePowerShell);
@@ -288,7 +348,18 @@ class Shell extends ConfiguredHelperAbstract {
             $process->clearErrorOutput();
         };
 
-        $timedOut = self::runBounded($process, $wrapped, $timeout, $callback, false);
+        try {
+            $timedOut = self::runBounded($process, $wrapped, $timeout, $callback, false);
+        } catch (ProcessStartFailedException $e) {
+            self::logDebug("Befehl nicht startbar: $command");
+            $resultCode = -1;
+            $message = sprintf('%s nicht startbar: %s', $program, self::startFailureReason($e));
+            if ($throwException) {
+                self::logErrorAndThrow(Exception::class, $message);
+            }
+
+            return self::logErrorAndReturn(false, $message);
+        }
         if ($pending !== '') {
             $output[] = self::trimOutputLine($pending);
         }
@@ -302,8 +373,7 @@ class Shell extends ConfiguredHelperAbstract {
                 self::logDebug("Befehlsausgabe: " . implode("\n", $output));
             }
             $output[] = self::timeoutMessage($timeout);
-            // Nur der Programmname: die Befehlszeile kann Pfade und Inhalte tragen
-            $message = sprintf('%s: %s, Prozessbaum beendet', self::programName($command), self::timeoutMessage($timeout));
+            $message = sprintf('%s: %s, Prozessbaum beendet', $program, self::timeoutMessage($timeout));
 
             if ($throwException) {
                 self::logErrorAndThrow(Exception::class, $message);
@@ -321,13 +391,13 @@ class Shell extends ConfiguredHelperAbstract {
 
         // Fehlerbehandlung
         if ($resultCode !== $expectedResultCode) {
-            $errorMessage = "Fehler bei der Ausführung des Kommandos: $command";
+            $errorMessage = sprintf('%s endete mit Exit-Code %d (erwartet %d)', $program, $resultCode, $expectedResultCode);
 
             if ($throwException) {
-                self::logErrorAndThrow(Exception::class, "$errorMessage Ausgabe: " . implode("\n", $output));
+                self::logErrorAndThrow(Exception::class, $errorMessage . self::outputTail($output));
             }
 
-            return self::logWarningAndReturn(false, "$errorMessage (keine Exception geworfen)");
+            return self::logWarningAndReturn(false, $errorMessage);
         }
 
         return true;
@@ -380,7 +450,7 @@ class Shell extends ConfiguredHelperAbstract {
             return [];
         }
 
-        $timeout = $timeout === null ? self::getDefaultTimeout() : self::validTimeout($timeout);
+        $timeout = self::resolveTimeout($timeout);
         $limit = max(1, min($maxParallel ?? Platform::getCpuCoreCount(), self::MAX_PARALLEL));
 
         $pending = $commands;
@@ -400,7 +470,8 @@ class Shell extends ConfiguredHelperAbstract {
                 try {
                     $process->start();
                 } catch (Throwable $e) {
-                    self::logWarning(sprintf('Prozess %s nicht startbar: %s', self::programName($command), $e->getMessage()));
+                    self::logDebug("Befehl nicht startbar: $command");
+                    self::logWarning(sprintf('Prozess %s nicht startbar: %s', self::programName($command), self::startFailureReason($e)));
                     $exitCodes[$key] = -1;
                     continue;
                 }
@@ -539,7 +610,7 @@ class Shell extends ConfiguredHelperAbstract {
      *        der Exit-Code 128 + Signal wie in der Shell.
      * @return bool Ob die Zeitgrenze gegriffen hat.
      */
-    private static function runBounded(Process $process, bool $wrapped, ?float $timeout, ?callable $callback, bool $throwOnSignal): bool {
+    private static function runBounded(Process $process, bool $wrapped, float $timeout, ?callable $callback, bool $throwOnSignal): bool {
         $started = microtime(true);
         $process->start($callback);
         $pid = $process->getPid();
@@ -575,8 +646,8 @@ class Shell extends ConfiguredHelperAbstract {
      * 137 (SIGKILL), und die Zeitgrenze ist verstrichen - ein Programm, das
      * selbst mit 124 endet, zaehlt nicht als Zeitueberschreitung.
      */
-    private static function expiredByTimeoutProgram(bool $wrapped, ?float $timeout, ?int $exitCode, float $started): bool {
-        return $wrapped && $timeout !== null
+    private static function expiredByTimeoutProgram(bool $wrapped, float $timeout, ?int $exitCode, float $started): bool {
+        return $wrapped
             && in_array($exitCode, self::TIMEOUT_EXIT_CODES, true)
             && microtime(true) - $started >= $timeout;
     }
@@ -650,6 +721,14 @@ class Shell extends ConfiguredHelperAbstract {
         return ($extra ?? []) + $env;
     }
 
+    /**
+     * Die Zeitgrenze eines Aufrufs: null = {@see getDefaultTimeout()}, sonst
+     * positiv und endlich.
+     */
+    private static function resolveTimeout(?float $seconds): float {
+        return $seconds === null ? self::getDefaultTimeout() : self::validTimeout($seconds);
+    }
+
     private static function validTimeout(float $seconds): float {
         if (!is_finite($seconds) || $seconds <= 0.0) {
             self::logErrorAndThrow(InvalidArgumentException::class, sprintf('Die Zeitgrenze muss eine positive, endliche Zahl sein (erhalten: %s).', var_export($seconds, true)));
@@ -694,6 +773,43 @@ class Shell extends ConfiguredHelperAbstract {
         if (self::$stderr !== false) {
             @fwrite(self::$stderr, $chunk);
         }
+    }
+
+    /**
+     * Grund eines Startfehlers ohne die Befehlszeile: Symfony nimmt sie samt
+     * Arbeitsverzeichnis in die Meldung auf.
+     */
+    private static function startFailureReason(Throwable $e): string {
+        if (!$e instanceof ProcessStartFailedException) {
+            return $e->getMessage();
+        }
+
+        $message = $e->getMessage();
+        $position = strrpos($message, 'Error: ');
+
+        return $position === false ? 'unbekannter Fehler' : trim(substr($message, $position + strlen('Error: ')));
+    }
+
+    /**
+     * Die letzten Ausgabezeilen fuer eine Fehlermeldung, je Zeile gekuerzt -
+     * genug fuer die Diagnose, ohne die ganze Ausgabe weiterzureichen.
+     *
+     * @param list<string> $output
+     */
+    private static function outputTail(array $output): string {
+        $lines = array_values(array_filter($output, static fn (string $line): bool => trim($line) !== ''));
+        if ($lines === []) {
+            return '';
+        }
+
+        $tail = array_map(
+            static fn (string $line): string => mb_strlen($line) > self::ERROR_TAIL_LINE_LENGTH
+                ? mb_substr($line, 0, self::ERROR_TAIL_LINE_LENGTH) . ' ...'
+                : $line,
+            array_slice($lines, -self::ERROR_TAIL_LINES)
+        );
+
+        return ". Letzte Ausgabe:\n" . implode("\n", $tail);
     }
 
     /**

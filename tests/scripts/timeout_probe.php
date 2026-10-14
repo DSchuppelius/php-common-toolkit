@@ -8,7 +8,10 @@
  * Executable-Konfiguration loest die Namen in diesem frischen Prozess ueber
  * PATH auf, deshalb laeuft die Probe getrennt vom PHPUnit-Prozess.
  *
- * Aufruf: php timeout_probe.php <fall> <zeitgrenze> <arbeitsverzeichnis>
+ * Aufruf: php timeout_probe.php <fall> <zeitgrenze> <arbeitsverzeichnis> [standard]
+ * Mit "standard" bekommt die Methode keine Zeitgrenze (null); die Zeitgrenze
+ * wird dann zur prozessweiten Standard-Zeitgrenze, aus der die Methode ihre
+ * eigene (skalierte) Frist ableitet.
  * Ausgabe: eine JSON-Zeile mit result, output, returnCode und duration.
  */
 
@@ -18,10 +21,19 @@ require dirname(__DIR__, 2) . '/vendor/autoload.php';
 
 use CommonToolkit\Helper\Media\MediaHelper;
 use CommonToolkit\Helper\Office\OfficeHelper;
+use CommonToolkit\Helper\Shell;
 
 $case = $argv[1] ?? '';
 $timeout = (float) ($argv[2] ?? 0.5);
 $workDir = rtrim($argv[3] ?? sys_get_temp_dir(), '/');
+if (($argv[4] ?? '') === 'standard') {
+    Shell::setDefaultTimeout($timeout);
+    $timeout = null;
+}
+
+// Kurzer Text fuer eSpeak: dessen Frist waechst ohne Angabe mit der Dateigroesse
+$textFile = $workDir . '/text.txt';
+file_put_contents($textFile, 'Hallo');
 
 $output = [];
 $returnCode = 0;
@@ -33,7 +45,7 @@ $result = match ($case) {
     'getVideoInfo' => MediaHelper::getVideoInfo(__FILE__, $timeout),
     'transcribeWhisper' => MediaHelper::transcribeWhisper(__FILE__, $workDir . '/whisper', 'base', '', 'auto', 'transcribe', 'cpu', 'txt', $timeout),
     'synthesizePiper' => MediaHelper::synthesizePiper('Hallo', $workDir . '/piper.wav', $workDir . '/voice.onnx', $output, $returnCode, $timeout),
-    'synthesizeEspeak' => MediaHelper::synthesizeEspeak(__FILE__, $workDir . '/espeak.wav', 'de', '150', $output, $returnCode, $timeout),
+    'synthesizeEspeak' => MediaHelper::synthesizeEspeak($textFile, $workDir . '/espeak.wav', 'de', '150', $output, $returnCode, $timeout),
     'officeConvert' => OfficeHelper::convert(__FILE__, 'pdf', $workDir, $output, $returnCode, $timeout),
     default => throw new InvalidArgumentException("Unbekannter Probe-Fall: $case"),
 };
