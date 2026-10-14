@@ -21,7 +21,7 @@ General-purpose PHP utility toolkit providing platform-agnostic helpers, CSV pro
 - **iCalendar**: `ICalendarParser` reads `.ics` data (folding, escapes, TZID incl. Windows names, all-day, DURATION); `Document::expand()` resolves series (RRULE DAILY/WEEKLY/MONTHLY/YEARLY with BYDAY/BYMONTHDAY/BYMONTH/BYSETPOS, EXDATE, RECURRENCE-ID)
 - **Creditor Reference (ISO 11649)**: `CreditorReferenceHelper::create()` / `::isValid()` / `::format()` / `::extract()` — build RF references from an identifier, check MOD 97-10 digits, print in groups of four and find them in remittance text
 - **CEF (SIEM)**: `CEFGenerator::line()` writes Common Event Format lines with header and extension escaping
-- **ZIP Entry Filtering**: `ZipFile::readEntries()` / `::skipEntry()` — inspect archives entry by entry and skip unsafe or unwanted members before extraction
+- **ZIP Entry Filtering**: `ZipFile::readEntries()` / `::readEntriesFromFile()` / `::extract()` with a `skipEntry` callback — inspect archives entry by entry and skip unsafe or unwanted members before extraction
 - **Value Objects**: typed wrappers such as `WasteCode` (European waste catalogue)
 - **Data URLs**: `DataUrlHelper::decode()` / `::parse()` / `::encode()` — strict RFC 2397 decoding with size limit and content-based type check (e.g. signature images from a canvas)
 
@@ -31,14 +31,17 @@ General-purpose PHP utility toolkit providing platform-agnostic helpers, CSV pro
 
 ```text
 src/
-├── Builders/           # Fluent document builders (CSV, XML)
+├── Builders/           # Fluent document builders (CSV, HTML, XLSX, XML, Payment/EPC QR)
 ├── Contracts/          # Abstract base classes and interfaces
-├── Entities/           # Immutable domain models (CSV, Executables, XML)
+├── Entities/           # Immutable domain models (CSV, Executables, HTML, ICalendar, XLSX, XML)
 ├── Enums/              # Typed enums with factory methods
-├── Generators/         # Code generators
-├── Helper/             # Utility classes (Data, FileSystem, Shell)
-├── Parsers/            # Document parsers (CSV)
-└── Traits/             # Reusable traits
+├── Exceptions/         # Exceptions (Parsers)
+├── Generators/         # Document generators (CEF, CSV, XLSX, XML)
+├── Helper/             # Utility classes (Data, FileSystem, Geo, Media, Office, Shell, Java, Platform)
+├── Parsers/            # Document parsers (CSV, HTML, ICalendar, XLSX, XML)
+├── PHPStan/            # PHPStan rule: processes only via Shell
+├── Traits/             # Reusable traits
+└── ValueObjects/       # Typed value objects (Gtin, IpAddress, ByteSize, Duration, ...)
 ```
 
 ---
@@ -177,7 +180,7 @@ use CommonToolkit\ValueObjects\{ByteSize, Duration, Gtin, IpAddress};
 // Gtin: EAN/UPC mit Prüfziffer (Längen 8/12/13/14)
 $gtin = Gtin::of('4006381-333931');
 $gtin->getValue();    // "4006381333931"
-$gtin->toGtin14();    // "04006381333931" (Prüfziffer bleibt gültig)
+$gtin->toGtin14()->getValue();    // "04006381333931" (Prüfziffer bleibt gültig)
 
 // IpAddress: sensibel — kein implizites Leaken, DSGVO-Anonymisierung
 $ip = IpAddress::of('192.168.2.77');
@@ -215,13 +218,12 @@ foreach ($document->getSeries() as $series) {
 
 ```php
 use CommonToolkit\Builders\CSVDocumentBuilder;
+use CommonToolkit\Entities\CSV\{DataLine, HeaderLine};
 
-$document = CSVDocumentBuilder::create()
-    ->setDelimiter(';')
-    ->setEnclosure('"')
-    ->addHeaderLine(['Name', 'Amount', 'Date'])
-    ->addDataLine(['Max Mustermann', '1000.00', '2025-01-15'])
-    ->addDataLine(['John Doe', '2500.00', '2025-01-16'])
+$document = (new CSVDocumentBuilder(';', '"'))
+    ->setHeader(new HeaderLine(['Name', 'Amount', 'Date'], ';', '"'))
+    ->addRow(new DataLine(['Max Mustermann', '1000.00', '2025-01-15'], ';', '"'))
+    ->addRow(new DataLine(['John Doe', '2500.00', '2025-01-16'], ';', '"'))
     ->build();
 
 echo $document->toString();
@@ -232,14 +234,15 @@ echo $document->toString();
 ```php
 use CommonToolkit\Helper\Data\BankHelper;
 
-// IBAN Validation
-$isValid = BankHelper::isValidIBAN('DE89370400440532013000'); // true
+// IBAN Validation (Aufbau und Prüfziffer, MOD 97-10)
+$isValid = BankHelper::checkIBAN('DE89370400440532013000'); // true
+$isValid = BankHelper::validateIBAN('DE89370400440532013000', strict: true); // dasselbe, null-tolerant
 
-// BIC Validation
-$isValid = BankHelper::isValidBIC('COBADEFFXXX'); // true
+// BIC Validation (Aufbau und Ländercode)
+$isValid = BankHelper::isBIC('COBADEFFXXX'); // true
 
 // Get Bank Name by BLZ
-$bankName = BankHelper::getBankNameByBLZ('37040044'); // "Commerzbank"
+$bankName = BankHelper::bankNameFromBLZ('37040044'); // "Commerzbank"
 ```
 
 ### Creditor Reference (RF, ISO 11649)
@@ -352,7 +355,7 @@ bleibt Sache des Aufrufers: `decode()` liefert `false` statt einer Exception.
 use CommonToolkit\Helper\Data\CurrencyHelper;
 use CommonToolkit\Enums\CurrencyCode;
 
-$formatted = CurrencyHelper::format(1234.56, CurrencyCode::Euro); // "1.234,56 €"
+$formatted = CurrencyHelper::format(1234.56, CurrencyCode::Euro, 'de_DE'); // "1.234,56 €" (ohne Locale: Locale::getDefault())
 ```
 
 ### Enum Usage
@@ -431,8 +434,8 @@ Mit passender Konfigurationsdatei (`config/image_executables.json`):
 ```json
 {
   "shellExecutables": {
-    "tiffconvert": {
-      "path": "tiffconvert",
+    "convert": {
+      "path": "convert",
       "required": false,
       "description": "ImageMagick Converter",
       "package": "imagemagick",
