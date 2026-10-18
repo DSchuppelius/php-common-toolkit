@@ -599,6 +599,9 @@ class FileTest extends BaseTestCase {
             'gif89a' => ['GIF89a' . str_repeat("\x00", 32), 'image/gif'],
             'zip' => ["PK\x03\x04" . str_repeat("\x00", 40), 'application/zip'],
             'xml' => ['<?xml version="1.0" encoding="UTF-8"?><Invoice><ID>1</ID></Invoice>', 'text/xml'],
+            // finfo meldet XML ohne Prolog als text/plain — UBL/CII dürfen ohne Prolog kommen.
+            'xml_without_declaration' => ['<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"><ID>1</ID></Invoice>', 'text/xml'],
+            'xml_bom_whitespace' => ["\xEF\xBB\xBF\n  <rsm:CrossIndustryInvoice xmlns:rsm=\"urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100\"/>", 'text/xml'],
             'json' => ['{"invoice": {"id": 1, "lines": [1, 2, 3]}}', 'application/json'],
             'html' => ['<!DOCTYPE html><html><body>Text</body></html>', 'text/html'],
             'text' => ["Dies ist reiner Text mit Umlauten: äöüß.\nZeile zwei.\n", 'text/plain'],

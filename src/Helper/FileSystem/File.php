@@ -37,6 +37,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     private const INCONCLUSIVE_MIME_TYPES = ['application/x-empty', 'application/octet-stream'];
 
+    /** Typen, die die Inhaltsheuristik aus finfo-"text/plain" noch herausliest. */
+    private const TEXT_REFINEMENTS = ['text/xml', 'application/json', 'text/html'];
+
     /** Zuschlag je MB auf die Zeitgrenze von chardet/uchardet, die die ganze Datei lesen. */
     private const CHARDET_SECONDS_PER_MEGABYTE = 30.0;
 
@@ -153,7 +156,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Anhänge). Erkennung primär über finfo::buffer(); liefert finfo kein
      * belastbares Ergebnis (Extension fehlt oder meldet application/x-empty bzw.
      * application/octet-stream), greift die Magic-Bytes-Erkennung
-     * {@see mimeTypeFromMagicBytes()}.
+     * {@see mimeTypeFromMagicBytes()}; meldet finfo text/plain, verfeinert dieselbe
+     * Heuristik auf XML ohne Prolog, JSON und HTML.
      *
      * Bewusst ohne Cache: der Cache-Schlüssel wäre der komplette Inhalt.
      *
@@ -168,6 +172,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         if (class_exists('finfo')) {
             $finfo = new \finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->buffer($bytes);
+            if ($result === 'text/plain') {
+                // finfo kennt XML nur am Prolog; UBL/CII ohne Prolog wäre sonst Text.
+                $refined = self::mimeTypeFromMagicBytes($bytes);
+                if (in_array($refined, self::TEXT_REFINEMENTS, true)) {
+                    return self::logDebugAndReturn($refined, "MIME-Typ via Inhaltsheuristik verfeinert: text/plain -> $refined");
+                }
+            }
             if ($result !== false && $result !== '' && !in_array($result, self::INCONCLUSIVE_MIME_TYPES, true)) {
                 return self::logDebugAndReturn($result, "MIME-Typ via finfo-Buffer erkannt: $result");
             }

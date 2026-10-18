@@ -322,8 +322,11 @@ Erkannt wird primär über `finfo::buffer()`. Fehlt `ext-fileinfo` oder liefert 
 kein belastbares Ergebnis (`application/x-empty`, `application/octet-stream`),
 greift `File::mimeTypeFromMagicBytes()` – eine deterministische
 Magic-Bytes-Tabelle (PDF, PNG, JPEG, GIF, ZIP, TIFF, GZIP, BMP, RIFF/WebP)
-plus Inhaltsheuristik für XML, HTML, JSON und Text. Unbekannter Binärinhalt
-ergibt `application/octet-stream`, ein leerer String `false`.
+plus Inhaltsheuristik für XML, HTML, JSON und Text. Meldet finfo `text/plain`,
+verfeinert dieselbe Heuristik auf `text/xml`, `application/json` oder
+`text/html` – finfo kennt XML nur am `<?xml`-Prolog, UBL/CII-Rechnungen kommen
+auch ohne. Unbekannter Binärinhalt ergibt `application/octet-stream`, ein
+leerer String `false`.
 
 ### Data-URLs (Bilder aus dem Browser)
 
