@@ -511,6 +511,18 @@ Warnung z. B. `pdftotext endete mit Exit-Code 1 (erwartet 0)`; die Exception (`$
 fünf Ausgabezeilen an (je Zeile höchstens 300 Zeichen). Startet ein Programm nicht, nennt die Meldung nur den Grund.
 Die ganze Befehlszeile steht im DEBUG-Log.
 
+Programme, deren Exit-Code ein fachliches Urteil ist (Validatoren: 0 = angenommen, 1 = abgelehnt), ruft man mit
+`expectedResultCode: null` auf: der Exit-Code wird dann nicht bewertet, es gibt weder Warnung noch Exception,
+`$resultCode` trägt den Wert und `executeShell()` liefert die Ausgabe. Zeitüberschreitung und Startfehler bleiben
+Fehler. `Java::execute()` und `Java::executeClass()` reichen den Parameter durch.
+
+```php
+$output = [];
+$code = 0;
+Shell::executeShellCommand($command, $output, $code, expectedResultCode: null); // true, $code = 1 bei Ablehnung
+$report = Java::execute($validatorJar, $arguments, expectedResultCode: null);    // Ausgabe auch bei Exit 1
+```
+
 Für unabhängige Arbeit je Datei oder Seite (z. B. OCR je Seite) startet `executeParallel()` mehrere Befehle
 nebenläufig, jeden mit eigener Zeitgrenze:
 

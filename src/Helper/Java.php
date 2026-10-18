@@ -26,10 +26,12 @@ class Java extends ConfiguredHelperAbstract {
      * @param string $path Der Pfad zur JAR-Datei.
      * @param array<int|string, string> $args Zusätzliche Argumente für die Ausführung.
      * @param float|null $timeout Zeitgrenze in Sekunden; null = {@see Shell::getDefaultTimeout()}.
+     * @param int|null $expectedResultCode Erwarteter Exit-Code; null bewertet ihn nicht (Programme, deren Exit-Code
+     *                                     ein fachliches Urteil ist, z. B. Validatoren) - siehe {@see Shell::executeShellCommand()}.
      * @return string Die Ausgabe der Ausführung; leer bei Fehlschlag oder Zeitüberschreitung.
      * @throws Exception Wenn ein Fehler auftritt.
      */
-    public static function execute(string $path, array $args = [], ?float $timeout = null): string {
+    public static function execute(string $path, array $args = [], ?float $timeout = null, ?int $expectedResultCode = 0): string {
         if (empty($path)) {
             self::logErrorAndThrow(Exception::class, "Für JAVA-Ausführung muss der Pfad zur JAR-Datei gesetzt sein.");
         } elseif (File::exists($path) === false) {
@@ -40,7 +42,7 @@ class Java extends ConfiguredHelperAbstract {
         if (empty($command)) {
             self::logErrorAndThrow(Exception::class, "JAVA-Ausführung benötigt eine JAVA-Runtime. Bitte installieren Sie eine JAVA-Runtime.");
         }
-        return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)), timeout: $timeout);
+        return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)), expectedResultCode: $expectedResultCode, timeout: $timeout);
     }
 
     /**
@@ -51,10 +53,11 @@ class Java extends ConfiguredHelperAbstract {
      * @param string $runClass Der Klassenname, der ausgeführt werden soll.
      * @param array<int|string, string> $args Zusätzliche Argumente für die Ausführung.
      * @param float|null $timeout Zeitgrenze in Sekunden; null = {@see Shell::getDefaultTimeout()}.
+     * @param int|null $expectedResultCode Erwarteter Exit-Code; null bewertet ihn nicht - siehe {@see self::execute()}.
      * @return string Die Ausgabe der Ausführung; leer bei Fehlschlag oder Zeitüberschreitung.
      * @throws Exception Wenn ein Fehler auftritt.
      */
-    public static function executeClass(string $classPath, string $mainClass, string $runClass, array $args = [], ?float $timeout = null): string {
+    public static function executeClass(string $classPath, string $mainClass, string $runClass, array $args = [], ?float $timeout = null, ?int $expectedResultCode = 0): string {
         if (empty($classPath) || empty($mainClass) || empty($runClass)) {
             self::logErrorAndThrow(Exception::class, "Für CLASS-Ausführung müssen classpath, mainClass und runClass gesetzt sein.");
         }
@@ -63,7 +66,7 @@ class Java extends ConfiguredHelperAbstract {
         if (empty($command)) {
             self::logErrorAndThrow(Exception::class, "JAVA Klassen-Ausführung benötigt eine JAVA-Runtime. Bitte installieren Sie eine JAVA-Runtime.");
         }
-        return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)), timeout: $timeout);
+        return Shell::executeShell($command . " " . implode(' ', array_map('escapeshellarg', $args)), expectedResultCode: $expectedResultCode, timeout: $timeout);
     }
 
     /**

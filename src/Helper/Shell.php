@@ -296,7 +296,10 @@ class Shell extends ConfiguredHelperAbstract {
      * @param list<string> $output Referenz auf ein Array, in dem die Ausgabe des Befehls gespeichert wird.
      * @param int $resultCode Referenz auf eine Variable, in der der Exit-Code gespeichert wird.
      * @param bool $throwException Ob eine Exception geworfen werden soll, wenn der Befehl fehlschlägt oder die Zeitgrenze greift.
-     * @param int $expectedResultCode Der erwartete Exit-Code des Befehls.
+     * @param int|null $expectedResultCode Der erwartete Exit-Code des Befehls; null bewertet den Exit-Code nicht
+     *                                     (keine Warnung, keine Exception, Rückgabe true) - für Programme, deren
+     *                                     Exit-Code ein fachliches Urteil ist (Validatoren: 1 = abgelehnt). Der
+     *                                     Aufrufer liest $resultCode selbst; Zeitgrenze und Startfehler bleiben Fehler.
      * @param bool $usePowerShell Ob PowerShell verwendet werden soll (Windows).
      * @param bool $captureStderr Ob stderr nach stdout umgeleitet werden soll (2>&1). Standard: true.
      * @param float|null $timeout Zeitgrenze in Sekunden; null = {@see getDefaultTimeout()}.
@@ -304,7 +307,7 @@ class Shell extends ConfiguredHelperAbstract {
      * @throws Exception Wenn der Befehl nicht ausgeführt werden kann.
      * @throws InvalidArgumentException Bei nicht positiver oder nicht endlicher Zeitgrenze.
      */
-    public static function executeShellCommand(string $command, array &$output = [], int &$resultCode = 0, bool $throwException = false, int $expectedResultCode = 0, bool $usePowerShell = false, bool $captureStderr = true, ?float $timeout = null): bool {
+    public static function executeShellCommand(string $command, array &$output = [], int &$resultCode = 0, bool $throwException = false, ?int $expectedResultCode = 0, bool $usePowerShell = false, bool $captureStderr = true, ?float $timeout = null): bool {
         // Nur der Programmname fuer Meldungen: die Befehlszeile kann Pfade und Inhalte tragen
         $program = self::programName($command);
 
@@ -390,7 +393,7 @@ class Shell extends ConfiguredHelperAbstract {
         }
 
         // Fehlerbehandlung
-        if ($resultCode !== $expectedResultCode) {
+        if ($expectedResultCode !== null && $resultCode !== $expectedResultCode) {
             $errorMessage = sprintf('%s endete mit Exit-Code %d (erwartet %d)', $program, $resultCode, $expectedResultCode);
 
             if ($throwException) {
@@ -408,7 +411,10 @@ class Shell extends ConfiguredHelperAbstract {
      *
      * @param string $command Der auszuführende Befehl.
      * @param bool $throwException Ob eine Exception geworfen werden soll, wenn der Befehl fehlschlägt.
-     * @param int $expectedResultCode Der erwartete Exit-Code des Befehls.
+     * @param int|null $expectedResultCode Der erwartete Exit-Code des Befehls; null bewertet den Exit-Code nicht
+     *                                     (keine Warnung, keine Exception, Rückgabe true) - für Programme, deren
+     *                                     Exit-Code ein fachliches Urteil ist (Validatoren: 1 = abgelehnt). Der
+     *                                     Aufrufer liest $resultCode selbst; Zeitgrenze und Startfehler bleiben Fehler.
      * @param bool $usePowerShell Ob PowerShell verwendet werden soll (Windows).
      * @param float|null $timeout Zeitgrenze in Sekunden; null = {@see getDefaultTimeout()}.
      * @return string Die Ausgabe des Befehls; leer bei Fehlschlag oder Zeitüberschreitung.
@@ -416,7 +422,7 @@ class Shell extends ConfiguredHelperAbstract {
     public static function executeShell(
         string $command,
         bool $throwException = false,
-        int $expectedResultCode = 0,
+        ?int $expectedResultCode = 0,
         bool $usePowerShell = false,
         ?float $timeout = null
     ): string {

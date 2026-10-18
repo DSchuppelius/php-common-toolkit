@@ -387,6 +387,24 @@ class ShellTest extends BaseTestCase {
         $this->assertSame(3, $resultCode);
     }
 
+    public function test_exit_code_null_bewertet_den_exit_code_nicht(): void {
+        $this->requireUnix();
+        $output = [];
+        $resultCode = 0;
+        $messages = $this->captureLog(function () use (&$output, &$resultCode): void {
+            $this->assertTrue(Shell::executeShellCommand("sh -c 'echo urteil; exit 1'", $output, $resultCode, expectedResultCode: null));
+        });
+
+        $this->assertSame(1, $resultCode);
+        $this->assertSame(['urteil'], $output);
+        $this->assertSame([], array_values(array_filter($messages, static fn (array $m): bool => $m[0] !== 'debug')), 'Exit 1 ist hier ein Urteil, keine Warnung');
+        $this->assertSame('urteil', Shell::executeShell("sh -c 'echo urteil; exit 1'", expectedResultCode: null));
+
+        // Zeitgrenze und Startfehler bleiben Fehler
+        $this->assertFalse(Shell::executeShellCommand('sleep 5', $output, $resultCode, expectedResultCode: null, timeout: 0.5));
+        $this->assertSame(Shell::EXIT_TIMEOUT, $resultCode);
+    }
+
     public function test_exception_kuerzt_lange_ausgabezeilen(): void {
         $this->requireUnix();
         $output = [];
