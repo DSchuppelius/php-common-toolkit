@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "dschuppelius/php-config-toolkit",
-            "version": "v0.5.11",
+            "version": "v0.5.13",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-config-toolkit.git",
-                "reference": "47b1ae4626f3057f89624bc91851669495d4d3a6"
+                "reference": "bef6ff6ab0dbc25888a9d4d8a20d2f6182ce685b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/47b1ae4626f3057f89624bc91851669495d4d3a6",
-                "reference": "47b1ae4626f3057f89624bc91851669495d4d3a6",
+                "url": "https://api.github.com/repos/DSchuppelius/php-config-toolkit/zipball/bef6ff6ab0dbc25888a9d4d8a20d2f6182ce685b",
+                "reference": "bef6ff6ab0dbc25888a9d4d8a20d2f6182ce685b",
                 "shasum": ""
             },
             "require": {
@@ -53,20 +53,20 @@
                 "issues": "https://github.com/DSchuppelius/php-config-toolkit/issues",
                 "source": "https://github.com/DSchuppelius/php-config-toolkit"
             },
-            "time": "2026-10-14T07:26:12+00:00"
+            "time": "2026-10-18T11:05:16+00:00"
         },
         {
             "name": "dschuppelius/php-error-toolkit",
-            "version": "v2.8.1",
+            "version": "v2.8.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DSchuppelius/php-error-toolkit.git",
-                "reference": "148eece946d9d327c14dd604489da46d275d9034"
+                "reference": "07b700b9ffaa847264ac2b78f133ba8e206d5c7d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/148eece946d9d327c14dd604489da46d275d9034",
-                "reference": "148eece946d9d327c14dd604489da46d275d9034",
+                "url": "https://api.github.com/repos/DSchuppelius/php-error-toolkit/zipball/07b700b9ffaa847264ac2b78f133ba8e206d5c7d",
+                "reference": "07b700b9ffaa847264ac2b78f133ba8e206d5c7d",
                 "shasum": ""
             },
             "require": {
@@ -115,7 +115,7 @@
                 "issues": "https://github.com/DSchuppelius/php-error-toolkit/issues",
                 "source": "https://github.com/DSchuppelius/php-error-toolkit"
             },
-            "time": "2026-10-14T07:25:17+00:00"
+            "time": "2026-10-18T11:01:57+00:00"
         },
         {
             "name": "maxmind-db/reader",
@@ -234,16 +234,16 @@
         },
         {
             "name": "symfony/process",
-            "version": "v7.4.19",
+            "version": "v7.4.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/process.git",
-                "reference": "ed0ae095b86994d370d5791612e55984f15aa30e"
+                "reference": "e5247f4a5e0797d232ad8e8e6803aeb341843c83"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/process/zipball/ed0ae095b86994d370d5791612e55984f15aa30e",
-                "reference": "ed0ae095b86994d370d5791612e55984f15aa30e",
+                "url": "https://api.github.com/repos/symfony/process/zipball/e5247f4a5e0797d232ad8e8e6803aeb341843c83",
+                "reference": "e5247f4a5e0797d232ad8e8e6803aeb341843c83",
                 "shasum": ""
             },
             "require": {
@@ -275,7 +275,7 @@
             "description": "Executes commands in sub-processes",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/process/tree/v7.4.19"
+                "source": "https://github.com/symfony/process/tree/v7.4.21"
             },
             "funding": [
                 {
@@ -295,7 +295,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-02T12:38:34+00:00"
+            "time": "2026-10-08T16:56:12+00:00"
         }
     ],
     "packages-dev": [
@@ -2214,5 +2214,5 @@
     "platform-overrides": {
         "php": "8.2.0"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
