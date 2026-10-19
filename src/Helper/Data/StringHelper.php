@@ -2186,6 +2186,46 @@ class StringHelper {
     }
 
     /**
+     * Wandelt HTML in lesbaren Text mit Zeilenstruktur: `<br>`/`<hr>`, Absatz-,
+     * Überschriften-, Tabellenzeilen- und Listenenden werden Zeilenumbrüche,
+     * Listenpunkte beginnen mit „- “, Zellen trennt ein Leerzeichen. `<script>`,
+     * `<style>`, `<head>` und Kommentare entfallen samt Inhalt, Entities werden
+     * dekodiert, geschützte Leerzeichen zu normalen. Zeilenumbrüche des
+     * HTML-Quelltexts zählen wie im Browser als Leerraum; Zeilen sind getrimmt,
+     * mehr als eine Leerzeile wird zu einer.
+     *
+     * Für E-Mail-Inhalte, OneNote-Seiten und andere HTML-Fragmente, die als
+     * Text gespeichert oder angezeigt werden. Im Gegensatz zu stripHtml() bleibt
+     * die Zeilenstruktur erhalten. Reiner Text ohne Tags verliert seine
+     * Zeilenumbrüche (HTML-Semantik) — nur HTML übergeben.
+     *
+     * @param string|null $html Das HTML (null wird als leerer String behandelt).
+     * @return string Der Text mit Zeilenumbrüchen.
+     * @see stripHtml() Für einzeiligen Text ohne Zeilenstruktur.
+     */
+    public static function htmlToText(?string $html): string {
+        if (self::isNullOrEmpty($html)) {
+            return '';
+        }
+        $html = preg_replace('#<(script|style|head|title|template)\b[^>]*>.*?</\1\s*>#is', '', $html) ?? $html;
+        $html = preg_replace('#<!--.*?-->#s', '', $html) ?? $html;
+        $html = preg_replace('/[\r\n\t\f]+/', ' ', $html) ?? $html;
+        $html = preg_replace('#<li\b[^>]*>#i', "\n- ", $html) ?? $html;
+        $html = preg_replace('#<(br|hr)\b[^>]*>#i', "\n", $html) ?? $html;
+        $html = preg_replace('#</(p|div|h[1-6]|tr|table|ul|ol|blockquote|pre|section|article|header|footer|address|dd|dt|figure|figcaption|caption|form|fieldset|legend)\s*>#i', "\n", $html) ?? $html;
+        $html = preg_replace('#</t[dh]\s*>#i', ' ', $html) ?? $html;
+
+        // Erst Tags entfernen, dann Entities: ein dekodiertes `&lt;b&gt;` bleibt Text.
+        $text = self::htmlEntitiesToText(strip_tags($html));
+        $lines = array_map(
+            static fn (string $line): string => trim(preg_replace('/[^\S\n]+/u', ' ', $line) ?? $line),
+            explode("\n", $text),
+        );
+
+        return trim(preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines)) ?? '');
+    }
+
+    /**
      * Wiederholt einen String n-mal.
      *
      * @param string|null $text Der zu wiederholende Text (null wird als leerer String behandelt).
