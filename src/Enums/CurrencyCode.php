@@ -567,13 +567,16 @@ enum CurrencyCode: string {
 
     /**
      * Eindeutige Schreibweisen des Symbols – regionale Präfixe, die {@see getSymbol()} nicht
-     * unterscheidet ("AU$" ist AUD, "$" bleibt USD). Kommt eine Währung mit eigenem Präfix dazu,
-     * genügt ein Eintrag hier: Tokenizer und {@see fromSymbol()} erkennen sie dann von selbst.
+     * unterscheidet ("AU$" ist AUD, "$" bleibt USD), und Schreibweisen ohne eigenes Zeichen
+     * ("Fr."/"SFr." für den Franken). Kommt eine Währung mit eigenem Präfix dazu, genügt ein
+     * Eintrag hier: Tokenizer und {@see fromSymbol()} erkennen sie dann von selbst.
      *
      * @return list<string>
      */
     public function getUniqueSymbols(): array {
         return match ($this) {
+            self::SwissFranc => ['SFr.', 'Fr.'],
+            self::USDollar => ['US$'],
             self::AustralianDollar => ['AU$', 'A$'],
             self::CanadianDollar => ['CA$', 'C$'],
             self::NewZealandDollar => ['NZ$'],

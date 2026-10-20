@@ -152,6 +152,19 @@ class AmountTokenizerTest extends BaseTestCase {
         $this->assertSame('CHF', AmountTokenizer::first("Zahlung CHF 1'234.56")?->currency);
     }
 
+    public function test_franken_und_us_dollar_schreibweisen(): void {
+        // Schweizer Rechnungen: "Fr. 1'234.50" bzw. "SFr."; US-Belege: "US$ 38.35"
+        $franken = AmountTokenizer::first("Total Fr. 1'234.50");
+        $this->assertSame(1234.5, $franken?->value);
+        $this->assertSame('CHF', $franken?->currency);
+        $this->assertSame('CHF', AmountTokenizer::first('Betrag SFr. 99.90')?->currency);
+        $us = AmountTokenizer::first('Total US$ 38.35');
+        $this->assertSame(38.35, $us?->value);
+        $this->assertSame('USD', $us?->currency);
+        // "Fr." ohne Betrag daneben ist keine Währung (Anrede "Fr. Müller")
+        $this->assertNull(AmountTokenizer::first('z. Hd. Fr. Müller'));
+    }
+
     public function test_schweizer_tausendertrenner_auch_typografisch(): void {
         // ODDO BHF 0346 druckt den Schweizer Trenner als U+2019, nicht als geraden Apostroph –
         // ohne das zerfiel "43’361.24" in Resttext "43’" plus den Betrag "361.24".

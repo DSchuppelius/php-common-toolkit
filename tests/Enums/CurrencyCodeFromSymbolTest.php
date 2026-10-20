@@ -32,6 +32,15 @@ final class CurrencyCodeFromSymbolTest extends BaseTestCase {
         );
     }
 
+    public function test_franc_and_us_dollar_spellings_resolve_without_own_sign(): void {
+        // Schweizer Belege schreiben "Fr." oder "SFr.", amerikanische "US$" — kein eigenes Zeichen, aber eindeutig
+        $this->assertSame(CurrencyCode::SwissFranc, CurrencyCode::fromSymbol('Fr.'));
+        $this->assertSame(CurrencyCode::SwissFranc, CurrencyCode::fromSymbol('SFr.'));
+        $this->assertSame(CurrencyCode::USDollar, CurrencyCode::fromSymbol('US$'));
+        $this->assertSame(['SFr.', 'Fr.'], CurrencyCode::SwissFranc->getSymbols());
+        $this->assertSame(['US$', '$'], CurrencyCode::USDollar->getSymbols());
+    }
+
     public function test_pound_symbol_resolves_to_british_pound(): void {
         $this->assertSame(
             CurrencyCode::BritishPound,

@@ -674,6 +674,13 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
+### 2.13 — Franken und US-Dollar als Schreibweise
+
+- `CurrencyCode::getUniqueSymbols()` kennt `Fr.`/`SFr.` für den Schweizer Franken und `US$` für den
+  US-Dollar. `fromSymbol('Fr.')` liefert CHF, `getSymbols()` nennt die Schreibweisen vor dem geteilten
+  Zeichen, und der `AmountTokenizer` liest „Total Fr. 1'234.50“ als CHF-Betrag; „Fr.“ ohne Betrag daneben
+  (Anrede) bleibt keine Währung.
+
 ### 2.10.1 — Whisper nur mit geprüfter WAV
 
 - `MediaHelper::transcribeWhisper()` gibt Whisper nicht mehr die Rohdatei: Erst wandelt das eigene FFmpeg mit
