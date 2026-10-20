@@ -674,7 +674,7 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
-### 2.13 — Franken und US-Dollar als Schreibweise
+### 2.12.2 — Franken und US-Dollar als Schreibweise
 
 - `CurrencyCode::getUniqueSymbols()` kennt `Fr.`/`SFr.` für den Schweizer Franken und `US$` für den
   US-Dollar. `fromSymbol('Fr.')` liefert CHF, `getSymbols()` nennt die Schreibweisen vor dem geteilten
