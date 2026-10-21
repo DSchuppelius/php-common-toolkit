@@ -674,6 +674,20 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
+### 2.13.0 — IBAN mit Folgetext, sicherer DOM-Lader, Wörter und Zeilen
+
+- `BankHelper::extractIBAN()`/`extractIBANs()` mit `$spaceTolerant`: Folgt einer gruppierten IBAN auf
+  derselben Zeile weiterer Text („IBAN DE89 3704 0044 0532 0130 00 BIC COBADEFFXXX“), gilt der Teil bis zur
+  Länderlänge als IBAN, wenn er an einer Gruppengrenze endet. Bis 2.12 lieferte das `null`, weil das Muster
+  bis zu 30 Zeichen in den Folgetext griff. Endet die Länderlänge mitten in einer Gruppe, bleibt es keine IBAN.
+- Neu: `XmlHelper::safeLoadDom()` lädt XML als `DOMDocument`, weist DOCTYPE und Entity-Deklarationen ab, hält
+  libxml-Fehler intern und lädt ohne Netzwerk. Neu: `XmlHelper::escape()` maskiert für XML (fünf vordefinierte
+  Entities, ungültiges UTF-8 ersetzt).
+- Neu: `CryptoHelper::hmac()` liefert HMAC als Hex oder Rohbytes, erlaubt leere Daten und protokolliert nichts
+  (`createHmac()` bleibt Base64). `secureRandomInt()` schreibt den erzeugten Wert nicht mehr ins Debug-Log.
+- Neu: `StringHelper::words()` (Leerraum einschließlich Unicode-Leerzeichen, ohne leere Teile) und
+  `StringHelper::lines()` (`\r\n`, `\r`, `\n` gleich, optional ohne Leerzeilen).
+
 ### 2.12.2 — Franken und US-Dollar als Schreibweise
 
 - `CurrencyCode::getUniqueSymbols()` kennt `Fr.`/`SFr.` für den Schweizer Franken und `US$` für den

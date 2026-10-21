@@ -2011,6 +2011,37 @@ class StringHelper {
     }
 
     /**
+     * Zerlegt Text an Leerraum (auch Unicode-Leerzeichen wie NBSP) in Wörter;
+     * leere Teile entfallen.
+     *
+     * @return list<string>
+     */
+    public static function words(?string $text): array {
+        if ($text === null || $text === '') {
+            return [];
+        }
+
+        return preg_split('/[\s\p{Z}]+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    }
+
+    /**
+     * Zerlegt Text in Zeilen — „\r\n“, „\r“ und „\n“ gelten gleich, ohne
+     * Zeilenende-Reste in den Zeilen.
+     *
+     * @param bool $skipEmpty true = leere und nur aus Leerraum bestehende Zeilen entfallen
+     * @return list<string>
+     */
+    public static function lines(?string $text, bool $skipEmpty = false): array {
+        if ($text === null || $text === '') {
+            return [];
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $text) ?: [];
+
+        return $skipEmpty ? array_values(array_filter($lines, static fn (string $line): bool => trim($line) !== '')) : $lines;
+    }
+
+    /**
      * Wandelt Zeilenumbrüche in ein einheitliches Format um.
      *
      * @param string|null $text Der zu konvertierende Text (null wird als leerer String behandelt).

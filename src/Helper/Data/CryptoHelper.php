@@ -410,6 +410,26 @@ class CryptoHelper extends HelperAbstract {
     }
 
     /**
+     * HMAC als Hex (Standard) oder Rohbytes — für Signaturen von Webhooks,
+     * Token und Blindindizes, die ein festes Format verlangen. Anders als
+     * {@see createHmac()} (Base64) sind leere Daten erlaubt, und weder Daten
+     * noch Ergebnis werden protokolliert.
+     *
+     * @param string $data Die zu signierenden Daten (darf leer sein)
+     * @param string $key Der HMAC-Schlüssel (nicht leer)
+     * @param HashAlgorithm|string $algorithm Hash-Algorithmus
+     * @param bool $binary true = Rohbytes, false = Hex in Kleinbuchstaben
+     * @throws InvalidArgumentException Bei leerem Schlüssel oder unbekanntem Algorithmus
+     */
+    public static function hmac(string $data, string $key, HashAlgorithm|string $algorithm = HashAlgorithm::SHA256, bool $binary = false): string {
+        if ($key === '') {
+            self::logErrorAndThrow(InvalidArgumentException::class, 'HMAC-Schlüssel darf nicht leer sein');
+        }
+
+        return hash_hmac(self::resolveCryptographicAlgorithm($algorithm), $data, $key, $binary);
+    }
+
+    /**
      * Verifiziert eine HMAC-Signatur.
      *
      * @param string $data Die ursprünglichen Daten
@@ -669,7 +689,8 @@ class CryptoHelper extends HelperAbstract {
             }
 
             $result = random_int($min, $max);
-            return self::logDebugAndReturn($result, "Sichere Zufallszahl generiert: {$result}");
+            // Den Wert nie protokollieren: er dient oft als Einmalcode oder PIN.
+            return self::logDebugAndReturn($result, "Sichere Zufallszahl generiert (Bereich {$min}–{$max})");
         } catch (Exception $e) {
             self::logErrorAndThrow(InvalidArgumentException::class, 'Sichere Zufallszahlgenerierung fehlgeschlagen: ' . $e->getMessage());
         }

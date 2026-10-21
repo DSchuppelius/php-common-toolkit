@@ -429,4 +429,15 @@ class CryptoHelperTest extends BaseTestCase {
             $this->assertTrue(CryptoHelper::verifyHmac($this->testData, $hmac, 'key', $algo));
         }
     }
+
+    public function test_hmac_returns_hex_or_raw_and_accepts_empty_data(): void {
+        $this->assertSame(hash_hmac('sha256', 'payload', 'secret'), CryptoHelper::hmac('payload', 'secret'));
+        $this->assertSame(hash_hmac('sha256', 'payload', 'secret', true), CryptoHelper::hmac('payload', 'secret', binary: true));
+        $this->assertSame(hash_hmac('sha512', '', 'secret'), CryptoHelper::hmac('', 'secret', \CommonToolkit\Enums\HashAlgorithm::SHA512));
+    }
+
+    public function test_hmac_rejects_an_empty_key(): void {
+        $this->expectException(\InvalidArgumentException::class);
+        CryptoHelper::hmac('payload', '');
+    }
 }

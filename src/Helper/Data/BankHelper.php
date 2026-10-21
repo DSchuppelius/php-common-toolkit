@@ -277,7 +277,7 @@ class BankHelper {
 
         $result = [];
         foreach ($matches[0] as $match) {
-            $candidate = self::sanitizeIBAN($spaceTolerant ? str_replace(' ', '', $match) : $match);
+            $candidate = self::ibanCandidate($match, $spaceTolerant);
             if ($candidate !== null && self::validateIBAN($candidate, $strict) && !in_array($candidate, $result, true)) {
                 $result[] = $candidate;
             }
@@ -309,7 +309,7 @@ class BankHelper {
 
         $offset = 0;
         while (preg_match($pattern, $text, $match, PREG_OFFSET_CAPTURE, $offset) === 1) {
-            $candidate = self::sanitizeIBAN($spaceTolerant ? str_replace(' ', '', $match[0][0]) : $match[0][0]);
+            $candidate = self::ibanCandidate($match[0][0], $spaceTolerant);
             if ($candidate !== null && self::validateIBAN($candidate, $strict)) {
                 return $candidate;
             }
@@ -317,6 +317,36 @@ class BankHelper {
         }
 
         return null;
+    }
+
+    /**
+     * Kandidat aus einem Suchtreffer. Mit $spaceTolerant greift das Muster über
+     * die Gruppen hinaus in Folgetext („DE89 3704 0044 0532 0130 00 BIC COBA…“);
+     * endet die Länderlänge an einer Gruppengrenze, gilt nur dieser Teil als IBAN.
+     * Endet sie mitten in einer Gruppe („… 0130 001234“), bleibt der ganze Treffer
+     * und scheitert an der Validierung.
+     */
+    private static function ibanCandidate(string $match, bool $spaceTolerant): ?string {
+        if (!$spaceTolerant) {
+            return self::sanitizeIBAN($match);
+        }
+
+        $compact = str_replace(' ', '', $match);
+        $expectedLength = CountryCode::tryFrom(substr($compact, 0, 2))?->getIBANLength();
+        if ($expectedLength !== null && strlen($compact) > $expectedLength) {
+            $taken = 0;
+            $length = strlen($match);
+            for ($i = 0; $i < $length; $i++) {
+                if ($match[$i] !== ' ' && ++$taken === $expectedLength) {
+                    if ($i + 1 === $length || $match[$i + 1] === ' ') {
+                        return substr($compact, 0, $expectedLength);
+                    }
+                    break;
+                }
+            }
+        }
+
+        return self::sanitizeIBAN($compact);
     }
 
     /**

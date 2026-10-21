@@ -367,6 +367,9 @@ class BankHelperTest extends BaseTestCase {
             'ABCD1234567890123 DE89370400440532013000',
             str_repeat('DE99000000000000000001 ', 20) . 'DE89370400440532013000',
             'FR7630006000011234567890189 DE89370400440532013000',
+            'IBAN DE89 3704 0044 0532 0130 00 BIC COBADEFFXXX',
+            'DE89370400440532013000 Konto',
+            'DE89 3704 0044 0532 0130 001234',
         ];
         foreach ($texts as $text) {
             foreach ([[false, false], [true, false], [false, true], [true, true]] as [$strict, $spaceTolerant]) {
@@ -426,5 +429,16 @@ class BankHelperTest extends BaseTestCase {
     public function test_bic_from_iban_returns_null_for_country_without_table(): void {
         // Länder ohne Tabelle liefern weiterhin null statt einer geratenen Angabe.
         self::assertNull(BankHelper::bicFromIBAN('FR1420041010050500013M02606'));
+    }
+
+    /** Gruppierte IBAN mit Folgetext auf derselben Zeile (Befund workDiary 2026-10-20). */
+    public function test_extract_iban_space_tolerant_stops_at_the_group_boundary(): void {
+        foreach ([false, true] as $strict) {
+            $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('IBAN DE89 3704 0044 0532 0130 00 BIC COBADEFFXXX', $strict, true));
+            $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('DE89370400440532013000 Konto', $strict, true));
+            $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('Bank: DE89 3704 0044 0532 0130 00 · BIC COBADEFFXXX', $strict, true));
+            $this->assertSame(['DE89370400440532013000'], BankHelper::extractIBANs('IBAN DE89 3704 0044 0532 0130 00 BIC COBADEFFXXX', $strict, true));
+        }
+        $this->assertNull(BankHelper::extractIBAN('DE89 3704 0044 0532 0130 001234', true, true), 'Endet die Länderlänge mitten in einer Gruppe, ist es keine IBAN.');
     }
 }

@@ -91,6 +91,47 @@ class XmlHelper extends HelperAbstract {
     }
 
     /**
+     * Lädt einen XML-String sicher als DOMDocument (XXE-geschützt).
+     *
+     * Für Fälle, die DOM brauchen (XPath über Namensräume hinweg, Knoten-
+     * Text in Dokumentreihenfolge, etwa die Teile einer DOCX-Datei). Dokumente
+     * mit DOCTYPE oder Entity-Deklaration werden abgewiesen — ohne DTD kann
+     * kein externes Entity und keine Entity-Expansion (Billion Laughs) greifen.
+     * Fehler bleiben intern (keine PHP-Warnung), Netzwerkzugriffe sind aus.
+     *
+     * @param string $xml Der XML-String
+     * @param int $additionalFlags Zusätzliche LIBXML_*-Flags (z.B. LIBXML_NOCDATA)
+     * @return DOMDocument|null Das Dokument oder null bei ungültigem XML bzw. DTD
+     */
+    public static function safeLoadDom(string $xml, int $additionalFlags = 0): ?DOMDocument {
+        if ($xml === '' || preg_match('/<!DOCTYPE|<!ENTITY/i', $xml) === 1) {
+            return null;
+        }
+
+        $useInternalErrors = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+        try {
+            $doc = new DOMDocument;
+            $loaded = $doc->loadXML($xml, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING | $additionalFlags);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($useInternalErrors);
+        }
+
+        return $loaded ? $doc : null;
+    }
+
+    /**
+     * Maskiert Text für XML-Inhalt und -Attribute (&, <, >, ", ').
+     *
+     * Anders als HTML-Entities erzeugt das nur die fünf in XML vordefinierten
+     * Entities; ungültiges UTF-8 wird ersetzt statt den Wert zu leeren.
+     */
+    public static function escape(string $value): string {
+        return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /**
      * Validiert XML gegen ein XSD-Schema.
      *
      * @param string $xml Der XML-String
