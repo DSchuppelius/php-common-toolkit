@@ -288,6 +288,20 @@ class StringHelperTest extends BaseTestCase {
     }
 
     /**
+     * Latin-1-Grossbuchstaben-Umlaute im Wort (Ä=0xC4, Ö=0xD6, Ü=0xDC,
+     * ß=0xDF) sind keine CP850-Rahmenzeichen: ein ISO-8859-15-MT940 mit
+     * "ÜBERWEISUNG"/"GÜNTER" galt sonst als CP850 ("GNTER", ckonverter
+     * 22.10.2026). Echte CP850-Umlaute bleiben CP850.
+     */
+    public function test_detect_legacy_encoding_latin1_uppercase_umlauts_are_not_cp850(): void {
+        $latin1 = ":86:166?00\xDCberweisung?20G\xDCNTER M\xDCLLER STRA\xDFE 5?21\xD6L UND \xC4PFEL";
+        $this->assertContains(StringHelper::detectLegacyEncoding($latin1), ['Windows-1252', 'ISO-8859-1', 'ISO-8859-15']);
+        $this->assertSame("G\u{00DC}NTER", StringHelper::convertToUtf8("G\xDCNTER", (string) StringHelper::detectLegacyEncoding($latin1)));
+
+        $this->assertSame('CP850', StringHelper::detectLegacyEncoding("\x9Aberweisung G\x9ANTER M\x81ller"), 'CP850-Umlaute bleiben CP850');
+    }
+
+    /**
      * Test detectLegacyEncoding für Windows-1252 (typografische Zeichen)
      */
     public function test_detect_legacy_encoding_windows1252(): void {

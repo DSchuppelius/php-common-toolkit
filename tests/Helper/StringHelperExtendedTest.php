@@ -249,4 +249,19 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertSame("\u{00DC}\u{00E4}x", StringHelper::repairInvalidUtf8("\xDC\xC3\xA4x"));
         $this->assertSame("B\u{00F6}ke \u{20AC} \u{20AC}", StringHelper::repairInvalidUtf8("B\xF6ke \xE2\x82\xAC \x80"));
     }
+
+    /**
+     * Lange gueltige Strecke vor dem Legacy-Byte: der gierige Lauf brach mit
+     * "JIT stack limit exhausted" ab, mb_scrub() machte das Byte zu "?"
+     * (MT940 mit 18 KB, ckonverter 22.10.2026).
+     */
+    public function test_repair_invalid_utf8_survives_long_valid_runs(): void {
+        $text = str_repeat("Zeile mit M\u{00FC}nchen und Text\r\n", 20000) . "Abrechnungsgeb\xFChr";
+
+        $repaired = StringHelper::repairInvalidUtf8($text);
+
+        $this->assertTrue(mb_check_encoding($repaired, 'UTF-8'));
+        $this->assertStringEndsWith("Abrechnungsgeb\u{00FC}hr", $repaired);
+        $this->assertStringNotContainsString('?', $repaired);
+    }
 }

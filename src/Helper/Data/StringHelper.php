@@ -217,8 +217,13 @@ class StringHelper {
         $valid = '(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}'
             . '|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})';
 
+        // Possessiv (++): der gierige Lauf ueber eine lange gueltige Strecke
+        // legte je Zeichen einen Ruecksetzpunkt an und brach ab ~16 KB mit
+        // "JIT stack limit exhausted" ab - dann ersetzte mb_scrub() jedes
+        // Legacy-Byte durch "?" ("Abrechnungsgeb?hr" in einem MT940 mit dem
+        // Umlaut hinter der Encoding-Stichprobe, ckonverter 22.10.2026).
         $repaired = preg_replace_callback(
-            '/(' . $valid . '+)|([\x80-\xFF])/s',
+            '/(' . $valid . '++)|([\x80-\xFF])/s',
             static fn (array $m): string => isset($m[2]) ? self::convertToUtf8($m[2], $legacyEncoding) : $m[1],
             $text
         );
@@ -448,6 +453,21 @@ class StringHelper {
                 } else {
                     $scores['Windows-1252'] += 2;
                 }
+            }
+
+            // Deutsche Grossbuchstaben-Umlaute und ß in Latin-1 (Ä=0xC4,
+            // Ö=0xD6, Ü=0xDC, ß=0xDF) im Wort: in CP850/CP437 waeren das
+            // Rahmenzeichen bzw. "Í" mitten im Wort. Sie zaehlten bisher als
+            // "einzelnes Box-Drawing-Zeichen" fuer CP850 - bei gleichem Stand
+            // gewann CP850 nach der Reihenfolge, aus "Überweisung" wurde
+            // "▄berweisung", aus "GÜNTER" "GNTER" (ISO-8859-15-MT940,
+            // ckonverter 22.10.2026).
+            if ($isLetterContext && in_array($byte, [0xC4, 0xD6, 0xDC, 0xDF], true)) {
+                $scores['ISO-8859-1'] += 3;
+                $scores['Windows-1252'] += 3;
+                $scores['ISO-8859-15'] += 3;
+
+                continue;
             }
 
             // Box-Drawing Zeichen (CP437-typisch, selten in Texten)
