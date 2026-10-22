@@ -194,6 +194,34 @@ class StringHelper {
         return in_array($encoding, $known, true);
     }
 
+    /** Ein gueltiges UTF-8-Zeichen aus zwei bis vier Bytes (ohne ASCII) */
+    private const UTF8_MULTIBYTE_CHAR = '[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}'
+        . '|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2}';
+
+    /**
+     * Legacy-Encoding der ungueltigen Bytes eines (gemischten) UTF-8-Texts.
+     *
+     * Die Encoding-Erkennung prueft nur den Dateianfang; ist er reines ASCII,
+     * galten spaetere Legacy-Bytes fest als Windows-1252. Eine CP850-Datei
+     * (DATEV-ASCII aus DOS-Programmen, v1-Bankumsaetze) wurde so zu
+     * "Gesch" + 0x84 als Windows-1252-Anfuehrungszeichen + "ft" statt "Geschaeft". Gueltige UTF-8-Zeichen werden vor der
+     * Heuristik durch einen Buchstaben ersetzt, damit ihre Bytes nicht als
+     * Legacy-Zeichen zaehlen und der Buchstabenkontext erhalten bleibt.
+     *
+     * @param string $text Text mit ungueltigen UTF-8-Bytes
+     * @param string $fallback Encoding, wenn die Bytes nicht unterscheidbar sind
+     */
+    public static function legacyEncodingOfInvalidBytes(string $text, string $fallback = 'Windows-1252'): string {
+        if ($text === '' || mb_check_encoding($text, 'UTF-8')) {
+            return $fallback;
+        }
+
+        $stripped = preg_replace('/(?:' . self::UTF8_MULTIBYTE_CHAR . ')++/', 'a', $text);
+        $detected = $stripped !== null ? self::detectLegacyEncoding($stripped) : null;
+
+        return ($detected === null || $detected === 'UTF-8') ? $fallback : $detected;
+    }
+
     /**
      * Repariert ungueltige UTF-8-Bytefolgen in einem sonst als UTF-8/ASCII
      * gelesenen Text: jedes Byte, das keine gueltige UTF-8-Folge bildet, wird
@@ -206,16 +234,17 @@ class StringHelper {
      * Umkodieren zu "?" (agree21-Export: "G?NTER" statt "GUENTER").
      *
      * @param string $text Der zu pruefende Text
-     * @param string $legacyEncoding Encoding fuer die ungueltigen Bytes
+     * @param string|null $legacyEncoding Encoding fuer die ungueltigen Bytes; null =
+     *        aus den ungueltigen Bytes selbst bestimmen ({@see legacyEncodingOfInvalidBytes()})
      * @return string Gueltiges UTF-8
      */
-    public static function repairInvalidUtf8(string $text, string $legacyEncoding = 'Windows-1252'): string {
+    public static function repairInvalidUtf8(string $text, ?string $legacyEncoding = 'Windows-1252'): string {
         if ($text === '' || mb_check_encoding($text, 'UTF-8')) {
             return $text;
         }
 
-        $valid = '(?:[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}'
-            . '|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})';
+        $legacyEncoding ??= self::legacyEncodingOfInvalidBytes($text);
+        $valid = '(?:[\x00-\x7F]|' . self::UTF8_MULTIBYTE_CHAR . ')';
 
         // Possessiv (++): der gierige Lauf ueber eine lange gueltige Strecke
         // legte je Zeichen einen Ruecksetzpunkt an und brach ab ~16 KB mit

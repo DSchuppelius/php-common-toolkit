@@ -264,4 +264,18 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertStringEndsWith("Abrechnungsgeb\u{00FC}hr", $repaired);
         $this->assertStringNotContainsString('?', $repaired);
     }
+
+    /**
+     * Die ungueltigen Bytes bestimmen ihr Encoding selbst: CP850 hinter einem
+     * ASCII-Dateianfang wurde fest als Windows-1252 gelesen ("Gesch" + 0x84 + "ft"
+     * als Anfuehrungszeichen statt "Geschaeft", v1-Bankumsaetze, 22.10.2026).
+     */
+    public function test_legacy_encoding_of_invalid_bytes(): void {
+        $this->assertSame('CP850', StringHelper::legacyEncodingOfInvalidBytes("Umbuchung Gesch\x84ft zu Gesch\x84ft, Gr\x81\xE1e"));
+        $this->assertContains(StringHelper::legacyEncodingOfInvalidBytes("Gr\xFCn und Stra\xDFe, M\xFCnchen"), ['Windows-1252', 'ISO-8859-1', 'ISO-8859-15']);
+        // gueltige UTF-8-Zeichen zaehlen nicht als Legacy-Bytes
+        $this->assertSame('CP850', StringHelper::legacyEncodingOfInvalidBytes("M\u{00FC}nchen \u{00E4}\u{00F6} Gesch\x84ft Gesch\x84ftsjahr"));
+        $this->assertSame('Windows-1252', StringHelper::legacyEncodingOfInvalidBytes('rein ascii'));
+        $this->assertSame("Gesch\u{00E4}ft", StringHelper::repairInvalidUtf8("Gesch\x84ft", null));
+    }
 }

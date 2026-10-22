@@ -613,7 +613,9 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             // Legacy-Sonderzeichen dahinter, galt die Datei als ASCII/UTF-8 und
             // das rohe Byte blieb ungueltiges UTF-8 (spaeter ein "?")
             if (!mb_check_encoding($content, 'UTF-8')) {
-                return self::logInfoAndReturn(StringHelper::repairInvalidUtf8($content), "Ungueltiges UTF-8 hinter der Encoding-Stichprobe repariert (Windows-1252): $file");
+                $legacy = StringHelper::legacyEncodingOfInvalidBytes($content);
+
+                return self::logInfoAndReturn(StringHelper::repairInvalidUtf8($content, $legacy), "Ungueltiges UTF-8 hinter der Encoding-Stichprobe repariert ($legacy): $file");
             }
             return self::logDebugAndReturn($content, "Keine Konvertierung nötig für $file (Encoding: " . ($encoding ?: 'unbekannt') . ")");
         }
@@ -1087,6 +1089,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
         $count = 0;
         $currentLine = 0;
+        /** Legacy-Encoding fuer ungueltige Bytes, sobald eine Zeile es zeigt */
+        $repairEncoding = null;
 
         while (($line = fgets($handle)) !== false) {
             // BOM bei erster Zeile entfernen
@@ -1120,8 +1124,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if ($needsConversion) {
                 $line = StringHelper::convertToUtf8($line, $encoding);
             } elseif (!mb_check_encoding($line, 'UTF-8')) {
-                // Legacy-Byte hinter der Encoding-Stichprobe (wie readAsUtf8)
-                $line = StringHelper::repairInvalidUtf8($line);
+                // Legacy-Byte hinter der Encoding-Stichprobe (wie readAsUtf8). Das
+                // Encoding gilt fuer die ganze Datei: einmal aus der ersten Zeile
+                // bestimmt, die es unterscheidet (eine Zeile mit nur einem mehrdeutigen Byte bleibt offen)
+                if ($repairEncoding === null) {
+                    $candidate = StringHelper::legacyEncodingOfInvalidBytes($line, '');
+                    $repairEncoding = $candidate !== '' ? $candidate : null;
+                }
+                $line = StringHelper::repairInvalidUtf8($line, $repairEncoding ?? 'Windows-1252');
             }
             if ($trimLines) {
                 $line = trim($line);

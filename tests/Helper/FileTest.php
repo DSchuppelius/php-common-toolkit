@@ -243,6 +243,24 @@ class FileTest extends BaseTestCase {
         }
     }
 
+    public function test_read_as_utf8_reads_cp850_behind_an_ascii_sample_as_cp850(): void {
+        // v1-Bankumsaetze (DATEV-ASCII) sind CP850; mit reinem ASCII-Anfang galt
+        // jedes spaetere Byte als Windows-1252 (0x84 = Anfuehrungszeichen statt "ae")
+        $file = tempnam(sys_get_temp_dir(), 'cp850late');
+        file_put_contents($file, str_repeat("Zeile ohne Sonderzeichen;1,00\r\n", 200) . "\"Umbuchung Gesch\x84ft\";\"Gr\x81\xE1e\";400,00\r\n");
+        File::clearChardetCache();
+
+        try {
+            $this->assertStringContainsString("Umbuchung Gesch\u{00E4}ft", File::readAsUtf8($file));
+
+            $lines = iterator_to_array(File::readLinesAsUtf8($file), false);
+            $this->assertSame("\"Umbuchung Gesch\u{00E4}ft\";\"Gr\u{00FC}\u{00DF}e\";400,00", end($lines));
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
     public function test_read_lines_as_utf8_with_ansi_csv(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
         $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');
