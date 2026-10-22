@@ -278,4 +278,14 @@ class StringHelperExtendedTest extends BaseTestCase {
         $this->assertSame('Windows-1252', StringHelper::legacyEncodingOfInvalidBytes('rein ascii'));
         $this->assertSame("Gesch\u{00E4}ft", StringHelper::repairInvalidUtf8("Gesch\x84ft", null));
     }
+
+    /** Lange Texte: die Heuristik sieht nur Fenster um die Legacy-Bytes, Ergebnis gleich. */
+    public function test_legacy_encoding_of_invalid_bytes_samples_long_texts(): void {
+        $text = str_repeat("Zeile mit M\u{00FC}nchen und Text;1,00;Gesch\x84ft;Gr\x81\xE1e\r\n", 40000);
+        $this->assertGreaterThan(1_000_000, strlen($text));
+
+        $start = microtime(true);
+        $this->assertSame('CP850', StringHelper::legacyEncodingOfInvalidBytes($text));
+        $this->assertLessThan(5.0, microtime(true) - $start);
+    }
 }

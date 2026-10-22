@@ -198,6 +198,39 @@ class StringHelper {
     private const UTF8_MULTIBYTE_CHAR = '[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}'
         . '|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2}';
 
+    /** Ab dieser Laenge wertet die Heuristik nur Fenster um die Legacy-Bytes */
+    private const LEGACY_SAMPLE_THRESHOLD = 262144;
+
+    /** Hoechstzahl der Fenster und Kontext je Seite eines Legacy-Bytes */
+    private const LEGACY_SAMPLE_WINDOWS = 4000;
+    private const LEGACY_SAMPLE_CONTEXT = 24;
+
+    /**
+     * Stichprobe fuer die Legacy-Heuristik: kurze Texte ganz, lange nur die
+     * Fenster um die ersten Legacy-Bytes. Die Heuristik braucht den
+     * Buchstabenkontext, nicht die ganze Datei; ohne Grenze kostete eine
+     * grosse Kundendatei (100 MB) allein fuer die Erkennung Minuten.
+     */
+    private static function legacyByteSample(string $text): string {
+        if (strlen($text) <= self::LEGACY_SAMPLE_THRESHOLD) {
+            return $text;
+        }
+
+        $windows = [];
+        $offset = 0;
+        $length = strlen($text);
+        while (count($windows) < self::LEGACY_SAMPLE_WINDOWS
+            && preg_match('/[\x80-\xFF]/', $text, $match, PREG_OFFSET_CAPTURE, $offset) === 1) {
+            $position = (int) $match[0][1];
+            $start = max($offset, $position - self::LEGACY_SAMPLE_CONTEXT);
+            $end = min($length, $position + self::LEGACY_SAMPLE_CONTEXT + 1);
+            $windows[] = substr($text, $start, $end - $start);
+            $offset = $end;
+        }
+
+        return implode("\n", $windows);
+    }
+
     /**
      * Legacy-Encoding der ungueltigen Bytes eines (gemischten) UTF-8-Texts.
      *
@@ -217,7 +250,7 @@ class StringHelper {
         }
 
         $stripped = preg_replace('/(?:' . self::UTF8_MULTIBYTE_CHAR . ')++/', 'a', $text);
-        $detected = $stripped !== null ? self::detectLegacyEncoding($stripped) : null;
+        $detected = $stripped !== null ? self::detectLegacyEncoding(self::legacyByteSample($stripped)) : null;
 
         return ($detected === null || $detected === 'UTF-8') ? $fallback : $detected;
     }
