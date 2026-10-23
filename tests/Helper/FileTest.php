@@ -514,6 +514,72 @@ class FileTest extends BaseTestCase {
     }
 
     /**
+     * Echter tuerkischer Text, den chardet als ISO-8859-1 meldet (ckonverter
+     * P2): Ganz- und Zeilenleser lesen ihn als Tuerkisch, auch wenn er hinter
+     * einer ASCII-Stichprobe steht. Islaendisch bleibt Latin-1.
+     */
+    public function test_read_as_utf8_reads_turkish_text_that_chardet_calls_latin1_as_turkish(): void {
+        $turkish = "İşlem Tarihi;Açıklama;Tutar;Bakiye\r\n02.07.2025;Kira ödemesi Şubat;-1.250,00;3.420,15\r\n"
+            . "03.07.2025;Maaş ödemesi Yılmaz Gıda Ltd. Şti.;8.500,00;11.920,15\r\n04.07.2025;Kredi kartı ödemesi;-640,30;11.279,85\r\n"
+            . "07.07.2025;Havale işlemi başarılı;-300,00;11.039,95\r\n08.07.2025;Müşteri iadesi Çiçek Mağazası;45,00;11.084,95\r\n";
+        $icelandic = "Dagsetning;Skýring;Upphæð;Staða\r\n02.07.2025;Millifærsla frá Þórði Guðmundssyni;-12.500;342.015\r\n"
+            . "03.07.2025;Launagreiðsla júlí;850.000;1.192.015\r\n06.07.2025;Þjónustugjald Íslandsbanki;-899;1.199.713\r\n";
+        $padding = str_repeat("01.07.2025;Kartenzahlung REWE Markt;-12,50;100,00\r\n", 120);
+        $cases = [
+            'tuerkisch' => [(string) iconv('UTF-8', 'ISO-8859-9', $turkish), $turkish, ['ISO-8859-9', 'Windows-1254']],
+            'tuerkisch hinter der Stichprobe' => [$padding . (string) iconv('UTF-8', 'Windows-1254', $turkish), $padding . $turkish, ['ASCII']],
+            'islaendisch' => [(string) iconv('UTF-8', 'ISO-8859-1', $icelandic), $icelandic, ['ISO-8859-1', 'Windows-1252']],
+        ];
+
+        foreach ($cases as $name => [$bytes, $expected, $chardet]) {
+            $file = tempnam(sys_get_temp_dir(), 'turkish');
+            file_put_contents($file, $bytes);
+            File::clearChardetCache();
+            try {
+                $this->assertContains(File::chardet($file), $chardet, $name);
+                File::clearChardetCache();
+                $this->assertSame($expected, File::readAsUtf8($file), $name);
+                File::clearChardetCache();
+                $this->assertSame(explode("\r\n", rtrim($expected, "\r\n")), iterator_to_array(File::readLinesAsUtf8($file), false), $name . ': Zeilenleser');
+            } finally {
+                unlink($file);
+                File::clearChardetCache();
+            }
+        }
+    }
+
+    /**
+     * SumUp 0141 (ckonverter 23.10.2026): je Zeile ein einzelnes 0xAC
+     * ("BankA" + 0xAC + "berweisung", v1-Quellmuell), chardet meldet Johab. Der
+     * Legacy-Rest ist kein CJK: Windows-1252, Byte fuer Zeichen, im Ganz- wie
+     * im Zeilenleser.
+     */
+    public function test_read_as_utf8_reads_a_sparse_legacy_rest_that_chardet_calls_johab(): void {
+        $ascii = "DRESDEFF100;DE91100800000012345678;;;;04.08.2025;46,35;\"SUMUP PID1270662 PAYOUT\";;;;\"SumUp Einzahlung\";\"Ref 2025 Nr 4711\";;;EUR;;;;;\r\n";
+        $bytes = $ascii;
+        foreach (['Eingehende', 'Ausgehende', 'Ausgehende', 'Ausgehende', 'Eingehende', 'Ausgehende'] as $i => $direction) {
+            $bytes .= "DRESDEFF100;DE91100800000012345678;;;;1$i.08.2025;-48,90;\"Lieferant GmbH\";;;DE06562500301000585260;\"$direction BankAberweisung \";"
+                . "\"Lieferant GmbH DE0656250030\";\"1000585260 Rechnung 2025-4711\";\"COP54LP2LR                 \";;EUR;\"$direction BankA\xACberweisung\";;;;;;;;;;;;;;;;\r\n";
+        }
+        $file = tempnam(sys_get_temp_dir(), 'sumup');
+        file_put_contents($file, $bytes);
+        File::clearChardetCache();
+
+        try {
+            $this->assertSame('Windows-1252', File::chardet($file));
+            File::clearChardetCache();
+            $whole = File::readAsUtf8($file);
+            $this->assertStringContainsString("Ausgehende BankA\u{00AC}berweisung", $whole);
+            $this->assertSame(strlen($bytes), mb_strlen($whole), 'laengengleich: jedes Byte ein Zeichen');
+            File::clearChardetCache();
+            $this->assertSame(explode("\r\n", rtrim($whole, "\r\n")), iterator_to_array(File::readLinesAsUtf8($file), false), 'Zeilenleser wie readAsUtf8');
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
+    /**
      * Gemischte Dateien (v1-Ausgaben, ckonverter 23.10.2026): die Textspalte
      * oder der Kopf als UTF-8, der Rest CP850 bzw. Latin-1. chardet meldete eine
      * Einzelkodierung (Windows-1254, MacRoman, ISO-8859-1), die ganze Datei wurde
@@ -542,6 +608,20 @@ class FileTest extends BaseTestCase {
                 "Buchungstag;Zahlungsempf\u{00E4}nger;Empf\u{00E4}nger-IBAN;Verwendungszweck;Betrag",
                 "03.07.2025;\"Kaffeer\u{00F6}sterei M\u{00FC}ller\";DE02120300000000202051;\"Bonus f\u{00FC}r Debitkarte\";1,00",
             ]],
+            'cp850-mit-doppelt-kodiertem-dos-text' => [
+                "BLZ;Konto;Umsatz;Verwendungszweck 1;Verwendungszweck 2;Gesch\x84ftvorgang;W\x84hrung;\x8Equivalenzbetrag;Geb\x81hr\r\n"
+                . str_repeat("HASPDEHHXXX;DE34200505501050805173;-529,19;\"EINZUG RATE/ANNUIT\xC5\xBDT Hambur\";\"r Str. 367, Hamburg F\xC2\x81r 01.\";;EUR;;\r\n"
+                    . "HASPDEHHXXX;DE34200505501050805173;2261,00;\"GUTSCHRIFT \xC5\xA1BERWEISUNG DAUE\";\" H.J. Mordhorst Holzhandel \";;EUR;;\r\n", 6),
+                [
+                    "BLZ;Konto;Umsatz;Verwendungszweck 1;Verwendungszweck 2;Gesch\u{00E4}ftvorgang;W\u{00E4}hrung;\u{00C4}quivalenzbetrag;Geb\u{00FC}hr",
+                    "HASPDEHHXXX;DE34200505501050805173;-529,19;\"EINZUG RATE/ANNUIT\u{017D}T Hambur\";\"r Str. 367, Hamburg F\u{0081}r 01.\";;EUR;;",
+                    "HASPDEHHXXX;DE34200505501050805173;2261,00;\"GUTSCHRIFT \u{0161}BERWEISUNG DAUE\";\" H.J. Mordhorst Holzhandel \";;EUR;;",
+                ],
+            ],
+            'cp850-mit-doppelt-kodiertem-ae' => [
+                "Buchungstag;Text;Betrag\r\n" . str_repeat("02.07.2025;\"Geb\x81hr f\x81r R\x81ckbuchung\";-1,00\r\n03.07.2025;\"Gesch\xE2\x80\x9Eftsanteil\";2,00\r\n", 5),
+                ["02.07.2025;\"Geb\u{00FC}hr f\u{00FC}r R\u{00FC}ckbuchung\";-1,00", "03.07.2025;\"Gesch\u{201E}ftsanteil\";2,00"],
+            ],
             'gross-utf8-zeile-hinten' => [str_repeat($latin1Row, 3500) . "31.07.2025;\"Stra\xC3\x9Fenbau M\xC3\xBCller\";DE02120300000000202051;\"Abschlag\";1,00\r\n", [
                 "03.07.2025;\"Kaffeer\u{00F6}sterei M\u{00FC}ller\";DE02120300000000202051;\"Bonus f\u{00FC}r Debitkarte\";1,00",
                 "31.07.2025;\"Stra\u{00DF}enbau M\u{00FC}ller\";DE02120300000000202051;\"Abschlag\";1,00",

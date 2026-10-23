@@ -246,6 +246,22 @@ class StringHelper {
     private const LEGACY_SAMPLE_WINDOWS = 4000;
     private const LEGACY_SAMPLE_CONTEXT = 24;
 
+    /**
+     * Die Buchstaben des tuerkischen Alphabets jenseits von ASCII in
+     * ISO-8859-9/Windows-1254 (Regex-Zeichenklasse): Â Ç Î Ğ Ö Û Ü İ Ş â ç î ğ
+     * ö û ü ı ş ({@see isTurkishEvidence()}).
+     */
+    private const TURKISH_LETTER_BYTES = '\xC2\xC7\xCE\xD0\xD6\xDB\xDC\xDD\xDE\xE2\xE7\xEE\xF0\xF6\xFB\xFC\xFD\xFE';
+
+    /** Ein Buchstabe in einer Latin-Lesart: ASCII oder 0xC0-0xFF ohne Mal- und Geteiltzeichen */
+    private const LATIN1_LETTER = '[A-Za-z\xC0-\xD6\xD8-\xF6\xF8-\xFF]';
+
+    /**
+     * Bytes, ohne die {@see refineLatinEncoding()} an Windows-1252/ISO-8859-1
+     * nichts aendern kann: 0xA4 (Euro-Regel) und 0xFD (Tuerkisch).
+     */
+    public const LATIN_REFINE_BYTES = "\xA4\xFD";
+
     /** Latin-Varianten mit Grundform ISO-8859-1 bzw. Windows-1252 ({@see latinVariantBase()}) */
     private const LATIN_VARIANTS_ISO = [2, 3, 4, 9, 10, 13, 14, 16];
     private const LATIN_VARIANTS_WINDOWS = [1250, 1254, 1257, 1258];
@@ -259,13 +275,22 @@ class StringHelper {
     private const GERMAN_LETTER_BYTES = '\xC4\xD6\xDC\xDF\xE4\xF6\xFC\x81\x84\x8E\x94\x99\x9A';
 
     /**
-     * Ein UTF-8-kodierter Latin-1-Buchstabe (U+00C0-U+00FF ohne Mal- und
-     * Geteiltzeichen, Leitbyte 0xC3) neben einem ASCII-Buchstaben: der Beleg
-     * fuer UTF-8-Teile eines gemischten Texts ({@see isUtf8WithLegacyBytes()}).
-     * In den Legacy-Kodierungen ist 0xC3 + Folgebyte kein Wortteil (Latin-1
-     * "A" mit Tilde + Satzzeichen, DOS ein Rahmenzeichen).
+     * UTF-8-Zeichen, die neben einem ASCII-Buchstaben UTF-8-Teile eines
+     * gemischten Texts belegen ({@see isUtf8WithLegacyBytes()}): ein
+     * Latin-Buchstabe U+00C0-U+017F (ohne Mal- und Geteiltzeichen, Leitbyte
+     * 0xC3-0xC5), ein C1-Steuerzeichen (0xC2 0x80-0x9F) oder ein
+     * typografisches Zeichen der Windows-1252-Lesart (U+2013-U+203A, U+2122).
+     * Die letzten beiden und "Z"/"s" mit Hacek traegt doppelt kodierter
+     * DOS-Text (CP850 als Windows-1252 gelesen und UTF-8 geschrieben:
+     * "ANNUIT" + U+017D + "T", "F" + U+0081 + "r", "Gesch" + U+201E + "ft").
+     * In den Legacy-Kodierungen sind diese Bytefolgen kein Wortteil: Latin-1
+     * "A" mit Tilde, Trema, Ring oder Zirkumflex + Satzzeichen, "a" mit
+     * Zirkumflex + Euro + Satzzeichen, DOS Rahmenzeichen + Buchstabe.
      */
-    private const UTF8_LATIN_LETTER_IN_WORD = '/[A-Za-z]\xC3[\x80-\x96\x98-\xB6\xB8-\xBF]|\xC3[\x80-\x96\x98-\xB6\xB8-\xBF][A-Za-z]/';
+    private const UTF8_CHAR_EVIDENCE = '\xC3[\x80-\x96\x98-\xB6\xB8-\xBF]|[\xC4\xC5][\x80-\xBF]|\xC2[\x80-\x9F]|\xE2\x80[\x93-\xBA]|\xE2\x84\xA2';
+
+    /** Ein Belegzeichen ({@see UTF8_CHAR_EVIDENCE}) neben einem ASCII-Buchstaben; reicht ueber hoechstens vier Bytes */
+    private const UTF8_CHAR_IN_WORD = '/[A-Za-z](?:' . self::UTF8_CHAR_EVIDENCE . ')|(?:' . self::UTF8_CHAR_EVIDENCE . ')[A-Za-z]/';
 
     /**
      * CJK-Mehrbyte-Kodierungen (Namen gross, ohne Trennzeichen), die chardet
@@ -275,6 +300,9 @@ class StringHelper {
         'SHIFTJIS', 'SJIS', 'CP932', 'MS932', 'WINDOWS31J', 'EUCJP', 'EUCKR', 'CP949', 'UHC', 'JOHAB',
         'GB2312', 'GBK', 'CP936', 'GB18030', 'EUCCN', 'BIG5', 'CP950', 'EUCTW', 'BIG5HKSCS',
     ];
+
+    /** Ein Legacy-Rest ({@see isSparseLegacyRest()}) ist hoechstens jedes hundertste Byte */
+    private const SPARSE_LEGACY_REST_RATIO = 100;
 
     /** mbstring-Namen der CJK-Kodierungen, die mbstring unter dem chardet-Namen nicht findet */
     private const CJK_MB_NAMES = ['SHIFTJIS' => 'SJIS', 'BIG5' => 'BIG-5', 'GB2312' => 'EUC-CN', 'GBK' => 'CP936'];
@@ -286,6 +314,15 @@ class StringHelper {
      * Buchstaben im Wort oder Rahmen-/Schattierungszeichen in Folge.
      */
     private const LATIN1_TYPOGRAPHIC_BYTES = [0xA7, 0xAB, 0xB0, 0xB4, 0xBB];
+
+    /** Leitbytes der Zeichen beider Mojibake-Klassen in UTF-8 ({@see repairMojibake()}) */
+    private const MOJIBAKE_LEAD_BYTES = "\xC2\xC3\xC5\xE2";
+
+    /**
+     * @var array{latinBytes: array<string, string>, utf8Sequence: string, dos: array<string, array{0: string, 1: string}>, dosClass: string}|null
+     *      Tabellen der Mojibake-Reparatur ({@see mojibakeTables()})
+     */
+    private static ?array $mojibakeTables = null;
 
     /** @var array<string, string> Unterscheidende Bytes je Latin-Variante ({@see latinVariantBytes()}) */
     private static array $latinVariantBytes = [];
@@ -379,6 +416,213 @@ class StringHelper {
     }
 
     /**
+     * Repariert doppelt kodierten Text ("Mojibake") je physischer Zeile,
+     * konservativ. Zwei Fehlerklassen, je Zeile hoechstens eine:
+     *
+     *  1. UTF-8 als Windows-1252/ISO-8859-1 gelesen und als UTF-8 geschrieben
+     *     ("Ã¼" fuer "ue", "ÃŸ" fuer "ss", "â‚¬" fuer Euro; SumUp
+     *     Transaktionsbericht 2025, ckonverter C3). Kandidat ist nur eine
+     *     vollstaendige Folge aus Start- und Folgezeichen der Lesart (die
+     *     Zeichen der Bytes C2-F4 bzw. 80-BF), deren Rueckwandlung genau ein
+     *     gueltiges UTF-8-Zeichen ergibt. Eine Zeile wird nur repariert, wenn
+     *     eine Folge zu einem Buchstaben oder Waehrungszeichen wird; "JOÃO" ist
+     *     keine Folge und bleibt.
+     *  2. DOS-Text (CP850, CP437) als Windows-1252/ISO-8859-1 gelesen und als
+     *     UTF-8 geschrieben ({@see repairDosAsLatinLine()}; v1-Ausgabe
+     *     brbgruppe, ckonverter P2): "Gesch" + U+201E + "ft", "F" + U+0081 +
+     *     "r", "ANNUIT" + U+017D + "T", "EINZEL" + U+0161 + "BERWEISUNG" - nur
+     *     die deutschen Umlaute und das Eszett, nur im Wort und nur in einer
+     *     Zeile mit sicherem Beleg.
+     *
+     * Zeilenenden und Zeilenzahl bleiben; ohne Treffer kommt der Text
+     * unveraendert (dieselbe Zeichenkette) zurueck, ungueltiges UTF-8 ebenso.
+     * Die Tabellen werden aus den Zeichentabellen abgeleitet, nicht getippt.
+     */
+    public static function repairMojibake(string $text): string {
+        // Jedes Zeichen beider Klassen beginnt in UTF-8 mit C2, C3, C5 oder E2
+        if ($text === '' || strpbrk($text, self::MOJIBAKE_LEAD_BYTES) === false) {
+            return $text;
+        }
+
+        $tables = self::mojibakeTables();
+        $repaired = preg_replace_callback(
+            '/^[^\n]*?(?:' . $tables['utf8Sequence'] . '|' . $tables['dosClass'] . ')[^\n]*$/mu',
+            static fn (array $m): string => self::repairMojibakeLine($m[0]),
+            $text,
+        );
+
+        return $repaired ?? $text;
+    }
+
+    /** Repariert eine einzelne Zeile (ohne Zeilenumbruch), siehe {@see repairMojibake()}. */
+    public static function repairMojibakeLine(string $line): string {
+        if ($line === '' || strpbrk($line, self::MOJIBAKE_LEAD_BYTES) === false || !mb_check_encoding($line, 'UTF-8')) {
+            return $line;
+        }
+
+        $repaired = self::repairUtf8AsLatinLine($line);
+
+        return $repaired !== $line ? $repaired : self::repairDosAsLatinLine($line);
+    }
+
+    /** Klasse 1 von {@see repairMojibake()}: UTF-8 als Windows-1252/ISO-8859-1 gelesen. */
+    private static function repairUtf8AsLatinLine(string $line): string {
+        $tables = self::mojibakeTables();
+        $typical = false;
+        $repaired = preg_replace_callback(
+            '/' . $tables['utf8Sequence'] . '/u',
+            static function (array $m) use (&$typical, $tables): string {
+                $bytes = '';
+                foreach (mb_str_split($m[0], 1, 'UTF-8') as $char) {
+                    if (!isset($tables['latinBytes'][$char])) {
+                        return $m[0];
+                    }
+                    $bytes .= $tables['latinBytes'][$char];
+                }
+                if (!mb_check_encoding($bytes, 'UTF-8') || mb_strlen($bytes, 'UTF-8') !== 1) {
+                    return $m[0];
+                }
+                if (preg_match('/^[\p{L}\p{Sc}]$/u', $bytes) === 1) {
+                    $typical = true;
+                }
+
+                return $bytes;
+            },
+            $line,
+        );
+
+        return ($repaired !== null && $typical) ? $repaired : $line;
+    }
+
+    /**
+     * Klasse 2 von {@see repairMojibake()}: DOS-Text (CP850/CP437) als
+     * Windows-1252/ISO-8859-1 gelesen. Was ein Zeichen der Lesart sein darf,
+     * bestimmt das Windows-1252-Zeichen seines Bytes:
+     *  - unbelegt (0x81 "ue", U+0081): nie Text, repariert am Buchstaben;
+     *  - Satzzeichen (0x84 "ae" U+201E, 0x94 "oe" U+201D, 0x99 "Oe" U+2122):
+     *    repariert nur zwischen zwei Buchstaben - ein echtes
+     *    Anfuehrungszeichen steht vor oder hinter einem Wort ("„S“",
+     *    "“Payouts overview”"), nie darin; "Oe" am Wortanfang bleibt;
+     *  - Buchstabe (0x8E "Ae" Z mit Hacek, 0x9A "Ue" s mit Hacek, 0xE1 "ss" a
+     *    mit Akut): repariert nur, wo der Umlaut ins Wort passt (Gross-Umlaut
+     *    nicht hinter einem Kleinbuchstaben, Eszett hinter einem Buchstaben).
+     * Die ISO-8859-1-Lesart derselben Bytes (C1-Steuerzeichen U+0084, U+008E,
+     * U+0094, U+0099, U+009A) folgt derselben Regel. Repariert wird eine Zeile
+     * nur mit sicherem Beleg: ein Steuerzeichen oder Satzzeichen, das repariert
+     * wird, oder ein Kleinbuchstabe der Lesart vor einem Grossbuchstaben in
+     * einem Grossbuchstabenwort ("EINZEL" + U+0161 + "BERWEISUNG", "STRA" +
+     * U+00E1 + "E"). Die Buchstaben der Lesart sind sonst echte Buchstaben
+     * anderer Sprachen ("Jácomo", "Košice") und werden nur in einer belegten
+     * Zeile repariert. Nachbarn zaehlen in der reparierten Lesart ("Gr" +
+     * U+0081 + U+00E1 + "e").
+     */
+    private static function repairDosAsLatinLine(string $line): string {
+        $tables = self::mojibakeTables();
+        if (preg_match('/' . $tables['dosClass'] . '/u', $line) !== 1) {
+            return $line;
+        }
+
+        $chars = mb_str_split($line, 1, 'UTF-8');
+        $view = array_map(static fn (string $char): string => $tables['dos'][$char][0] ?? $char, $chars);
+        $isLetter = static fn (?string $char): bool => $char !== null && preg_match('/^\p{L}$/u', $char) === 1;
+        $isUpper = static fn (?string $char): bool => $char !== null && preg_match('/^\p{Lu}$/u', $char) === 1;
+        $isLower = static fn (?string $char): bool => $char !== null && preg_match('/^\p{Ll}$/u', $char) === 1;
+
+        $proven = false;
+        $repairs = [];
+        foreach ($chars as $i => $char) {
+            if (!isset($tables['dos'][$char])) {
+                continue;
+            }
+            [$german, $kind] = $tables['dos'][$char];
+            $before = $view[$i - 1] ?? null;
+            $after = $view[$i + 1] ?? null;
+            $fits = match ($kind) {
+                'control' => $isLetter($before) || $isLetter($after),
+                'punctuation' => $isLetter($before) && $isLetter($after),
+                // Gross-Umlaut am Wortanfang oder im Grossbuchstabenwort, Eszett hinter einem Buchstaben
+                default => $isUpper($german) ? !$isLower($before) && ($isLetter($before) || $isLetter($after)) : $isLetter($before),
+            };
+            if (!$fits) {
+                continue;
+            }
+            $repairs[$i] = $german;
+            if ($kind !== 'letter' || preg_match('/^\p{Cc}$/u', $char) === 1
+                || ($isLower($char) && $isUpper($after) && ($isUpper($before) || !$isLetter($before)))) {
+                $proven = true;
+            }
+        }
+        if (!$proven) {
+            return $line;
+        }
+        foreach ($repairs as $i => $german) {
+            $chars[$i] = $german;
+        }
+
+        return implode('', $chars);
+    }
+
+    /**
+     * Tabellen der Mojibake-Reparatur ({@see repairMojibake()}), aus den
+     * Zeichentabellen abgeleitet: Zeichen -> Byte der Windows-1252-/
+     * ISO-8859-1-Lesart (0x80-0xFF), die Regex der Kandidatenfolgen der
+     * Klasse 1, und fuer Klasse 2 Zeichen der Lesart -> [deutscher Buchstabe,
+     * Art] samt Regex-Zeichenklasse.
+     *
+     * @return array{latinBytes: array<string, string>, utf8Sequence: string, dos: array<string, array{0: string, 1: string}>, dosClass: string}
+     */
+    private static function mojibakeTables(): array {
+        if (self::$mojibakeTables !== null) {
+            return self::$mojibakeTables;
+        }
+
+        $latinBytes = [];
+        $readings = static fn (string $byte): array => array_values(array_unique([
+            (string) mb_convert_encoding($byte, 'UTF-8', 'Windows-1252'),
+            (string) mb_convert_encoding($byte, 'UTF-8', 'ISO-8859-1'),
+        ]));
+        $charsOf = static function (int $from, int $to) use (&$latinBytes, $readings): string {
+            $class = '';
+            for ($b = $from; $b <= $to; $b++) {
+                foreach ($readings(chr($b)) as $char) {
+                    $latinBytes[$char] ??= chr($b);
+                    $class .= sprintf('\x{%04X}', mb_ord($char, 'UTF-8'));
+                }
+            }
+
+            return '[' . $class . ']';
+        };
+        $cont = $charsOf(0x80, 0xBF);
+        $lead2 = $charsOf(0xC2, 0xDF);
+        $lead3 = $charsOf(0xE0, 0xEF);
+        $lead4 = $charsOf(0xF0, 0xF4);
+
+        $dos = [];
+        $dosClass = '';
+        foreach (['ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß'] as $german) {
+            $byte = (string) iconv('UTF-8', 'CP850', $german);
+            // Die Art bestimmt das Windows-1252-Zeichen des Bytes, auch fuer die ISO-8859-1-Lesart
+            $windows = (string) mb_convert_encoding($byte, 'UTF-8', 'Windows-1252');
+            $kind = match (true) {
+                preg_match('/^\p{Cc}$/u', $windows) === 1 => 'control',
+                preg_match('/^\p{L}$/u', $windows) === 1 => 'letter',
+                default => 'punctuation',
+            };
+            foreach ($readings($byte) as $char) {
+                $dos[$char] = [$german, $kind];
+                $dosClass .= sprintf('\x{%04X}', mb_ord($char, 'UTF-8'));
+            }
+        }
+
+        return self::$mojibakeTables = [
+            'latinBytes' => $latinBytes,
+            'utf8Sequence' => "{$lead2}{$cont}|{$lead3}{$cont}{2}|{$lead4}{$cont}{3}",
+            'dos' => $dos,
+            'dosClass' => '[' . $dosClass . ']',
+        ];
+    }
+
+    /**
      * Konvertiert Text von einem Encoding nach UTF-8.
      * Verwendet iconv für Encodings die mb_* nicht unterstützt.
      *
@@ -458,15 +702,18 @@ class StringHelper {
      * im Text fehlen, die aber deutsche Umlaute traegt, ist ihre Grundform
      * (ISO-8859-1 bzw. Windows-1252) - chardet las eine deutsche Latin-1-CSV
      * als ISO-8859-9 (Tuerkisch), die Euro-Regel griff dann nicht, und eine
-     * DOS-Datei als Windows-1254 (ckonverter 23.10.2026).
+     * DOS-Datei als Windows-1254 (ckonverter 23.10.2026). Umgekehrt wird
+     * Windows-1252/ISO-8859-1 Tuerkisch, wenn der Text tuerkisch ist
+     * ({@see isTurkishEvidence()}) - chardet meldet echten tuerkischen Text als
+     * ISO-8859-1.
      *
      * @param string $text Rohdaten (ganz oder Stichprobe)
      * @param string $encoding bisher erkanntes Encoding
-     * @return string ISO-8859-15, die Grundform einer Latin-Variante oder das uebergebene Encoding
+     * @return string ISO-8859-15, die Grundform einer Latin-Variante, Windows-1254/ISO-8859-9 oder das uebergebene Encoding
      */
     public static function refineLatinEncoding(string $text, string $encoding): string {
         if (self::latinVariantBase($encoding) === null
-            && (!in_array(self::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !str_contains($text, "\xA4"))) {
+            && (!in_array(self::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || strpbrk($text, self::LATIN_REFINE_BYTES) === false)) {
             return $encoding;
         }
 
@@ -482,17 +729,19 @@ class StringHelper {
      * DOS 0x81, 0x84, 0x8E, 0x94, 0x99, 0x9A) -
      * gueltige UTF-8-Zeichen eines gemischten Texts zaehlen nicht; sie belegen
      * nur, ob ein UTF-8-kodierter Buchstabe in einem Wort steht ("utf8",
-     * {@see isUtf8WithLegacyBytes()}). Die Merkmale
+     * {@see isUtf8WithLegacyBytes()}). Dazu ein 0xFD zwischen zwei Buchstaben
+     * ("turkish": tuerkisch ein punktloses i mitten im Wort, {@see isTurkishEvidence()}).
+     * Die Merkmale
      * der Zeilen einer Datei werden zusammengefuehrt
      * ({@see mergeLatinEncodingEvidence()}, zeilenweises Lesen, File::readLinesAsUtf8):
      * kein Muster reicht ueber ein Zeilenende, die Entscheidung ist dieselbe wie
      * fuer den ganzen Text.
      *
-     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool}
+     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool, turkish: bool}
      */
     public static function latinEncodingEvidence(string $text): array {
         if (preg_match('/[\x80-\xFF]/', $text) !== 1) {
-            return ['a4' => false, 'euroAtAmount' => false, 'c1' => false, 'bytes' => '', 'german' => false, 'utf8' => false];
+            return ['a4' => false, 'euroAtAmount' => false, 'c1' => false, 'bytes' => '', 'german' => false, 'utf8' => false, 'turkish' => false];
         }
         $legacy = preg_replace('/(?:' . self::UTF8_MULTIBYTE_CHAR . ')++/', 'a', $text) ?? $text;
         $letters = self::GERMAN_LETTER_BYTES;
@@ -503,7 +752,8 @@ class StringHelper {
             'c1' => preg_match('/[\x80-\x9F]/', $legacy) === 1,
             'bytes' => self::highBytesOf($legacy),
             'german' => preg_match('/[A-Za-z][' . $letters . ']|[' . $letters . '][A-Za-z]/', $legacy) === 1,
-            'utf8' => self::containsUtf8LatinLetterInWord($text),
+            'utf8' => self::containsUtf8CharInWord($text),
+            'turkish' => preg_match('/' . self::LATIN1_LETTER . '\xFD' . self::LATIN1_LETTER . '/', $legacy) === 1,
         ];
     }
 
@@ -511,9 +761,9 @@ class StringHelper {
      * Fuehrt die Merkmale zweier Textstuecke zusammen ({@see latinEncodingEvidence()}):
      * die Wahrheitswerte verodert, die Bytes vereinigt.
      *
-     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool} $first
-     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool} $second
-     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool}
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool, turkish?: bool} $first
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool, turkish?: bool} $second
+     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool, turkish: bool}
      */
     public static function mergeLatinEncodingEvidence(array $first, array $second): array {
         return [
@@ -523,13 +773,15 @@ class StringHelper {
             'bytes' => self::highBytesOf(($first['bytes'] ?? '') . ($second['bytes'] ?? '')),
             'german' => ($first['german'] ?? false) || ($second['german'] ?? false),
             'utf8' => ($first['utf8'] ?? false) || ($second['utf8'] ?? false),
+            'turkish' => ($first['turkish'] ?? false) || ($second['turkish'] ?? false),
         ];
     }
 
     /**
      * UTF-8 mit Legacy-Bytes: ein Text mit ungueltigen UTF-8-Bytes, der
-     * UTF-8-kodierte Latin-1-Buchstaben in Woertern traegt (v1-Ausgaben: Kopf
-     * oder Textspalte UTF-8, der Rest CP850 oder Latin-1). Er gehoert auf den
+     * UTF-8-kodierte Zeichen in Woertern traegt ({@see containsUtf8CharInWord()};
+     * v1-Ausgaben: Kopf oder Textspalte UTF-8, der Rest CP850 oder Latin-1).
+     * Er gehoert auf den
      * Reparaturweg ({@see repairInvalidUtf8()} mit
      * {@see legacyEncodingOfInvalidBytes()}), nicht unter eine Kodierung fuer
      * den ganzen Text: die bisher gewaehlte Einzelkodierung zerlegte jeden
@@ -537,27 +789,42 @@ class StringHelper {
      * mit Breve + "s" mit Akut; ckonverter 23.10.2026).
      */
     public static function isUtf8WithLegacyBytes(string $text): bool {
-        return !mb_check_encoding($text, 'UTF-8') && self::containsUtf8LatinLetterInWord($text);
+        return !mb_check_encoding($text, 'UTF-8') && self::containsUtf8CharInWord($text);
     }
 
     /**
-     * Traegt der Text einen UTF-8-kodierten Latin-1-Buchstaben (U+00C0-U+00FF
-     * ohne Mal- und Geteiltzeichen) neben einem ASCII-Buchstaben? Der Beleg fuer
-     * UTF-8-Teile eines gemischten Texts ({@see isUtf8WithLegacyBytes()}); ein
-     * Muster reicht ueber hoechstens drei Bytes.
+     * Traegt der Text neben einem ASCII-Buchstaben ein UTF-8-Zeichen, das keine
+     * Legacy-Lesart so traegt ({@see UTF8_CHAR_EVIDENCE}: Latin-Buchstabe
+     * U+00C0-U+017F, C1-Steuerzeichen, typografisches Zeichen der
+     * Windows-1252-Lesart)? Der Beleg fuer UTF-8-Teile eines gemischten Texts
+     * ({@see isUtf8WithLegacyBytes()}); ein Muster reicht ueber hoechstens
+     * vier Bytes. Bis ckonverter P2 (23.10.2026) nur Latin-1-Buchstaben:
+     * doppelt kodierter DOS-Text in einer CP850-Datei ("ANNUIT" + U+017D + "T"
+     * neben "Gesch" + 0x84 + "ftvorgang") blieb CP850, jedes UTF-8-Zeichen
+     * wurde zwei Rahmenzeichen.
+     */
+    public static function containsUtf8CharInWord(string $text): bool {
+        return preg_match(self::UTF8_CHAR_IN_WORD, $text) === 1;
+    }
+
+    /**
+     * @deprecated {@see containsUtf8CharInWord()} - derselbe Beleg, seit
+     *             ckonverter P2 auch fuer Latin Extended-A, C1-Steuerzeichen und
+     *             typografische Zeichen
      */
     public static function containsUtf8LatinLetterInWord(string $text): bool {
-        return preg_match(self::UTF8_LATIN_LETTER_IN_WORD, $text) === 1;
+        return self::containsUtf8CharInWord($text);
     }
 
     /**
      * {@see refineLatinEncoding()} aus gesammelten Merkmalen
      * ({@see latinEncodingEvidence()}): eine Latin-Variante ohne ihre
      * unterscheidenden Bytes, aber mit deutschen Umlauten wird ihre Grundform;
-     * Windows-1252/ISO-8859-1 werden ISO-8859-15, wenn ein 0xA4 an einem Betrag
-     * steht und kein Byte aus 0x80-0x9F vorkommt.
+     * Windows-1252/ISO-8859-1 werden Windows-1254/ISO-8859-9, wenn der Text
+     * tuerkisch ist ({@see isTurkishEvidence()}), sonst ISO-8859-15, wenn ein
+     * 0xA4 an einem Betrag steht und kein Byte aus 0x80-0x9F vorkommt.
      *
-     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool} $evidence
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool, turkish?: bool} $evidence
      */
     public static function refineLatinEncodingFromEvidence(string $encoding, array $evidence): string {
         $base = self::latinVariantBase($encoding);
@@ -567,11 +834,43 @@ class StringHelper {
             $encoding = $base;
         }
 
-        if (!in_array(self::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !$evidence['a4'] || $evidence['c1']) {
+        $normalized = self::normalizeEncodingName($encoding);
+        if (in_array($normalized, ['Windows-1252', 'ISO-8859-1'], true) && self::isTurkishEvidence($evidence)) {
+            return $normalized === 'Windows-1252' ? 'Windows-1254' : 'ISO-8859-9';
+        }
+
+        if (!in_array($normalized, ['Windows-1252', 'ISO-8859-1'], true) || !$evidence['a4'] || $evidence['c1']) {
             return $encoding;
         }
 
         return $evidence['euroAtAmount'] ? 'ISO-8859-15' : $encoding;
+    }
+
+    /**
+     * Ist ein als Windows-1252/ISO-8859-1 gemeldeter Text tuerkisch (ISO-8859-9,
+     * Windows-1254)? chardet meldet echten tuerkischen Text als ISO-8859-1
+     * ("Ýstanbul ödeme baþarýlý" statt "İstanbul ödeme başarılı", ckonverter
+     * P2). Die sechs Stellen, an denen sich die Kodierungen unterscheiden (0xD0,
+     * 0xDD, 0xDE, 0xF0, 0xFD, 0xFE), sind in Latin-1 die islaendischen
+     * Buchstaben Eth, Y mit Akut und Thorn. Tuerkisch nur, wenn beides gilt:
+     *  - ein 0xFD steht zwischen zwei Buchstaben ("turkish" in
+     *    {@see latinEncodingEvidence()}): das punktlose i ist der haeufigste
+     *    tuerkische Sonderbuchstabe und steht fast immer im Wort;
+     *  - der Text traegt keinen Buchstaben ausserhalb des tuerkischen Alphabets
+     *    (Latin-1 0xC0-0xFF ohne Ç Ö Ü Â Î Û, die sechs Stellen, Mal- und
+     *    Geteiltzeichen; dazu die Windows-1252-Buchstaben 0x8A, 0x8C, 0x8E, 0x9A,
+     *    0x9C, 0x9E, 0x9F). Das schliesst Deutsch mit ä/Ä/ß aus (ö und ü sind
+     *    auch tuerkisch) - und Islaendisch: dort fehlen Akut-Vokale (á é í ó ú)
+     *    und æ in keinem Text, im Tuerkischen gibt es sie nicht.
+     *
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool, turkish?: bool} $evidence
+     */
+    public static function isTurkishEvidence(array $evidence): bool {
+        if (!($evidence['turkish'] ?? false)) {
+            return false;
+        }
+
+        return preg_replace('/[\x80-\x89\x8B\x8D\x8F-\x99\x9B\x9D\xA0-\xBF\xD7\xF7' . self::TURKISH_LETTER_BYTES . ']/', '', $evidence['bytes'] ?? '') === '';
     }
 
     /**
@@ -652,14 +951,18 @@ class StringHelper {
      * jedes Zeichen einzeln an einem ASCII-Buchstaben. Ist das bei mehr als der
      * Haelfte der Nicht-ASCII-Laeufe so (oder liest die Kodierung den Text gar
      * nicht) und steht ein deutscher Umlaut neben einem Buchstaben
-     * ({@see latinEncodingEvidence()}), entscheidet die Legacy-Heuristik
-     * ({@see legacyEncodingOfInvalidBytes()}, danach die Euro-Regel). Der
-     * Umlaut allein belegt nichts: Shift_JIS traegt dieselben Bytes als
-     * Leitbytes (das Komma ist 0x81 0x41).
+     * ({@see latinEncodingEvidence()}) oder ist der Text ein Legacy-Rest
+     * ({@see isSparseLegacyRest()}: wenige einzelne Hochbytes in ASCII, SumUp
+     * 0141 "BankA" + 0xAC + "berweisung" als Johab), entscheidet die
+     * Legacy-Heuristik ({@see legacyEncodingOfInvalidBytes()}, danach die
+     * Euro-Regel) - ohne Beleg wie bei jedem Latin-Rest Windows-1252, mit
+     * DOS-Beleg CP850. Umlaut und Rest allein belegen nichts: Shift_JIS traegt
+     * dieselben Bytes als Leitbytes (das Komma ist 0x81 0x41, Katakana hat
+     * ASCII-Folgebytes); entscheidend ist das Dekodat.
      *
      * @param string $text Rohdaten (ganz oder Stichprobe)
      * @param string $encoding von chardet gemeldetes Encoding
-     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool}|null $evidence
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool, turkish?: bool}|null $evidence
      *        Merkmale der ganzen Datei, wenn $text nur eine Stichprobe ist
      * @return string die Latin-/DOS-Kodierung oder das uebergebene Encoding
      */
@@ -668,11 +971,26 @@ class StringHelper {
             return $encoding;
         }
         $evidence ??= self::latinEncodingEvidence($text);
-        if (!($evidence['german'] ?? false) || self::isPlausibleCjkReading($text, $encoding)) {
+        if (!(($evidence['german'] ?? false) || self::isSparseLegacyRest($text)) || self::isPlausibleCjkReading($text, $encoding)) {
             return $encoding;
         }
 
         return self::refineLatinEncodingFromEvidence(self::legacyEncodingOfInvalidBytes($text), $evidence);
+    }
+
+    /**
+     * Ein Legacy-Rest in einem ASCII-Text: jedes Byte aus 0x80-0xFF steht
+     * allein (kein Hochbyte daneben), und zusammen sind sie hoechstens ein
+     * Prozent des Texts. So sieht ein deutscher Text mit vereinzeltem Quellmuell
+     * aus (v1 schrieb "BankA" + 0xAC + "berweisung", je Zeile einmal); echter
+     * CJK-Text traegt Laeufe von Hochbytes (Hiragana, die meisten Kanji, Hangul,
+     * Hanzi haben hohe Folgebytes) - und wo die Folgebytes ASCII sind (Katakana
+     * in Shift_JIS), entscheidet das Dekodat ({@see isPlausibleCjkReading()}).
+     */
+    private static function isSparseLegacyRest(string $text): bool {
+        $high = preg_match_all('/[\x80-\xFF]/', $text);
+
+        return $high > 0 && $high * self::SPARSE_LEGACY_REST_RATIO <= strlen($text) && preg_match('/[\x80-\xFF]{2}/', $text) !== 1;
     }
 
     /**

@@ -405,14 +405,15 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             }
         }
 
-        // Gemischte Datei: UTF-8-kodierte Buchstaben in Woertern neben Legacy-Bytes
-        // (v1-Ausgaben: Kopf oder Textspalte UTF-8, der Rest CP850/Latin-1). Sie ist
-        // UTF-8 mit Legacy-Bytes, readAsUtf8 und readLinesAsUtf8 reparieren die
-        // ungueltigen Bytes - vor chardet und jeder Ganzdatei-Heuristik. Bisher
+        // Gemischte Datei: UTF-8-kodierte Zeichen in Woertern neben Legacy-Bytes
+        // (v1-Ausgaben: Kopf oder Textspalte UTF-8, der Rest CP850/Latin-1; auch
+        // doppelt kodierter DOS-Text neben CP850, StringHelper::containsUtf8CharInWord).
+        // Sie ist UTF-8 mit Legacy-Bytes, readAsUtf8 und readLinesAsUtf8 reparieren
+        // die ungueltigen Bytes - vor chardet und jeder Ganzdatei-Heuristik. Bisher
         // wandelte die Einzelkodierung von chardet (MacRoman -> CP852, Windows-1254
         // -> CP850, CP949) die UTF-8-Teile mit ("Ue" -> "A" mit Breve + "s" mit Akut,
         // ckonverter 23.10.2026).
-        if ($content !== false && self::containsUtf8LatinLetter($file)) {
+        if ($content !== false && self::containsUtf8CharInWord($file)) {
             self::logDebug("Zeichencodierung erkannt: UTF-8 mit Legacy-Bytes für $file");
             self::adjustLocaleBasedOnEncoding('UTF-8');
             self::$chardetCache[$file] = 'UTF-8';
@@ -1224,12 +1225,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * ganz zu laden: eine Latin-Variante ohne ihre unterscheidenden Bytes, aber
      * mit deutschen Umlauten wird ihre Grundform; Windows-1252/ISO-8859-1 werden
      * ISO-8859-15, wenn irgendwo ein Euro-Zeichen (0xA4) an einem Betrag steht
-     * und kein Byte aus 0x80-0x9F. Ohne 0xA4 in der Datei bleibt es bei
-     * Windows-1252/ISO-8859-1 (ein schneller Durchlauf in Bloecken).
+     * und kein Byte aus 0x80-0x9F, und Windows-1254/ISO-8859-9, wenn die Datei
+     * tuerkisch ist ({@see StringHelper::isTurkishEvidence()}). Ohne 0xA4 und
+     * 0xFD in der Datei bleibt es bei Windows-1252/ISO-8859-1 (ein schneller
+     * Durchlauf in Bloecken).
      */
     private static function refineLatinEncodingOfFile(string $file, string $encoding): string {
         if (StringHelper::latinVariantBase($encoding) === null
-            && (!in_array(StringHelper::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !self::containsByte($file, "\xA4"))) {
+            && (!in_array(StringHelper::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !self::containsAnyByte($file, StringHelper::LATIN_REFINE_BYTES))) {
             return $encoding;
         }
 
@@ -1254,7 +1257,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * gueltigen UTF-8-Zeilen). Kleine Dateien liest es ganz - dieselbe
      * Grundlage wie readAsUtf8.
      *
-     * @return array{0: string, 1: array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool}}
+     * @return array{0: string, 1: array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool, turkish: bool}}
      */
     private static function scanLegacyBytes(string $file, bool $collectSample): array {
         $size = @filesize($file);
@@ -1278,7 +1281,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 continue;
             }
             if (mb_check_encoding($line, 'UTF-8')) {
-                $evidence['utf8'] = $evidence['utf8'] || StringHelper::containsUtf8LatinLetterInWord($line);
+                $evidence['utf8'] = $evidence['utf8'] || StringHelper::containsUtf8CharInWord($line);
 
                 continue;
             }
@@ -1293,11 +1296,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     }
 
     /**
-     * Traegt die Datei einen UTF-8-kodierten Latin-1-Buchstaben in einem Wort
-     * ({@see StringHelper::containsUtf8LatinLetterInWord()})? In Bloecken
-     * gelesen; zwei Bytes Ueberlappung, das Muster reicht ueber drei.
+     * Traegt die Datei ein UTF-8-kodiertes Zeichen in einem Wort
+     * ({@see StringHelper::containsUtf8CharInWord()})? In Bloecken gelesen;
+     * drei Bytes Ueberlappung, das Muster reicht ueber vier.
      */
-    private static function containsUtf8LatinLetter(string $file): bool {
+    private static function containsUtf8CharInWord(string $file): bool {
         $handle = @fopen($file, 'rb');
         if ($handle === false) {
             return false;
@@ -1309,10 +1312,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 if ($chunk === false) {
                     return false;
                 }
-                if (StringHelper::containsUtf8LatinLetterInWord($tail . $chunk)) {
+                if (StringHelper::containsUtf8CharInWord($tail . $chunk)) {
                     return true;
                 }
-                $tail = substr($chunk, -2);
+                $tail = substr($chunk, -3);
             }
 
             return false;
@@ -1321,8 +1324,8 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
     }
 
-    /** Kommt ein Byte in der Datei vor? In Bloecken gelesen, ohne die Datei zu laden. */
-    private static function containsByte(string $file, string $byte): bool {
+    /** Kommt eines der Bytes in der Datei vor? In Bloecken gelesen, ohne die Datei zu laden. */
+    private static function containsAnyByte(string $file, string $bytes): bool {
         $handle = @fopen($file, 'rb');
         if ($handle === false) {
             return false;
@@ -1333,7 +1336,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 if ($chunk === false) {
                     return false;
                 }
-                if (str_contains($chunk, $byte)) {
+                if (strpbrk($chunk, $bytes) !== false) {
                     return true;
                 }
             }

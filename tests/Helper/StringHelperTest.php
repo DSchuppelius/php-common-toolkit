@@ -441,6 +441,43 @@ class StringHelperTest extends BaseTestCase {
     }
 
     /**
+     * chardet meldet echten tuerkischen Text als ISO-8859-1 (ckonverter P2):
+     * "Ýþlem" statt "İşlem", "baþarýlý" statt "başarılı". Tuerkisch ist ein
+     * Text mit punktlosem i (0xFD) zwischen zwei Buchstaben und ohne Buchstaben
+     * ausserhalb des tuerkischen Alphabets - Windows-1252 wird Windows-1254,
+     * ISO-8859-1 wird ISO-8859-9. Islaendisch (dieselben Bytes als Y mit Akut,
+     * Thorn, Eth) traegt immer Akut-Vokale oder ae, Deutsch ae/Ae/ss: beides
+     * bleibt Latin-1.
+     */
+    public function test_turkish_text_reported_as_latin1_is_turkish(): void {
+        $turkish = (string) iconv('UTF-8', 'ISO-8859-9', "İşlem Tarihi;Açıklama;Tutar\r\n02.07.2025;Kira ödemesi Şubat;-1.250,00\r\n"
+            . "03.07.2025;Maaş ödemesi Yılmaz Gıda Ltd. Şti.;8.500,00\r\n07.07.2025;Havale işlemi başarılı;-300,00\r\n08.07.2025;Müşteri iadesi Çiçek Mağazası;45,00\r\n");
+
+        $this->assertSame('ISO-8859-9', StringHelper::refineLatinEncoding($turkish, 'ISO-8859-1'));
+        $this->assertSame('Windows-1254', StringHelper::refineLatinEncoding($turkish, 'Windows-1252'));
+        $this->assertSame('Windows-1254', StringHelper::refineLatinEncoding($turkish . "09.07.2025;\x93Fatura\x94 ödemesi;-89,90\r\n", 'Windows-1252'), 'Windows-1252-Satzzeichen');
+        $utf8 = StringHelper::convertToUtf8($turkish, StringHelper::refineLatinEncoding($turkish, 'ISO-8859-1'));
+        $this->assertStringContainsString('İşlem Tarihi;Açıklama', $utf8);
+        $this->assertStringContainsString('Havale işlemi başarılı', $utf8);
+        $this->assertStringContainsString('Çiçek Mağazası', $utf8);
+        $this->assertTrue(StringHelper::latinEncodingEvidence($turkish)['turkish']);
+        $this->assertSame('ISO-8859-9', StringHelper::refineLatinEncoding($turkish, 'ISO-8859-9'), 'chardets Tuerkisch bleibt');
+
+        $icelandic = (string) iconv('UTF-8', 'ISO-8859-1', "Dagsetning;Skýring;Upphæð;Staða\r\n02.07.2025;Millifærsla frá Þórði Guðmundssyni;-12.500\r\n"
+            . "03.07.2025;Launagreiðsla júlí;850.000\r\n06.07.2025;Þjónustugjald Íslandsbanki;-899\r\n");
+        $this->assertTrue(StringHelper::latinEncodingEvidence($icelandic)['turkish'], 'Y mit Akut im Wort');
+        $this->assertSame('ISO-8859-1', StringHelper::refineLatinEncoding($icelandic, 'ISO-8859-1'), 'Islaendisch: Akut-Vokale und ae');
+        $this->assertSame('ISO-8859-1', StringHelper::refineLatinEncoding((string) iconv('UTF-8', 'ISO-8859-1', 'Greiðsla til Alþingis; Guðmundur maður'), 'ISO-8859-1'), 'Eth und Thorn ohne Y mit Akut');
+        $this->assertSame('Windows-1252', StringHelper::refineLatinEncoding("\xDCberweisung an Y\xFDlmaz Stra\xDFe;Geb\xFChr M\xE4rz", 'Windows-1252'), 'Deutsch mit ae und ss bleibt');
+        $this->assertSame('Windows-1254', StringHelper::refineLatinEncoding("\xDCberweisung an Y\xFDlmaz G\xFDda;Geb\xFChr f\xFCr R\xFCckbuchung", 'Windows-1252'), 'tuerkische Namen in deutschem Text ohne ae/ss');
+        $this->assertSame('ISO-8859-1', StringHelper::refineLatinEncoding((string) iconv('UTF-8', 'ISO-8859-9', 'Şubat ödemesi Ayşe'), 'ISO-8859-1'), 'ohne punktloses i kein Beleg');
+        $this->assertSame('ISO-8859-1', StringHelper::refineLatinEncoding("Fl\xE4che 12 m\xFD", 'ISO-8859-1'), '0xFD am Wortende');
+
+        $this->assertSame('ISO-8859-9', StringHelper::refineLatinEncodingFromEvidence('ISO-8859-1', StringHelper::latinEncodingEvidence($turkish)));
+        $this->assertFalse(StringHelper::isTurkishEvidence(StringHelper::latinEncodingEvidence($icelandic)));
+    }
+
+    /**
      * Auch der chardet-Weg fuer Zeichenketten (ShellChardet) gibt eine
      * Latin-Variante ohne ihre Bytes als Grundform zurueck - chardet liest den
      * kurzen deutschen Text als ISO-8859-9.
@@ -496,6 +533,37 @@ class StringHelperTest extends BaseTestCase {
     }
 
     /**
+     * Ein Legacy-Rest unter einer CJK-Kodierung (SumUp 0141, ckonverter
+     * 23.10.2026): v1 schrieb je Zeile einmal "BankA" + 0xAC + "berweisung",
+     * chardet meldete Johab (0,99) - 0xAC + "b" ist dort eine Hangul-Silbe.
+     * Ohne Umlaut griff die CJK-Regel nicht. Wenige einzelne Hochbytes in
+     * ASCII, deren CJK-Dekodat einzeln an ASCII-Buchstaben steht, sind kein
+     * CJK: wie jeder Latin-Rest Windows-1252, mit DOS-Beleg CP850. Katakana in
+     * Shift_JIS (ASCII-Folgebytes) und echtes Japanisch bleiben.
+     */
+    public function test_cjk_reading_of_a_sparse_legacy_rest_is_a_latin_encoding(): void {
+        $row = "DRESDEFF100;DE91100800000012345678;;;;08.08.2025;1329,41;\"Booking.com B.V.\";;;;\"Eingehende BankA\xACberweisung\";;EUR\r\n";
+        $ascii = "DRESDEFF100;DE91100800000012345678;;;;04.08.2025;46,35;\"SUMUP PID1270662 PAYOUT\";;;;\"SumUp Einzahlung\";;EUR\r\n";
+        $sumup = $ascii . str_repeat($row . $ascii, 4);
+
+        $this->assertSame('Windows-1252', StringHelper::refineMultibyteEncoding($sumup, 'JOHAB'));
+        $this->assertSame('Windows-1252', StringHelper::refineMultibyteEncoding($sumup, 'CP949'));
+        $this->assertSame('Windows-1252', StringHelper::refineMultibyteEncoding($sumup, 'SHIFT_JIS'));
+        $this->assertSame('CP850', StringHelper::refineMultibyteEncoding($sumup . "\"M\x81ller Gartenbau\";12,00\r\n", 'JOHAB'), 'mit DOS-Beleg CP850');
+        $utf8 = StringHelper::convertToUtf8($sumup, StringHelper::refineMultibyteEncoding($sumup, 'JOHAB'));
+        $this->assertSame(strlen($sumup), mb_strlen($utf8), 'laengengleich: kein ASCII-Buchstabe verschluckt');
+        $this->assertStringContainsString("BankA\u{00AC}berweisung", $utf8);
+
+        $padding = str_repeat("2024-03-01;Item 4711 Standard price;100\r\n", 30);
+        $katakana = (string) iconv('UTF-8', 'SHIFT_JIS', "\u{30A2}\u{30A4}\u{30B9}");
+        $this->assertSame("\x83A\x83C\x83X", $katakana, 'Katakana: ASCII-Folgebytes, jedes Hochbyte allein');
+        $this->assertSame('SHIFT_JIS', StringHelper::refineMultibyteEncoding($padding . "2024-03-02;Item $katakana price;100\r\n" . $padding, 'SHIFT_JIS'), 'ein Katakana-Wort ist ein CJK-Lauf');
+        $this->assertSame('SHIFT_JIS', StringHelper::refineMultibyteEncoding($padding . "Summe 12,00 \x81\x40 Ende\r\n" . $padding, 'SHIFT_JIS'), 'ideografisches Leerzeichen');
+        $this->assertSame('JOHAB', StringHelper::refineMultibyteEncoding(str_repeat("BankA\xACberweisung ", 3), 'JOHAB'), 'mehr als jedes hundertste Byte: kein Rest');
+        $this->assertSame('JOHAB', StringHelper::refineMultibyteEncoding($padding . "Bank \xAC\xACber\r\n" . $padding, 'JOHAB'), 'zwei Hochbytes in Folge: kein Rest');
+    }
+
+    /**
      * Gemischte Texte (v1-Ausgaben: Kopf oder Textspalte als UTF-8, der Rest
      * CP850 oder Latin-1; ckonverter 23.10.2026) sind UTF-8 mit Legacy-Bytes:
      * ein UTF-8-kodierter Latin-1-Buchstabe neben einem ASCII-Buchstaben belegt
@@ -525,6 +593,105 @@ class StringHelperTest extends BaseTestCase {
             StringHelper::repairInvalidUtf8($latin1, StringHelper::legacyEncodingOfInvalidBytes($latin1))
         );
         $this->assertSame('UTF-8', StringHelper::detectEncoding($dos . "\r\n" . str_repeat("02.07.2025;Abschlag Strom Vertrag 4711;-85,00\r\n", 5)), 'auch der chardet-Weg fuer Zeichenketten');
+    }
+
+    /**
+     * Doppelt kodierter DOS-Text in einer CP850-Datei (v1-Ausgabe brbgruppe,
+     * ckonverter P2): CP850 als Windows-1252 gelesen und als UTF-8 geschrieben
+     * ("ANNUIT" + U+017D + "T", "F" + U+0081 + "r", "Gesch" + U+201E + "ft"),
+     * daneben der Kopf in CP850. Ohne UTF-8-kodierten Latin-1-Buchstaben galt
+     * die Datei als CP850, jedes UTF-8-Zeichen wurde zwei Rahmenzeichen. Belegt
+     * sind UTF-8-Teile auch durch Latin-Buchstaben bis U+017F, C1-Steuerzeichen
+     * und typografische Zeichen der Windows-1252-Lesart am Buchstaben.
+     */
+    public function test_utf8_dos_mojibake_with_legacy_bytes_is_utf8_with_legacy_bytes(): void {
+        $brb = "Gesch\x84ftvorgang;W\x84hrung;Geb\x81hr\r\n\"EINZUG RATE/ANNUIT\xC5\xBDT\";\"Hamburg F\xC2\x81r 01.\"\r\n\"EINZEL\xC5\xA1BERWEISUNG\"\r\n";
+
+        $this->assertTrue(StringHelper::isUtf8WithLegacyBytes($brb));
+        $this->assertTrue(StringHelper::latinEncodingEvidence($brb)['utf8']);
+        $this->assertTrue(StringHelper::containsUtf8CharInWord("ANNUIT\xC5\xBDT"), 'Z mit Hacek');
+        $this->assertTrue(StringHelper::containsUtf8CharInWord("F\xC2\x81r"), 'C1-Steuerzeichen');
+        $this->assertTrue(StringHelper::containsUtf8CharInWord("Gesch\xE2\x80\x9Eft"), 'Anfuehrungszeichen unten');
+        $this->assertTrue(StringHelper::containsUtf8CharInWord("K\xE2\x80\x9Dln M\xE2\x84\xA2BEL"), 'Anfuehrungszeichen oben, Markenzeichen');
+        $this->assertTrue(StringHelper::containsUtf8LatinLetterInWord("ANNUIT\xC5\xBDT"), 'alter Name, derselbe Beleg');
+        $this->assertFalse(StringHelper::containsUtf8CharInWord("Preis 12,00 \xE2\x82\xAC"), 'Euro an einer Zahl');
+        $this->assertFalse(StringHelper::isUtf8WithLegacyBytes("Gesch\x84ftvorgang;W\x84hrung;Geb\x81hr;\xC4\xC4\xC4 Summe"), 'reines CP850');
+
+        $this->assertSame(
+            "Gesch\u{00E4}ftvorgang;W\u{00E4}hrung;Geb\u{00FC}hr\r\n\"EINZUG RATE/ANNUIT\u{017D}T\";\"Hamburg F\u{0081}r 01.\"\r\n\"EINZEL\u{0161}BERWEISUNG\"\r\n",
+            StringHelper::repairInvalidUtf8($brb, StringHelper::legacyEncodingOfInvalidBytes($brb)),
+            'UTF-8 bleibt, der Kopf ist CP850 - die Fehlkodierung repariert repairMojibake()'
+        );
+    }
+
+    /**
+     * @return iterable<string, array{0: string, 1: string}>
+     */
+    public static function mojibakeRepairedProvider(): iterable {
+        // Klasse 1: UTF-8 als Windows-1252 gelesen (SumUp 0141 MDCLRN2T, ckonverter C3)
+        yield 'SumUp-Buchungsart' => ['Ausgehende BankÃ¼berweisung', 'Ausgehende Banküberweisung'];
+        yield 'Umlaute und Eszett' => ['GrÃ¶ÃŸe Ã„rger Ã–l Ãœbel StraÃŸe Ã¤', 'Größe Ärger Öl Übel Straße ä'];
+        yield 'Euro (drei Bytes)' => ['Preis 12,00 â‚¬', 'Preis 12,00 €'];
+        yield 'polnisch' => ['WysÅ‚ane z SumUp', 'Wysłane z SumUp'];
+        yield 'neben korrekt kodierten Zeichen' => ['Müller BankÃ¼berweisung', 'Müller Banküberweisung'];
+        yield 'Satzzeichen in einer reparierten Zeile' => ['MÃ¼ller â€“ RÃ¼ckzahlung', 'Müller – Rückzahlung'];
+        // Klasse 2: DOS-Text als Windows-1252/ISO-8859-1 gelesen (v1-Ausgabe brbgruppe, ckonverter P2)
+        yield 'brbgruppe: Steuerzeichen belegt die Zeile' => ["\"EINZUG RATE/ANNUIT\u{017D}T Hambur\";\"r Str. 367, Hamburg F\u{0081}r 01.\"", "\"EINZUG RATE/ANNUITÄT Hambur\";\"r Str. 367, Hamburg Für 01.\""];
+        yield 'brbgruppe: Kleinbuchstabe vor Grossbuchstaben' => ['"GUTSCHRIFT šBERWEISUNG DAUE"', '"GUTSCHRIFT ÜBERWEISUNG DAUE"'];
+        yield 'brbgruppe: im Grossbuchstabenwort' => ['"EINZELšBERWEISUNG Finanzamt"', '"EINZELÜBERWEISUNG Finanzamt"'];
+        yield 'Satzzeichen im Wort' => ["Gesch\u{201E}ftvorgang;W\u{201E}hrung;K\u{201D}ln;M\u{2122}BEL", 'Geschäftvorgang;Währung;Köln;MÖBEL'];
+        yield 'Nachbarn in der reparierten Lesart' => ["Gr\u{0081}\u{00E1}e aus K\u{201D}ln", 'Grüße aus Köln'];
+        yield 'Eszett im Grossbuchstabenwort' => ['STRAáE 5', 'STRAßE 5'];
+        yield 'Gross-Umlaut am Wortanfang in belegter Zeile' => ["\u{017D}nderung der Gesch\u{201E}ftsbedingungen", 'Änderung der Geschäftsbedingungen'];
+        yield 'ISO-8859-1-Lesart (Steuerzeichen)' => ["Gesch\u{0084}ft \u{009A}bertrag K\u{0094}ln \u{008E}nderung M\u{0099}BEL", 'Geschäft Übertrag Köln Änderung MÖBEL'];
+    }
+
+    /** Doppelt kodierter Text wird je physischer Zeile repariert (repairMojibake). */
+    #[DataProvider('mojibakeRepairedProvider')]
+    public function test_repair_mojibake_repairs_double_encoded_text(string $input, string $expected): void {
+        $this->assertSame($expected, StringHelper::repairMojibake($input));
+        $this->assertSame($expected, StringHelper::repairMojibakeLine($input));
+    }
+
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function mojibakeUnchangedProvider(): iterable {
+        yield 'reines UTF-8' => ['Müller Straße, Gebühr 1,50 €, São Paulo, Ærø, Øre'];
+        yield 'portugiesisch ohne Folgezeichen' => ['JOÃO SILVA, SÃO PAULO, ÃGUA'];
+        yield 'nur ASCII' => ['Kartenzahlung REWE 12.50'];
+        yield 'unvollstaendige Folge' => ['Ã( und Ã'];
+        yield 'nur Satzzeichen, kein typisches Paar' => ['Temperatur 20Â° â€“ ok'];
+        yield 'echter Name mit a Akut (Revolut 0184)' => ['Money added from Gorzolla Jácomo'];
+        yield 'deutsche Anfuehrungszeichen vor dem Wort (camt-Beispiel)' => ['„S“ (SEPA-Clearer) bzw. „E“ (Scheckabwicklung)'];
+        yield 'englische Anfuehrungszeichen hinter dem Wort' => ['The “Payouts overview” table'];
+        yield 'Markenzeichen hinter dem Wort' => ['Brand™ Name'];
+        yield 'slawische Namen ohne Beleg' => ['Košice Žilina BOŽENA Dvořák'];
+        yield 'Z mit Hacek im Grossbuchstabenwort ohne Beleg' => ['EINZUG RATE/ANNUITŽT Hambur'];
+        yield 'ungueltiges UTF-8' => ["Gesch\x84ft F\xC2\x81r"];
+        yield 'Windows-1252-Anfuehrungszeichen als ISO-8859-1 gelesen' => ["Er sagte \u{0084}Zitat\u{0094} und ging"];
+        yield 'Markenzeichen als ISO-8859-1 gelesen' => ["Brand\u{0099} Name"];
+    }
+
+    #[DataProvider('mojibakeUnchangedProvider')]
+    public function test_repair_mojibake_keeps_real_text(string $input): void {
+        $this->assertSame($input, StringHelper::repairMojibake($input));
+    }
+
+    /** Je physischer Zeile: Zeilenenden und Zeilenzahl bleiben, der Beleg gilt nur fuer seine Zeile. */
+    public function test_repair_mojibake_works_per_line(): void {
+        $this->assertSame(
+            "Kopf;Wert\r\nBanküberweisung;1\r\nJOÃO;2\nä;3\n",
+            StringHelper::repairMojibake("Kopf;Wert\r\nBankÃ¼berweisung;1\r\nJOÃO;2\nÃ¤;3\n"),
+        );
+        $this->assertSame("ä\n20Â°", StringHelper::repairMojibake("Ã¤\n20Â°"), 'Klasse 1: nur Zeilen mit typischem Paar');
+        $this->assertSame('ä 20°', StringHelper::repairMojibake('Ã¤ 20Â°'));
+        $this->assertSame(
+            "ANNUITÄT Für\r\nANNUITŽT\r\nÜBERWEISUNG\r\n",
+            StringHelper::repairMojibake("ANNUITŽT F\u{0081}r\r\nANNUITŽT\r\nšBERWEISUNG\r\n"),
+            'Klasse 2: nur belegte Zeilen'
+        );
+        $this->assertSame('Ausgehende Banküberweisung Košice', StringHelper::repairMojibake('Ausgehende BankÃ¼berweisung Košice'), 'eine Fehlkodierung je Zeile');
     }
 
     /**
