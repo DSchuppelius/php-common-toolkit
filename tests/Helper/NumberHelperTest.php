@@ -411,4 +411,17 @@ final class NumberHelperTest extends TestCase {
         $this->assertSame('-12.50', NumberHelper::normalizeDecimalStringOrNull('- 12,50', CountryCode::Germany));
         $this->assertSame('12.5', NumberHelper::normalizeDecimalStringOrNull('+12.5'));
     }
+
+    public function test_to_int_or_null_reads_numbers_and_treats_everything_else_as_missing(): void {
+        $this->assertSame(42, NumberHelper::toIntOrNull(' 42 '));
+        $this->assertSame(-3, NumberHelper::toIntOrNull('-3'));
+        $this->assertSame(7, NumberHelper::toIntOrNull('7.9'));
+        $this->assertSame(5, NumberHelper::toIntOrNull(5));
+        $this->assertSame(2, NumberHelper::toIntOrNull(2.5));
+        $this->assertSame(0, NumberHelper::toIntOrNull('0'));
+
+        foreach (['', '   ', 'abc', '12abc', null, true, [], NAN, INF] as $missing) {
+            $this->assertNull(NumberHelper::toIntOrNull($missing), var_export($missing, true));
+        }
+    }
 }

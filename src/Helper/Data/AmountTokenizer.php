@@ -35,9 +35,10 @@ final class AmountTokenizer {
     /**
      * Alle Betrags-Token einer Zeile, von links nach rechts.
      *
+     * @param bool $skipPercent Zahlen direkt vor „%“ auslassen („MwSt 19,00 % 234,56“ → nur 234,56).
      * @return list<AmountToken>
      */
-    public static function tokens(string $line): array {
+    public static function tokens(string $line, bool $skipPercent = false): array {
         if (preg_match_all(self::amountRe(), $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === false) {
             return [];
         }
@@ -56,25 +57,29 @@ final class AmountTokenizer {
             $hasSign = $lead !== '' || $trail !== '';
 
             $start = self::charPos($line, (int) $m[3][1]);
+            $end = $start + mb_strlen($number);
+            if ($skipPercent && preg_match('/^\s*%/u', mb_substr($line, $end)) === 1) {
+                continue;
+            }
             $tokens[] = new AmountToken(
                 $number,
                 $negative ? -$value : $value,
                 $hasSign,
                 $start,
-                $start + mb_strlen($number),
+                $end,
                 self::normalizeCurrency($currencyBefore !== '' ? $currencyBefore : $currencyAfter),
             );
         }
         return $tokens;
     }
 
-    public static function first(string $line): ?AmountToken {
-        $tokens = self::tokens($line);
+    public static function first(string $line, bool $skipPercent = false): ?AmountToken {
+        $tokens = self::tokens($line, $skipPercent);
         return $tokens[0] ?? null;
     }
 
-    public static function last(string $line): ?AmountToken {
-        $tokens = self::tokens($line);
+    public static function last(string $line, bool $skipPercent = false): ?AmountToken {
+        $tokens = self::tokens($line, $skipPercent);
         return $tokens === [] ? null : $tokens[count($tokens) - 1];
     }
 

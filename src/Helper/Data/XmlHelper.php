@@ -104,21 +104,33 @@ class XmlHelper extends HelperAbstract {
      * @return DOMDocument|null Das Dokument oder null bei ungültigem XML bzw. DTD
      */
     public static function safeLoadDom(string $xml, int $additionalFlags = 0): ?DOMDocument {
+        $doc = new DOMDocument;
+
+        return self::safeLoadInto($doc, $xml, $additionalFlags) ? $doc : null;
+    }
+
+    /**
+     * Wie {@see safeLoadDom()}, lädt aber in ein vorhandenes Dokument — etwa eine
+     * Unterklasse von DOMDocument, die eine Bibliothek als Antworttyp verlangt.
+     *
+     * @param DOMDocument $document Ziel; bei false ist sein Inhalt unbestimmt.
+     * @param string $xml Der XML-String
+     * @param int $additionalFlags Zusätzliche LIBXML_*-Flags
+     * @return bool false bei ungültigem XML bzw. DTD
+     */
+    public static function safeLoadInto(DOMDocument $document, string $xml, int $additionalFlags = 0): bool {
         if ($xml === '' || preg_match('/<!DOCTYPE|<!ENTITY/i', $xml) === 1) {
-            return null;
+            return false;
         }
 
         $useInternalErrors = libxml_use_internal_errors(true);
         libxml_clear_errors();
         try {
-            $doc = new DOMDocument;
-            $loaded = $doc->loadXML($xml, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING | $additionalFlags);
+            return $document->loadXML($xml, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING | $additionalFlags);
         } finally {
             libxml_clear_errors();
             libxml_use_internal_errors($useInternalErrors);
         }
-
-        return $loaded ? $doc : null;
     }
 
     /**

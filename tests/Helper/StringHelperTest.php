@@ -500,4 +500,19 @@ class StringHelperTest extends BaseTestCase {
         $this->assertSame('', StringHelper::foldCharToAscii('─'));
         $this->assertSame('', StringHelper::foldCharToAscii('🎉'));
     }
+
+    public function test_trim_to_null_keeps_text_and_drops_blanks(): void {
+        $this->assertSame('Text', StringHelper::trimToNull("  Text \n"));
+        $this->assertSame('5', StringHelper::trimToNull(5));
+        $this->assertSame('0', StringHelper::trimToNull('0'));
+        $this->assertSame('a b', StringHelper::trimToNull(new class implements \Stringable {
+            public function __toString(): string {
+                return ' a b ';
+            }
+        }));
+
+        foreach (['', "  \t", null, [], new \stdClass] as $missing) {
+            $this->assertNull(StringHelper::trimToNull($missing));
+        }
+    }
 }

@@ -198,4 +198,40 @@ class FolderTest extends BaseTestCase {
         // Standard-Test: Nicht-existierendes Verzeichnis
         $this->assertFalse(Folder::exists('/nonexistent/path/folder'));
     }
+
+    public function test_create_temp_makes_a_fresh_private_directory_and_its_parent(): void {
+        $parent = $this->testDir . '/neu/tief';
+        $a = Folder::createTemp('job-', 0700, $parent);
+        $b = Folder::createTemp('job-', 0700, $parent);
+
+        $this->assertNotSame($a, $b);
+        $this->assertDirectoryExists($a);
+        $this->assertStringStartsWith($parent . DIRECTORY_SEPARATOR . 'job-', $a);
+        $this->assertSame(0700, fileperms($a) & 0777);
+    }
+
+    public function test_with_temp_removes_the_directory_with_its_content_even_on_failure(): void {
+        $seen = Folder::withTemp(function (string $dir): string {
+            file_put_contents($dir . '/a.txt', 'x');
+            mkdir($dir . '/sub');
+            file_put_contents($dir . '/sub/b.txt', 'y');
+
+            return $dir;
+        }, 'w-', $this->testDir);
+        $this->assertDirectoryDoesNotExist($seen);
+
+        $kept = null;
+        $caught = null;
+        try {
+            Folder::withTemp(function (string $dir) use (&$kept): void {
+                $kept = $dir;
+                throw new \RuntimeException('Abbruch');
+            }, 'w-', $this->testDir);
+        } catch (\RuntimeException $e) {
+            $caught = $e;
+        }
+        $this->assertSame('Abbruch', $caught->getMessage());
+        $this->assertNotNull($kept);
+        $this->assertDirectoryDoesNotExist($kept);
+    }
 }

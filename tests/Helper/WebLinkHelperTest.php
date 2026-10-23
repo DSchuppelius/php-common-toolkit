@@ -64,12 +64,16 @@ class WebLinkHelperTest extends BaseTestCase {
         $this->assertTrue(WebLinkHelper::isHttpUrl('http://example.com'));
         $this->assertFalse(WebLinkHelper::isHttpUrl('ftp://ftp.example.com'));
         $this->assertFalse(WebLinkHelper::isHttpUrl(null));
+        $this->assertTrue(WebLinkHelper::isHttpUrl('HTTPS://example.com'));
+        $this->assertFalse(WebLinkHelper::isHttpUrl('javascript:alert(1)'));
+        $this->assertFalse(WebLinkHelper::isHttpUrl('javascript://example.com/%0Aalert(1)'));
     }
 
     public function test_is_secure(): void {
         $this->assertTrue(WebLinkHelper::isSecure('https://example.com'));
         $this->assertFalse(WebLinkHelper::isSecure('http://example.com'));
         $this->assertFalse(WebLinkHelper::isSecure('ftp://ftp.example.com'));
+        $this->assertTrue(WebLinkHelper::isSecure('HTTPS://example.com'));
     }
 
     public function test_validate_url(): void {

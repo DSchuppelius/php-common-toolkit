@@ -49,6 +49,25 @@ class StringHelper {
     }
 
     /**
+     * Getrimmter Text oder null, wenn nichts übrig bleibt — für Formular-,
+     * Import- und Konfigurationswerte, bei denen "leer" "nicht angegeben" heißt.
+     *
+     * Beispiele: "  Text " -> "Text", "   " -> null, null -> null, 5 -> "5",
+     * [] -> null.
+     *
+     * @param mixed $value Skalar, Stringable oder null; alles andere ergibt null.
+     * @return non-empty-string|null
+     */
+    public static function trimToNull(mixed $value): ?string {
+        if (!is_scalar($value) && !$value instanceof \Stringable) {
+            return null;
+        }
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    /**
      * Konvertiert einen UTF-8-String in ISO-8859-1.
      *
      * @param string $string Der zu konvertierende String.

@@ -68,7 +68,8 @@ class WebLinkHelper {
             return false;
         }
 
-        $scheme = self::getScheme($url);
+        // Schemata sind groß/klein-unabhängig (RFC 3986, 3.1).
+        $scheme = strtolower((string) self::getScheme($url));
         return $scheme === 'http' || $scheme === 'https';
     }
 
@@ -83,7 +84,7 @@ class WebLinkHelper {
             return false;
         }
 
-        return self::getScheme($url) === 'https';
+        return strtolower((string) self::getScheme($url)) === 'https';
     }
 
     /**

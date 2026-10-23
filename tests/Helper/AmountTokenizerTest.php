@@ -177,4 +177,13 @@ class AmountTokenizerTest extends BaseTestCase {
         $gerade = AmountTokenizer::tokens("Devisengeschaeft   49'478.23   28'806.48 H");
         $this->assertSame([49478.23, 28806.48], array_map(static fn ($t) => $t->value, $gerade));
     }
+
+    public function test_skip_percent_laesst_saetze_aus(): void {
+        $line = 'MwSt 19,00 % 234,56 EUR';
+        $this->assertCount(2, AmountTokenizer::tokens($line));
+        $this->assertSame(['234,56'], array_map(static fn ($t) => $t->raw, AmountTokenizer::tokens($line, skipPercent: true)));
+        $this->assertSame('234,56', AmountTokenizer::first($line, skipPercent: true)?->raw);
+        $this->assertSame('234,56', AmountTokenizer::last('Brutto 234,56 inkl. 19,00%', skipPercent: true)?->raw);
+        $this->assertNull(AmountTokenizer::last('Rabatt 5,00 %', skipPercent: true));
+    }
 }

@@ -319,6 +319,30 @@ class NumberHelper {
     }
 
     /**
+     * Ganzzahl oder null, wenn der Wert leer oder keine Zahl ist — für
+     * Formular-, Import- und Konfigurationswerte.
+     *
+     * Beispiele: " 42 " -> 42, "7.9" -> 7 (wie ein int-Cast), "" -> null,
+     * "abc" -> null, null -> null, true -> null.
+     *
+     * @param mixed $value Zahl, numerischer String oder null.
+     */
+    public static function toIntOrNull(mixed $value): ?int {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_float($value)) {
+            return is_finite($value) ? (int) $value : null;
+        }
+        if (!is_string($value)) {
+            return null;
+        }
+        $value = trim($value);
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
      * Wie {@see normalizeDecimalString()}, unterscheidet aber nicht deutbare
      * Eingaben von einer echten Null: liefert null statt "0".
      *

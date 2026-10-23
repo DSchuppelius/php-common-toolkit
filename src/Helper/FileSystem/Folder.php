@@ -212,6 +212,59 @@ class Folder extends HelperAbstract implements FileSystemInterface {
     }
 
     /**
+     * Legt ein neues, exklusiv erzeugtes Temp-Verzeichnis an und liefert seinen Pfad.
+     *
+     * Fehlt der Zielordner, entsteht er mit. Aufräumen ist Sache des Aufrufers —
+     * {@see withTemp()} erledigt das selbst.
+     *
+     * @param string $prefix Namenspräfix.
+     * @param int $permissions Rechte des Verzeichnisses (Standard: 0700).
+     * @param string|null $directory Zielordner (Standard: sys_get_temp_dir()).
+     * @return string Pfad des angelegten Verzeichnisses.
+     * @throws Exception Wenn das Verzeichnis nicht angelegt werden kann.
+     */
+    public static function createTemp(string $prefix = 'tmp', int $permissions = 0700, ?string $directory = null): string {
+        $directory = rtrim($directory ?? sys_get_temp_dir(), '/\\');
+        if (!self::exists($directory)) {
+            self::create($directory, $permissions, true);
+        }
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $path = $directory . DIRECTORY_SEPARATOR . $prefix . bin2hex(random_bytes(8));
+            // mkdir scheitert an einem vorhandenen Namen, statt ihn zu übernehmen.
+            if (@mkdir($path, $permissions)) {
+                @chmod($path, $permissions);
+
+                return self::logDebugAndReturn($path, "Temp-Verzeichnis angelegt: $path");
+            }
+        }
+
+        self::logErrorAndThrow(Exception::class, "Temp-Verzeichnis in $directory nicht anlegbar");
+    }
+
+    /**
+     * Legt ein Temp-Verzeichnis an, übergibt seinen Pfad an `$callback` und löscht
+     * es danach samt Inhalt — auch wenn der Callback wirft.
+     *
+     * @template T
+     * @param callable(string): T $callback Erhält den Pfad.
+     * @param string $prefix Namenspräfix.
+     * @param string|null $directory Zielordner (Standard: sys_get_temp_dir()).
+     * @return T Rückgabe des Callbacks.
+     * @throws Exception Wenn das Verzeichnis nicht angelegt werden kann.
+     */
+    public static function withTemp(callable $callback, string $prefix = 'tmp', ?string $directory = null): mixed {
+        $path = self::createTemp($prefix, 0700, $directory);
+        try {
+            return $callback($path);
+        } finally {
+            if (self::exists($path)) {
+                self::delete($path, true);
+            }
+        }
+    }
+
+    /**
      * Benennt ein Verzeichnis um.
      *
      * @param string $oldName Der alte Name des Verzeichnisses.

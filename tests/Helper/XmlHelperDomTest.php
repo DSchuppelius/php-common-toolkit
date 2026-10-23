@@ -30,6 +30,16 @@ class XmlHelperDomTest extends BaseTestCase {
         $this->assertSame([], libxml_get_errors(), 'Fehler bleiben nicht im libxml-Puffer stehen.');
     }
 
+    public function test_safe_load_into_fills_a_given_document_subclass(): void {
+        $doc = new class extends \DOMDocument {};
+        $this->assertTrue(XmlHelper::safeLoadInto($doc, '<ebics><ok>1</ok></ebics>'));
+        $this->assertSame('ebics', $doc->documentElement?->nodeName);
+
+        $this->assertFalse(XmlHelper::safeLoadInto(new \DOMDocument, '<!DOCTYPE x [<!ENTITY e "x">]><x>&e;</x>'));
+        $this->assertFalse(XmlHelper::safeLoadInto(new \DOMDocument, '<x>'));
+        $this->assertSame([], libxml_get_errors());
+    }
+
     public function test_escape_produces_xml_entities_only(): void {
         $this->assertSame('a &amp; b &lt;c&gt; &quot;d&quot; &apos;e&apos; ä', XmlHelper::escape('a & b <c> "d" \'e\' ä'));
     }
