@@ -224,6 +224,21 @@ class StringHelper {
     private const LEGACY_SAMPLE_WINDOWS = 4000;
     private const LEGACY_SAMPLE_CONTEXT = 24;
 
+    /** Latin-Varianten mit Grundform ISO-8859-1 bzw. Windows-1252 ({@see latinVariantBase()}) */
+    private const LATIN_VARIANTS_ISO = [2, 3, 4, 9, 10, 13, 14, 16];
+    private const LATIN_VARIANTS_WINDOWS = [1250, 1254, 1257, 1258];
+
+    /**
+     * Deutsche Umlaute als Bytes (Regex-Zeichenklasse): Ä, Ö, Ü, ß, ä, ö, ü in
+     * Latin-1 und die Umlaute der DOS-Codepage 850 aus 0x80-0x9F (ü 0x81,
+     * ä 0x84, Ä 0x8E, ö 0x94, Ö 0x99, Ü 0x9A) - dort tragen ISO-8859-x
+     * Steuerzeichen, Windows-125x Satzzeichen oder nichts.
+     */
+    private const GERMAN_LETTER_BYTES = '\xC4\xD6\xDC\xDF\xE4\xF6\xFC\x81\x84\x8E\x94\x99\x9A';
+
+    /** @var array<string, string> Unterscheidende Bytes je Latin-Variante ({@see latinVariantBytes()}) */
+    private static array $latinVariantBytes = [];
+
     /**
      * Stichprobe fuer die Legacy-Heuristik: kurze Texte ganz, lange nur die
      * Fenster um die ersten Legacy-Bytes. Die Heuristik braucht den
@@ -386,12 +401,20 @@ class StringHelper {
      * (MT940-Ziele, ckonverter 23.10.2026: "2,00" + 0xA4 + "Anzahl").
      * Gueltige UTF-8-Zeichen eines gemischten Texts zaehlen nicht mit.
      *
+     * Vorher gilt die Regel fuer Latin-Varianten ({@see latinVariantBase()}):
+     * eine Variante, deren unterscheidende Bytes ({@see latinVariantBytes()})
+     * im Text fehlen, die aber deutsche Umlaute traegt, ist ihre Grundform
+     * (ISO-8859-1 bzw. Windows-1252) - chardet las eine deutsche Latin-1-CSV
+     * als ISO-8859-9 (Tuerkisch), die Euro-Regel griff dann nicht, und eine
+     * DOS-Datei als Windows-1254 (ckonverter 23.10.2026).
+     *
      * @param string $text Rohdaten (ganz oder Stichprobe)
      * @param string $encoding bisher erkanntes Encoding
-     * @return string ISO-8859-15 oder das uebergebene Encoding
+     * @return string ISO-8859-15, die Grundform einer Latin-Variante oder das uebergebene Encoding
      */
     public static function refineLatinEncoding(string $text, string $encoding): string {
-        if (!in_array(self::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !str_contains($text, "\xA4")) {
+        if (self::latinVariantBase($encoding) === null
+            && (!in_array(self::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !str_contains($text, "\xA4"))) {
             return $encoding;
         }
 
@@ -401,41 +424,142 @@ class StringHelper {
     /**
      * Die Merkmale, an denen {@see refineLatinEncoding()} entscheidet, fuer ein
      * Textstueck: ein 0xA4 ueberhaupt, ein 0xA4 an einem Betrag ("2,00" + 0xA4,
-     * 0xA4 + "12", ein Leerzeichen erlaubt), ein Byte aus 0x80-0x9F - gueltige
-     * UTF-8-Zeichen eines gemischten Texts zaehlen nicht. Die Merkmale der
-     * Zeilen einer Datei werden verodert (zeilenweises Lesen, File::readLinesAsUtf8):
+     * 0xA4 + "12", ein Leerzeichen erlaubt), ein Byte aus 0x80-0x9F, die
+     * vorkommenden Bytes aus 0x80-0xFF und ein deutscher Umlaut neben einem
+     * Buchstaben (Latin-1 0xC4, 0xD6, 0xDC, 0xDF, 0xE4, 0xF6, 0xFC oder
+     * DOS 0x81, 0x84, 0x8E, 0x94, 0x99, 0x9A) -
+     * gueltige UTF-8-Zeichen eines gemischten Texts zaehlen nicht. Die Merkmale
+     * der Zeilen einer Datei werden zusammengefuehrt
+     * ({@see mergeLatinEncodingEvidence()}, zeilenweises Lesen, File::readLinesAsUtf8):
      * kein Muster reicht ueber ein Zeilenende, die Entscheidung ist dieselbe wie
      * fuer den ganzen Text.
      *
-     * @return array{a4: bool, euroAtAmount: bool, c1: bool}
+     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool}
      */
     public static function latinEncodingEvidence(string $text): array {
         if (preg_match('/[\x80-\xFF]/', $text) !== 1) {
-            return ['a4' => false, 'euroAtAmount' => false, 'c1' => false];
+            return ['a4' => false, 'euroAtAmount' => false, 'c1' => false, 'bytes' => '', 'german' => false];
         }
         $legacy = preg_replace('/(?:' . self::UTF8_MULTIBYTE_CHAR . ')++/', 'a', $text) ?? $text;
+        $letters = self::GERMAN_LETTER_BYTES;
 
         return [
             'a4' => str_contains($legacy, "\xA4"),
             'euroAtAmount' => preg_match('/\d ?\xA4|\xA4 ?\d/', $legacy) === 1,
             'c1' => preg_match('/[\x80-\x9F]/', $legacy) === 1,
+            'bytes' => self::highBytesOf($legacy),
+            'german' => preg_match('/[A-Za-z][' . $letters . ']|[' . $letters . '][A-Za-z]/', $legacy) === 1,
+        ];
+    }
+
+    /**
+     * Fuehrt die Merkmale zweier Textstuecke zusammen ({@see latinEncodingEvidence()}):
+     * die Wahrheitswerte verodert, die Bytes vereinigt.
+     *
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool} $first
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool} $second
+     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool}
+     */
+    public static function mergeLatinEncodingEvidence(array $first, array $second): array {
+        return [
+            'a4' => $first['a4'] || $second['a4'],
+            'euroAtAmount' => $first['euroAtAmount'] || $second['euroAtAmount'],
+            'c1' => $first['c1'] || $second['c1'],
+            'bytes' => self::highBytesOf(($first['bytes'] ?? '') . ($second['bytes'] ?? '')),
+            'german' => ($first['german'] ?? false) || ($second['german'] ?? false),
         ];
     }
 
     /**
      * {@see refineLatinEncoding()} aus gesammelten Merkmalen
-     * ({@see latinEncodingEvidence()}): Windows-1252/ISO-8859-1 werden
-     * ISO-8859-15, wenn ein 0xA4 an einem Betrag steht und kein Byte aus
-     * 0x80-0x9F vorkommt.
+     * ({@see latinEncodingEvidence()}): eine Latin-Variante ohne ihre
+     * unterscheidenden Bytes, aber mit deutschen Umlauten wird ihre Grundform;
+     * Windows-1252/ISO-8859-1 werden ISO-8859-15, wenn ein 0xA4 an einem Betrag
+     * steht und kein Byte aus 0x80-0x9F vorkommt.
      *
-     * @param array{a4: bool, euroAtAmount: bool, c1: bool} $evidence
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool} $evidence
      */
     public static function refineLatinEncodingFromEvidence(string $encoding, array $evidence): string {
+        $base = self::latinVariantBase($encoding);
+        $variantBytes = self::latinVariantBytes($encoding);
+        if ($base !== null && $variantBytes !== null && $variantBytes !== '' && ($evidence['german'] ?? false)
+            && strpbrk($evidence['bytes'] ?? '', $variantBytes) === false) {
+            $encoding = $base;
+        }
+
         if (!in_array(self::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !$evidence['a4'] || $evidence['c1']) {
             return $encoding;
         }
 
         return $evidence['euroAtAmount'] ? 'ISO-8859-15' : $encoding;
+    }
+
+    /**
+     * Grundform einer Latin-Variante, die chardet fuer deutsche Texte meldet:
+     * ISO-8859-2, -3, -4, -9, -10, -13, -14, -16 -> ISO-8859-1, Windows-1250,
+     * -1254, -1257, -1258 -> Windows-1252; sonst null. Die deutschen Umlaute und
+     * das Eszett stehen in allen an derselben Stelle wie in Latin-1.
+     * ISO-8859-15 gehoert nicht dazu (dafuer gilt die Euro-Regel).
+     */
+    public static function latinVariantBase(string $encoding): ?string {
+        $variant = self::latinVariantName($encoding);
+        if ($variant === null) {
+            return null;
+        }
+
+        return str_starts_with($variant, 'ISO-') ? 'ISO-8859-1' : 'Windows-1252';
+    }
+
+    /**
+     * Die Bytes, in denen sich eine Latin-Variante von ihrer Grundform
+     * ({@see latinVariantBase()}) unterscheidet, aus den Zeichentabellen
+     * hergeleitet: die Stellen, an denen die Variante ein anderes Zeichen traegt -
+     * ISO-8859-9: 0xD0, 0xDD, 0xDE, 0xF0, 0xFD, 0xFE. Stellen ohne Zeichen in der
+     * Variante (Steuerzeichen, unbelegt) sprechen nicht fuer sie und zaehlen nicht.
+     *
+     * @return string|null die Bytes; null, wenn das Encoding keine Latin-Variante ist
+     */
+    public static function latinVariantBytes(string $encoding): ?string {
+        $variant = self::latinVariantName($encoding);
+        if ($variant === null) {
+            return null;
+        }
+        if (!isset(self::$latinVariantBytes[$variant])) {
+            $base = (string) self::latinVariantBase($variant);
+            $bytes = '';
+            for ($byte = 0x80; $byte <= 0xFF; $byte++) {
+                $inVariant = self::convertToUtf8(chr($byte), $variant);
+                $inBase = self::convertToUtf8(chr($byte), $base);
+                if ($inVariant !== $inBase && !self::isUnassignedLegacyChar($inVariant)) {
+                    $bytes .= chr($byte);
+                }
+            }
+            self::$latinVariantBytes[$variant] = $bytes;
+        }
+
+        return self::$latinVariantBytes[$variant];
+    }
+
+    /** Einheitlicher Name einer Latin-Variante ("ISO-8859-9", "Windows-1254") oder null */
+    private static function latinVariantName(string $encoding): ?string {
+        if (preg_match('/^(?:ISO[-_ ]?8859[-_ ]?(\d{1,2})|(?:WINDOWS|WIN|CP)[-_ ]?(\d{4}))$/', strtoupper(trim($encoding)), $match) !== 1) {
+            return null;
+        }
+        if ($match[1] !== '') {
+            return in_array((int) $match[1], self::LATIN_VARIANTS_ISO, true) ? 'ISO-8859-' . (int) $match[1] : null;
+        }
+
+        return in_array((int) $match[2], self::LATIN_VARIANTS_WINDOWS, true) ? 'Windows-' . (int) $match[2] : null;
+    }
+
+    /** Ein Zeichen ohne Belegung: unbelegt (leer, "?") oder ein C1-Steuerzeichen */
+    private static function isUnassignedLegacyChar(string $char): bool {
+        return $char === '' || $char === '?' || preg_match('/^[\x{80}-\x{9F}]$/u', $char) === 1;
+    }
+
+    /** Die verschiedenen Bytes aus 0x80-0xFF eines Texts, aufsteigend */
+    private static function highBytesOf(string $text): string {
+        return (string) preg_replace('/[\x00-\x7F]+/', '', count_chars($text, 3));
     }
 
     /**
@@ -1242,6 +1366,9 @@ class StringHelper {
         try {
             $encoding = ShellChardet::detect($text);
             if ($encoding !== false) {
+                // Latin-Variante ohne ihre Bytes (ISO-8859-9 fuer deutsches Latin-1), Euro-Regel
+                $encoding = self::refineLatinEncoding($text, $encoding);
+
                 return self::logDebugAndReturn($encoding, "ShellChardet erkannte: $encoding");
             }
             self::logWarning("ShellChardet konnte keine Kodierung erkennen.");

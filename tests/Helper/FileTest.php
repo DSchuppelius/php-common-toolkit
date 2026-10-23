@@ -10,6 +10,7 @@
 
 namespace Tests\Helper;
 
+use CommonToolkit\Helper\Data\StringHelper;
 use CommonToolkit\Helper\FileSystem\File;
 use ERRORToolkit\Exceptions\FileSystem\FileNotFoundException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -352,6 +353,89 @@ class FileTest extends BaseTestCase {
             } finally {
                 unlink($file);
                 File::clearChardetCache();
+            }
+        }
+    }
+
+    /**
+     * Deutsche Dateien, die chardet als Latin-Variante liest: Latin-1 mit
+     * Euro-Zeichen als ISO-8859-9 (Tuerkisch), DOS-Text (CP850) als Windows-1254.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function latinVariantFileProvider(): array {
+        return [
+            'latin1-als-iso-8859-9' => [
+                "Buchungstag;Verwendungszweck;Betrag\r\n" . str_repeat("02.07.2024;Abschlag Strom Vertrag 4711;-85,00\r\n", 10)
+                    . "03.07.2024;Buchung M\xFCller Gartenbau Rechnung Gr\xFC\xDFe aus K\xF6ln 2,00\xA4;-2,00\r\n",
+                "03.07.2024;Buchung M\u{00FC}ller Gartenbau Rechnung Gr\u{00FC}\u{00DF}e aus K\u{00F6}ln 2,00\u{20AC};-2,00",
+            ],
+            'cp850-als-windows-1254' => [
+                "Buchungstag;Text;Betrag\r\n15.03.2024;\"Rechnungsabschluss (Konto\x81bersicht) Wir bitten um Pruefung\";0,00\r\n"
+                    . "15.03.2024;\"Kontoauszug gem\x84\xE1 Ziffer 11 AGB, Gesch\x84ftsbedingungen, Vollst\x84ndigkeit\";0,00\r\n",
+                "15.03.2024;\"Kontoauszug gem\u{00E4}\u{00DF} Ziffer 11 AGB, Gesch\u{00E4}ftsbedingungen, Vollst\u{00E4}ndigkeit\";0,00",
+            ],
+        ];
+    }
+
+    /**
+     * chardet meldet fuer kurze deutsche Latin-1-Texte ISO-8859-9 (Tuerkisch)
+     * und fuer DOS-Text (CP850) Windows-1254 (ckonverter 23.10.2026). Die
+     * Variante blieb: die Euro-Regel griff nicht ("2,00" + U+00A4), die
+     * Heuristik fuer DOS-Codepages lief nicht ("Konto?bersicht"). Ohne die
+     * Bytes der Variante gilt ihre Grundform - im chardet-Pfad, im Ganzleser
+     * und im Zeilenleser gleich.
+     */
+    #[DataProvider('latinVariantFileProvider')]
+    public function test_read_as_utf8_reads_a_latin_variant_without_its_bytes_as_its_base(string $bytes, string $lastLine): void {
+        $file = tempnam(sys_get_temp_dir(), 'latinvariant');
+        file_put_contents($file, $bytes);
+        File::clearChardetCache();
+
+        try {
+            $whole = explode("\r\n", rtrim(File::readAsUtf8($file), "\r\n"));
+            $this->assertSame($lastLine, end($whole));
+            $this->assertStringNotContainsString("\u{00A4}", implode("\n", $whole));
+
+            File::clearChardetCache();
+            $this->assertSame($whole, iterator_to_array(File::readLinesAsUtf8($file), false), 'Zeilenleser wie readAsUtf8');
+
+            File::clearChardetCache();
+            $encoding = File::chardet($file);
+            $this->assertIsString($encoding);
+            $this->assertNull(StringHelper::latinVariantBase($encoding), $encoding);
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
+    /**
+     * Die Entscheidung ueber eine Latin-Variante gilt fuer die ganze Datei,
+     * auch wenn sie zu gross ist, um sie ganz zu laden (zeilenweise Merkmale):
+     * ein tuerkisches Zeichen (0xFD) hinter 256 KB haelt ISO-8859-9, ein
+     * Euro-Zeichen dahinter macht aus der Grundform ISO-8859-15.
+     */
+    public function test_latin_variant_of_a_large_file_is_decided_over_the_whole_file(): void {
+        $refine = new \ReflectionMethod(File::class, 'refineLatinEncodingOfFile');
+        $head = "Buchungstag;Verwendungszweck;Betrag\r\n03.07.2024;Rechnung M\xFCller Gr\xFC\xDFe aus K\xF6ln;-2,00\r\n";
+        $body = str_repeat("02.07.2024;Abschlag Strom Vertrag 4711;-85,00\r\n", 7000);
+        $cases = [
+            'deutsch' => [$head . $body . "31.07.2024;Kontof\xFChrung;-2,00\r\n", 'ISO-8859-9', 'ISO-8859-1'],
+            'euro' => [$head . $body . "31.07.2024;Entgelt 2,00\xA4;-2,00\r\n", 'ISO-8859-9', 'ISO-8859-15'],
+            'tuerkisch' => [$head . $body . "31.07.2024;Kira \xF6demesi Ba\xFEar\xFDl\xFD;-2,00\r\n", 'ISO-8859-9', 'ISO-8859-9'],
+            'windows' => [$head . $body . "31.07.2024;\x93Abschlag\x94;-2,00\r\n", 'Windows-1254', 'Windows-1252'],
+        ];
+        foreach ($cases as $label => [$bytes, $encoding, $expected]) {
+            $this->assertGreaterThan(262144, strlen($bytes), $label);
+            $file = tempnam(sys_get_temp_dir(), 'latinvariantlarge');
+            file_put_contents($file, $bytes);
+
+            try {
+                $this->assertSame($expected, $refine->invoke(null, $file, $encoding), $label);
+                $this->assertSame($expected, StringHelper::refineLatinEncoding($bytes, $encoding), "$label: wie der ganze Text");
+            } finally {
+                unlink($file);
             }
         }
     }

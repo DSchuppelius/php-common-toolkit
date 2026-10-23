@@ -367,6 +367,7 @@ class StringHelperTest extends BaseTestCase {
     public function test_latin_encoding_evidence_of_lines_decides_like_the_whole_text(): void {
         $cases = [
             "M\xFCller Gr\xFC\xDFe\nEntgelt 2,00\xA4\nK\xF6ln",
+            "\xDDstanbul\n\xF6deme ba\xFEar\xFDl\xFD 2,00\xA4",
             "M\xFCller \x93Zitat\x94\nEntgelt 2,00\xA4",
             "M\xFCller\nZeichen \xA4 ohne Betrag",
             "\xC3\xA41 M\xFCller\nnur ASCII",
@@ -374,13 +375,12 @@ class StringHelperTest extends BaseTestCase {
             "ohne Sonderzeichen",
         ];
         foreach ($cases as $text) {
-            $evidence = ['a4' => false, 'euroAtAmount' => false, 'c1' => false];
+            $evidence = StringHelper::latinEncodingEvidence('');
             foreach (explode("\n", $text) as $line) {
-                foreach (StringHelper::latinEncodingEvidence($line) as $key => $value) {
-                    $evidence[$key] = $evidence[$key] || $value;
-                }
+                $evidence = StringHelper::mergeLatinEncodingEvidence($evidence, StringHelper::latinEncodingEvidence($line));
             }
-            foreach (['Windows-1252', 'ISO-8859-1', 'CP850'] as $encoding) {
+            $this->assertSame(StringHelper::latinEncodingEvidence($text), $evidence, bin2hex($text));
+            foreach (['Windows-1252', 'ISO-8859-1', 'CP850', 'ISO-8859-9', 'Windows-1254'] as $encoding) {
                 $this->assertSame(
                     StringHelper::refineLatinEncoding($text, $encoding),
                     StringHelper::refineLatinEncodingFromEvidence($encoding, $evidence),
@@ -390,6 +390,66 @@ class StringHelperTest extends BaseTestCase {
         }
         $this->assertSame('ISO-8859-15', StringHelper::refineLatinEncodingFromEvidence('Windows-1252', ['a4' => true, 'euroAtAmount' => true, 'c1' => false]));
         $this->assertSame('Windows-1252', StringHelper::refineLatinEncodingFromEvidence('Windows-1252', ['a4' => true, 'euroAtAmount' => true, 'c1' => true]));
+    }
+
+    /**
+     * chardet meldet fuer deutsche Latin-1-Texte oft eine Latin-Variante
+     * (ISO-8859-9 Tuerkisch, ckonverter 23.10.2026): die Euro-Regel galt nur
+     * fuer Windows-1252/ISO-8859-1, das Euro-Zeichen an 0xA4 blieb U+00A4.
+     * Fehlen dem Text die Bytes, in denen sich die Variante von ihrer
+     * Grundform unterscheidet, und traegt er deutsche Umlaute neben
+     * Buchstaben, gilt die Grundform (ISO-8859-x -> ISO-8859-1, Windows-125x
+     * -> Windows-1252), danach die Euro-Regel. Echtes Tuerkisch (0xDD, 0xFD,
+     * 0xFE) und Polnisch bleiben, was chardet meldet.
+     */
+    public function test_latin_variant_without_its_bytes_is_its_base_encoding(): void {
+        $german = "Empf\xE4nger;M\xFCller Gr\xFC\xDFe;Stra\xDFe K\xF6ln;\xDCberweisung";
+
+        $this->assertSame('ISO-8859-1', StringHelper::refineLatinEncoding($german, 'ISO-8859-9'));
+        $this->assertSame('ISO-8859-15', StringHelper::refineLatinEncoding($german . ";Geb\xFChr 2,00\xA4", 'ISO-8859-9'), 'danach die Euro-Regel');
+        $this->assertSame('Windows-1252', StringHelper::refineLatinEncoding($german, 'WINDOWS-1254'));
+        $this->assertSame('Windows-1252', StringHelper::refineLatinEncoding($german . " \x93Zitat\x94 2,00\xA4", 'Windows-1254'), 'Windows-1252-Zeichen: keine Euro-Regel');
+        $this->assertSame('ISO-8859-1', StringHelper::refineLatinEncoding($german, 'ISO-8859-2'));
+        $this->assertSame('ISO-8859-1', StringHelper::refineLatinEncoding($german, 'iso8859-13'));
+        $this->assertSame('Windows-1252', StringHelper::refineLatinEncoding($german, 'CP1250'));
+        $this->assertSame(
+            StringHelper::convertToUtf8($german, 'ISO-8859-9'),
+            StringHelper::convertToUtf8($german, StringHelper::refineLatinEncoding($german, 'ISO-8859-9')),
+            'ohne die unterscheidenden Bytes lesen Variante und Grundform gleich'
+        );
+
+        // DOS-Umlaute (CP850) unter einer Windows-Variante: die Grundform, die
+        // Heuristik entscheidet dann zwischen Windows-1252 und CP850
+        $dos = "Kontoauszug gem\x84\xE1 Ziffer 11;Konto\x81bersicht;Gesch\x84ftsbedingungen";
+        $this->assertSame('Windows-1252', StringHelper::refineLatinEncoding($dos, 'Windows-1254'));
+        $this->assertSame('CP850', StringHelper::detectLegacyEncoding($dos, 'Windows-1252'));
+
+        $turkish = "\xDDstanbul \xF6deme ba\xFEar\xFDl\xFD;G\xFCnl\xFCk \xFCcret 2,00\xA4";
+        $this->assertSame('ISO-8859-9', StringHelper::refineLatinEncoding($turkish, 'ISO-8859-9'), 'Tuerkisch bleibt');
+        $this->assertSame('Windows-1254', StringHelper::refineLatinEncoding($turkish, 'Windows-1254'), 'Tuerkisch bleibt');
+        $this->assertSame('ISO-8859-2', StringHelper::refineLatinEncoding("Pozna\xF1 \xA3\xF3d\xBC M\xFCller", 'ISO-8859-2'), 'Polnisch bleibt');
+        $this->assertSame('ISO-8859-9', StringHelper::refineLatinEncoding("Entgelt 2,00\xA4", 'ISO-8859-9'), 'ohne Umlaut kein Beleg fuer Deutsch');
+        $this->assertSame('ISO-8859-9', StringHelper::refineLatinEncoding("Summe \xE4 1", 'ISO-8859-9'), 'Umlaut ohne Buchstaben daneben');
+        $this->assertSame('ISO-8859-15', StringHelper::refineLatinEncoding($german, 'ISO-8859-15'), 'ISO-8859-15 ist keine Variante');
+        $this->assertSame('KOI8-R', StringHelper::refineLatinEncoding($german, 'KOI8-R'), 'nur die Latin-Familie');
+
+        $this->assertSame("\xD0\xDD\xDE\xF0\xFD\xFE", StringHelper::latinVariantBytes('ISO-8859-9'), 'aus den Zeichentabellen');
+        $this->assertSame("\xD0\xDD\xDE\xF0\xFD\xFE", StringHelper::latinVariantBytes('Windows-1254'), 'unbelegte Stellen zaehlen nicht');
+        $this->assertSame('Windows-1252', StringHelper::latinVariantBase('windows-1257'));
+        $this->assertNull(StringHelper::latinVariantBase('ISO-8859-15'));
+        $this->assertNull(StringHelper::latinVariantBytes('Windows-1252'));
+    }
+
+    /**
+     * Auch der chardet-Weg fuer Zeichenketten (ShellChardet) gibt eine
+     * Latin-Variante ohne ihre Bytes als Grundform zurueck - chardet liest den
+     * kurzen deutschen Text als ISO-8859-9.
+     */
+    public function test_detect_encoding_resolves_a_latin_variant_without_its_bytes(): void {
+        $detected = (string) StringHelper::detectEncoding("03.07.2024;Buchung M\xFCller Gartenbau Rechnung Gr\xFC\xDFe aus K\xF6ln 2,00\xA4;-2,00\r\n");
+
+        $this->assertNotSame('ISO-8859-9', $detected);
+        $this->assertNull(StringHelper::latinVariantBase($detected), $detected);
     }
 
     /**

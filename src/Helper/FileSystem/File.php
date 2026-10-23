@@ -418,6 +418,19 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 $detected = "UTF-8";
             }
 
+            // chardet meldet fuer deutsche Texte oft eine Latin-Variante (ISO-8859-9
+            // fuer Latin-1, Windows-1254 fuer DOS-Text): fehlen der Datei die Bytes,
+            // in denen sich die Variante unterscheidet, und traegt sie deutsche
+            // Umlaute, gilt die Grundform ISO-8859-1 bzw. Windows-1252 - vor der
+            // Heuristik, die nur die Latin-Familie prueft. Bisher blieb die Variante:
+            // die Euro-Regel griff nicht, CP850-Umlaute wurden Satzzeichen
+            // (ckonverter 23.10.2026).
+            if (StringHelper::latinVariantBase($detected) !== null) {
+                $refined = self::refineLatinEncodingOfFile($file, $detected);
+                self::logDebugIf($refined !== $detected, "Latin-Variante: $refined statt $detected erkannt für $file");
+                $detected = $refined;
+            }
+
             // Erweiterte Heuristik: Wenn chardet ein problematisches Encoding erkannt hat
             // prüfe mit unserer Heuristik auf DOS-Codepages, MacRoman, etc.
             if ($content !== false && in_array($detected, ['Windows-1252', 'ISO-8859-15', 'ISO-8859-1', 'MacRoman', 'MACROMAN'], true)) {
@@ -1172,13 +1185,15 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * {@see StringHelper::refineLatinEncoding()} ueber die ganze Datei, ohne sie
-     * ganz zu laden: Windows-1252/ISO-8859-1 aus der Stichprobe werden
+     * ganz zu laden: eine Latin-Variante ohne ihre unterscheidenden Bytes, aber
+     * mit deutschen Umlauten wird ihre Grundform; Windows-1252/ISO-8859-1 werden
      * ISO-8859-15, wenn irgendwo ein Euro-Zeichen (0xA4) an einem Betrag steht
-     * und kein Byte aus 0x80-0x9F. Ohne 0xA4 in der Datei bleibt es beim
-     * Encoding (ein schneller Durchlauf in Bloecken).
+     * und kein Byte aus 0x80-0x9F. Ohne 0xA4 in der Datei bleibt es bei
+     * Windows-1252/ISO-8859-1 (ein schneller Durchlauf in Bloecken).
      */
     private static function refineLatinEncodingOfFile(string $file, string $encoding): string {
-        if (!in_array(StringHelper::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !self::containsByte($file, "\xA4")) {
+        if (StringHelper::latinVariantBase($encoding) === null
+            && (!in_array(StringHelper::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !self::containsByte($file, "\xA4"))) {
             return $encoding;
         }
 
@@ -1198,10 +1213,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
 
     /**
      * Zeilen einer Datei mit Legacy-Bytes (ungueltiges UTF-8; hoechstens
-     * LEGACY_SCAN_SAMPLE Bytes) und die Merkmale der Euro-Regel aller Zeilen.
-     * Kleine Dateien liest es ganz - dieselbe Grundlage wie readAsUtf8.
+     * LEGACY_SCAN_SAMPLE Bytes) und die Merkmale der Latin-Regeln aller Zeilen
+     * ({@see StringHelper::latinEncodingEvidence()}). Kleine Dateien liest es
+     * ganz - dieselbe Grundlage wie readAsUtf8.
      *
-     * @return array{0: string, 1: array{a4: bool, euroAtAmount: bool, c1: bool}}
+     * @return array{0: string, 1: array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool}}
      */
     private static function scanLegacyBytes(string $file, bool $collectSample): array {
         $size = @filesize($file);
@@ -1211,7 +1227,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             return [$collectSample ? $content : '', StringHelper::latinEncodingEvidence($content)];
         }
 
-        $evidence = ['a4' => false, 'euroAtAmount' => false, 'c1' => false];
+        $evidence = StringHelper::latinEncodingEvidence('');
         $sample = '';
         $handle = @fopen($file, 'rb');
         if ($handle === false) {
@@ -1223,12 +1239,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if (preg_match('/[\x80-\xFF]/', $line) !== 1 || mb_check_encoding($line, 'UTF-8')) {
                 continue;
             }
-            $lineEvidence = StringHelper::latinEncodingEvidence($line);
-            $evidence = [
-                'a4' => $evidence['a4'] || $lineEvidence['a4'],
-                'euroAtAmount' => $evidence['euroAtAmount'] || $lineEvidence['euroAtAmount'],
-                'c1' => $evidence['c1'] || $lineEvidence['c1'],
-            ];
+            $evidence = StringHelper::mergeLatinEncodingEvidence($evidence, StringHelper::latinEncodingEvidence($line));
             if ($collectSample && strlen($sample) < self::LEGACY_SCAN_SAMPLE) {
                 $sample .= $line;
             }
