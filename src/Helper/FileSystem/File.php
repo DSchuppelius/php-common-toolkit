@@ -613,12 +613,19 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             // Legacy-Sonderzeichen dahinter, galt die Datei als ASCII/UTF-8 und
             // das rohe Byte blieb ungueltiges UTF-8 (spaeter ein "?")
             if (!mb_check_encoding($content, 'UTF-8')) {
-                $legacy = StringHelper::legacyEncodingOfInvalidBytes($content);
+                // Euro-Zeichen an 0xA4 irgendwo in der Datei: ISO-8859-15 (die
+                // Heuristik sieht bei langen Texten nur Fenster)
+                $legacy = StringHelper::refineLatinEncoding($content, StringHelper::legacyEncodingOfInvalidBytes($content));
 
                 return self::logInfoAndReturn(StringHelper::repairInvalidUtf8($content, $legacy), "Ungueltiges UTF-8 hinter der Encoding-Stichprobe repariert ($legacy): $file");
             }
             return self::logDebugAndReturn($content, "Keine Konvertierung nötig für $file (Encoding: " . ($encoding ?: 'unbekannt') . ")");
         }
+
+        // chardet und seine Heuristik sehen nur den Dateianfang (readPartial):
+        // ein Euro-Zeichen an 0xA4 dahinter macht aus Windows-1252/ISO-8859-1
+        // ISO-8859-15 (MT940-Ziele schreiben ISO-8859-15; sonst wurde es U+00A4)
+        $encoding = StringHelper::refineLatinEncoding($content, $encoding);
 
         // Zu UTF-8 konvertieren - verwendet iconv für DOS-Codepages
         $converted = StringHelper::convertToUtf8($content, $encoding);

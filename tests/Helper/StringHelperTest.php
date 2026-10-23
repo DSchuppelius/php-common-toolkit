@@ -340,6 +340,26 @@ class StringHelperTest extends BaseTestCase {
     }
 
     /**
+     * Die Latin-Kodierungen sind auf den Buchstaben gleich: Umlaute duerfen das
+     * Euro-Zeichen an 0xA4 nicht ueberstimmen (bisher Windows-1252, das Zeichen
+     * wurde U+00A4). Bytes aus 0x80-0x9F bleiben Windows-1252, ein 0xA4 ohne
+     * Betrag bleibt, was es war; gueltiges UTF-8 ("ae" als C3 A4 vor einer
+     * Ziffer) ist kein Euro-Zeichen.
+     */
+    public function test_detect_legacy_encoding_euro_sign_with_umlauts_is_iso_8859_15(): void {
+        $latin9 = "?00\xDCberweisung?20M\xFCller Gr\xFC\xDFe K\xF6ln?212,00\xA4Anzahl: 1 USt. 19,0%";
+        $this->assertSame('ISO-8859-15', StringHelper::detectLegacyEncoding($latin9));
+        $this->assertSame("2,00\u{20AC}Anzahl", StringHelper::convertToUtf8("2,00\xA4Anzahl", (string) StringHelper::detectLegacyEncoding($latin9)));
+
+        $this->assertSame('Windows-1252', StringHelper::refineLatinEncoding("M\xFCller \x93Zitat\x94 2,00\xA4", 'Windows-1252'), 'typografische Zeichen: Windows-1252');
+        $this->assertSame('Windows-1252', StringHelper::detectLegacyEncoding("M\xFCller Gr\xFC\xDFe \xA4 Zeichen"), 'ohne Betrag kein Euro-Zeichen');
+
+        $this->assertSame('Windows-1252', StringHelper::refineLatinEncoding("\xC3\xA41 M\xFCller", 'Windows-1252'), 'UTF-8-Folge vor einer Ziffer');
+        $this->assertSame('ISO-8859-15', StringHelper::refineLatinEncoding("12,00 \xA4", 'ISO-8859-1'));
+        $this->assertSame('CP850', StringHelper::refineLatinEncoding("12,00 \xA4", 'CP850'), 'nur die Latin-Familie');
+    }
+
+    /**
      * Test detectLegacyEncoding für UTF-8
      */
     public function test_detect_legacy_encoding_ut_f8(): void {

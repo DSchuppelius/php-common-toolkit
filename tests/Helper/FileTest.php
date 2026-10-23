@@ -243,6 +243,41 @@ class FileTest extends BaseTestCase {
         }
     }
 
+    /**
+     * ISO-8859-15 mit Umlauten im Dateianfang und dem Euro-Zeichen (0xA4)
+     * dahinter: chardet und seine Heuristik sahen nur die ersten 4 KB und
+     * lasen Windows-1252 - aus "2,00" + Euro wurde "2,00" + U+00A4 (MT940-Ziel,
+     * ckonverter 23.10.2026). Dasselbe hinter einem reinen ASCII-Anfang.
+     */
+    public function test_read_as_utf8_reads_euro_sign_behind_the_sample_as_iso_8859_15(): void {
+        $head = ":20:STARTUMS\r\n:25:25190001/0976643000\r\n:28C:11/1\r\n:60F:C231031EUR1000,00\r\n";
+        $block = ":61:2311021102D45,00NDDTNONREF\r\n:86:105?00SEPA-Basislastschrift?20Beitrag f\xFCr November?21Mitgliedsnummer 4711?32Verein f\xFCr Gartenfreunde\r\n"
+            . ":61:2311031103C120,00NTRFNONREF\r\n:86:166?00\xDCberweisung?20Rechnung 2023-11 Danke?32M\xFCller Gartenbau GmbH\r\n";
+        $asciiBlock = ":61:2311031103C120,00NTRFNONREF\r\n:86:166?00Ueberweisung?20Rechnung 2023-11 Danke?32Mueller Gartenbau GmbH\r\n";
+        $tail = ":61:2311231123D2,38NCHGNONREF\r\n:86:808?00Entgelt/Auslagen?20M\xFCller Datum Lieferung: 23.11.2023?222,00\xA4Anzahl: 1 USt. 19,0% 0,?2338\xA4Re.Nr. 3421300423\r\n"
+            . ":62F:C231130EUR500,00\r\n-\r\n";
+        $cases = [
+            'umlaut-head' => $head . str_repeat($block, 30) . $tail,
+            'ascii-head' => $head . str_repeat($asciiBlock, 60) . $tail,
+        ];
+        foreach ($cases as $label => $bytes) {
+            $this->assertGreaterThan(4096, strpos($bytes, "\xA4"), $label);
+            $file = tempnam(sys_get_temp_dir(), 'latin9late');
+            file_put_contents($file, $bytes);
+            File::clearChardetCache();
+
+            try {
+                $content = File::readAsUtf8($file);
+                $this->assertStringContainsString("?222,00\u{20AC}Anzahl", $content, $label);
+                $this->assertStringContainsString("M\u{00FC}ller", $content, $label);
+                $this->assertStringNotContainsString("\u{00A4}", $content, $label);
+            } finally {
+                unlink($file);
+                File::clearChardetCache();
+            }
+        }
+    }
+
     public function test_read_as_utf8_reads_cp850_behind_an_ascii_sample_as_cp850(): void {
         // v1-Bankumsaetze (DATEV-ASCII) sind CP850; mit reinem ASCII-Anfang galt
         // jedes spaetere Byte als Windows-1252 (0x84 = Anfuehrungszeichen statt "ae")

@@ -348,6 +348,46 @@ class StringHelper {
      * @return string|null Das erkannte Encoding oder null wenn nicht unterscheidbar
      */
     public static function detectLegacyEncoding(string $data, ?string $chardetHint = null): ?string {
+        $detected = self::scoreLegacyEncoding($data, $chardetHint);
+
+        return $detected === null ? null : self::refineLatinEncoding($data, $detected);
+    }
+
+    /**
+     * Windows-1252 oder ISO-8859-1 als ISO-8859-15, wenn der Text das
+     * Euro-Zeichen an 0xA4 traegt (an einem Betrag: "2,00" + 0xA4, 0xA4 + "12")
+     * und kein Byte aus 0x80-0x9F (dort hat Windows-1252 seine eigenen Zeichen,
+     * das Euro-Zeichen an 0x80; in ISO-8859-x sind es Steuerzeichen).
+     *
+     * Die drei Latin-Kodierungen sind auf den Buchstaben (0xC0-0xFF) gleich;
+     * unterscheiden koennen sie nur 0x80-0x9F und die acht Stellen von
+     * ISO-8859-15. Die Punkte der Heuristik fuer Buchstaben zaehlten nur
+     * Windows-1252 und ISO-8859-1 - sobald ein Umlaut im Text stand, gewann
+     * Windows-1252, und das Euro-Zeichen einer ISO-8859-15-Datei wurde U+00A4
+     * (MT940-Ziele, ckonverter 23.10.2026: "2,00" + 0xA4 + "Anzahl").
+     * Gueltige UTF-8-Zeichen eines gemischten Texts zaehlen nicht mit.
+     *
+     * @param string $text Rohdaten (ganz oder Stichprobe)
+     * @param string $encoding bisher erkanntes Encoding
+     * @return string ISO-8859-15 oder das uebergebene Encoding
+     */
+    public static function refineLatinEncoding(string $text, string $encoding): string {
+        if (!in_array(self::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !str_contains($text, "\xA4")) {
+            return $encoding;
+        }
+
+        $legacy = preg_replace('/(?:' . self::UTF8_MULTIBYTE_CHAR . ')++/', 'a', $text) ?? $text;
+        if (preg_match('/[\x80-\x9F]/', $legacy) === 1) {
+            return $encoding;
+        }
+
+        return preg_match('/\d ?\xA4|\xA4 ?\d/', $legacy) === 1 ? 'ISO-8859-15' : $encoding;
+    }
+
+    /**
+     * Punktwertung der Legacy-Heuristik ({@see detectLegacyEncoding()}).
+     */
+    private static function scoreLegacyEncoding(string $data, ?string $chardetHint): ?string {
         if ($data === '') {
             return null;
         }
