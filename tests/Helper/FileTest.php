@@ -296,6 +296,66 @@ class FileTest extends BaseTestCase {
         }
     }
 
+    /**
+     * Der Zeilenleser entscheidet den Zeichensatz wie readAsUtf8 ueber die ganze
+     * Datei (ckonverter N6 Punkt 4): bisher bestimmte die erste Zeile mit einem
+     * Legacy-Byte allein das Encoding hinter einem ASCII-Anfang - "Se" + 0xA4 +
+     * "or" (CP850 "Senor" mit Tilde) machte die Datei zu ISO-8859-1, die CP850-
+     * Umlaute danach wurden Steuerzeichen ("Gesch" + U+0084 + "ft").
+     */
+    public function test_read_lines_as_utf8_decides_cp850_behind_an_ascii_sample_from_the_whole_file(): void {
+        $file = tempnam(sys_get_temp_dir(), 'cp850mix');
+        file_put_contents($file, str_repeat("Zeile ohne Sonderzeichen;1,00\r\n", 200)
+            . "\"Se\xA4or Garcia\";1,00\r\n\"Caf\x82 am Markt\";2,00\r\n\"Umbuchung Gesch\x84ft\";\"Gr\x81\xE1e\";400,00\r\n");
+        File::clearChardetCache();
+
+        try {
+            $whole = explode("\r\n", rtrim(File::readAsUtf8($file), "\r\n"));
+            File::clearChardetCache();
+            $lines = iterator_to_array(File::readLinesAsUtf8($file), false);
+
+            $this->assertSame($whole, $lines);
+            $this->assertSame(["\"Se\u{00F1}or Garcia\";1,00", "\"Caf\u{00E9} am Markt\";2,00", "\"Umbuchung Gesch\u{00E4}ft\";\"Gr\u{00FC}\u{00DF}e\";400,00"], array_slice($lines, -3));
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
+    /**
+     * ISO-8859-15 mit Umlauten im Dateianfang und dem Euro-Zeichen (0xA4)
+     * dahinter, zeilenweise gelesen (CSV-Streaming): chardet sah Windows-1252,
+     * jede Zeile wurde so gewandelt und das Euro-Zeichen wurde U+00A4. Die
+     * Euro-Regel gilt wie in readAsUtf8 fuer die ganze Datei (ckonverter N6).
+     */
+    public function test_read_lines_as_utf8_reads_euro_sign_behind_the_sample_as_iso_8859_15(): void {
+        $head = ":20:STARTUMS\r\n:25:25190001/0976643000\r\n:28C:11/1\r\n:60F:C231031EUR1000,00\r\n";
+        $block = ":61:2311021102D45,00NDDTNONREF\r\n:86:105?00SEPA-Basislastschrift?20Beitrag f\xFCr November?21Mitgliedsnummer 4711?32Verein f\xFCr Gartenfreunde\r\n"
+            . ":61:2311031103C120,00NTRFNONREF\r\n:86:166?00\xDCberweisung?20Rechnung 2023-11 Danke?32M\xFCller Gartenbau GmbH\r\n";
+        $tail = ":61:2311231123D2,38NCHGNONREF\r\n:86:808?00Entgelt/Auslagen?20M\xFCller Datum Lieferung: 23.11.2023?222,00\xA4Anzahl: 1 USt. 19,0% 0,?2338\xA4Re.Nr. 3421300423\r\n"
+            . ":62F:C231130EUR500,00\r\n-\r\n";
+        // klein: die Datei wird fuer die Entscheidung ganz gelesen; gross (> 256 KB): zeilenweise
+        foreach (['klein' => 30, 'gross' => 1500] as $label => $repeat) {
+            $bytes = $head . str_repeat($block, $repeat) . $tail;
+            $this->assertGreaterThan(4096, strpos($bytes, "\xA4"), $label);
+            $file = tempnam(sys_get_temp_dir(), 'latin9lines');
+            file_put_contents($file, $bytes);
+            File::clearChardetCache();
+
+            try {
+                $lines = iterator_to_array(File::readLinesAsUtf8($file), false);
+                $euro = array_values(array_filter($lines, static fn (string $line): bool => str_starts_with($line, ':86:808')));
+                $this->assertSame([":86:808?00Entgelt/Auslagen?20M\u{00FC}ller Datum Lieferung: 23.11.2023?222,00\u{20AC}Anzahl: 1 USt. 19,0% 0,?2338\u{20AC}Re.Nr. 3421300423"], $euro, $label);
+                $this->assertStringNotContainsString("\u{00A4}", implode("\n", $lines), $label);
+                File::clearChardetCache();
+                $this->assertSame(explode("\r\n", rtrim(File::readAsUtf8($file), "\r\n")), $lines, $label . ': wie readAsUtf8');
+            } finally {
+                unlink($file);
+                File::clearChardetCache();
+            }
+        }
+    }
+
     public function test_read_lines_as_utf8_with_ansi_csv(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
         $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');

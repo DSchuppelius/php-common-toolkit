@@ -360,6 +360,39 @@ class StringHelperTest extends BaseTestCase {
     }
 
     /**
+     * Die Euro-Regel aus verorderten Merkmalen der Zeilen entscheidet wie ueber
+     * den ganzen Text (zeilenweises Lesen, ckonverter N6 Punkt 4): Euro-Zeichen
+     * in einer Zeile, ein Windows-1252-Zeichen (0x80-0x9F) in einer anderen.
+     */
+    public function test_latin_encoding_evidence_of_lines_decides_like_the_whole_text(): void {
+        $cases = [
+            "M\xFCller Gr\xFC\xDFe\nEntgelt 2,00\xA4\nK\xF6ln",
+            "M\xFCller \x93Zitat\x94\nEntgelt 2,00\xA4",
+            "M\xFCller\nZeichen \xA4 ohne Betrag",
+            "\xC3\xA41 M\xFCller\nnur ASCII",
+            "12,00 \xA4",
+            "ohne Sonderzeichen",
+        ];
+        foreach ($cases as $text) {
+            $evidence = ['a4' => false, 'euroAtAmount' => false, 'c1' => false];
+            foreach (explode("\n", $text) as $line) {
+                foreach (StringHelper::latinEncodingEvidence($line) as $key => $value) {
+                    $evidence[$key] = $evidence[$key] || $value;
+                }
+            }
+            foreach (['Windows-1252', 'ISO-8859-1', 'CP850'] as $encoding) {
+                $this->assertSame(
+                    StringHelper::refineLatinEncoding($text, $encoding),
+                    StringHelper::refineLatinEncodingFromEvidence($encoding, $evidence),
+                    bin2hex($text) . ' ' . $encoding
+                );
+            }
+        }
+        $this->assertSame('ISO-8859-15', StringHelper::refineLatinEncodingFromEvidence('Windows-1252', ['a4' => true, 'euroAtAmount' => true, 'c1' => false]));
+        $this->assertSame('Windows-1252', StringHelper::refineLatinEncodingFromEvidence('Windows-1252', ['a4' => true, 'euroAtAmount' => true, 'c1' => true]));
+    }
+
+    /**
      * Test detectLegacyEncoding für UTF-8
      */
     public function test_detect_legacy_encoding_ut_f8(): void {

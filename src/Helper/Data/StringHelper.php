@@ -376,12 +376,47 @@ class StringHelper {
             return $encoding;
         }
 
+        return self::refineLatinEncodingFromEvidence($encoding, self::latinEncodingEvidence($text));
+    }
+
+    /**
+     * Die Merkmale, an denen {@see refineLatinEncoding()} entscheidet, fuer ein
+     * Textstueck: ein 0xA4 ueberhaupt, ein 0xA4 an einem Betrag ("2,00" + 0xA4,
+     * 0xA4 + "12", ein Leerzeichen erlaubt), ein Byte aus 0x80-0x9F - gueltige
+     * UTF-8-Zeichen eines gemischten Texts zaehlen nicht. Die Merkmale der
+     * Zeilen einer Datei werden verodert (zeilenweises Lesen, File::readLinesAsUtf8):
+     * kein Muster reicht ueber ein Zeilenende, die Entscheidung ist dieselbe wie
+     * fuer den ganzen Text.
+     *
+     * @return array{a4: bool, euroAtAmount: bool, c1: bool}
+     */
+    public static function latinEncodingEvidence(string $text): array {
+        if (preg_match('/[\x80-\xFF]/', $text) !== 1) {
+            return ['a4' => false, 'euroAtAmount' => false, 'c1' => false];
+        }
         $legacy = preg_replace('/(?:' . self::UTF8_MULTIBYTE_CHAR . ')++/', 'a', $text) ?? $text;
-        if (preg_match('/[\x80-\x9F]/', $legacy) === 1) {
+
+        return [
+            'a4' => str_contains($legacy, "\xA4"),
+            'euroAtAmount' => preg_match('/\d ?\xA4|\xA4 ?\d/', $legacy) === 1,
+            'c1' => preg_match('/[\x80-\x9F]/', $legacy) === 1,
+        ];
+    }
+
+    /**
+     * {@see refineLatinEncoding()} aus gesammelten Merkmalen
+     * ({@see latinEncodingEvidence()}): Windows-1252/ISO-8859-1 werden
+     * ISO-8859-15, wenn ein 0xA4 an einem Betrag steht und kein Byte aus
+     * 0x80-0x9F vorkommt.
+     *
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool} $evidence
+     */
+    public static function refineLatinEncodingFromEvidence(string $encoding, array $evidence): string {
+        if (!in_array(self::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !$evidence['a4'] || $evidence['c1']) {
             return $encoding;
         }
 
-        return preg_match('/\d ?\xA4|\xA4 ?\d/', $legacy) === 1 ? 'ISO-8859-15' : $encoding;
+        return $evidence['euroAtAmount'] ? 'ISO-8859-15' : $encoding;
     }
 
     /**

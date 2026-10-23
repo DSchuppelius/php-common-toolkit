@@ -44,6 +44,16 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     private const CHARDET_SECONDS_PER_MEGABYTE = 30.0;
 
     /**
+     * Zeilenweises Lesen (readLinesAsUtf8): bis zu dieser Groesse wird fuer die
+     * Zeichensatz-Entscheidung die ganze Datei gelesen wie in readAsUtf8 (dieselbe
+     * Stichprobe der Legacy-Heuristik), darueber zeilenweise.
+     */
+    private const LEGACY_SCAN_WHOLE_FILE = 262144;
+
+    /** Hoechstgroesse der gesammelten Legacy-Zeilen fuer die Heuristik (Speicher). */
+    private const LEGACY_SCAN_SAMPLE = 1048576;
+
+    /**
      * @var array<string, string> Magic-Bytes-Signatur (Präfix) => MIME-Typ, längste Signatur zuerst.
      */
     private const MAGIC_BYTES = [
@@ -1067,6 +1077,12 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             self::logDebug("readLinesAsUtf8: Verwende explizit angegebenes Encoding: $encoding für $file");
         } else {
             $encoding = self::chardet($file);
+            // chardet sieht nur die Stichprobe (readPartial): das Euro-Zeichen an
+            // 0xA4 dahinter entscheidet ueber die ganze Datei zwischen
+            // Windows-1252/ISO-8859-1 und ISO-8859-15 - wie in readAsUtf8
+            if ($encoding !== false) {
+                $encoding = self::refineLatinEncodingOfFile($file, $encoding);
+            }
         }
         $needsConversion = $encoding !== false && $encoding !== 'UTF-8' && $encoding !== 'ASCII';
 
@@ -1131,14 +1147,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             if ($needsConversion) {
                 $line = StringHelper::convertToUtf8($line, $encoding);
             } elseif (!mb_check_encoding($line, 'UTF-8')) {
-                // Legacy-Byte hinter der Encoding-Stichprobe (wie readAsUtf8). Das
-                // Encoding gilt fuer die ganze Datei: einmal aus der ersten Zeile
-                // bestimmt, die es unterscheidet (eine Zeile mit nur einem mehrdeutigen Byte bleibt offen)
-                if ($repairEncoding === null) {
-                    $candidate = StringHelper::legacyEncodingOfInvalidBytes($line, '');
-                    $repairEncoding = $candidate !== '' ? $candidate : null;
-                }
-                $line = StringHelper::repairInvalidUtf8($line, $repairEncoding ?? 'Windows-1252');
+                // Legacy-Byte hinter der Encoding-Stichprobe: das Encoding gilt fuer
+                // die ganze Datei und wird wie in readAsUtf8 aus ALLEN Legacy-Bytes
+                // bestimmt, einmal bei der ersten solchen Zeile. Bisher entschied die
+                // erste Zeile allein: "Se" + 0xA4 + "or" (CP850) machte die Datei zu
+                // ISO-8859-1, "Caf" + 0x82 blieb offen und wurde Windows-1252.
+                $repairEncoding ??= self::legacyEncodingOfFile($file);
+                $line = StringHelper::repairInvalidUtf8($line, $repairEncoding);
             }
             if ($trimLines) {
                 $line = trim($line);
@@ -1153,6 +1168,97 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
 
         fclose($handle);
+    }
+
+    /**
+     * {@see StringHelper::refineLatinEncoding()} ueber die ganze Datei, ohne sie
+     * ganz zu laden: Windows-1252/ISO-8859-1 aus der Stichprobe werden
+     * ISO-8859-15, wenn irgendwo ein Euro-Zeichen (0xA4) an einem Betrag steht
+     * und kein Byte aus 0x80-0x9F. Ohne 0xA4 in der Datei bleibt es beim
+     * Encoding (ein schneller Durchlauf in Bloecken).
+     */
+    private static function refineLatinEncodingOfFile(string $file, string $encoding): string {
+        if (!in_array(StringHelper::normalizeEncodingName($encoding), ['Windows-1252', 'ISO-8859-1'], true) || !self::containsByte($file, "\xA4")) {
+            return $encoding;
+        }
+
+        return StringHelper::refineLatinEncodingFromEvidence($encoding, self::scanLegacyBytes($file, false)[1]);
+    }
+
+    /**
+     * Legacy-Encoding der ungueltigen UTF-8-Bytes einer Datei wie in readAsUtf8
+     * ({@see StringHelper::legacyEncodingOfInvalidBytes()} samt Euro-Regel) -
+     * aus allen Zeilen mit Bytes jenseits von ASCII, nicht aus einer.
+     */
+    private static function legacyEncodingOfFile(string $file): string {
+        [$sample, $evidence] = self::scanLegacyBytes($file, true);
+
+        return StringHelper::refineLatinEncodingFromEvidence(StringHelper::legacyEncodingOfInvalidBytes($sample), $evidence);
+    }
+
+    /**
+     * Zeilen einer Datei mit Legacy-Bytes (ungueltiges UTF-8; hoechstens
+     * LEGACY_SCAN_SAMPLE Bytes) und die Merkmale der Euro-Regel aller Zeilen.
+     * Kleine Dateien liest es ganz - dieselbe Grundlage wie readAsUtf8.
+     *
+     * @return array{0: string, 1: array{a4: bool, euroAtAmount: bool, c1: bool}}
+     */
+    private static function scanLegacyBytes(string $file, bool $collectSample): array {
+        $size = @filesize($file);
+        if ($size !== false && $size <= self::LEGACY_SCAN_WHOLE_FILE) {
+            $content = (string) @file_get_contents($file);
+
+            return [$collectSample ? $content : '', StringHelper::latinEncodingEvidence($content)];
+        }
+
+        $evidence = ['a4' => false, 'euroAtAmount' => false, 'c1' => false];
+        $sample = '';
+        $handle = @fopen($file, 'rb');
+        if ($handle === false) {
+            return [$sample, $evidence];
+        }
+        while (($line = fgets($handle)) !== false) {
+            // Reines ASCII und gueltiges UTF-8 tragen keine Legacy-Bytes (die
+            // Heuristik ersetzt UTF-8-Zeichen ohnehin vorab)
+            if (preg_match('/[\x80-\xFF]/', $line) !== 1 || mb_check_encoding($line, 'UTF-8')) {
+                continue;
+            }
+            $lineEvidence = StringHelper::latinEncodingEvidence($line);
+            $evidence = [
+                'a4' => $evidence['a4'] || $lineEvidence['a4'],
+                'euroAtAmount' => $evidence['euroAtAmount'] || $lineEvidence['euroAtAmount'],
+                'c1' => $evidence['c1'] || $lineEvidence['c1'],
+            ];
+            if ($collectSample && strlen($sample) < self::LEGACY_SCAN_SAMPLE) {
+                $sample .= $line;
+            }
+        }
+        fclose($handle);
+
+        return [$sample, $evidence];
+    }
+
+    /** Kommt ein Byte in der Datei vor? In Bloecken gelesen, ohne die Datei zu laden. */
+    private static function containsByte(string $file, string $byte): bool {
+        $handle = @fopen($file, 'rb');
+        if ($handle === false) {
+            return false;
+        }
+        try {
+            while (!feof($handle)) {
+                $chunk = fread($handle, 1048576);
+                if ($chunk === false) {
+                    return false;
+                }
+                if (str_contains($chunk, $byte)) {
+                    return true;
+                }
+            }
+
+            return false;
+        } finally {
+            fclose($handle);
+        }
     }
 
     /**
