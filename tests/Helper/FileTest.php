@@ -440,6 +440,212 @@ class FileTest extends BaseTestCase {
         }
     }
 
+    /**
+     * Deutsche DOS-Dateien, die chardet als CJK-Mehrbyte-Kodierung liest
+     * (Shift_JIS, CP949; ckonverter 23.10.2026).
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function cjkMisdetectedFileProvider(): array {
+        $head = "Buchungstag;Valuta;Empfaenger;Verwendungszweck;Betrag;Waehrung\r\n";
+        $ascii = '';
+        for ($i = 1; $i <= 12; $i++) {
+            $ascii .= sprintf("%02d.03.2024;%02d.03.2024;\"Schubert GmbH\";\"Abschlag Strom Vertrag 47%02d\";-85,00;EUR\r\n", $i, $i, $i);
+        }
+        $umlauts = "15.03.2024;15.03.2024;\"BW B\x81cherWege Verlag\";\"Umsatz B\x81cherWege KW 11\";731,00;EUR\r\n"
+            . "16.03.2024;16.03.2024;\"Schubert F\x81m GmbH\";\"R\x81ckzahlung: Zinsen\";12,00;EUR\r\n"
+            . "17.03.2024;17.03.2024;\"Sparkasse\";\"Hinweise auf der R\x81ckseite beachten\";0,00;EUR\r\n";
+        $line = '"' . str_repeat("\xC4", 32) . '";"' . str_repeat("\xC4", 32) . "\";0,00;EUR\r\n";
+
+        return [
+            'shift-jis' => [$head . $ascii . $umlauts, "Umsatz B\u{00FC}cherWege KW 11"],
+            'cp949' => [$head . substr($ascii, 0, 600) . '10.07.2025;10.07.2025;' . $line
+                . "11.07.2025;11.07.2025;\"G\x81lten T\x81rkUmbuchung\";\"G\x81lten T\x81rk\";50,00;EUR\r\n"
+                . "12.07.2025;12.07.2025;\"Geldw\x84schepr\x84vention\";\"R\x81ckgabe/Widerruf\";-50,00;EUR\r\n"
+                . '13.07.2025;13.07.2025;' . $line, "Geldw\u{00E4}schepr\u{00E4}vention"],
+        ];
+    }
+
+    /**
+     * chardet meldet fuer deutsche DOS-Dateien Shift_JIS oder CP949: jedes
+     * Umlaut-Byte bildet mit dem folgenden Buchstaben ein Kanji/Hangul, der
+     * Buchstabe ging verloren. Das CJK-Dekodat ohne CJK-Dichte (einzelne
+     * Zeichen in ASCII-Woertern) ist eine Fehlerkennung - die Latin-Heuristik
+     * entscheidet, Ganzleser und Zeilenleser lesen DOS-Text, Byte fuer Zeichen.
+     */
+    #[DataProvider('cjkMisdetectedFileProvider')]
+    public function test_read_as_utf8_reads_a_german_dos_file_that_chardet_calls_cjk_as_cp850(string $bytes, string $expected): void {
+        $file = tempnam(sys_get_temp_dir(), 'cjkdos');
+        file_put_contents($file, $bytes);
+        File::clearChardetCache();
+
+        try {
+            $this->assertContains(File::chardet($file), ['CP850', 'CP437'], 'eine DOS-Codepage (gleich auf Umlauten und Rahmen)');
+            File::clearChardetCache();
+            $whole = File::readAsUtf8($file);
+            $this->assertStringContainsString($expected, $whole);
+            $this->assertSame(strlen($bytes), mb_strlen($whole), 'laengengleich: jedes Byte ein Zeichen');
+            File::clearChardetCache();
+            $this->assertSame(explode("\r\n", rtrim($whole, "\r\n")), iterator_to_array(File::readLinesAsUtf8($file), false), 'Zeilenleser wie readAsUtf8');
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
+    /** Echtes Japanisch in Shift_JIS bleibt Shift_JIS (Gegenprobe zur CJK-Regel). */
+    public function test_read_as_utf8_keeps_a_real_shift_jis_file(): void {
+        $text = "\u{53D6}\u{5F15}\u{65E5};\u{6458}\u{8981};\u{91D1}\u{984D}\r\n"
+            . "2024/03/01;\u{304A}\u{632F}\u{8FBC}\u{307F}\u{3001}\u{6771}\u{4EAC}\u{90FD}\u{4E2D}\u{592E}\u{533A};-85,000\r\n"
+            . "2024/03/02;\u{624B}\u{6570}\u{6599}\u{306E}\u{3054}\u{6848}\u{5185}\u{3002};-330\r\n"
+            . "2024/03/03;\u{30AB}\u{30FC}\u{30C9}\u{5229}\u{7528} \u{30B3}\u{30F3}\u{30D3}\u{30CB}\u{30A8}\u{30F3}\u{30B9}\u{30B9}\u{30C8}\u{30A2};-1,200\r\n";
+        $file = tempnam(sys_get_temp_dir(), 'sjis');
+        file_put_contents($file, (string) iconv('UTF-8', 'SHIFT_JIS', $text));
+        File::clearChardetCache();
+
+        try {
+            $this->assertSame('SHIFT_JIS', File::chardet($file));
+            File::clearChardetCache();
+            $this->assertSame($text, File::readAsUtf8($file));
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
+    /**
+     * Gemischte Dateien (v1-Ausgaben, ckonverter 23.10.2026): die Textspalte
+     * oder der Kopf als UTF-8, der Rest CP850 bzw. Latin-1. chardet meldete eine
+     * Einzelkodierung (Windows-1254, MacRoman, ISO-8859-1), die ganze Datei wurde
+     * damit gewandelt - "Ue" als C3 9C wurde Rahmen + Pfund oder "A" mit Breve +
+     * "s" mit Akut, "ae" als C3 A4 wurde "A" mit Tilde + Waehrungszeichen.
+     * Traegt eine Datei UTF-8-kodierte Buchstaben in Woertern, ist sie UTF-8 mit
+     * Legacy-Bytes: der Reparaturweg vor jeder Ganzdatei-Heuristik, auch wenn
+     * die UTF-8-Zeilen hinter 256 KB stehen.
+     *
+     * @return array<string, array{string, list<string>}>
+     */
+    public static function mixedUtf8FileProvider(): array {
+        $head = "Buchungstag;Valuta;Text;Empfaenger;Verwendungszweck;Betrag;Waehrung\r\n";
+        $ascii = "02.07.2025;02.07.2025;Lastschrift;\"Stadtwerke Musterstadt\";\"Abschlag Strom Vertrag 4711\";-85,00;EUR\r\n";
+        $mixed = "03.07.2025;03.07.2025;\"\xC3\x9Cberweisungsgutschrift\";\"M\x81ller Gartenbau\";\"Geb\x81hr f\x81r R\x81ckbuchung\";12,00;EUR\r\n";
+        $dos = '';
+        for ($i = 0; $i < 30; $i++) {
+            $dos .= $i % 3 === 0 ? $mixed : $ascii;
+        }
+        $latin1Head = "Buchungstag;Zahlungsempf\xC3\xA4nger;Empf\xC3\xA4nger-IBAN;Verwendungszweck;Betrag\r\n";
+        $latin1Row = "03.07.2025;\"Kaffeer\xF6sterei M\xFCller\";DE02120300000000202051;\"Bonus f\xFCr Debitkarte\";1,00\r\n";
+
+        return [
+            'utf8-und-cp850' => [$head . $dos, ["03.07.2025;03.07.2025;\"\u{00DC}berweisungsgutschrift\";\"M\u{00FC}ller Gartenbau\";\"Geb\u{00FC}hr f\u{00FC}r R\u{00FC}ckbuchung\";12,00;EUR"]],
+            'utf8-kopf-und-latin1' => [$latin1Head . str_repeat($latin1Row, 20), [
+                "Buchungstag;Zahlungsempf\u{00E4}nger;Empf\u{00E4}nger-IBAN;Verwendungszweck;Betrag",
+                "03.07.2025;\"Kaffeer\u{00F6}sterei M\u{00FC}ller\";DE02120300000000202051;\"Bonus f\u{00FC}r Debitkarte\";1,00",
+            ]],
+            'gross-utf8-zeile-hinten' => [str_repeat($latin1Row, 3500) . "31.07.2025;\"Stra\xC3\x9Fenbau M\xC3\xBCller\";DE02120300000000202051;\"Abschlag\";1,00\r\n", [
+                "03.07.2025;\"Kaffeer\u{00F6}sterei M\u{00FC}ller\";DE02120300000000202051;\"Bonus f\u{00FC}r Debitkarte\";1,00",
+                "31.07.2025;\"Stra\u{00DF}enbau M\u{00FC}ller\";DE02120300000000202051;\"Abschlag\";1,00",
+            ]],
+        ];
+    }
+
+    /** @param list<string> $expectedLines */
+    #[DataProvider('mixedUtf8FileProvider')]
+    public function test_read_as_utf8_repairs_a_mixed_utf8_and_legacy_file(string $bytes, array $expectedLines): void {
+        $file = tempnam(sys_get_temp_dir(), 'mixedutf8');
+        file_put_contents($file, $bytes);
+        File::clearChardetCache();
+
+        try {
+            $this->assertSame('UTF-8', File::chardet($file));
+            File::clearChardetCache();
+            $whole = explode("\r\n", rtrim(File::readAsUtf8($file), "\r\n"));
+            foreach ($expectedLines as $expected) {
+                $this->assertContains($expected, $whole);
+            }
+            File::clearChardetCache();
+            $this->assertSame($whole, iterator_to_array(File::readLinesAsUtf8($file), false), 'Zeilenleser wie readAsUtf8');
+            File::clearChardetCache();
+            $this->assertSame(array_slice($whole, -2), File::tailAsUtf8($file, 2, true), 'tailAsUtf8 repariert wie readAsUtf8');
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
+    /**
+     * Latin-1-MT940 mit Guillemet und Grad (Revolut, ckonverter 23.10.2026):
+     * die Heuristik waehlte CP852, aus "Europaeischen" wurde "Europ" + "n" mit
+     * Akut + "ischen".
+     */
+    public function test_read_as_utf8_reads_latin1_with_typography_as_latin1(): void {
+        $bytes = ":20:STARTUMS\r\n:25:DE50100101788784724252\r\n:28C:0\r\n:60F:C260601EUR100,00\r\n"
+            . ":61:2606020602D12,00NMSCNONREF\r\n:86:177?00SEPA-Zahlung?20Ebay 0\xB002-14730-79155?21Amazon\xAB 20255 Luxemburg?22der Europ\xE4ischen Zentralbank\r\n"
+            . ":61:2606030603D2,00NMSCNONREF\r\n:86:177?00SEPA-Zahlung?20Ebay 0\xB002-14730-79166?21Ebay 0\xB002-14730-79177?22Europ\xE4ischen Zahlung\r\n"
+            . ":62F:C260630EUR86,00\r\n-\r\n";
+        $file = tempnam(sys_get_temp_dir(), 'latin1typo');
+        file_put_contents($file, $bytes);
+        File::clearChardetCache();
+
+        try {
+            $whole = File::readAsUtf8($file);
+            $this->assertStringContainsString("der Europ\u{00E4}ischen Zentralbank", $whole);
+            $this->assertStringContainsString("Ebay 0\u{00B0}02-14730-79155?21Amazon\u{00AB} 20255", $whole);
+            File::clearChardetCache();
+            $this->assertSame(explode("\r\n", rtrim($whole, "\r\n")), iterator_to_array(File::readLinesAsUtf8($file), false));
+            File::clearChardetCache();
+            $this->assertContains(File::chardet($file), ['Windows-1252', 'ISO-8859-1']);
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
+    /**
+     * chardet meldet MacRoman (ckonverter 23.10.2026): die Heuristik sah nur die
+     * 4-KB-Stichprobe, deren einziges Sonderzeichen (CP850 0x90 in "CAFE" mit
+     * Akut) nichts entschied - die CP850-Umlaute dahinter zaehlten nicht, und
+     * "MACROMAN" kannten weder mbstring noch iconv: readAsUtf8 gab ungueltiges
+     * UTF-8 zurueck, tailAsUtf8 warf einen ValueError. Entscheidet die
+     * Stichprobe nicht, entscheiden die Legacy-Bytes der ganzen Datei; bleibt
+     * es MacRoman, wird MacRoman gewandelt.
+     */
+    public function test_mac_roman_file_is_decided_over_the_whole_file_and_convertible(): void {
+        $head = "Buchungstag;Valuta;Text;Empfaenger;Verwendungszweck;Betrag;Waehrung\r\n";
+        $ascii = "02.07.2025;02.07.2025;Lastschrift;\"Stadtwerke Musterstadt\";\"Abschlag Strom Vertrag 4711\";-85,00;EUR\r\n";
+        $dos = $head . $ascii . $ascii . "05.06.2025;05.06.2025;Lastschrift;\"GRAND CAF\x90 BETRIEBSGESELLSCHAFT\";\"Rechnung 4711\";-245,00;EUR\r\n"
+            . str_repeat($ascii, 57) . str_repeat("17.07.2025;17.07.2025;Entgelt;\"DKB AG\";\"2,2% f\x81r W\x84hrungsumrechnung\";-0,38;EUR\r\n", 5);
+        $undecided = "Buchungstag;Valuta;Text;Empfaenger;Verwendungszweck;Betrag;Waehrung\r\n"
+            . str_repeat("02.09.2025;02.09.2025;Lastschrift;\"JPMORGAN CHASE BANK\";\"BANK REFD 135 9929 80131\";-85,00;EUR\r\n", 20)
+            . "03.09.2025;03.09.2025;Gutschrift;\"9929 80131I \x83GMBH AND CO.\xA0 \";\"KG 0.00\";100,00;EUR\r\n";
+        $file = tempnam(sys_get_temp_dir(), 'macroman');
+
+        try {
+            file_put_contents($file, $dos);
+            File::clearChardetCache();
+            $this->assertSame('CP850', File::chardet($file));
+            File::clearChardetCache();
+            $whole = File::readAsUtf8($file);
+            $this->assertStringContainsString("\"GRAND CAF\u{00C9} BETRIEBSGESELLSCHAFT\"", $whole);
+            $this->assertStringContainsString("\"2,2% f\u{00FC}r W\u{00E4}hrungsumrechnung\"", $whole);
+
+            file_put_contents($file, $undecided);
+            File::clearChardetCache();
+            $this->assertSame('MacRoman', File::chardet($file), 'ohne Beleg bleibt chardets MacRoman');
+            File::clearChardetCache();
+            $whole = File::readAsUtf8($file);
+            $this->assertTrue(mb_check_encoding($whole, 'UTF-8'));
+            $this->assertStringContainsString("80131I \u{00C9}GMBH AND CO.\u{2020} ", $whole);
+            File::clearChardetCache();
+            $this->assertSame(explode("\r\n", rtrim($whole, "\r\n")), iterator_to_array(File::readLinesAsUtf8($file), false));
+            File::clearChardetCache();
+            $this->assertSame(array_slice(explode("\r\n", rtrim($whole, "\r\n")), -1), File::tailAsUtf8($file, 1, true));
+        } finally {
+            unlink($file);
+            File::clearChardetCache();
+        }
+    }
+
     public function test_read_lines_as_utf8_with_ansi_csv(): void {
         $ansiFile = __DIR__ . '/../../.samples/ansi.csv';
         $this->assertFileExists($ansiFile, 'ansi.csv Testdatei muss existieren');

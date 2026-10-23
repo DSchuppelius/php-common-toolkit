@@ -405,6 +405,27 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             }
         }
 
+        // Gemischte Datei: UTF-8-kodierte Buchstaben in Woertern neben Legacy-Bytes
+        // (v1-Ausgaben: Kopf oder Textspalte UTF-8, der Rest CP850/Latin-1). Sie ist
+        // UTF-8 mit Legacy-Bytes, readAsUtf8 und readLinesAsUtf8 reparieren die
+        // ungueltigen Bytes - vor chardet und jeder Ganzdatei-Heuristik. Bisher
+        // wandelte die Einzelkodierung von chardet (MacRoman -> CP852, Windows-1254
+        // -> CP850, CP949) die UTF-8-Teile mit ("Ue" -> "A" mit Breve + "s" mit Akut,
+        // ckonverter 23.10.2026).
+        if ($content !== false && self::containsUtf8LatinLetter($file)) {
+            self::logDebug("Zeichencodierung erkannt: UTF-8 mit Legacy-Bytes für $file");
+            self::adjustLocaleBasedOnEncoding('UTF-8');
+            self::$chardetCache[$file] = 'UTF-8';
+            return 'UTF-8';
+        }
+
+        // Legacy-Bytes und Merkmale der ganzen Datei (kleine Dateien ganz, grosse
+        // zeilenweise) fuer die Regeln hinter chardet, hoechstens einmal gelesen
+        $legacyScan = null;
+        $scanFile = static function () use ($file, &$legacyScan): array {
+            return $legacyScan ??= self::scanLegacyBytes($file, true);
+        };
+
         // Für nicht-UTF-8 Inhalte: Versuche Shell-basierte Erkennung (erkennt DOS-Codepages besser)
         self::logDebug("Versuche Shell-basierte Erkennung (chardet/uchardet) für $file");
         $detected = self::detectViaShell('chardet', $file) ?: self::detectViaShell('uchardet', $file);
@@ -426,7 +447,7 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             // die Euro-Regel griff nicht, CP850-Umlaute wurden Satzzeichen
             // (ckonverter 23.10.2026).
             if (StringHelper::latinVariantBase($detected) !== null) {
-                $refined = self::refineLatinEncodingOfFile($file, $detected);
+                $refined = StringHelper::refineLatinEncodingFromEvidence($detected, $scanFile()[1]);
                 self::logDebugIf($refined !== $detected, "Latin-Variante: $refined statt $detected erkannt für $file");
                 $detected = $refined;
             }
@@ -435,10 +456,25 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             // prüfe mit unserer Heuristik auf DOS-Codepages, MacRoman, etc.
             if ($content !== false && in_array($detected, ['Windows-1252', 'ISO-8859-15', 'ISO-8859-1', 'MacRoman', 'MACROMAN'], true)) {
                 $legacyEncoding = StringHelper::detectLegacyEncoding($content, $detected);
-                if ($legacyEncoding !== null && $legacyEncoding !== $detected) {
+                // Entscheidet die Stichprobe nicht (kein wertbares Legacy-Byte in den
+                // ersten 4 KB), entscheiden die Legacy-Bytes der ganzen Datei - bisher
+                // blieb chardets MacRoman stehen, obwohl die CP850-Umlaute dahinter
+                // standen (ckonverter 23.10.2026)
+                $legacyEncoding ??= StringHelper::legacyEncodingOfInvalidBytes($scanFile()[0], $detected);
+                if ($legacyEncoding !== $detected) {
                     self::logDebug("Heuristik: $legacyEncoding statt $detected erkannt für $file");
                     $detected = $legacyEncoding;
                 }
+            }
+
+            // chardet meldet fuer deutsche DOS-Dateien CJK-Mehrbyte-Kodierungen
+            // (Shift_JIS, CP949, Johab): ohne CJK-Dichte entscheidet die
+            // Legacy-Heuristik ueber die ganze Datei (ckonverter 23.10.2026)
+            if (StringHelper::isCjkMultibyteEncoding($detected)) {
+                [$sample, $evidence] = $scanFile();
+                $refined = StringHelper::refineMultibyteEncoding($sample, $detected, $evidence);
+                self::logDebugIf($refined !== $detected, "CJK-Fehlerkennung: $refined statt $detected erkannt für $file");
+                $detected = $refined;
             }
 
             self::adjustLocaleBasedOnEncoding($detected);
@@ -1214,10 +1250,11 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
     /**
      * Zeilen einer Datei mit Legacy-Bytes (ungueltiges UTF-8; hoechstens
      * LEGACY_SCAN_SAMPLE Bytes) und die Merkmale der Latin-Regeln aller Zeilen
-     * ({@see StringHelper::latinEncodingEvidence()}). Kleine Dateien liest es
-     * ganz - dieselbe Grundlage wie readAsUtf8.
+     * ({@see StringHelper::latinEncodingEvidence()}; "utf8" auch aus den
+     * gueltigen UTF-8-Zeilen). Kleine Dateien liest es ganz - dieselbe
+     * Grundlage wie readAsUtf8.
      *
-     * @return array{0: string, 1: array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool}}
+     * @return array{0: string, 1: array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool}}
      */
     private static function scanLegacyBytes(string $file, bool $collectSample): array {
         $size = @filesize($file);
@@ -1235,8 +1272,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         }
         while (($line = fgets($handle)) !== false) {
             // Reines ASCII und gueltiges UTF-8 tragen keine Legacy-Bytes (die
-            // Heuristik ersetzt UTF-8-Zeichen ohnehin vorab)
-            if (preg_match('/[\x80-\xFF]/', $line) !== 1 || mb_check_encoding($line, 'UTF-8')) {
+            // Heuristik ersetzt UTF-8-Zeichen ohnehin vorab); gueltige UTF-8-Zeilen
+            // belegen aber UTF-8-Teile einer gemischten Datei
+            if (preg_match('/[\x80-\xFF]/', $line) !== 1) {
+                continue;
+            }
+            if (mb_check_encoding($line, 'UTF-8')) {
+                $evidence['utf8'] = $evidence['utf8'] || StringHelper::containsUtf8LatinLetterInWord($line);
+
                 continue;
             }
             $evidence = StringHelper::mergeLatinEncodingEvidence($evidence, StringHelper::latinEncodingEvidence($line));
@@ -1247,6 +1290,35 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         fclose($handle);
 
         return [$sample, $evidence];
+    }
+
+    /**
+     * Traegt die Datei einen UTF-8-kodierten Latin-1-Buchstaben in einem Wort
+     * ({@see StringHelper::containsUtf8LatinLetterInWord()})? In Bloecken
+     * gelesen; zwei Bytes Ueberlappung, das Muster reicht ueber drei.
+     */
+    private static function containsUtf8LatinLetter(string $file): bool {
+        $handle = @fopen($file, 'rb');
+        if ($handle === false) {
+            return false;
+        }
+        try {
+            $tail = '';
+            while (!feof($handle)) {
+                $chunk = fread($handle, 1048576);
+                if ($chunk === false) {
+                    return false;
+                }
+                if (StringHelper::containsUtf8LatinLetterInWord($tail . $chunk)) {
+                    return true;
+                }
+                $tail = substr($chunk, -2);
+            }
+
+            return false;
+        } finally {
+            fclose($handle);
+        }
     }
 
     /** Kommt ein Byte in der Datei vor? In Bloecken gelesen, ohne die Datei zu laden. */
@@ -1402,14 +1474,21 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
         // Encoding der Datei bestimmen
         $encoding = self::chardet($file);
         if ($encoding === false || $encoding === 'UTF-8' || $encoding === 'ASCII') {
-            return $result;
+            // Legacy-Bytes hinter der Stichprobe oder in einer gemischten Datei: der
+            // Reparaturweg wie in readAsUtf8, entschieden an den Legacy-Bytes der
+            // gelesenen Zeilen (die Datei kann ein grosses Log sein)
+            $invalid = array_filter($result, static fn (string $line): bool => !mb_check_encoding($line, 'UTF-8'));
+            if ($invalid === []) {
+                return $result;
+            }
+            $legacy = StringHelper::legacyEncodingOfInvalidBytes(implode("\n", $invalid));
+
+            return array_map(static fn (string $line): string => StringHelper::repairInvalidUtf8($line, $legacy), $result);
         }
 
-        // Zeilen zu UTF-8 konvertieren
-        return array_map(
-            fn (string $line): string => mb_convert_encoding($line, 'UTF-8', $encoding) ?: $line,
-            $result
-        );
+        // Zeilen zu UTF-8 konvertieren - iconv fuer Kodierungen, die mbstring nicht
+        // kennt (mb_convert_encoding warf fuer MacRoman einen ValueError)
+        return array_map(static fn (string $line): string => StringHelper::convertToUtf8($line, $encoding), $result);
     }
 
     /**

@@ -125,6 +125,8 @@ class StringHelper {
         if (stripos($from, 'UTF-8') === 0) {
             $from = 'UTF-8';
         }
+        $from = self::iconvEncodingName($from);
+        $to = self::iconvEncodingName($to);
 
         $converted = @iconv($from, $to, $text);
 
@@ -150,6 +152,7 @@ class StringHelper {
      * - CP437, IBM437, 437 -> CP437
      * - CP850, IBM850, 850 -> CP850
      * - CP1252, Windows-1252 -> Windows-1252
+     * - MACROMAN, x-mac-roman, MACINTOSH, MAC -> MacRoman
      *
      * @param string $encoding Der Encoding-Name
      * @return string Der normalisierte Encoding-Name
@@ -167,6 +170,8 @@ class StringHelper {
             // Windows-Zeichensätze
             'CP1252', 'WINDOWS-1252', 'WIN-1252' => 'Windows-1252',
             'CP1250', 'WINDOWS-1250', 'WIN-1250' => 'Windows-1250',
+            // Mac OS Roman (chardet meldet "MacRoman"; iconv kennt nur MACINTOSH/MAC, {@see iconvEncodingName()})
+            'MACROMAN', 'MAC-ROMAN', 'X-MAC-ROMAN', 'MACINTOSH', 'MAC', 'CSMACINTOSH' => 'MacRoman',
             // ISO-Zeichensätze
             'LATIN1', 'LATIN-1', 'ISO-8859-1', 'ISO8859-1' => 'ISO-8859-1',
             'LATIN9', 'LATIN-9', 'ISO-8859-15', 'ISO8859-15' => 'ISO-8859-15',
@@ -175,6 +180,23 @@ class StringHelper {
             // Sonst unverändert zurückgeben
             default => $encoding,
         };
+    }
+
+    /**
+     * Der Name eines Encodings fuer iconv: MacRoman heisst dort MACINTOSH
+     * (mbstring kennt es gar nicht), ein Zusatz wie "//TRANSLIT" bleibt.
+     * Bisher wurde "MACROMAN" (chardet "MacRoman", normalisiert) nicht
+     * gewandelt, die Rohbytes blieben ungueltiges UTF-8 (ckonverter 23.10.2026).
+     */
+    private static function iconvEncodingName(string $encoding): string {
+        $suffix = '';
+        $position = strpos($encoding, '//');
+        if ($position !== false) {
+            $suffix = substr($encoding, $position);
+            $encoding = substr($encoding, 0, $position);
+        }
+
+        return (self::normalizeEncodingName($encoding) === 'MacRoman' ? 'MACINTOSH' : $encoding) . $suffix;
     }
 
     /**
@@ -235,6 +257,35 @@ class StringHelper {
      * Steuerzeichen, Windows-125x Satzzeichen oder nichts.
      */
     private const GERMAN_LETTER_BYTES = '\xC4\xD6\xDC\xDF\xE4\xF6\xFC\x81\x84\x8E\x94\x99\x9A';
+
+    /**
+     * Ein UTF-8-kodierter Latin-1-Buchstabe (U+00C0-U+00FF ohne Mal- und
+     * Geteiltzeichen, Leitbyte 0xC3) neben einem ASCII-Buchstaben: der Beleg
+     * fuer UTF-8-Teile eines gemischten Texts ({@see isUtf8WithLegacyBytes()}).
+     * In den Legacy-Kodierungen ist 0xC3 + Folgebyte kein Wortteil (Latin-1
+     * "A" mit Tilde + Satzzeichen, DOS ein Rahmenzeichen).
+     */
+    private const UTF8_LATIN_LETTER_IN_WORD = '/[A-Za-z]\xC3[\x80-\x96\x98-\xB6\xB8-\xBF]|\xC3[\x80-\x96\x98-\xB6\xB8-\xBF][A-Za-z]/';
+
+    /**
+     * CJK-Mehrbyte-Kodierungen (Namen gross, ohne Trennzeichen), die chardet
+     * auch fuer deutsche DOS-/Latin-Texte meldet ({@see refineMultibyteEncoding()}).
+     */
+    private const CJK_MULTIBYTE_ENCODINGS = [
+        'SHIFTJIS', 'SJIS', 'CP932', 'MS932', 'WINDOWS31J', 'EUCJP', 'EUCKR', 'CP949', 'UHC', 'JOHAB',
+        'GB2312', 'GBK', 'CP936', 'GB18030', 'EUCCN', 'BIG5', 'CP950', 'EUCTW', 'BIG5HKSCS',
+    ];
+
+    /** mbstring-Namen der CJK-Kodierungen, die mbstring unter dem chardet-Namen nicht findet */
+    private const CJK_MB_NAMES = ['SHIFTJIS' => 'SJIS', 'BIG5' => 'BIG-5', 'GB2312' => 'EUC-CN', 'GBK' => 'CP936'];
+
+    /**
+     * Typografische Latin-1-Zeichen (Guillemets 0xAB/0xBB, Grad 0xB0,
+     * Paragraf 0xA7, Akut 0xB4): ausserhalb eines Worts und ohne Legacy-Byte
+     * daneben stehen sie fuer Latin-1/Windows-1252 - in CP852/CP850 waeren es
+     * Buchstaben im Wort oder Rahmen-/Schattierungszeichen in Folge.
+     */
+    private const LATIN1_TYPOGRAPHIC_BYTES = [0xA7, 0xAB, 0xB0, 0xB4, 0xBB];
 
     /** @var array<string, string> Unterscheidende Bytes je Latin-Variante ({@see latinVariantBytes()}) */
     private static array $latinVariantBytes = [];
@@ -348,12 +399,13 @@ class StringHelper {
 
         // Für Encodings die mb_* nicht unterstützt, iconv verwenden
         if (!self::isMbEncodingSupported($fromEncoding)) {
-            $result = @iconv($fromEncoding, 'UTF-8//TRANSLIT//IGNORE', $text);
+            $iconvEncoding = self::iconvEncodingName($fromEncoding);
+            $result = @iconv($iconvEncoding, 'UTF-8//TRANSLIT//IGNORE', $text);
             if ($result !== false) {
                 return $result;
             }
             // Fallback ohne TRANSLIT
-            $result = @iconv($fromEncoding, 'UTF-8//IGNORE', $text);
+            $result = @iconv($iconvEncoding, 'UTF-8//IGNORE', $text);
             if ($result !== false) {
                 return $result;
             }
@@ -428,17 +480,19 @@ class StringHelper {
      * vorkommenden Bytes aus 0x80-0xFF und ein deutscher Umlaut neben einem
      * Buchstaben (Latin-1 0xC4, 0xD6, 0xDC, 0xDF, 0xE4, 0xF6, 0xFC oder
      * DOS 0x81, 0x84, 0x8E, 0x94, 0x99, 0x9A) -
-     * gueltige UTF-8-Zeichen eines gemischten Texts zaehlen nicht. Die Merkmale
+     * gueltige UTF-8-Zeichen eines gemischten Texts zaehlen nicht; sie belegen
+     * nur, ob ein UTF-8-kodierter Buchstabe in einem Wort steht ("utf8",
+     * {@see isUtf8WithLegacyBytes()}). Die Merkmale
      * der Zeilen einer Datei werden zusammengefuehrt
      * ({@see mergeLatinEncodingEvidence()}, zeilenweises Lesen, File::readLinesAsUtf8):
      * kein Muster reicht ueber ein Zeilenende, die Entscheidung ist dieselbe wie
      * fuer den ganzen Text.
      *
-     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool}
+     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool}
      */
     public static function latinEncodingEvidence(string $text): array {
         if (preg_match('/[\x80-\xFF]/', $text) !== 1) {
-            return ['a4' => false, 'euroAtAmount' => false, 'c1' => false, 'bytes' => '', 'german' => false];
+            return ['a4' => false, 'euroAtAmount' => false, 'c1' => false, 'bytes' => '', 'german' => false, 'utf8' => false];
         }
         $legacy = preg_replace('/(?:' . self::UTF8_MULTIBYTE_CHAR . ')++/', 'a', $text) ?? $text;
         $letters = self::GERMAN_LETTER_BYTES;
@@ -449,6 +503,7 @@ class StringHelper {
             'c1' => preg_match('/[\x80-\x9F]/', $legacy) === 1,
             'bytes' => self::highBytesOf($legacy),
             'german' => preg_match('/[A-Za-z][' . $letters . ']|[' . $letters . '][A-Za-z]/', $legacy) === 1,
+            'utf8' => self::containsUtf8LatinLetterInWord($text),
         ];
     }
 
@@ -456,9 +511,9 @@ class StringHelper {
      * Fuehrt die Merkmale zweier Textstuecke zusammen ({@see latinEncodingEvidence()}):
      * die Wahrheitswerte verodert, die Bytes vereinigt.
      *
-     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool} $first
-     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool} $second
-     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool}
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool} $first
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool} $second
+     * @return array{a4: bool, euroAtAmount: bool, c1: bool, bytes: string, german: bool, utf8: bool}
      */
     public static function mergeLatinEncodingEvidence(array $first, array $second): array {
         return [
@@ -467,7 +522,32 @@ class StringHelper {
             'c1' => $first['c1'] || $second['c1'],
             'bytes' => self::highBytesOf(($first['bytes'] ?? '') . ($second['bytes'] ?? '')),
             'german' => ($first['german'] ?? false) || ($second['german'] ?? false),
+            'utf8' => ($first['utf8'] ?? false) || ($second['utf8'] ?? false),
         ];
+    }
+
+    /**
+     * UTF-8 mit Legacy-Bytes: ein Text mit ungueltigen UTF-8-Bytes, der
+     * UTF-8-kodierte Latin-1-Buchstaben in Woertern traegt (v1-Ausgaben: Kopf
+     * oder Textspalte UTF-8, der Rest CP850 oder Latin-1). Er gehoert auf den
+     * Reparaturweg ({@see repairInvalidUtf8()} mit
+     * {@see legacyEncodingOfInvalidBytes()}), nicht unter eine Kodierung fuer
+     * den ganzen Text: die bisher gewaehlte Einzelkodierung zerlegte jeden
+     * UTF-8-Buchstaben ("Ue" als C3 9C in CP850 Rahmen + Pfund, in CP852 "A"
+     * mit Breve + "s" mit Akut; ckonverter 23.10.2026).
+     */
+    public static function isUtf8WithLegacyBytes(string $text): bool {
+        return !mb_check_encoding($text, 'UTF-8') && self::containsUtf8LatinLetterInWord($text);
+    }
+
+    /**
+     * Traegt der Text einen UTF-8-kodierten Latin-1-Buchstaben (U+00C0-U+00FF
+     * ohne Mal- und Geteiltzeichen) neben einem ASCII-Buchstaben? Der Beleg fuer
+     * UTF-8-Teile eines gemischten Texts ({@see isUtf8WithLegacyBytes()}); ein
+     * Muster reicht ueber hoechstens drei Bytes.
+     */
+    public static function containsUtf8LatinLetterInWord(string $text): bool {
+        return preg_match(self::UTF8_LATIN_LETTER_IN_WORD, $text) === 1;
     }
 
     /**
@@ -477,7 +557,7 @@ class StringHelper {
      * Windows-1252/ISO-8859-1 werden ISO-8859-15, wenn ein 0xA4 an einem Betrag
      * steht und kein Byte aus 0x80-0x9F vorkommt.
      *
-     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool} $evidence
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool} $evidence
      */
     public static function refineLatinEncodingFromEvidence(string $encoding, array $evidence): string {
         $base = self::latinVariantBase($encoding);
@@ -550,6 +630,110 @@ class StringHelper {
         }
 
         return in_array((int) $match[2], self::LATIN_VARIANTS_WINDOWS, true) ? 'Windows-' . (int) $match[2] : null;
+    }
+
+    /**
+     * Ist das Encoding eine CJK-Mehrbyte-Kodierung (Shift_JIS, CP932, EUC-JP,
+     * EUC-KR, CP949, Johab, GB2312, GBK, GB18030, Big5, EUC-TW)?
+     */
+    public static function isCjkMultibyteEncoding(string $encoding): bool {
+        return in_array(self::compactEncodingName($encoding), self::CJK_MULTIBYTE_ENCODINGS, true);
+    }
+
+    /**
+     * Eine CJK-Mehrbyte-Kodierung, die chardet fuer einen deutschen Text
+     * meldet, als die Latin-/DOS-Kodierung der Legacy-Heuristik.
+     *
+     * chardet meldete fuer deutsche DOS-Dateien (CP850) Shift_JIS, CP949 und
+     * Johab (ckonverter 23.10.2026): dort ist ein DOS-Umlaut (0x81 "ue", 0x84
+     * "ae", 0x94 "oe") ein Leitbyte, das den folgenden ASCII-Buchstaben als
+     * Folgebyte schluckt - aus "Buecher" wurde "B" + Kanji + "her". Echter
+     * CJK-Text besteht aus Laeufen von CJK-Zeichen; im Fehldekodat steht fast
+     * jedes Zeichen einzeln an einem ASCII-Buchstaben. Ist das bei mehr als der
+     * Haelfte der Nicht-ASCII-Laeufe so (oder liest die Kodierung den Text gar
+     * nicht) und steht ein deutscher Umlaut neben einem Buchstaben
+     * ({@see latinEncodingEvidence()}), entscheidet die Legacy-Heuristik
+     * ({@see legacyEncodingOfInvalidBytes()}, danach die Euro-Regel). Der
+     * Umlaut allein belegt nichts: Shift_JIS traegt dieselben Bytes als
+     * Leitbytes (das Komma ist 0x81 0x41).
+     *
+     * @param string $text Rohdaten (ganz oder Stichprobe)
+     * @param string $encoding von chardet gemeldetes Encoding
+     * @param array{a4: bool, euroAtAmount: bool, c1: bool, bytes?: string, german?: bool, utf8?: bool}|null $evidence
+     *        Merkmale der ganzen Datei, wenn $text nur eine Stichprobe ist
+     * @return string die Latin-/DOS-Kodierung oder das uebergebene Encoding
+     */
+    public static function refineMultibyteEncoding(string $text, string $encoding, ?array $evidence = null): string {
+        if ($text === '' || !self::isCjkMultibyteEncoding($encoding)) {
+            return $encoding;
+        }
+        $evidence ??= self::latinEncodingEvidence($text);
+        if (!($evidence['german'] ?? false) || self::isPlausibleCjkReading($text, $encoding)) {
+            return $encoding;
+        }
+
+        return self::refineLatinEncodingFromEvidence(self::legacyEncodingOfInvalidBytes($text), $evidence);
+    }
+
+    /**
+     * Liest sich der Text in der CJK-Kodierung als CJK-Text? Hoechstens die
+     * Haelfte seiner Nicht-ASCII-Laeufe darf ein einzelnes Zeichen an einem
+     * ASCII-Buchstaben sein ({@see refineMultibyteEncoding()}).
+     */
+    private static function isPlausibleCjkReading(string $text, string $encoding): bool {
+        $decoded = self::decodeCjk(self::legacyByteSample($text), $encoding);
+        if ($decoded === null || preg_match_all('/[^\x00-\x7F]+/u', $decoded, $runs, PREG_OFFSET_CAPTURE) === false) {
+            return false;
+        }
+        $total = count($runs[0]);
+        $isolated = 0;
+        foreach ($runs[0] as [$run, $offset]) {
+            if (mb_strlen($run, 'UTF-8') !== 1) {
+                continue;
+            }
+            $neighbours = ($offset > 0 ? $decoded[$offset - 1] : '') . ($decoded[$offset + strlen($run)] ?? '');
+            if (preg_match('/[A-Za-z]/', $neighbours) === 1) {
+                $isolated++;
+            }
+        }
+
+        return $total > 0 && $isolated * 2 <= $total;
+    }
+
+    /** Text aus einer CJK-Kodierung als UTF-8 (ungueltige Folgen ersetzt) oder null, wenn die Kodierung ihn nicht liest */
+    private static function decodeCjk(string $text, string $encoding): ?string {
+        $mbName = self::CJK_MB_NAMES[self::compactEncodingName($encoding)] ?? $encoding;
+        $decoded = self::isMbEncodingSupported($mbName)
+            ? @mb_convert_encoding($text, 'UTF-8', $mbName)
+            : @iconv($encoding, 'UTF-8//IGNORE', $text);
+
+        return is_string($decoded) && mb_check_encoding($decoded, 'UTF-8') ? $decoded : null;
+    }
+
+    /** Encoding-Name gross und ohne Trennzeichen ("Shift_JIS" -> "SHIFTJIS") */
+    private static function compactEncodingName(string $encoding): string {
+        return (string) preg_replace('/[-_ ]/', '', strtoupper(trim($encoding)));
+    }
+
+    /**
+     * Steht an der Stelle ein typografisches Latin-1-Zeichen
+     * ({@see LATIN1_TYPOGRAPHIC_BYTES}) ausserhalb eines Worts, ohne
+     * Legacy-Byte daneben (Grad zwischen Ziffern, Guillemet am Wortende,
+     * Paragraf vor einer Zahl)? Zwischen zwei Buchstaben waere es ein Buchstabe
+     * (CP852 "z" mit Akut, MacRoman "ss"), in einer Folge von Legacy-Bytes ein
+     * Rahmen- oder Schattierungszeichen.
+     */
+    private static function isLatin1TypographicAt(string $data, int $position): bool {
+        if (!in_array(ord($data[$position]), self::LATIN1_TYPOGRAPHIC_BYTES, true)) {
+            return false;
+        }
+        $before = $position > 0 ? $data[$position - 1] : ' ';
+        $after = $data[$position + 1] ?? ' ';
+        if (ord($before) >= 0x80 || ord($after) >= 0x80) {
+            return false;
+        }
+
+        return preg_match('/^[A-Za-z]{2}$/', $before . $after) !== 1;
     }
 
     /** Ein Zeichen ohne Belegung: unbelegt (leer, "?") oder ein C1-Steuerzeichen */
@@ -663,6 +847,25 @@ class StringHelper {
         // Diese brauchen Kontextanalyse für deutsche vs polnische Texte
         $conflictBytes = [0xE4];
 
+        // Belegte CP852-Buchstaben, einmal vorab: CP852-eigene Bytes im
+        // Buchstabenkontext, die kein typografisches Latin-1-Zeichen ausserhalb
+        // eines Worts sind. Bisher kippte jedes dieser Bytes irgendwo im Text -
+        // auch ein Guillemet hinter "Amazon" - jedes 0xE4 im Wort zu CP852
+        // ("Europ" + "n" mit Akut + "ischen", Revolut-MT940, ckonverter
+        // 23.10.2026), und die Suche lief je 0xE4 erneut ueber den ganzen Text.
+        $hasCp852Letter = false;
+        $cp852Class = '/[' . implode('', array_map(static fn (int $byte): string => sprintf('\\x%02X', $byte), $cp852Specific)) . ']/';
+        if (preg_match_all($cp852Class, $data, $cp852Matches, PREG_OFFSET_CAPTURE) > 0) {
+            foreach ($cp852Matches[0] as [, $position]) {
+                $around = ($position > 0 ? $data[$position - 1] : '') . ($data[$position + 1] ?? '');
+                if (preg_match('/[A-Za-z]/', $around) === 1 && !self::isLatin1TypographicAt($data, $position)) {
+                    $hasCp852Letter = true;
+
+                    break;
+                }
+            }
+        }
+
         // Windows-1252 typografische Zeichen (0x80-0x9F)
         // €=0x80, ‚=0x82, ƒ=0x83, „=0x84, …=0x85, †=0x86, ‡=0x87, ˆ=0x88, ‰=0x89,
         // Š=0x8A, ‹=0x8B, Œ=0x8C, Ž=0x8E, '=0x91, '=0x92, "=0x93, "=0x94,
@@ -712,6 +915,18 @@ class StringHelper {
 
             $isLetterContext = $beforeIsLetter || $afterIsLetter;
             $isDigitContext = $beforeIsDigit || $afterIsDigit;
+
+            // ===== Typografische Latin-1-Zeichen ausserhalb eines Worts =====
+            // Grad (0xB0) zwischen Ziffern, Guillemet (0xAB/0xBB) am Wort,
+            // Paragraf (0xA7) vor einer Zahl: Latin-1/Windows-1252. Bisher
+            // zaehlte 0xAB als CP852-Buchstabe und 0xB0 als einzelnes
+            // CP850-Rahmenzeichen ("0" + Schattierung + "02").
+            if (self::isLatin1TypographicAt($data, $i)) {
+                $scores['ISO-8859-1'] += 2;
+                $scores['Windows-1252'] += 2;
+
+                continue;
+            }
 
             // ===== DOS Codepages (CP850/CP437) =====
             // Eindeutige DOS-Umlaute (in Windows-1252 undefiniert oder typografisch)
@@ -769,7 +984,9 @@ class StringHelper {
             }
 
             // ===== CP852 (Mitteleuropa) =====
-            if (in_array($byte, $cp852Specific, true)) {
+            // Nur im Buchstabenkontext: ein CP850-Pfund (0x9C) am Betrag ist
+            // kein polnisches "s" mit Akut
+            if (in_array($byte, $cp852Specific, true) && $isLetterContext) {
                 $scores['CP852'] += 2;
             }
 
@@ -779,14 +996,8 @@ class StringHelper {
             // Heuristik: Im Buchstabenkontext mit deutschen Mustern -> Latin-1
             if (in_array($byte, $conflictBytes, true)) {
                 if ($isLetterContext) {
-                    // Prüfe ob andere polnische CP852-Zeichen vorhanden sind
-                    $hasOtherCp852 = false;
-                    for ($j = 0; $j < $len && !$hasOtherCp852; $j++) {
-                        if (in_array(ord($data[$j]), $cp852Specific, true)) {
-                            $hasOtherCp852 = true;
-                        }
-                    }
-                    if ($hasOtherCp852) {
+                    // Belegte CP852-Buchstaben im Text ($hasCp852Letter, vorab)?
+                    if ($hasCp852Letter) {
                         // Andere polnische Zeichen vorhanden -> wahrscheinlich CP852
                         $scores['CP852'] += 2;
                     } else {
@@ -1362,12 +1573,18 @@ class StringHelper {
             return self::logDebugAndReturn(false, "detectEncoding: leerer String übergeben");
         }
 
+        // UTF-8 mit Legacy-Bytes (gemischter Text): der Reparaturweg, keine Einzelkodierung
+        if (self::isUtf8WithLegacyBytes($text)) {
+            return self::logDebugAndReturn('UTF-8', "detectEncoding: UTF-8 mit Legacy-Bytes");
+        }
+
         // Versuch über ShellChardet (sofern chardet installiert)
         try {
             $encoding = ShellChardet::detect($text);
             if ($encoding !== false) {
-                // Latin-Variante ohne ihre Bytes (ISO-8859-9 fuer deutsches Latin-1), Euro-Regel
-                $encoding = self::refineLatinEncoding($text, $encoding);
+                // Latin-Variante ohne ihre Bytes (ISO-8859-9 fuer deutsches Latin-1), Euro-Regel;
+                // CJK-Kodierung ohne CJK-Dichte (deutscher DOS-Text als Shift_JIS/CP949)
+                $encoding = self::refineMultibyteEncoding($text, self::refineLatinEncoding($text, $encoding));
 
                 return self::logDebugAndReturn($encoding, "ShellChardet erkannte: $encoding");
             }

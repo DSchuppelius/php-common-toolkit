@@ -453,6 +453,119 @@ class StringHelperTest extends BaseTestCase {
     }
 
     /**
+     * chardet meldet fuer deutsche DOS-Texte (CP850) CJK-Mehrbyte-Kodierungen
+     * (Shift_JIS, CP949, Johab; ckonverter 23.10.2026): jedes DOS-Umlaut-Byte
+     * bildet mit dem folgenden ASCII-Buchstaben ein Zeichen, aus "Buecher" wurde
+     * "B" + Kanji + "her" - der Buchstabe dahinter ging verloren. Ein CJK-Dekodat,
+     * dessen Zeichen ueberwiegend einzeln an ASCII-Buchstaben stehen, ist bei
+     * deutschen Umlauten eine Fehlerkennung: die Latin-Heuristik entscheidet.
+     * Echtes Japanisch und Koreanisch bleibt, auch mit Umlaut-Bytes als Leitbyte
+     * (0x81 + "A" ist in Shift_JIS ein Komma).
+     */
+    public function test_cjk_reading_of_a_german_dos_text_is_a_latin_encoding(): void {
+        $dos = "\"BW B\x81cherWege Verlag\";\"Umsatz B\x81cherWege KW 11\";731,00\r\n"
+            . "\"Schubert F\x81m GmbH\";\"R\x81ckzahlung: Zinsen\";12,00\r\n\"Sparkasse\";\"Hinweise auf der R\x81ckseite\";0,00\r\n";
+        $box = $dos . '"' . str_repeat("\xC4", 32) . "\";0,00\r\n\"G\x81lten T\x81rk\";\"Geldw\x84schepr\x84vention\";50,00\r\n";
+
+        $this->assertSame('CP850', StringHelper::refineMultibyteEncoding($dos, 'SHIFT_JIS'));
+        $this->assertContains(StringHelper::refineMultibyteEncoding($box, 'CP949'), ['CP850', 'CP437'], 'Rahmenlinie als Hangul-Lauf; CP437 liest Umlaute und Rahmen wie CP850');
+        $this->assertSame('CP850', StringHelper::refineMultibyteEncoding($dos, 'Johab'));
+        $this->assertContains(StringHelper::refineMultibyteEncoding("Kaffeer\xF6sterei M\xFCller;Bonus f\xFCr Debitkarte;Gr\xFC\xDFe aus K\xF6ln", 'EUC-KR'), ['Windows-1252', 'ISO-8859-1']);
+
+        // laengengleich: jedes Byte ein Zeichen, kein ASCII-Buchstabe verschluckt
+        $utf8 = StringHelper::convertToUtf8($dos, StringHelper::refineMultibyteEncoding($dos, 'SHIFT_JIS'));
+        $this->assertSame(strlen($dos), mb_strlen($utf8));
+        $this->assertStringContainsString("B\u{00FC}cherWege", $utf8);
+        $this->assertLessThan(strlen($dos), mb_strlen(StringHelper::convertToUtf8($dos, 'SHIFT_JIS')), 'das CJK-Dekodat verschluckt Buchstaben');
+
+        $japanese = (string) iconv('UTF-8', 'SHIFT_JIS', "\u{53D6}\u{5F15}\u{65E5};\u{6458}\u{8981};\u{91D1}\u{984D}\r\n2024/03/01;\u{304A}\u{632F}\u{8FBC}\u{307F}\u{3001}\u{6771}\u{4EAC}\u{90FD}\u{4E2D}\u{592E}\u{533A};-85,000\r\n2024/03/02;\u{624B}\u{6570}\u{6599}\u{306E}\u{3054}\u{6848}\u{5185}\u{3002};-330\r\n2024/03/03;\u{30AB}\u{30FC}\u{30C9}\u{5229}\u{7528} \u{30B3}\u{30F3}\u{30D3}\u{30CB}\u{30A8}\u{30F3}\u{30B9}\u{30B9}\u{30C8}\u{30A2};-1,200\r\n");
+        $this->assertTrue(StringHelper::latinEncodingEvidence($japanese)['german'], 'Shift_JIS traegt Umlaut-Bytes neben Buchstaben');
+        $this->assertSame('SHIFT_JIS', StringHelper::refineMultibyteEncoding($japanese, 'SHIFT_JIS'), 'echtes Japanisch bleibt');
+        $korean = "\u{AC70}\u{B798}\u{C77C};\u{C801}\u{C694};\u{AE08}\u{C561}\r\n2024-03-01;\u{C774}\u{CCB4} \u{C11C}\u{C6B8}\u{D2B9}\u{BCC4}\u{C2DC} \u{C911}\u{AD6C} PC\u{BC29};-85,000\r\n2024-03-02;\u{C218}\u{C218}\u{B8CC} \u{C548}\u{B0B4};-330\r\n";
+        $this->assertSame('CP949', StringHelper::refineMultibyteEncoding((string) iconv('UTF-8', 'CP949', $korean), 'CP949'), 'echtes Koreanisch bleibt');
+        $this->assertSame('EUC-KR', StringHelper::refineMultibyteEncoding((string) iconv('UTF-8', 'EUC-KR', $korean), 'EUC-KR'));
+
+        $this->assertSame('SHIFT_JIS', StringHelper::refineMultibyteEncoding("Summe 12,00 \x81\x40 Ende", 'SHIFT_JIS'), 'ohne deutschen Umlaut bleibt chardets Wert');
+        $this->assertSame('Windows-1252', StringHelper::refineMultibyteEncoding($dos, 'Windows-1252'), 'nur CJK-Kodierungen');
+        foreach (['Shift_JIS', 'SJIS', 'CP932', 'EUC-JP', 'EUC-KR', 'CP949', 'Johab', 'GB2312', 'GBK', 'GB18030', 'Big5', 'EUC-TW'] as $cjk) {
+            $this->assertTrue(StringHelper::isCjkMultibyteEncoding($cjk), $cjk);
+        }
+        foreach (['Windows-1252', 'CP850', 'UTF-8', 'ISO-8859-1', 'ISO-2022-JP'] as $other) {
+            $this->assertFalse(StringHelper::isCjkMultibyteEncoding($other), $other);
+        }
+    }
+
+    /**
+     * Gemischte Texte (v1-Ausgaben: Kopf oder Textspalte als UTF-8, der Rest
+     * CP850 oder Latin-1; ckonverter 23.10.2026) sind UTF-8 mit Legacy-Bytes:
+     * ein UTF-8-kodierter Latin-1-Buchstabe neben einem ASCII-Buchstaben belegt
+     * die UTF-8-Teile. Bisher wurde die ganze Datei mit einer Kodierung gewandelt
+     * ("Ue" als C3 9C wurde in CP850 Rahmen + Pfund, in CP852 "A" mit Breve + "s"
+     * mit Akut). Der Reparaturweg laesst gueltiges UTF-8 stehen und liest nur die
+     * ungueltigen Bytes nach ihrer eigenen Heuristik.
+     */
+    public function test_utf8_letters_with_legacy_bytes_are_utf8_with_legacy_bytes(): void {
+        $dos = "\"\xC3\x9Cberweisungsgutschrift\";\"M\x81ller Gartenbau\";\"Geb\x81hr f\x81r R\x81ckbuchung\"";
+        $latin1 = "Zahlungsempf\xC3\xA4nger;Kaffeer\xF6sterei M\xFCller;Bonus f\xFCr Debitkarte";
+
+        $this->assertTrue(StringHelper::isUtf8WithLegacyBytes($dos));
+        $this->assertTrue(StringHelper::isUtf8WithLegacyBytes($latin1));
+        $this->assertTrue(StringHelper::latinEncodingEvidence($dos)['utf8']);
+        $this->assertFalse(StringHelper::isUtf8WithLegacyBytes("\xC3\x9Cberweisung M\xC3\xBCller"), 'gueltiges UTF-8');
+        $this->assertFalse(StringHelper::isUtf8WithLegacyBytes("M\x81ller Gesch\x84ft"), 'reines CP850');
+        $this->assertFalse(StringHelper::isUtf8WithLegacyBytes("\xDA\xC4\xC4\xBF M\x81ller \xC0\xC4\xC4\xB4"), 'CP850-Rahmen ohne Buchstaben daneben');
+        $this->assertFalse(StringHelper::isUtf8WithLegacyBytes("a\xC3\x97b M\x81ller"), 'Malzeichen ist kein Buchstabe');
+
+        $this->assertSame(
+            "\"\u{00DC}berweisungsgutschrift\";\"M\u{00FC}ller Gartenbau\";\"Geb\u{00FC}hr f\u{00FC}r R\u{00FC}ckbuchung\"",
+            StringHelper::repairInvalidUtf8($dos, StringHelper::legacyEncodingOfInvalidBytes($dos))
+        );
+        $this->assertSame(
+            "Zahlungsempf\u{00E4}nger;Kaffeer\u{00F6}sterei M\u{00FC}ller;Bonus f\u{00FC}r Debitkarte",
+            StringHelper::repairInvalidUtf8($latin1, StringHelper::legacyEncodingOfInvalidBytes($latin1))
+        );
+        $this->assertSame('UTF-8', StringHelper::detectEncoding($dos . "\r\n" . str_repeat("02.07.2025;Abschlag Strom Vertrag 4711;-85,00\r\n", 5)), 'auch der chardet-Weg fuer Zeichenketten');
+    }
+
+    /**
+     * Latin-1 mit typografischen Zeichen (Guillemet 0xAB, Grad 0xB0) und
+     * Umlauten (Revolut-MT940, ckonverter 23.10.2026): 0xAB zaehlte als
+     * CP852-Buchstabe und kippte jedes 0xE4 im Wort zu CP852 ("Europ" + "n" mit
+     * Akut + "ischen"), der Grad zwischen Ziffern als CP850-Rahmenzeichen.
+     * Typografische Latin-1-Zeichen ausserhalb eines Worts stehen fuer Latin-1,
+     * CP852 braucht seine eigenen Bytes im Buchstabenkontext. Polnisch in CP852
+     * und DOS-Rahmen bleiben, was sie waren.
+     */
+    public function test_latin1_typography_does_not_make_umlauts_cp852(): void {
+        $revolut = ":86:177?00SEPA-Zahlung?20Ebay 0\xB002-14730-79155?21Amazon\xAB 20255 Luxemburg?22der Europ\xE4ischen Zentralbank\r\n"
+            . ":86:177?00SEPA-Zahlung?20Ebay 0\xB002-14730-79166?21Ebay 0\xB002-14730-79177?22Europ\xE4ischen Zahlung\r\n";
+        $detected = StringHelper::detectLegacyEncoding($revolut);
+        $this->assertContains($detected, ['Windows-1252', 'ISO-8859-1']);
+        $this->assertStringContainsString("Europ\u{00E4}ischen", StringHelper::convertToUtf8($revolut, (string) $detected));
+        $this->assertStringContainsString("Amazon\u{00AB} 20255", StringHelper::convertToUtf8($revolut, (string) $detected));
+        $this->assertContains(StringHelper::detectLegacyEncoding("Paragraf \xA7 3, 20\xB0C, \xABZitat\xBB, Gr\xFC\xDFe aus M\xE4rz"), ['Windows-1252', 'ISO-8859-1']);
+
+        $polish = (string) iconv('UTF-8', 'CP852', "Zażółć gęślą jaźń; Łódź Poznań; Wrocław Gdańsk Kraków; właśnie będzie");
+        $this->assertSame('CP852', StringHelper::detectLegacyEncoding($polish), 'Polnisch bleibt CP852');
+        $this->assertSame('CP850', StringHelper::detectLegacyEncoding("M\x81ller Gesch\x84ft \xB0\xB1\xB2\xB0 Gr\x81\xE1e"), 'DOS-Schattierung bleibt CP850');
+    }
+
+    /**
+     * MacRoman ist wandelbar: chardet meldet "MacRoman", normalisiert
+     * "MACROMAN" - weder mbstring noch iconv kennen den Namen (iconv: MACINTOSH,
+     * MAC), die Wandlung gab die Rohbytes zurueck (ungueltiges UTF-8).
+     */
+    public function test_mac_roman_is_convertible(): void {
+        foreach (['MacRoman', 'MACROMAN', 'mac-roman', 'x-mac-roman', 'MACINTOSH', 'MAC', 'csMacintosh'] as $name) {
+            $this->assertSame('MacRoman', StringHelper::normalizeEncodingName($name), $name);
+        }
+        $this->assertSame("\u{00C4}pfel M\u{00FC}ller \u{00DF}", StringHelper::convertToUtf8("\x80pfel M\x9Fller \xA7", 'MACROMAN'));
+        $this->assertSame("\u{00C4}pfel", StringHelper::convertToUtf8("\x80pfel", 'MacRoman'));
+        $this->assertSame("\u{00C4}pfel", StringHelper::convertEncoding("\x80pfel", 'MacRoman', 'UTF-8'));
+        $this->assertSame("\x80pfel", StringHelper::convertEncoding("\u{00C4}pfel", 'UTF-8', 'MACROMAN'));
+    }
+
+    /**
      * Test detectLegacyEncoding für UTF-8
      */
     public function test_detect_legacy_encoding_ut_f8(): void {
