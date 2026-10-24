@@ -635,6 +635,8 @@ class Shell extends ConfiguredHelperAbstract {
             // Braucht es nach der Nachfrist SIGKILL, trifft GNU timeout damit die
             // eigene Gruppe und also auch sich selbst
             if (self::expiredByTimeoutProgram($wrapped, $timeout, $process->getExitCode(), $started)) {
+                self::killRemainingGroup($pid);
+
                 return true;
             }
             if ($throwOnSignal) {
@@ -644,7 +646,26 @@ class Shell extends ConfiguredHelperAbstract {
             return false;
         }
 
-        return self::expiredByTimeoutProgram($wrapped, $timeout, $process->getExitCode(), $started);
+        $expired = self::expiredByTimeoutProgram($wrapped, $timeout, $process->getExitCode(), $started);
+        if ($expired) {
+            self::killRemainingGroup($pid);
+        }
+
+        return $expired;
+    }
+
+    /**
+     * Nach Ablauf: SIGKILL an die Prozessgruppe des timeout-Programms, falls noch
+     * etwas darin lebt. GNU timeout trifft die Gruppe selbst; die Rust-Fassung
+     * (uutils, Standard ab Ubuntu 26.04) gibt sich ebenfalls als "coreutils" aus,
+     * beendet nach der Nachfrist aber nur den direkten Kindprozess - ein Enkel,
+     * der SIGTERM ignoriert, lief weiter. Ist die Gruppe schon leer, ist der Aufruf
+     * wirkungslos.
+     */
+    private static function killRemainingGroup(?int $pid): void {
+        if ($pid !== null) {
+            self::killProcessGroup($pid);
+        }
     }
 
     /**
