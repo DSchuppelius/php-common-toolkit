@@ -28,6 +28,9 @@ use ZipArchive;
  * Schreiben, Temp-Dateien, Pfad-Eingrenzung, argv-Prozesse, gemischte ZIPs.
  */
 class FileSystemExtensionsTest extends BaseTestCase {
+    /** PHP ohne php.ini: Erweiterungen der Maschine (Xdebug + JIT) schreiben sonst Startwarnungen in die verglichene Ausgabe. */
+    private const PHP = [PHP_BINARY, '-n'];
+
     private string $dir;
 
     protected function setUp(): void {
@@ -230,7 +233,7 @@ class FileSystemExtensionsTest extends BaseTestCase {
     // --- Shell::run ----------------------------------------------------------
 
     public function test_run_captures_output_and_exit_code_without_a_shell(): void {
-        $result = Shell::run([PHP_BINARY, '-r', 'echo $argv[1]; fwrite(STDERR, "err"); exit(3);', 'a b;c $(x)']);
+        $result = Shell::run([...self::PHP, '-r', 'echo $argv[1]; fwrite(STDERR, "err"); exit(3);', 'a b;c $(x)']);
 
         $this->assertSame(3, $result->exitCode);
         $this->assertSame('a b;c $(x)', $result->output, 'Argumente gehen ohne Shell unverändert durch');
@@ -242,7 +245,7 @@ class FileSystemExtensionsTest extends BaseTestCase {
     public function test_run_passes_environment_and_streams_output(): void {
         $chunks = [];
         $result = Shell::run(
-            [PHP_BINARY, '-r', 'echo getenv("CTK_SECRET");'],
+            [...self::PHP, '-r', 'echo getenv("CTK_SECRET");'],
             env: ['CTK_SECRET' => 'geheim'],
             onOutput: function (string $buffer, bool $isError) use (&$chunks): void {
                 $chunks[] = [$buffer, $isError];
@@ -255,7 +258,7 @@ class FileSystemExtensionsTest extends BaseTestCase {
     }
 
     public function test_run_reports_a_timeout_instead_of_throwing(): void {
-        $result = Shell::run([PHP_BINARY, '-r', 'sleep(5);'], timeout: 0.5);
+        $result = Shell::run([...self::PHP, '-r', 'sleep(5);'], timeout: 0.5);
 
         $this->assertTrue($result->timedOut);
         $this->assertNull($result->exitCode);

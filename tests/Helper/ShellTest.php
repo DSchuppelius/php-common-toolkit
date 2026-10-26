@@ -22,6 +22,9 @@ use Symfony\Component\Process\Process;
 use Tests\Contracts\BaseTestCase;
 
 class ShellTest extends BaseTestCase {
+    /** PHP ohne php.ini: Erweiterungen der Maschine (Xdebug + JIT) schreiben sonst Startwarnungen in die verglichene Ausgabe. */
+    private const PHP = [PHP_BINARY, '-n'];
+
     protected function tearDown(): void {
         Shell::setDefaultTimeout(null);
         Shell::setTimeoutProgram(null);
@@ -58,7 +61,7 @@ class ShellTest extends BaseTestCase {
         $output = ['vorher'];
         $resultCode = -1;
 
-        $ok = Shell::execute([PHP_BINARY, '-r', 'echo "eins\nzwei  \n"; fwrite(STDERR, "fehler\n"); exit(2);'], $output, $resultCode);
+        $ok = Shell::execute([...self::PHP, '-r', 'echo "eins\nzwei  \n"; fwrite(STDERR, "fehler\n"); exit(2);'], $output, $resultCode);
 
         $this->assertFalse($ok);
         $this->assertSame(2, $resultCode);
@@ -70,7 +73,7 @@ class ShellTest extends BaseTestCase {
         $output = [];
         $resultCode = 0;
 
-        $ok = Shell::execute([PHP_BINARY, '-r', 'echo strtoupper(stream_get_contents(STDIN));'], $output, $resultCode, null, "hallo\n");
+        $ok = Shell::execute([...self::PHP, '-r', 'echo strtoupper(stream_get_contents(STDIN));'], $output, $resultCode, null, "hallo\n");
 
         $this->assertTrue($ok);
         $this->assertSame(0, $resultCode);
@@ -82,7 +85,7 @@ class ShellTest extends BaseTestCase {
         $resultCode = 0;
         $started = microtime(true);
 
-        $ok = Shell::execute([PHP_BINARY, '-r', 'sleep(5);'], $output, $resultCode, 0.5);
+        $ok = Shell::execute([...self::PHP, '-r', 'sleep(5);'], $output, $resultCode, 0.5);
 
         $this->assertFalse($ok);
         $this->assertSame(Shell::EXIT_TIMEOUT, $resultCode);
@@ -194,7 +197,7 @@ class ShellTest extends BaseTestCase {
             'require %s; $o = []; $c = 0; CommonToolkit\Helper\Shell::executeShellCommand((string) getenv("CKT_SHELL_PROBE"), $o, $c, false, 0, false, true, 1.0);',
             var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true),
         );
-        $php = new Process([PHP_BINARY, '-r', $code], null, ['CKT_SHELL_PROBE' => $marker], null, 30.0);
+        $php = new Process([...self::PHP, '-r', $code], null, ['CKT_SHELL_PROBE' => $marker], null, 30.0);
         $php->start();
 
         $this->waitFor(fn (): bool => $this->processesWith($marker) !== []);
@@ -292,7 +295,7 @@ class ShellTest extends BaseTestCase {
         $this->requireUnix();
         Shell::setDefaultTimeout(0.5);
 
-        $result = Shell::run([PHP_BINARY, '-r', 'sleep(5);'], null);
+        $result = Shell::run([...self::PHP, '-r', 'sleep(5);'], null);
 
         $this->assertTrue($result->timedOut, 'null heisst seit 2.10 Standard-Zeitgrenze, nicht unbegrenzt');
         $this->assertLessThan(4.0, $result->duration);
@@ -305,7 +308,7 @@ class ShellTest extends BaseTestCase {
         $resultCode = 0;
         $started = microtime(true);
 
-        $ok = Shell::execute([PHP_BINARY, '-r', 'sleep(5);'], $output, $resultCode);
+        $ok = Shell::execute([...self::PHP, '-r', 'sleep(5);'], $output, $resultCode);
 
         $this->assertFalse($ok);
         $this->assertSame(Shell::EXIT_TIMEOUT, $resultCode);
@@ -316,7 +319,7 @@ class ShellTest extends BaseTestCase {
     #[\PHPUnit\Framework\Attributes\DataProvider('ungueltigeZeitgrenzen')]
     public function test_run_lehnt_ungueltige_zeitgrenze_ab(float $timeout): void {
         $this->expectException(InvalidArgumentException::class);
-        Shell::run([PHP_BINARY, '-r', 'echo 1;'], $timeout);
+        Shell::run([...self::PHP, '-r', 'echo 1;'], $timeout);
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('ungueltigeZeitgrenzen')]
@@ -325,7 +328,7 @@ class ShellTest extends BaseTestCase {
         $resultCode = 0;
 
         $this->expectException(InvalidArgumentException::class);
-        Shell::execute([PHP_BINARY, '-r', 'echo 1;'], $output, $resultCode, $timeout);
+        Shell::execute([...self::PHP, '-r', 'echo 1;'], $output, $resultCode, $timeout);
     }
 
     public function test_skalierte_zeitgrenze_waechst_mit_der_arbeit(): void {
