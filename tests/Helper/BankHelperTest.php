@@ -431,6 +431,27 @@ class BankHelperTest extends BaseTestCase {
         self::assertNull(BankHelper::bicFromIBAN('FR1420041010050500013M02606'));
     }
 
+    public function test_bic_or_from_iban_keeps_a_given_bic_or_blz(): void {
+        self::assertSame('COBADEFFXXX', BankHelper::bicOrFromIBAN('COBADEFFXXX', 'NL91ABNA0417164300'));
+        self::assertSame('37040044', BankHelper::bicOrFromIBAN('37040044', 'NL91ABNA0417164300'));
+    }
+
+    public function test_bic_or_from_iban_derives_only_from_a_valid_iban(): void {
+        self::assertSame('COBADEFFXXX', BankHelper::bicOrFromIBAN('', 'de89 3704 0044 0532 0130 00'));
+        self::assertSame('ABNANL2AXXX', BankHelper::bicOrFromIBAN(null, 'NL91 ABNA 0417 1643 00'));
+        self::assertSame('RLNWATWWXXX', BankHelper::bicOrFromIBAN(' ', 'AT483200000012345864'));
+        self::assertNull(BankHelper::bicOrFromIBAN('', 'DE89370400440532013001'), 'Prüfsumme falsch');
+        self::assertNull(BankHelper::bicOrFromIBAN('', 'DE85999999990001234567'), 'Bankleitzahl unbekannt');
+        self::assertNull(BankHelper::bicOrFromIBAN('', 'DE00PSEUDO0000000000'), 'Pseudo-IBAN');
+        self::assertNull(BankHelper::bicOrFromIBAN('', '0532013000'), 'Kontonummer statt IBAN');
+        // Falsche Prüfziffer: bicFromIBAN() fände die Bank, die Regel leitet nichts her.
+        self::assertSame('ABNANL2AXXX', BankHelper::bicFromIBAN('NL92ABNA0417164300'));
+        self::assertNull(BankHelper::bicOrFromIBAN('', 'NL92ABNA0417164300'));
+        self::assertNull(BankHelper::bicOrFromIBAN('', 'FR1420041010050500013M02606'));
+        self::assertNull(BankHelper::bicOrFromIBAN('', ''));
+        self::assertNull(BankHelper::bicOrFromIBAN(null, null));
+    }
+
     /** Gruppierte IBAN mit Folgetext auf derselben Zeile (Befund workDiary 2026-10-20). */
     public function test_extract_iban_space_tolerant_stops_at_the_group_boundary(): void {
         foreach ([false, true] as $strict) {

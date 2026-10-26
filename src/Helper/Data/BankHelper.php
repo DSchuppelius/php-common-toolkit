@@ -658,6 +658,31 @@ class BankHelper {
     }
 
     /**
+     * BIC einer Kontoverbindung: die angegebene, sonst die aus der IBAN hergeleitete.
+     *
+     * Ergänzt wird nur ein leeres BIC-Feld; eine BIC oder BLZ der Quelle bleibt,
+     * wie sie ist. Hergeleitet wird nur aus einer IBAN mit gültiger Prüfsumme und
+     * nur für die Länder mit Bankcode-Tabelle ({@see bicFromIBAN()}: DE, NL, AT,
+     * CH, BE, LU) - für andere wird nichts geraten.
+     *
+     * @param string|null $bic  BIC- bzw. BLZ-Feld, wie die Quelle es liefert.
+     * @param string|null $iban Die IBAN (Leerzeichen erlaubt).
+     * @return string|null Die angegebene oder hergeleitete BIC, sonst null.
+     */
+    public static function bicOrFromIBAN(?string $bic, ?string $iban): ?string {
+        if ($bic !== null && trim($bic) !== '') {
+            return $bic;
+        }
+        $iban = strtoupper((string) preg_replace('/\s+/', '', (string) $iban));
+        if ($iban === '' || !self::checkIBAN($iban)) {
+            return null;
+        }
+        $derived = self::bicFromIBAN($iban);
+
+        return $derived !== null && self::isBIC($derived) ? $derived : null;
+    }
+
+    /**
      * Bankcode -> BIC für Länder, deren IBAN einen numerischen Bankcode führt.
      *
      * Anders als in den Niederlanden (Bankcode = die ersten vier Zeichen des BIC)
