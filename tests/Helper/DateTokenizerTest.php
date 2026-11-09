@@ -22,6 +22,9 @@ class DateTokenizerTest extends BaseTestCase {
         return [
             'TT.MM.JJJJ' => ['05.09.2023 Basislastschrift', 'dmy', 5, 9, 2023],
             'TT.MM.JJ' => ['01.12.23  Bsp GmbH', 'dmy2', 1, 12, 2023],
+            'T.M.JJJJ' => ['1.6.2026                   2.6.2026   GOOGLE*CLOUD   -0,27', 'dmy', 1, 6, 2026],
+            'T.MM.JJJJ' => ['4.12.2025  5.12.2025 Lastschrifteinzug  296,85', 'dmy', 4, 12, 2025],
+            'TT.M.JJJJ' => ['10.6.2026  11.6.2026  FRAME.IO', 'dmy', 10, 6, 2026],
             'TT.MM.' => ['12.10. 12.10. Gutschrift', 'dm', 12, 10, null],
             'ISO' => ['2024-01-15  Zahlung', 'iso', 15, 1, 2024],
             'TT-MM-JJJJ' => ['27-05-2025  Belastingdienst', 'dmy-dash', 27, 5, 2025],

@@ -18,7 +18,7 @@ use CommonToolkit\ValueObjects\DateToken;
 /**
  * Findet Datumsangaben in Textzeilen – mit Zeichenposition und ohne Jahrespflicht.
  *
- * Formen: ISO, TT-MM-JJJJ, TT/MM/JJJJ, TT.MM.JJJJ, TT.MM.JJ, "1. Juni 2023",
+ * Formen: ISO, TT-MM-JJJJ, TT/MM/JJJJ, TT.MM.JJJJ (auch T.M.JJJJ), TT.MM.JJ, "1. Juni 2023",
  * "3 Jan 24", TT.MM., TT/MM – deutsche und englische Monatsnamen.
  */
 final class DateTokenizer {
@@ -27,7 +27,8 @@ final class DateTokenizer {
         'iso' => '\d{4}-\d{2}-\d{2}',
         'dmy-dash' => '\d{2}-\d{2}-\d{4}',
         'dmy-slash' => '\d{2}\/\d{2}\/\d{4}',
-        'dmy' => '\d{1,2}\.\d{2}\.\d{4}',
+        // Tag UND Monat ohne fuehrende Null: "1.6.2026" (Commerzbank Business Card 2026)
+        'dmy' => '\d{1,2}\.\d{1,2}\.\d{4}',
         'dmy2' => '\d{2}\.\d{2}\.\d{2}(?!\d)',
         'd-month-y' => '\d{1,2}\.? ?%MONTH% \d{4}',
         'month-d-y' => '%MONTH% \d{1,2}, \d{2,4}',
