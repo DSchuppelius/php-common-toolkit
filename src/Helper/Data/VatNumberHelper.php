@@ -250,6 +250,28 @@ class VatNumberHelper {
     }
 
     /**
+     * Land zu einem USt-ID-Präfix — die Umkehrung von {@see getVatPrefix()}.
+     * Präfixe, die kein ISO-3166-Alpha-2 sind (EL, CHE, XI), werden aufgelöst.
+     *
+     * @param string $prefix Der Präfix (z.B. "EL", "CHE", "DE").
+     * @return CountryCode|null Das Land oder null, wenn der Präfix keine USt-ID kennzeichnet.
+     */
+    public static function getCountryForVatPrefix(string $prefix): ?CountryCode {
+        $prefix = strtoupper(trim($prefix));
+        if (!isset(self::VAT_PATTERNS[$prefix])) {
+            return null;
+        }
+
+        return match ($prefix) {
+            'EL' => CountryCode::Greece,
+            'CHE' => CountryCode::Switzerland,
+            'XI' => CountryCode::NorthernIreland,
+            'GB' => CountryCode::UnitedKingdomOfGreatBritainAndNorthernIreland,
+            default => CountryCode::tryFrom($prefix),
+        };
+    }
+
+    /**
      * Gibt alle unterstützten Ländercodes zurück.
      *
      * @return array<string> Liste der unterstützten Ländercodes.

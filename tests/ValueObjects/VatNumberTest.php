@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace Tests\ValueObjects;
 
+use CommonToolkit\Enums\CountryCode;
+use CommonToolkit\Helper\Data\VatNumberHelper;
 use CommonToolkit\ValueObjects\VatNumber;
 use InvalidArgumentException;
 use JsonSerializable;
@@ -68,6 +70,30 @@ class VatNumberTest extends BaseTestCase {
         // durchgehenden ISO-3166-Alpha-2-Fälle — deshalb bewusst string.
         $this->assertSame('CHE', VatNumber::of('CHE-123.456.788 MWST')->getCountryCode());
         $this->assertSame('XI', VatNumber::of('XI123456789')->getCountryCode());
+    }
+
+    public function test_country_resolves_non_iso_prefixes(): void {
+        $this->assertSame(CountryCode::Germany, VatNumber::of('DE136695976')->getCountry());
+        $this->assertSame(CountryCode::Greece, VatNumber::of('EL123456789')->getCountry());
+        $this->assertSame(CountryCode::Switzerland, VatNumber::of('CHE-123.456.788 MWST')->getCountry());
+        $this->assertSame(CountryCode::NorthernIreland, VatNumber::of('XI123456789')->getCountry());
+    }
+
+    public function test_country_for_vat_prefix(): void {
+        $this->assertSame(CountryCode::Greece, VatNumberHelper::getCountryForVatPrefix('el'));
+        $this->assertSame(CountryCode::Austria, VatNumberHelper::getCountryForVatPrefix('AT'));
+        $this->assertSame(CountryCode::UnitedKingdomOfGreatBritainAndNorthernIreland, VatNumberHelper::getCountryForVatPrefix('GB'));
+        // GR ist ISO, aber kein USt-ID-Präfix (Griechenland nutzt EL).
+        $this->assertNull(VatNumberHelper::getCountryForVatPrefix('GR'));
+        $this->assertNull(VatNumberHelper::getCountryForVatPrefix('US'));
+
+        foreach (VatNumberHelper::getSupportedCountries() as $prefix) {
+            $country = VatNumberHelper::getCountryForVatPrefix($prefix);
+            $this->assertNotNull($country, $prefix);
+            if ($prefix !== 'XI') {
+                $this->assertSame($prefix, VatNumberHelper::getVatPrefix($country), 'Hin- und Rückweg für ' . $prefix);
+            }
+        }
     }
 
     public function test_national_number(): void {

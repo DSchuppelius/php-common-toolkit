@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace CommonToolkit\ValueObjects;
 
+use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Helper\Data\VatNumberHelper;
 use ERRORToolkit\Traits\ErrorLog;
 use InvalidArgumentException;
@@ -117,6 +118,14 @@ final class VatNumber {
      */
     public function getCountryCode(): string {
         return $this->countryCode;
+    }
+
+    /**
+     * Land der USt-ID als Enum — löst die Präfixe EL (Griechenland), CHE
+     * (Schweiz) und XI (Nordirland) auf, die kein ISO-Code sind.
+     */
+    public function getCountry(): ?CountryCode {
+        return VatNumberHelper::getCountryForVatPrefix($this->countryCode);
     }
 
     /**
