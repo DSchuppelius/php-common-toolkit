@@ -663,6 +663,43 @@ class StringHelper {
     }
 
     /**
+     * Name der Zeichenkodierung zu einer Windows-Codepage-Nummer, in der
+     * Schreibweise, die {@see convertToUtf8()} versteht.
+     *
+     * Codepage-Nummern stehen in MAPI-Eigenschaften (Outlook-.msg:
+     * PR_MESSAGE_CODEPAGE, PR_INTERNET_CPID), in RTF (`\ansicpg1252`) und in
+     * DBF-Köpfen. Abgedeckt sind Unicode (65001, 1200, 1201), die
+     * Windows-Codepages 874 und 1250–1258, ISO-8859 (28591–28599, 28603,
+     * 28605), DOS (437, 850, 852, 866), KOI8, Mac Roman und die
+     * ostasiatischen Codepages (932, 936, 949, 950, EUC, ISO-2022-JP, GB18030).
+     *
+     * @param int $codepage Die Codepage-Nummer (z. B. 1252).
+     * @return string|null Der Kodierungsname (z. B. "Windows-1252") oder null bei unbekannter Nummer.
+     */
+    public static function encodingForCodepage(int $codepage): ?string {
+        return match (true) {
+            $codepage === 65001 => 'UTF-8',
+            $codepage === 1200 => 'UTF-16LE',
+            $codepage === 1201 => 'UTF-16BE',
+            $codepage === 20127 => 'ASCII',
+            $codepage >= 1250 && $codepage <= 1258 => 'Windows-' . $codepage,
+            $codepage >= 28591 && $codepage <= 28599 => 'ISO-8859-' . ($codepage - 28590),
+            $codepage === 28603 => 'ISO-8859-13',
+            $codepage === 28605 => 'ISO-8859-15',
+            in_array($codepage, [437, 850, 852, 866, 874, 932, 936, 949, 950], true) => 'CP' . $codepage,
+            $codepage === 20866 => 'KOI8-R',
+            $codepage === 21866 => 'KOI8-U',
+            $codepage === 10000 => 'MacRoman',
+            in_array($codepage, [50220, 50221, 50222], true) => 'ISO-2022-JP',
+            $codepage === 51932 || $codepage === 20932 => 'EUC-JP',
+            $codepage === 51936 => 'EUC-CN',
+            $codepage === 51949 => 'EUC-KR',
+            $codepage === 54936 => 'GB18030',
+            default => null,
+        };
+    }
+
+    /**
      * Erweiterte Heuristik zur Erkennung von Legacy-Encodings.
      *
      * Diese Methode analysiert Byte-Muster, um zwischen verschiedenen

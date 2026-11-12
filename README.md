@@ -25,6 +25,8 @@ General-purpose PHP utility toolkit providing platform-agnostic helpers, CSV pro
 - **ZIP Entry Filtering**: `ZipFile::readEntries()` / `::readEntriesFromFile()` / `::extract()` with a `skipEntry` callback — inspect archives entry by entry and skip unsafe or unwanted members before extraction
 - **Value Objects**: typed wrappers such as `WasteCode` (European waste catalogue)
 - **Data URLs**: `DataUrlHelper::decode()` / `::parse()` / `::encode()` — strict RFC 2397 decoding with size limit and content-based type check (e.g. signature images from a canvas)
+- **EPC QR (Girocode)**: `EpcQrBuilder` writes the payload, `EpcQrParser::parse()` / `::tryParse()` reads it back (EPC069-12 version 001/002, charsets 1–8 converted to UTF-8, the builder's limits, IBAN check digits reported via `isIbanValid()`, amount as decimal string)
+- **Outlook .msg**: `OutlookMessageParser` reads MS-OXMSG messages in pure PHP into a format-neutral `Entities\Mail\Message` (sender with SMTP preference, To/Cc/Bcc, date, Message-ID, headers, text and HTML body, attachments, embedded messages), with limits for file size, attachment count/bytes and nesting depth; `CompoundFileReader` is the underlying MS-CFB reader (also for other OLE2 containers)
 
 ---
 
@@ -34,12 +36,12 @@ General-purpose PHP utility toolkit providing platform-agnostic helpers, CSV pro
 src/
 ├── Builders/           # Fluent document builders (CSV, HTML, XLSX, XML, Payment/EPC QR)
 ├── Contracts/          # Abstract base classes and interfaces
-├── Entities/           # Immutable domain models (CSV, Executables, HTML, ICalendar, XLSX, XML)
+├── Entities/           # Immutable domain models (CompoundFile, CSV, Executables, HTML, ICalendar, Mail, Payment, XLSX, XML)
 ├── Enums/              # Typed enums with factory methods
 ├── Exceptions/         # Exceptions (Parsers)
 ├── Generators/         # Document generators (CEF, CSV, XLSX, XML)
 ├── Helper/             # Utility classes (Data, FileSystem, Geo, Media, Office, Shell, Java, Platform)
-├── Parsers/            # Document parsers (CSV, HTML, ICalendar, XLSX, XML)
+├── Parsers/            # Document parsers (Compound File, CSV, HTML, ICalendar, Outlook .msg, Payment/EPC QR, XLSX, XML)
 ├── PHPStan/            # PHPStan rule: processes only via Shell
 ├── Traits/             # Reusable traits
 └── ValueObjects/       # Typed value objects (Gtin, IpAddress, ByteSize, Duration, ...)
@@ -214,6 +216,61 @@ foreach ($document->getSeries() as $series) {
     }
 }
 ```
+
+### EPC-QR lesen (Girocode)
+
+```php
+use CommonToolkit\Exceptions\Parsers\InvalidEpcQrPayloadException;
+use CommonToolkit\Parsers\Payment\EpcQrParser;
+
+$payment = EpcQrParser::tryParse($scannedText);   // null bei fremden/kaputten Codes
+if ($payment !== null) {
+    $payment->getName();          // "Muster GmbH" (UTF-8, gleich welcher Zeichensatz 1–8)
+    $payment->getIban();          // "DE02120300000000202051"
+    $payment->isIbanValid();      // false bei falscher Prüfziffer — Code wird trotzdem geliefert
+    $payment->getAmount();        // "1234.50" (Dezimal-String, kein float) oder null
+    $payment->getReference() ?? $payment->getRemittance();
+}
+
+try {
+    EpcQrParser::parse($scannedText);
+} catch (InvalidEpcQrPayloadException $e) {
+    $e->getField();               // z. B. InvalidEpcQrPayloadException::FIELD_AMOUNT
+}
+```
+
+Grenzen wie beim `EpcQrBuilder` (dessen öffentliche Konstanten beide nutzen): 7–12 Zeilen, höchstens
+331 Byte, LF oder CRLF (ein Zeilenumbruch am Ende wird toleriert), Feldlängen, Betrag `EUR0.01`–`EUR999999999.99`,
+Referenz *oder* Verwendungszweck; Version 001 verlangt die BIC.
+
+### Outlook-Nachrichten (.msg)
+
+```php
+use CommonToolkit\Parsers\OutlookMessageParser;
+
+$message = OutlookMessageParser::fromFile('anfrage.msg');   // oder ::fromString($bytes, documentName: 'anfrage.msg')
+$message->getFrom()?->getAddress();      // SMTP bevorzugt, auch bei Exchange-Absendern
+$message->getTo();                       // list<Recipient> (Name, Adresse, RecipientType)
+$message->getDate();                     // UTC, Sendezeit (sonst Date-Kopfzeile, sonst Zustellzeit)
+$message->getTextBody();
+$message->getHtmlBody();                 // auch binär gespeichertes HTML, mit Codepage
+foreach ($message->getAttachments() as $attachment) {
+    if ($attachment->isMessage()) {
+        $attachment->getMessage();       // eingebettete Nachricht, bereits gelesen
+    } else {
+        $attachment->getFilename();      // langer vor kurzem Namen
+        $attachment->getContent();
+        $attachment->isInline();         // Logo/Signaturbild im HTML
+    }
+}
+```
+
+Grenzen (Parameter mit Vorgabe): `maxFileBytes` 50 MiB, `maxAttachments` 100 und `maxAttachmentBytes` 50 MiB
+über alle Ebenen, `maxDepth` 2 für eingebettete Nachrichten. Überschreitung wirft
+`DocumentLimitExceededException` (`getKind()`: `bytes`, `entries`, `depth`), eine beschädigte Datei
+`MalformedDocumentException` — nie Warnungen oder Endlosschleifen (Zyklen in Sektorketten und im Verzeichnis,
+Verweise außerhalb der Datei, doppelt belegte Sektoren). Ein RTF-komprimierter Körper wird nicht gewandelt
+(`hasRtfBody()`).
 
 ### CSV Processing
 
@@ -673,6 +730,26 @@ This project is licensed under the **MIT License**.
 📧 <info@schuppelius.org>
 
 ## Versions
+
+### 2.17.0 (Vorschlag, unveröffentlicht) — Girocode lesen, Outlook-Nachrichten lesen
+
+- Neu: `Parsers\Payment\EpcQrParser::parse()` / `::tryParse()` mit Ergebnis `Entities\Payment\EpcQrPayment` und
+  `Enums\Payment\EpcQrCharset` — Gegenstück zum `EpcQrBuilder`. Ungültige Nutzlast wirft
+  `Exceptions\Parsers\InvalidEpcQrPayloadException` (mit `getField()`), eine IBAN mit falscher Prüfziffer steht
+  im Ergebnis (`isIbanValid()`).
+- `EpcQrBuilder`: Grenzen als öffentliche Konstanten (`MAX_LINES`, `MAX_NAME_LENGTH`, `MAX_REFERENCE_LENGTH`,
+  `MAX_REMITTANCE_LENGTH`, `MAX_NOTE_LENGTH`, `MIN_AMOUNT`, `MAX_AMOUNT`, `PURPOSE_PATTERN`, …), die der Parser
+  mitbenutzt. **Verhaltensänderung:** Name, Referenz, Verwendungszweck und Hinweis mit Zeilenumbruch werfen jetzt
+  eine `InvalidArgumentException` — bisher entstand eine Nutzlast, in der alle folgenden Felder verrutscht waren
+  (ein Umbruch im Namen schob eine fremde Zeile an die IBAN-Stelle).
+- Neu: `Parsers\OutlookMessageParser` (MS-OXMSG) mit den formatneutralen Entities `Mail\Message`, `Mail\Address`,
+  `Mail\Recipient`, `Mail\Attachment` und `Enums\Mail\RecipientType`; `Parsers\CompoundFileReader` (MS-CFB,
+  Version 3 und 4) mit `Entities\CompoundFile\DirectoryEntry`. Reines PHP, keine neue Abhängigkeit.
+- Neu: `Exceptions\Parsers\MalformedDocumentException` (RuntimeException, `getDocument()`) für strukturell
+  ungültige Eingaben; `DocumentLimitExceededException::KIND_DEPTH`.
+- Neu: `StringHelper::encodingForCodepage()` — Windows-Codepage-Nummer (MAPI, RTF, DBF) zu einem Namen, den
+  `convertToUtf8()` versteht.
+- Signaturen bestehender Methoden bleiben unverändert.
 
 ### 2.13.0 — IBAN mit Folgetext, sicherer DOM-Lader, Wörter und Zeilen
 
