@@ -3105,6 +3105,10 @@ class StringHelper {
      * die Zeilenstruktur erhalten. Reiner Text ohne Tags verliert seine
      * Zeilenumbrüche (HTML-Semantik) — nur HTML übergeben.
      *
+     * Die Laufzeit wächst linear mit der Eingabe, auch bei nicht geschlossenen
+     * `<style>`/`<script>`-Blöcken, Kommentaren oder Tags ohne `>` (bis 2.17.0
+     * quadratisch: 1 MB ungeschlossener `<style>`-Tags brauchte über eine Minute).
+     *
      * @param string|null $html Das HTML (null wird als leerer String behandelt).
      * @return string Der Text mit Zeilenumbrüchen.
      * @see stripHtml() Für einzeiligen Text ohne Zeilenstruktur.
@@ -3113,11 +3117,11 @@ class StringHelper {
         if (self::isNullOrEmpty($html)) {
             return '';
         }
-        $html = preg_replace('#<(script|style|head|title|template)\b[^>]*>.*?</\1\s*>#is', '', $html) ?? $html;
-        $html = preg_replace('#<!--.*?-->#s', '', $html) ?? $html;
+        $html = self::removeHtmlBlocks($html, ['script', 'style', 'head', 'title', 'template']);
+        $html = self::removeHtmlComments($html);
         $html = preg_replace('/[\r\n\t\f]+/', ' ', $html) ?? $html;
-        $html = preg_replace('#<li\b[^>]*>#i', "\n- ", $html) ?? $html;
-        $html = preg_replace('#<(br|hr)\b[^>]*>#i', "\n", $html) ?? $html;
+        $html = self::replaceHtmlOpeningTags($html, ['li'], "\n- ");
+        $html = self::replaceHtmlOpeningTags($html, ['br', 'hr'], "\n");
         $html = preg_replace('#</(p|div|h[1-6]|tr|table|ul|ol|blockquote|pre|section|article|header|footer|address|dd|dt|figure|figcaption|caption|form|fieldset|legend)\s*>#i', "\n", $html) ?? $html;
         $html = preg_replace('#</t[dh]\s*>#i', ' ', $html) ?? $html;
 
@@ -3129,6 +3133,154 @@ class StringHelper {
         );
 
         return trim(preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines)) ?? '');
+    }
+
+    /**
+     * Entfernt Blöcke `<name …>…</name>` samt Inhalt (Name ohne Groß-/Kleinschreibung,
+     * Endtag mit optionalem Leerraum vor `>`); ein Block ohne Endtag bleibt stehen.
+     * Gleiches Ergebnis wie `#<(name|…)\b[^>]*>.*?</\1\s*>#is`, aber linear: die
+     * Suchen nach `>` und nach dem Endtag laufen nur vorwärts und merken sich ihr
+     * Ergebnis, ein offener Block löst keinen erneuten Lauf bis zum Ende aus.
+     *
+     * @param list<string> $names Tag-Namen in Kleinschreibung.
+     */
+    private static function removeHtmlBlocks(string $html, array $names): string {
+        $lower = strtolower($html);
+        $length = strlen($html);
+        $nextGt = self::forwardFinder($lower, '>');
+        /** @var array<string, array{from: int, start: int|false, end: int}> $closeCache */
+        $closeCache = [];
+
+        $out = '';
+        $copyFrom = 0;
+        $position = 0;
+        while (($lt = strpos($lower, '<', $position)) !== false) {
+            $position = $lt + 1;
+            $name = self::htmlTagNameAt($lower, $lt + 1, $names);
+            if ($name === null) {
+                continue;
+            }
+            $openEnd = $nextGt($lt + 1 + strlen($name));
+            if ($openEnd === false) {
+                break; // kein `>` mehr: kein weiterer Block kann beginnen
+            }
+
+            $from = $openEnd + 1;
+            $cached = $closeCache[$name] ?? null;
+            if ($cached === null || $from < $cached['from'] || ($cached['start'] !== false && $cached['start'] < $from)) {
+                $cached = ['from' => $from, 'start' => false, 'end' => -1];
+                $search = $from;
+                while (($candidate = strpos($lower, '</' . $name, $search)) !== false) {
+                    $after = $candidate + 2 + strlen($name);
+                    $gt = $after + strspn($lower, " \t\n\v\f\r", $after);
+                    if ($gt < $length && $lower[$gt] === '>') {
+                        $cached = ['from' => $from, 'start' => $candidate, 'end' => $gt];
+                        break;
+                    }
+                    $search = $candidate + 1;
+                }
+                $closeCache[$name] = $cached;
+            }
+            if ($cached['start'] === false) {
+                continue; // offener Block bleibt stehen, wie beim regulären Ausdruck
+            }
+
+            $out .= substr($html, $copyFrom, $lt - $copyFrom);
+            $copyFrom = $position = $cached['end'] + 1;
+        }
+
+        return $out . substr($html, $copyFrom);
+    }
+
+    /** Entfernt `<!-- … -->`; ein offener Kommentar bleibt stehen (wie `#<!--.*?-->#s`), linear. */
+    private static function removeHtmlComments(string $html): string {
+        $out = '';
+        $copyFrom = 0;
+        $position = 0;
+        while (($start = strpos($html, '<!--', $position)) !== false) {
+            $end = strpos($html, '-->', $start + 4);
+            if ($end === false) {
+                break; // kein `-->` mehr: kein späterer Kommentar kann enden
+            }
+            $out .= substr($html, $copyFrom, $start - $copyFrom);
+            $copyFrom = $position = $end + 3;
+        }
+
+        return $out . substr($html, $copyFrom);
+    }
+
+    /**
+     * Ersetzt öffnende Tags `<name …>` (bis zum ersten `>`) durch $replacement —
+     * wie `#<(name|…)\b[^>]*>#i`, aber linear.
+     *
+     * @param list<string> $names Tag-Namen in Kleinschreibung.
+     */
+    private static function replaceHtmlOpeningTags(string $html, array $names, string $replacement): string {
+        $lower = strtolower($html);
+        $nextGt = self::forwardFinder($lower, '>');
+
+        $out = '';
+        $copyFrom = 0;
+        $position = 0;
+        while (($lt = strpos($lower, '<', $position)) !== false) {
+            $position = $lt + 1;
+            $name = self::htmlTagNameAt($lower, $lt + 1, $names);
+            if ($name === null) {
+                continue;
+            }
+            $gt = $nextGt($lt + 1 + strlen($name));
+            if ($gt === false) {
+                break;
+            }
+            $out .= substr($html, $copyFrom, $lt - $copyFrom) . $replacement;
+            $copyFrom = $position = $gt + 1;
+        }
+
+        return $out . substr($html, $copyFrom);
+    }
+
+    /**
+     * Welcher der Namen steht ab $offset, gefolgt von einer Wortgrenze (`\b`)?
+     *
+     * @param list<string> $names
+     */
+    private static function htmlTagNameAt(string $lower, int $offset, array $names): ?string {
+        foreach ($names as $name) {
+            $end = $offset + strlen($name);
+            if (substr_compare($lower, $name, $offset, strlen($name)) === 0 && ($end >= strlen($lower) || !self::isAsciiWordByte($lower[$end]))) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
+    /** Wortzeichen wie `\b` in PCRE ohne /u: nur ASCII, unabhängig von der Locale. */
+    private static function isAsciiWordByte(string $byte): bool {
+        $code = ord($byte);
+
+        return ($code >= 0x30 && $code <= 0x39) || ($code >= 0x41 && $code <= 0x5A) || ($code >= 0x61 && $code <= 0x7A) || $code === 0x5F;
+    }
+
+    /**
+     * Nächste Fundstelle von $needle ab einer Position, für nicht fallende
+     * Positionen: ein Ergebnis gilt für alle Positionen bis zur Fundstelle
+     * weiter, darum durchläuft jede Region den Text höchstens einmal.
+     *
+     * @return \Closure(int): (int|false)
+     */
+    private static function forwardFinder(string $haystack, string $needle): \Closure {
+        $from = -1;
+        $found = false;
+
+        return static function (int $offset) use ($haystack, $needle, &$from, &$found): int|false {
+            if ($from === -1 || $offset < $from || ($found !== false && $found < $offset)) {
+                $from = $offset;
+                $found = $offset >= strlen($haystack) ? false : strpos($haystack, $needle, $offset);
+            }
+
+            return $found;
+        };
     }
 
     /**

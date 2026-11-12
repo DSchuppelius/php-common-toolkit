@@ -55,7 +55,7 @@ class VatNumberHelper {
         'NL' => ['lengths' => [12],                         'pattern' => '/^NL[0-9]{9}B[0-9]{2}$/'],                            // Niederlande
         'PL' => ['lengths' => [10],                         'pattern' => '/^PL[0-9]{10}$/'],                                    // Polen
         'PT' => ['lengths' => [9],                          'pattern' => '/^PT[0-9]{9}$/'],                                     // Portugal
-        'RO' => ['lengths' => [2, 3, 4, 5, 6, 7, 8, 9, 10], 'pattern' => '/^RO[0-9]{2,10}$/'],                                  // Rumänien
+        'RO' => ['lengths' => [2, 3, 4, 5, 6, 7, 8, 9, 10], 'pattern' => '/^RO[1-9][0-9]{1,9}$/'],                              // Rumänien (CUI ohne führende Null)
         'SE' => ['lengths' => [12],                         'pattern' => '/^SE[0-9]{12}$/'],                                    // Schweden
         'SI' => ['lengths' => [8],                          'pattern' => '/^SI[0-9]{8}$/'],                                     // Slowenien
         'SK' => ['lengths' => [10],                         'pattern' => '/^SK[0-9]{10}$/'],                                    // Slowakei
@@ -124,6 +124,7 @@ class VatNumberHelper {
             'LU' => self::validateLUVatId($vatId),
             'HU' => self::validateHUVatId($vatId),
             'SI' => self::validateSIVatId($vatId),
+            'RO' => self::validateROVatId($vatId),
             default => true, // Keine Prüfsummenvalidierung verfügbar
         };
     }
@@ -662,6 +663,30 @@ class VatNumberHelper {
         $checkDigit = (10 - ($sum % 10)) % 10;
 
         return (int) $number[7] === $checkDigit;
+    }
+
+    /**
+     * Rumänien: CUI/CIF mit 2 bis 10 Ziffern, die letzte ist die Prüfziffer.
+     * Rumpf links mit Nullen auf 9 Stellen auffüllen, mit 7,5,3,2,1,7,5,3,2
+     * gewichten, Summe × 10 mod 11; Rest 10 ergibt 0. Die Länge allein lässt
+     * schon "RO12" zu (2 Ziffern sind ein gültiges Format) — erst die Prüfziffer
+     * trennt (RO19 ja, RO12 nein).
+     */
+    private static function validateROVatId(string $vatId): bool {
+        $number = substr($vatId, 2); // Entferne "RO"
+        $length = strlen($number);
+        if ($length < 2 || $length > 10 || !ctype_digit($number)) {
+            return false;
+        }
+
+        $body = str_pad(substr($number, 0, -1), 9, '0', STR_PAD_LEFT);
+        $weights = [7, 5, 3, 2, 1, 7, 5, 3, 2];
+        $sum = 0;
+        for ($i = 0; $i < 9; $i++) {
+            $sum += (int) $body[$i] * $weights[$i];
+        }
+
+        return (int) $number[$length - 1] === ($sum * 10 % 11) % 10;
     }
 
     /**

@@ -123,6 +123,12 @@ class VatNumberTest extends BaseTestCase {
         $this->assertFalse(VatNumber::of('DE136695976')->equals(VatNumber::of('ATU13585627')));
     }
 
+    public function test_romanian_number_needs_its_check_digit(): void {
+        $this->assertNull(VatNumber::tryFrom('RO12'), 'Format zulässig, Prüfziffer falsch (Befund 2.17.1)');
+        $this->assertNotNull(VatNumber::tryFrom('RO12', false), 'nur Formatprüfung');
+        $this->assertSame('RO19', VatNumber::of('ro 19')->getValue());
+    }
+
     public function test_no_string_or_json_interface(): void {
         $reflection = new ReflectionClass(VatNumber::class);
         $this->assertFalse($reflection->implementsInterface(Stringable::class), 'Sensibler Wert darf nicht implizit zum String werden.');

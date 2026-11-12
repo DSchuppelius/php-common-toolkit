@@ -370,11 +370,19 @@ final class CompoundFileReader {
             $this->malformed(sprintf('DIFAT nennt %d von %d FAT-Sektoren.', count($locations), $fatSectorCount));
         }
 
+        // Nur so viele Einträge, wie die Datei Sektoren hat: ein Eintrag jenseits
+        // davon kann nie verfolgt werden ({@see walk()} weist den Verweis vorher
+        // ab). Ungekürzt kostete eine Datei aus lauter FAT-Sektoren das
+        // Vielfache ihrer Größe an Speicher (128 Einträge je 512-Byte-Sektor).
         $fat = [];
         foreach (array_slice($locations, 0, $fatSectorCount) as $sector) {
             $this->assertSector($sector, 'FAT');
             $this->claim($sector, self::OWNER_FAT);
-            array_push($fat, ...self::uint32List($this->sector($sector)));
+            $data = $this->sector($sector);
+            $missing = $this->sectorCount - count($fat);
+            if ($missing > 0) {
+                array_push($fat, ...self::uint32List(substr($data, 0, $missing * 4)));
+            }
         }
         $this->fat = $fat;
     }
@@ -394,16 +402,28 @@ final class CompoundFileReader {
         }
     }
 
-    /** @throws MalformedDocumentException */
+    /**
+     * MiniFAT, gekürzt auf die Mini-Sektoren, die der Mini-Stream haben kann
+     * (Größe des Wurzeleintrags, höchstens die Dateigröße) — wie bei der FAT
+     * würde eine lange Kette sonst 128 Einträge je Sektor kosten.
+     *
+     * @throws MalformedDocumentException
+     */
     private function readMiniFat(int $firstSector, int $sectorCount): void {
         if ($firstSector === self::END_OF_CHAIN || $sectorCount === 0) {
             return;
         }
 
+        $miniStreamBytes = min($this->getRoot()->getSize(), strlen($this->bytes));
+        $limit = intdiv($miniStreamBytes + self::MINI_SECTOR_SIZE - 1, self::MINI_SECTOR_SIZE);
         $miniFat = [];
         foreach ($this->walk($firstSector, $this->fat, $this->sectorCount, null, 'MiniFAT') as $sector) {
             $this->claim($sector, self::OWNER_MINI_FAT);
-            array_push($miniFat, ...self::uint32List($this->sector($sector)));
+            $data = $this->sector($sector);
+            $missing = $limit - count($miniFat);
+            if ($missing > 0) {
+                array_push($miniFat, ...self::uint32List(substr($data, 0, $missing * 4)));
+            }
         }
         $this->miniFat = $miniFat;
     }

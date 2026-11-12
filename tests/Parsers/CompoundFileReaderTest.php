@@ -357,6 +357,111 @@ class CompoundFileReaderTest extends BaseTestCase {
         $this->assertMalformed($broken, 'DIFAT: Zyklus');
     }
 
+    // ------------------------------------------------------------------
+    // Speicher: Verwaltungstabellen nur so groß wie die Datei
+    // ------------------------------------------------------------------
+
+    /**
+     * Datei aus Verzeichnis, MiniFAT-Kette, FAT- und DIFAT-Sektoren — sonst nichts.
+     * Mit vielen FAT-Sektoren nennt die FAT 128 Einträge je Sektor, obwohl die
+     * Datei nur einen Bruchteil davon an Sektoren hat.
+     */
+    private static function tableHeavyFile(int $fatSectors, int $miniFatSectors = 0): string {
+        $fat = max(1, $fatSectors);
+        do {
+            $previous = $fat;
+            $difat = $fat > 109 ? intdiv($fat - 109 + 126, 127) : 0;
+            $total = 1 + $miniFatSectors + $fat + $difat;
+            $fat = max($fatSectors, intdiv($total + 127, 128));
+        } while ($fat !== $previous);
+        $difat = $fat > 109 ? intdiv($fat - 109 + 126, 127) : 0;
+        $fatStart = 1 + $miniFatSectors;
+        $difatStart = $fatStart + $fat;
+
+        $entries = [CompoundFileWriter::END_OF_CHAIN];
+        for ($i = 1; $i <= $miniFatSectors; $i++) {
+            $entries[] = $i < $miniFatSectors ? $i + 1 : CompoundFileWriter::END_OF_CHAIN;
+        }
+        array_push($entries, ...array_fill(0, $fat, CompoundFileWriter::FAT_SECTOR));
+        if ($difat > 0) {
+            array_push($entries, ...array_fill(0, $difat, CompoundFileWriter::DIFAT_SECTOR));
+        }
+        $fatBytes = str_pad(pack('V*', ...$entries), $fat * 512, "\xFF");
+
+        $fatLocations = range($fatStart, $fatStart + $fat - 1);
+        $difatBytes = '';
+        for ($d = 0; $d < $difat; $d++) {
+            $values = array_pad(array_slice($fatLocations, 109 + $d * 127, 127), 127, CompoundFileWriter::FREE_SECTOR);
+            $values[] = $d < $difat - 1 ? $difatStart + $d + 1 : CompoundFileWriter::END_OF_CHAIN;
+            $difatBytes .= pack('V*', ...$values);
+        }
+
+        $root = str_pad(mb_convert_encoding('Root Entry', 'UTF-16LE', 'UTF-8') . "\0\0", 64, "\0")
+            . pack('vCC', 22, 5, 1) . pack('VVV', CompoundFileWriter::NO_STREAM, CompoundFileWriter::NO_STREAM, CompoundFileWriter::NO_STREAM)
+            . str_repeat("\0", 36) . pack('VVV', CompoundFileWriter::END_OF_CHAIN, 0, 0);
+        $empty = str_repeat("\0", 64) . pack('vCC', 0, 0, 0) . pack('VVV', CompoundFileWriter::NO_STREAM, CompoundFileWriter::NO_STREAM, CompoundFileWriter::NO_STREAM) . str_repeat("\0", 48);
+
+        $header = "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1" . str_repeat("\0", 16) . pack('vvvvv', 0x003E, 3, 0xFFFE, 9, 6) . str_repeat("\0", 6)
+            . pack(
+                'VVVVVVVVV',
+                0,
+                $fat,
+                0,
+                0,
+                4096,
+                $miniFatSectors > 0 ? 1 : CompoundFileWriter::END_OF_CHAIN,
+                $miniFatSectors,
+                $difat > 0 ? $difatStart : CompoundFileWriter::END_OF_CHAIN,
+                $difat,
+            )
+            . pack('V*', ...array_pad(array_slice($fatLocations, 0, 109), 109, CompoundFileWriter::FREE_SECTOR));
+
+        return $header . $root . str_repeat($empty, 3) . str_repeat("\xFF", $miniFatSectors * 512) . $fatBytes . $difatBytes;
+    }
+
+    /** Spitzenverbrauch beim Öffnen, über dem Stand davor (die Eingabe selbst liegt schon im Speicher). */
+    private function peakGrowthWhileOpening(string $bytes): int {
+        if (!function_exists('memory_reset_peak_usage')) {
+            $this->markTestSkipped('memory_reset_peak_usage() gibt es erst ab PHP 8.2.');
+        }
+        gc_collect_cycles();
+        $before = memory_get_usage();
+        memory_reset_peak_usage();
+        $reader = CompoundFileReader::fromString($bytes, null, null);
+        $peak = memory_get_peak_usage();
+        $this->assertSame([], $reader->getChildren($reader->getRoot()));
+
+        return $peak - $before;
+    }
+
+    public function test_fat_is_capped_to_the_sectors_of_the_file(): void {
+        // 20.000 FAT-Sektoren = 2,56 Mio. FAT-Einträge für eine 10-MB-Datei mit rund 20.200 Sektoren.
+        $bytes = self::tableHeavyFile(20_000);
+        $this->assertGreaterThan(10_000_000, strlen($bytes));
+
+        $growth = $this->peakGrowthWhileOpening($bytes);
+
+        $this->assertLessThan(strlen($bytes), $growth, sprintf('Spitze %.1f MB bei %.1f MB Datei', $growth / 1e6, strlen($bytes) / 1e6));
+    }
+
+    public function test_mini_fat_is_capped_to_the_mini_stream(): void {
+        // 20.000 MiniFAT-Sektoren, aber ein leerer Mini-Stream: kein Eintrag ist nutzbar.
+        $bytes = self::tableHeavyFile(0, 20_000);
+        $this->assertGreaterThan(10_000_000, strlen($bytes));
+
+        $growth = $this->peakGrowthWhileOpening($bytes);
+
+        $this->assertLessThan(strlen($bytes), $growth, sprintf('Spitze %.1f MB bei %.1f MB Datei', $growth / 1e6, strlen($bytes) / 1e6));
+    }
+
+    public function test_capped_fat_still_reads_every_stream(): void {
+        [, $bytes] = self::difatFile();
+        $reader = CompoundFileReader::fromString($bytes);
+
+        $this->assertStringEndsWith('Ende', $this->read($reader, 'riesig'));
+        $this->assertSame('neben dem Riesen', $this->read($reader, 'klein'));
+    }
+
     public function test_exception_carries_the_document_name(): void {
         try {
             CompoundFileReader::fromString('kaputt', 'eingang.msg');

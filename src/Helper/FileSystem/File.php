@@ -2303,7 +2303,14 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Bereinigt einen Dateinamen für Anzeige und Ablage-Metadaten, ohne ihn nach
      * ASCII zu wandeln (anders als {@see sanitizeFilename()}): „Übersicht März.pdf"
      * bleibt lesbar. Entfernt wird nur, was einen Pfad oder Steuerbefehl bilden
-     * könnte — Pfadanteile fallen weg, Steuerzeichen und Slashes werden zu `_`.
+     * könnte — Pfadanteile fallen weg, Steuerzeichen (C0, DEL, C1) sowie Zeilen-
+     * und Absatztrenner (U+2028/U+2029) werden zu `_`.
+     *
+     * Unsichtbare Formatzeichen (Unicode-Kategorie Cf) entfallen ganz:
+     * Richtungssteuerung (U+202A–U+202E, U+2066–U+2069, U+200E/U+200F,
+     * U+061C), Nullbreiten-Zeichen (U+200B–U+200D, U+2060), BOM, weiches
+     * Trennzeichen. Sonst erschiene „Rechnung\u{202E}fdp.exe" als
+     * „Rechnungexe.pdf" (bis 2.17.0 durchgelassen).
      *
      * Nicht für Dateisystempfade gedacht, deren Namen der Nutzer bestimmt: dort
      * gehört ein generierter Name hin, der Anzeigename in die Metadaten.
@@ -2315,10 +2322,13 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     public static function sanitizeDisplayName(string $name, int $maxLength = 255, string $fallback = 'file'): string {
         $name = mb_scrub($name, 'UTF-8');
+        // Unsichtbare Formatzeichen zuerst: sie dürfen weder die Anzeige umkehren
+        // noch einen Namen aus „." und „.." oder einen leeren Namen verdecken.
+        $name = preg_replace('/\p{Cf}/u', '', $name) ?? '';
         // Letzter Pfadanteil — basename() hinge von der Locale ab.
         $parts = preg_split('#[/\\\\]#u', $name) ?: [$name];
         $name = (string) end($parts);
-        $name = preg_replace('/[\x00-\x1F\x7F]/u', '_', $name) ?? '';
+        $name = preg_replace('/[\x00-\x1F\x7F\x{80}-\x{9F}\x{2028}\x{2029}]/u', '_', $name) ?? '';
         $name = mb_substr($name, 0, max(1, $maxLength));
 
         return $name === '' || $name === '.' || $name === '..' ? $fallback : $name;

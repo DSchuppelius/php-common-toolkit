@@ -13,6 +13,7 @@ namespace Tests\Helper;
 use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Helper\Data\BankHelper;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Contracts\BaseTestCase;
 
 class BankHelperTest extends BaseTestCase {
@@ -479,5 +480,76 @@ class BankHelperTest extends BaseTestCase {
             $this->assertSame(['DE89370400440532013000'], BankHelper::extractIBANs('IBAN DE89 3704 0044 0532 0130 00 BIC COBADEFFXXX', $strict, true));
         }
         $this->assertNull(BankHelper::extractIBAN('DE89 3704 0044 0532 0130 001234', true, true), 'Endet die Länderlänge mitten in einer Gruppe, ist es keine IBAN.');
+    }
+
+    /**
+     * Mehrere IBANs im Fließtext: Folgetext in Großschreibung griff in die
+     * nächste IBAN und verschluckte sie (Befund workDiary 2.17.1).
+     *
+     * @return array<string, array{string, list<string>}>
+     */
+    public static function freeTextProvider(): array {
+        return [
+            'Großwort zwischen zwei IBANs' => [
+                'Zahlung an DE89 3704 0044 0532 0130 00 UND DE02 1203 0000 0000 2020 51 BITTE PRÜFEN',
+                ['DE89370400440532013000', 'DE02120300000000202051'],
+            ],
+            'drei IBANs, je mit Großwort dazwischen' => [
+                'DE89 3704 0044 0532 0130 00 ODER DE02 1203 0000 0000 2020 51 ODER AT61 1904 3002 3457 3201',
+                ['DE89370400440532013000', 'DE02120300000000202051', 'AT611904300234573201'],
+            ],
+            'BIC zwischen zwei IBANs' => [
+                'IBAN: DE89 3704 0044 0532 0130 00 BIC COBADEFFXXX oder AT61 1904 3002 3457 3201 BIC BKAUATWW',
+                ['DE89370400440532013000', 'AT611904300234573201'],
+            ],
+            'kleingeschrieben' => [
+                'bitte an de89 3704 0044 0532 0130 00 und de02 1203 0000 0000 2020 51 überweisen',
+                ['DE89370400440532013000', 'DE02120300000000202051'],
+            ],
+            'gemischte Schreibweise der IBANs' => [
+                'DE89 3704 0044 0532 0130 00 / gb29 nwbk 6016 1331 9268 19 / De02 1203 0000 0000 2020 51',
+                ['DE89370400440532013000', 'GB29NWBK60161331926819', 'DE02120300000000202051'],
+            ],
+            'Zeichenfolge vor der IBAN, die selbst wie ein IBAN-Anfang aussieht' => [
+                'Ref AB12 DE02 1203 0000 0000 2020 51 danke',
+                ['DE02120300000000202051'],
+            ],
+            'zusammenhängend und gruppiert gemischt' => [
+                'Konto de89370400440532013000, Ersatz DE02 1203 0000 0000 2020 51.',
+                ['DE89370400440532013000', 'DE02120300000000202051'],
+            ],
+        ];
+    }
+
+    /**
+     * @param list<string> $expected
+     */
+    #[DataProvider('freeTextProvider')]
+    public function test_extract_ibans_space_tolerant_finds_every_iban_in_free_text(string $text, array $expected): void {
+        foreach ([false, true] as $strict) {
+            $this->assertSame($expected, BankHelper::extractIBANs($text, $strict, true), 'strict=' . var_export($strict, true));
+            $this->assertSame($expected[0], BankHelper::extractIBAN($text, $strict, true));
+        }
+    }
+
+    public function test_extract_ibans_strict_skips_an_invalid_iban_without_hiding_the_next(): void {
+        $text = 'DE00 3704 0044 0532 0130 00 UND DE02 1203 0000 0000 2020 51';
+
+        $this->assertSame(['DE02120300000000202051'], BankHelper::extractIBANs($text, true, true));
+        $this->assertSame(['DE00370400440532013000', 'DE02120300000000202051'], BankHelper::extractIBANs($text, false, true));
+    }
+
+    public function test_extract_ibans_finds_lowercase_without_spaces(): void {
+        $this->assertSame(['DE89370400440532013000', 'DE02120300000000202051'], BankHelper::extractIBANs('de89370400440532013000 und DE02120300000000202051', true));
+        $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('iban: de89370400440532013000', true));
+    }
+
+    public function test_a_glued_word_in_the_other_case_is_not_part_of_the_iban(): void {
+        foreach ([false, true] as $spaceTolerant) {
+            $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('DE89370400440532013000und', true, $spaceTolerant));
+            $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('de89370400440532013000UND', true, $spaceTolerant));
+            $this->assertSame('DE89370400440532013000', BankHelper::extractIBAN('DE89370400440532013000EURund', true, $spaceTolerant), 'Währung angeklebt, wie bisher');
+            $this->assertNull(BankHelper::extractIBAN('DE89370400440532013000ABC', true, $spaceTolerant), 'gleiche Schreibweise angeklebt bleibt keine IBAN');
+        }
     }
 }

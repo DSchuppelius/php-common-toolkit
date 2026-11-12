@@ -255,4 +255,32 @@ class VatNumberHelperTest extends BaseTestCase {
         $this->assertTrue(VatNumberHelper::isVatId('XI123456789'));
         $this->assertTrue(VatNumberHelper::isVatId('XI123456789012'));
     }
+
+    /**
+     * Rumänien (Befund workDiary 2.17.1: "RO12" galt als gültig).
+     *
+     * Format: "RO" + 2 bis 10 Ziffern — GOV.UK, "EU country codes, VAT numbers
+     * and enquiry letters for EC Sales Lists" (Stand 18.12.2020): Romania (RO)
+     * "From 2 to 10 characters". Die Länge allein lässt RO12 also zu.
+     * Prüfziffer und "keine führende Null": CUI/CIF-Prüfung mit den Gewichten
+     * 7,5,3,2,1,7,5,3,2, Summe × 10 mod 11 mod 10 — wie python-stdnum,
+     * stdnum/ro/cui.py (calc_check_digit/validate). Testnummern sind synthetisch.
+     */
+    public function test_romanian_format_allows_two_to_ten_digits_without_leading_zero(): void {
+        $this->assertTrue(VatNumberHelper::isVatId('RO12'), 'zwei Ziffern sind laut Formatregel zulässig');
+        $this->assertTrue(VatNumberHelper::isVatId('RO1234567897'));
+        $this->assertFalse(VatNumberHelper::isVatId('RO1'), 'eine Ziffer');
+        $this->assertFalse(VatNumberHelper::isVatId('RO12345678901'), 'elf Ziffern');
+        $this->assertFalse(VatNumberHelper::isVatId('RO0123456789'), 'führende Null');
+    }
+
+    public function test_romanian_check_digit_in_strict_mode(): void {
+        foreach (['RO19', 'RO27', 'RO124', 'RO230', 'RO47119', 'RO1234567897', 'ro 4711 9'] as $valid) {
+            $this->assertTrue(VatNumberHelper::validateVatId($valid, true), $valid);
+        }
+        foreach (['RO12', 'RO10', 'RO231', 'RO47118', 'RO1234567890'] as $invalid) {
+            $this->assertFalse(VatNumberHelper::validateVatId($invalid, true), $invalid);
+            $this->assertTrue(VatNumberHelper::validateVatId($invalid, false), "$invalid hat gültiges Format");
+        }
+    }
 }
