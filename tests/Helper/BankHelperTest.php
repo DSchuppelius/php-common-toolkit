@@ -12,6 +12,7 @@ namespace Tests\Helper;
 
 use CommonToolkit\Enums\CountryCode;
 use CommonToolkit\Helper\Data\BankHelper;
+use InvalidArgumentException;
 use Tests\Contracts\BaseTestCase;
 
 class BankHelperTest extends BaseTestCase {
@@ -58,6 +59,8 @@ class BankHelperTest extends BaseTestCase {
 
     public function test_check_iban_invalid(): void {
         $this->assertFalse(BankHelper::checkIBAN("DE00500105175407324931"));
+        // Buchstaben als Prüfziffer bestehen Mod 97 zufällig, sind nach ISO 13616 aber keine IBAN.
+        $this->assertFalse(BankHelper::checkIBAN("DECZ370400440532013000"));
     }
 
     public function test_generate_iban(): void {
@@ -67,6 +70,21 @@ class BankHelperTest extends BaseTestCase {
         $this->assertEquals("DE46100500001234567890", $ibanGermany);
         $this->assertMatchesRegularExpression('/^DE\d{2}100500001234567890$/', $ibanGermany);
         $this->assertTrue(BankHelper::checkIBAN($ibanGermany));
+    }
+
+    public function test_generate_iban_keeps_the_spelling_and_pads_check_digits(): void {
+        $this->assertSame('GB29NWBK60161331926819', BankHelper::generateIBAN('GB', 'NWBK60161331926819'));
+        $this->assertSame('GB29nwbk60161331926819', BankHelper::generateIBAN('GB', 'nwbk60161331926819'));
+        $this->assertSame('DE09123456780001234567', BankHelper::generateIBAN('DE', '123456780001234567'));
+        $this->assertTrue(BankHelper::checkIBAN('de09 1234 5678 0001 2345 67'));
+        $this->assertFalse(BankHelper::checkIBAN('DE10123456780001234567'));
+    }
+
+    /** Fremde Zeichen fielen sonst still aus der Prüfziffernrechnung, die IBAN wäre ungültig. */
+    public function test_generate_iban_rejects_other_characters(): void {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('andere Zeichen als A-Z und 0-9');
+        BankHelper::generateIBAN('DE', '37040044-532013000');
     }
 
     /**

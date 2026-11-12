@@ -162,7 +162,7 @@ class CompanyIdHelper {
 
         $lei = self::normalizeLEI($lei);
 
-        return self::checkMod97($lei);
+        return CheckDigitHelper::isValidMod97($lei);
     }
 
     /**
@@ -371,32 +371,6 @@ class CompanyIdHelper {
     // ========================================
     // Private Methoden
     // ========================================
-
-    /**
-     * Prüft die MOD 97-10 Prüfsumme (für LEI).
-     *
-     * @param string $code Der zu prüfende Code.
-     * @return bool True, wenn die Prüfsumme korrekt ist.
-     */
-    private static function checkMod97(string $code): bool {
-        // Konvertiere Buchstaben in Zahlen (A=10, B=11, ...)
-        $converted = '';
-        foreach (str_split($code) as $char) {
-            if (ctype_digit($char)) {
-                $converted .= $char;
-            } else {
-                $converted .= (ord($char) - ord('A') + 10);
-            }
-        }
-
-        // MOD 97 Berechnung
-        $remainder = 0;
-        foreach (str_split($converted) as $digit) {
-            $remainder = ($remainder * 10 + (int) $digit) % 97;
-        }
-
-        return $remainder === 1;
-    }
 
     /**
      * Prüft die EAN/GTIN Prüfziffer.

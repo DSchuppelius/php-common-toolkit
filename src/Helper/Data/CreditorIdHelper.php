@@ -89,22 +89,8 @@ class CreditorIdHelper {
         $checkDigits = substr($normalized, 2, 2);
         $nationalId = substr($normalized, 7); // Nach dem 3-stelligen Geschäftsbereich
 
-        // Numerische Umwandlung für MOD 97-10
-        // Reihenfolge: nationale ID + Ländercode + Prüfziffern
-        $checkString = $nationalId . $country . $checkDigits;
-
-        // Buchstaben in Zahlen umwandeln (A=10, B=11, ..., Z=35)
-        $numericString = '';
-        foreach (str_split(strtoupper($checkString)) as $char) {
-            if (ctype_alpha($char)) {
-                $numericString .= (string) (ord($char) - ord('A') + 10);
-            } else {
-                $numericString .= $char;
-            }
-        }
-
-        // MOD 97 Prüfung
-        return bcmod($numericString, '97') === '1';
+        // Reihenfolge für MOD 97-10: nationale ID + Ländercode + Prüfziffern
+        return CheckDigitHelper::isValidMod97($nationalId . $country . $checkDigits);
     }
 
     /**
@@ -292,24 +278,11 @@ class CreditorIdHelper {
             return self::logErrorAndReturn(null, "Nationale Kennung fehlt");
         }
 
-        // Berechnung: nationale ID + Ländercode + 00 -> MOD 97
-        $checkString = $nationalId . $countryCode . '00';
-
-        // Buchstaben in Zahlen umwandeln
-        $numericString = '';
-        foreach (str_split($checkString) as $char) {
-            if (ctype_alpha($char)) {
-                $numericString .= (string) (ord($char) - ord('A') + 10);
-            } else {
-                $numericString .= $char;
-            }
+        if (preg_match('/^[A-Z0-9]+$/', $nationalId) !== 1) {
+            return self::logErrorAndReturn(null, "Nationale Kennung enthält andere Zeichen als A-Z und 0-9");
         }
 
-        // Prüfziffer = 98 - (Zahl MOD 97)
-        $remainder = bcmod($numericString, '97');
-        $checkDigit = 98 - (int) $remainder;
-
-        return str_pad((string) $checkDigit, 2, '0', STR_PAD_LEFT);
+        return CheckDigitHelper::mod97CheckDigits($nationalId . $countryCode);
     }
 
     /**

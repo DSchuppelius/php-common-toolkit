@@ -170,6 +170,15 @@ class CreditorIdHelperTest extends BaseTestCase {
         $this->assertNull(CreditorIdHelper::calculateCheckDigits('DE', ''));
     }
 
+    /** Andere Zeichen als A–Z und 0–9 ergeben null statt eines Rechenfehlers ("+", "-" und "." wären Vorzeichen bzw. Dezimalpunkt). */
+    public function test_calculate_check_digits_rejects_other_characters(): void {
+        $this->assertSame('98', CreditorIdHelper::calculateCheckDigits('de', '0999 9999 999'));
+        foreach (['0999-999999', 'äb', '+12', '1.5', '-5'] as $nationalId) {
+            $this->assertNull(CreditorIdHelper::calculateCheckDigits('DE', $nationalId), $nationalId);
+            $this->assertNull(CreditorIdHelper::generate('DE', 'ZZZ', $nationalId), $nationalId);
+        }
+    }
+
     // ========================================
     // Test: Generierung
     // ========================================

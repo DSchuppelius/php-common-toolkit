@@ -18,7 +18,6 @@ use ConfigToolkit\ConfigLoader;
 use ERRORToolkit\Traits\ErrorLog;
 use Exception;
 use InvalidArgumentException;
-use RuntimeException;
 
 class BankHelper {
     use ErrorLog;
@@ -446,14 +445,11 @@ class BankHelper {
      * @return bool True, wenn die IBAN gültig ist, andernfalls false.
      */
     public static function checkIBAN(string $iban): bool {
-        self::requireBcMath();
-
         $iban = strtoupper(str_replace(' ', '', $iban));
-        if (!self::isIBAN($iban)) {
+        // ISO 13616: Stellen 3–4 sind Ziffern; Mod 97 allein ließe Buchstabenpaare als Prüfziffer durch.
+        if (!self::isIBAN($iban) || !ctype_digit(substr($iban, 2, 2))) {
             return false;
         }
-
-        $chars = self::ibanCharMap();
 
         $countryCodeStr = substr($iban, 0, 2);
         $country = CountryCode::tryFrom($countryCodeStr);
@@ -463,22 +459,7 @@ class BankHelper {
             return false;
         }
 
-        $rearranged = substr($iban, 4) . substr($iban, 0, 4);
-
-        $converted = '';
-        foreach (str_split($rearranged) as $char) {
-            if (ctype_digit($char)) {
-                $converted .= $char;
-            } elseif (isset($chars[strtolower($char)])) {
-                $converted .= $chars[strtolower($char)];
-            } else {
-                return false;
-            }
-        }
-
-        $result = bcmod($converted, '97');
-
-        return $result === '1';
+        return CheckDigitHelper::isValidMod97(substr($iban, 4) . substr($iban, 0, 4));
     }
 
     /**
@@ -574,12 +555,11 @@ class BankHelper {
      * Generiert eine IBAN für ein bestimmtes Land und eine Kontonummer.
      *
      * @param CountryCode|string $countryCode Der Ländercode (z.B. 'DE' für Deutschland).
-     * @param string $accountNumber Die Kontonummer.
+     * @param string $accountNumber Die Kontonummer (BBAN).
      * @return string Die generierte IBAN.
+     * @throws InvalidArgumentException Bei unbekanntem Land, falscher Länge oder anderen Zeichen als A-Z und 0-9.
      */
     public static function generateIBAN(CountryCode|string $countryCode, string $accountNumber): string {
-        self::requireBcMath();
-
         $country = $countryCode instanceof CountryCode
             ? $countryCode
             : CountryCode::tryFrom(strtoupper($countryCode));
@@ -593,23 +573,15 @@ class BankHelper {
             self::logErrorAndThrow(InvalidArgumentException::class, "Land '{$country->value}' unterstützt kein IBAN-System.");
         }
 
-        $chars = self::ibanCharMap();
         $expectedLength = $ibanLength - 4; // ohne Prüfziffer und Länderkennung
         if (strlen($accountNumber) !== $expectedLength) {
             self::logErrorAndThrow(InvalidArgumentException::class, "Die Kontonummer hat nicht die richtige Länge ($expectedLength) für {$country->value}. Eingabe: '$accountNumber'");
         }
-
-        $countryCode = $country->value;
-
-        $rearranged = $accountNumber . $countryCode . '00';
-
-        $converted = '';
-        foreach (str_split($rearranged) as $char) {
-            $converted .= is_numeric($char) ? $char : $chars[strtolower($char)] ?? '';
+        if (preg_match('/^[A-Za-z0-9]+$/', $accountNumber) !== 1) {
+            self::logErrorAndThrow(InvalidArgumentException::class, "Die Kontonummer enthält andere Zeichen als A-Z und 0-9. Eingabe: '$accountNumber'");
         }
 
-        $checksum = 98 - (int) bcmod($converted, '97');
-        return $countryCode . str_pad((string) $checksum, 2, '0', STR_PAD_LEFT) . $accountNumber;
+        return $country->value . CheckDigitHelper::mod97CheckDigits($accountNumber . $country->value) . $accountNumber;
     }
 
     /**
@@ -1518,21 +1490,6 @@ class BankHelper {
         }
 
         return File::readLinesAsArray($path, skipEmpty: true);
-    }
-
-    /**
-     * Gibt eine Zuordnung von Buchstaben zu Zahlen zurück, die für die IBAN-Prüfziffernberechnung verwendet wird.
-     *
-     * @return array<string, int>
-     */
-    private static function ibanCharMap(): array {
-        return array_combine(range('a', 'z'), range(10, 35));
-    }
-
-    private static function requireBcMath(): void {
-        if (!function_exists('bcmod')) {
-            self::logErrorAndThrow(RuntimeException::class, "Die PHP-Erweiterung 'bcmath' ist erforderlich, aber nicht aktiviert.");
-        }
     }
 
     /**

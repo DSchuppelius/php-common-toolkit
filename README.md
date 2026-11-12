@@ -21,6 +21,7 @@ General-purpose PHP utility toolkit providing platform-agnostic helpers, CSV pro
 - **Person Names**: `PersonNameHelper::split()` breaks a free-text name into salutation (`mr`/`ms`, German, English, French, Spanish, Italian), academic title, first name, middle names and last name (particles such as von/van/de start the last name, "Last, First" is recognised); `::splitSalutation()` separates a salutation line such as "Herr Dr."; `::join()` reassembles a name without the salutation
 - **iCalendar**: `ICalendarParser` reads `.ics` data (folding, escapes, TZID incl. Windows names, all-day, DURATION); `Document::expand()` resolves series (RRULE DAILY/WEEKLY/MONTHLY/YEARLY with BYDAY/BYMONTHDAY/BYMONTH/BYSETPOS, EXDATE, RECURRENCE-ID)
 - **Creditor Reference (ISO 11649)**: `CreditorReferenceHelper::create()` / `::isValid()` / `::format()` / `::extract()` — build RF references from an identifier, check MOD 97-10 digits, print in groups of four and find them in remittance text
+- **Check Digits (ISO/IEC 7064 MOD 97-10)**: `CheckDigitHelper::mod97CheckDigits()` / `::isValidMod97()` / `::mod97Remainder()` — the arithmetic behind IBAN, RF reference, SEPA creditor identifier, LEI and Leitweg-ID (letters A = 10 … Z = 35, either case); the format helpers above use it
 - **CEF (SIEM)**: `CEFGenerator::line()` writes Common Event Format lines with header and extension escaping
 - **ZIP Entry Filtering**: `ZipFile::readEntries()` / `::readEntriesFromFile()` / `::extract()` with a `skipEntry` callback — inspect archives entry by entry and skip unsafe or unwanted members before extraction
 - **Value Objects**: typed wrappers such as `WasteCode` (European waste catalogue)
@@ -312,6 +313,20 @@ CreditorReferenceHelper::create('539007547034');          // "RF18539007547034"
 CreditorReferenceHelper::format('RF18539007547034');      // "RF18 5390 0754 7034"
 CreditorReferenceHelper::isValid('RF18 5390 0754 7034');  // true
 CreditorReferenceHelper::extract('Zahlung RF18 5390 0754 7034'); // ["RF18539007547034"]
+```
+
+### Check Digits (ISO/IEC 7064 MOD 97-10)
+
+```php
+use CommonToolkit\Helper\Data\CheckDigitHelper;
+
+// Prüfziffern stehen am Ende der Folge; IBAN, RF und Gläubiger-ID stellen vorher um.
+CheckDigitHelper::mod97CheckDigits('040110001234512345');   // "06" (Leitweg-ID 04011000-1234512345-06)
+CheckDigitHelper::mod97CheckDigits('370400440532013000DE'); // "89" (IBAN DE89 3704 0044 0532 0130 00)
+CheckDigitHelper::isValidMod97('370400440532013000DE89');   // true
+CheckDigitHelper::mod97Remainder('370400440532013000DE89'); // 1
+CheckDigitHelper::isValidMod97('0401-1000');                // false (nur 0-9, A-Z)
+CheckDigitHelper::mod97CheckDigits('');                     // InvalidArgumentException
 ```
 
 ### CEF Lines (SIEM)
@@ -730,6 +745,24 @@ This project is licensed under the **MIT License**.
 📧 <info@schuppelius.org>
 
 ## Versions
+
+### 2.18.0 — Prüfziffern nach ISO/IEC 7064 MOD 97-10
+
+- Neu: `Helper\Data\CheckDigitHelper` mit `mod97Remainder()`, `mod97CheckDigits()` (zweistellig, 02–98) und
+  `isValidMod97()`. Buchstaben zählen A = 10 … Z = 35, Kleinbuchstaben wie Großbuchstaben; leere Eingabe oder
+  andere Zeichen werfen bei Rest und Prüfziffer eine `InvalidArgumentException`, `isValidMod97()` liefert `false`.
+  Reines PHP, unabhängig von bcmath und Locale.
+- `CreditorReferenceHelper`, `CompanyIdHelper::validateLEI()`, `CreditorIdHelper::validateCreditorId()`/
+  `calculateCheckDigits()` und `BankHelper::checkIBAN()`/`generateIBAN()` rechnen damit; ihre eigenen Kopien
+  sind entfernt. Für gültige Eingaben bleiben alle Ergebnisse gleich (Gegenprobe mit 44 000 Zufallswerten).
+- **Verhaltensänderung bei ungültigen Zeichen:** `CreditorIdHelper::calculateCheckDigits()` (und damit
+  `generate()`) liefert für eine nationale Kennung mit anderen Zeichen als A–Z und 0–9 `null` wie bei den übrigen
+  Fehlern. Bis 2.17 warf bcmath einen `ValueError` oder las `+`, `-` und `.` als Vorzeichen bzw. Dezimalpunkt
+  (`-5` ergab „101“). `BankHelper::generateIBAN()` wirft für eine solche Kontonummer eine
+  `InvalidArgumentException`; bis 2.17 fielen die Zeichen still aus der Rechnung und die IBAN war ungültig.
+- `checkIBAN()` und `generateIBAN()` brauchen bcmath nicht mehr (die `RuntimeException` ohne bcmath entfällt).
+- **Verhaltensänderung:** `BankHelper::checkIBAN()` verlangt an Stelle 3–4 Ziffern (ISO 13616). Bis 2.17 bestanden
+  Buchstabenpaare als Prüfziffer, wenn sie die Mod-97-Rechnung zufällig erfüllten (`DECZ370400440532013000`).
 
 ### 2.17.0 — Girocode lesen, Outlook-Nachrichten lesen
 

@@ -32,9 +32,8 @@ final class CreditorReferenceHelper {
         if (preg_match('/^[A-Z0-9]{1,' . self::MAX_REFERENCE_LENGTH . '}$/', $reference) !== 1) {
             return null;
         }
-        $check = 98 - self::mod97($reference . 'RF00');
 
-        return 'RF' . str_pad((string) $check, 2, '0', STR_PAD_LEFT) . $reference;
+        return 'RF' . CheckDigitHelper::mod97CheckDigits($reference . 'RF') . $reference;
     }
 
     /** Prüft Aufbau und Prüfziffern; Leerzeichen und Kleinschreibung sind erlaubt. */
@@ -44,7 +43,7 @@ final class CreditorReferenceHelper {
             return false;
         }
 
-        return self::mod97(substr($compact, 4) . substr($compact, 0, 4)) === 1;
+        return CheckDigitHelper::isValidMod97(substr($compact, 4) . substr($compact, 0, 4));
     }
 
     /** Die Kennung hinter `RFnn` einer gültigen Referenz, sonst null. */
@@ -92,18 +91,5 @@ final class CreditorReferenceHelper {
 
     private static function compact(string $value): string {
         return strtoupper((string) preg_replace('/\s+/', '', $value));
-    }
-
-    /** Rest modulo 97 nach ISO 7064 (Buchstaben A=10 … Z=35), ziffernweise ohne bcmath. */
-    private static function mod97(string $value): int {
-        $remainder = 0;
-        foreach (str_split($value) as $char) {
-            $digits = ctype_alpha($char) ? (string) (ord($char) - 55) : $char;
-            foreach (str_split($digits) as $digit) {
-                $remainder = ($remainder * 10 + (int) $digit) % 97;
-            }
-        }
-
-        return $remainder;
     }
 }
