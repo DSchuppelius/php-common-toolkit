@@ -11,6 +11,7 @@
 namespace Tests\Helper;
 
 use CommonToolkit\Helper\Data\StringHelper;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Contracts\BaseTestCase;
 
 class StringHelperHtmlToTextTest extends BaseTestCase {
@@ -65,5 +66,52 @@ class StringHelperHtmlToTextTest extends BaseTestCase {
 
     public function test_unicode_spaces_collapse_within_a_line(): void {
         $this->assertSame('ein zwei drei', StringHelper::htmlToText("<p>ein\u{00A0}\u{00A0}zwei\u{202F} drei</p>"));
+    }
+
+    // ------------------------------------------------------------------
+    // Nicht geschlossene Blöcke: Ergebnis wie bisher, Laufzeit linear (2.17.1)
+    // ------------------------------------------------------------------
+
+    public function test_unclosed_blocks_keep_their_previous_result(): void {
+        // Ohne Endtag bleibt der Block stehen (wie der frühere reguläre Ausdruck); nur das Tag fällt weg.
+        $this->assertSame("Hallo\nbody{}", StringHelper::htmlToText('<p>Hallo</p><style>body{}'));
+        $this->assertSame('b', StringHelper::htmlToText('<style>a</style><style>b'));
+        // Ein geschlossener Block hinter einem offenen wird trotzdem entfernt.
+        $this->assertSame('x z', StringHelper::htmlToText('<style>x <script>y</script> z'));
+        $this->assertSame('Text', StringHelper::htmlToText('<STYLE type="text/css">p{}</Style  >Text'));
+        $this->assertSame("Kopf\nText", StringHelper::htmlToText('<header>Kopf</header> Text'), '<header> ist kein <head>, bleibt also stehen');
+        $this->assertSame('a b', StringHelper::htmlToText('a <!-- weg --> b'));
+        $this->assertSame("a\n- b", StringHelper::htmlToText('a<ul><li class="x">b</li></ul>'));
+        $this->assertSame("a\nb", StringHelper::htmlToText('a<br class="x"/>b'));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function adversarialProvider(): array {
+        return [
+            '<style> ohne Endtag, wiederholt' => ['<style>a'],
+            '<script> ohne Endtag, wiederholt' => ['<script>'],
+            '<style ohne >' => ['<style '],
+            'Kommentar ohne Ende' => ['<!--'],
+            '<li ohne >' => ['<li '],
+        ];
+    }
+
+    /**
+     * Bis 2.17.0 quadratisch: 125 KB wiederholter <style> ohne Endtag brauchten
+     * 1,1 s, 1 MB in der App rund 80 s. Linear sind es hier Bruchteile davon;
+     * die Grenzen lassen langsamen CI-Maschinen viel Luft.
+     */
+    #[DataProvider('adversarialProvider')]
+    public function test_runtime_stays_linear_for_unclosed_constructs(string $unit): void {
+        foreach ([1_000_000 => 3.0, 4_000_000 => 10.0] as $bytes => $limit) {
+            $html = str_repeat($unit, intdiv($bytes, strlen($unit)));
+            $start = microtime(true);
+            StringHelper::htmlToText($html);
+            $seconds = microtime(true) - $start;
+
+            $this->assertLessThan($limit, $seconds, sprintf('%d Byte brauchten %.2f s', strlen($html), $seconds));
+        }
     }
 }
