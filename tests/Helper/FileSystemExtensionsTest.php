@@ -181,6 +181,30 @@ class FileSystemExtensionsTest extends BaseTestCase {
         $this->assertTrue(mb_check_encoding(File::sanitizeDisplayName("ok\xFF.txt"), 'UTF-8'));
     }
 
+    /** Unsichtbare Formatzeichen (Unicode Cf) — Befund workDiary 2.17.1. */
+    public function test_sanitize_display_name_removes_bidi_and_invisible_format_characters(): void {
+        // RIGHT-TO-LEFT OVERRIDE ließ „Rechnung\u{202E}fdp.exe" als „Rechnungexe.pdf" erscheinen.
+        $this->assertSame('Rechnungfdp.exe', File::sanitizeDisplayName("Rechnung\u{202E}fdp.exe"));
+        $this->assertSame(
+            'abc.pdf',
+            File::sanitizeDisplayName("\u{200B}a\u{200C}\u{200D}b\u{2060}\u{FEFF}c\u{00AD}\u{2066}\u{2069}\u{202A}\u{202C}\u{200E}\u{200F}\u{061C}.pdf"),
+        );
+        $this->assertSame('file', File::sanitizeDisplayName("\u{202E}\u{200B}"), 'nur Formatzeichen = leer');
+        $this->assertSame('file', File::sanitizeDisplayName(".\u{200B}."), 'verdecktes ".."');
+        $this->assertSame('x.pdf', File::sanitizeDisplayName("ordner/\u{202E}/x.pdf"));
+    }
+
+    public function test_sanitize_display_name_replaces_c1_controls_and_line_separators(): void {
+        $this->assertSame('a_b.txt', File::sanitizeDisplayName("a\u{0085}b.txt"));
+        $this->assertSame('Zeile_Neu_Absatz.txt', File::sanitizeDisplayName("Zeile\u{2028}Neu\u{2029}Absatz.txt"));
+    }
+
+    public function test_sanitize_display_name_keeps_right_to_left_and_other_scripts(): void {
+        $this->assertSame('تقرير.pdf', File::sanitizeDisplayName('تقرير.pdf'));
+        $this->assertSame('דוח 2026.pdf', File::sanitizeDisplayName('דוח 2026.pdf'));
+        $this->assertSame('Übersicht 😀.pdf', File::sanitizeDisplayName('Übersicht 😀.pdf'));
+    }
+
     public function test_mime_type_for_extension_reverses_the_extension_table(): void {
         $this->assertSame('application/pdf', File::mimeTypeForExtension('pdf'));
         $this->assertSame('image/jpeg', File::mimeTypeForExtension('.JPEG'));

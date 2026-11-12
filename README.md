@@ -731,6 +731,31 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
+### 2.17.1 — Härtung aus der App-Integration
+
+- `CompoundFileReader` (und damit `OutlookMessageParser`): FAT und MiniFAT werden auf die Einträge gekürzt, die
+  die Datei überhaupt haben kann (Sektorzahl bzw. Größe des Mini-Streams). Eine Datei aus fast nur FAT-Sektoren
+  kostete bisher ein Vielfaches ihrer Größe an Speicher (10 MB Datei: +70 MB Spitze, jetzt +4 MB). Ergebnisse
+  gültiger Dateien bleiben gleich.
+- `StringHelper::htmlToText()` läuft linear: `<style>`/`<script>`-Blöcke und Kommentare ohne Ende sowie Tags ohne
+  `>` lösten bisher quadratische Laufzeit aus (1 MB nicht geschlossener `<style>`-Tags: 84 s, jetzt unter 0,2 s).
+  Das Ergebnis ist unverändert, auch für nicht geschlossene Blöcke (sie bleiben wie bisher als Text stehen).
+- `BankHelper::extractIBANs()`/`extractIBAN()`: Nach einem Treffer geht die Suche hinter der IBAN weiter, nicht
+  hinter dem ganzen Suchtreffer — großgeschriebene Wörter zwischen zwei gruppierten IBANs („… 00 UND DE02 …“)
+  verschluckten bisher die zweite. **Verhaltensänderungen:** IBANs werden auch kleingeschrieben gefunden
+  („de89 3704 …“, Ergebnis groß), in beiden Modi; im leerzeichentoleranten Modus sucht ein Fehltreffer ab dem
+  nächsten Zeichen weiter („Ref AB12 DE02 1203 …“ findet DE02…). Ein angeklebtes Wort in der anderen Schreibweise
+  gehört wie bisher nicht zur IBAN („…3000und“). Bei durchgehend großgeschriebenem Text ohne Leerzeichen ist das
+  Ergebnis unverändert; mit `$spaceTolerant` werden höchstens zusätzliche IBANs gefunden.
+- `VatNumberHelper::validateVatId()` (strikt) und `VatNumber::of()`/`tryFrom()`: rumänische USt-IdNr. werden mit
+  der CUI-Prüfziffer geprüft (bisher ohne). Die Formatregel bleibt „RO“ + 2 bis 10 Ziffern; neu ist nur, dass die
+  erste Ziffer keine 0 sein darf. „RO12“ hat also ein gültiges Format, scheitert aber strikt an der Prüfziffer.
+  Die Längenregeln der übrigen Länder sind gegen die GOV.UK-Tabelle der EU-Formate geprüft und unverändert.
+- `File::sanitizeDisplayName()`: unsichtbare Unicode-Formatzeichen (Kategorie Cf: Richtungssteuerung wie U+202E,
+  Nullbreiten-Zeichen, BOM, weiches Trennzeichen) werden entfernt — „Rechnung\u{202E}fdp.exe“ erschien als
+  „Rechnungexe.pdf“. C1-Steuerzeichen und die Zeilen-/Absatztrenner U+2028/U+2029 werden wie C0-Steuerzeichen zu `_`.
+- Signaturen bleiben unverändert.
+
 ### 2.17.0 — Girocode lesen, Outlook-Nachrichten lesen
 
 - Neu: `Parsers\Payment\EpcQrParser::parse()` / `::tryParse()` mit Ergebnis `Entities\Payment\EpcQrPayment` und

@@ -259,6 +259,12 @@ class BankHelper {
      * des Auftretens, ohne Duplikate. Anonymisierte IBANs (XXXX...) werden
      * dabei automatisch verworfen.
      *
+     * Groß- und Kleinschreibung werden gefunden ("de89 3704 …"), das Ergebnis ist
+     * groß geschrieben. Innerhalb einer IBAN wechselt die Schreibweise nicht:
+     * ein angeklebtes Wort in der anderen Schreibweise ("…3000und") gehört nicht
+     * dazu. Nach einem Treffer geht die Suche hinter dem Teil weiter, der die
+     * IBAN war — Folgetext greift nicht mehr in die nächste IBAN.
+     *
      * @param string|null $text Der zu durchsuchende Text (z.B. CSV-/PDF-Inhalt).
      * @param bool $strict Bei true zusätzlich Prüfsummen-/Längenvalidierung.
      * @param bool $spaceTolerant Bei true werden auch durch einzelne Leerzeichen
@@ -267,23 +273,7 @@ class BankHelper {
      * @return string[] Gefundene gültige IBANs (ohne Leerzeichen), dedupliziert.
      */
     public static function extractIBANs(?string $text, bool $strict = false, bool $spaceTolerant = false): array {
-        $pattern = $spaceTolerant
-            ? '/' . self::IBAN_SPACED_REGEX . '/'
-            : '/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/';
-
-        if ($text === null || $text === '' || preg_match_all($pattern, $text, $matches) === 0) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($matches[0] as $match) {
-            $candidate = self::ibanCandidate($match, $spaceTolerant);
-            if ($candidate !== null && self::validateIBAN($candidate, $strict) && !in_array($candidate, $result, true)) {
-                $result[] = $candidate;
-            }
-        }
-
-        return $result;
+        return self::scanIBANs($text, $strict, $spaceTolerant, null);
     }
 
     /**
@@ -295,58 +285,103 @@ class BankHelper {
      * @return string|null Die erste gültige IBAN oder null.
      */
     public static function extractIBAN(?string $text, bool $strict = false, bool $spaceTolerant = false): ?string {
-        if ($text === null || $text === '') {
-            return null;
-        }
-
-        // Kandidat fuer Kandidat pruefen und beim ersten gueltigen aufhoeren:
-        // extractIBANs() wuerde erst ALLE Treffer sammeln und validieren — bei
-        // einem Plattformexport mit hunderttausend Gegen-IBANs Minuten fuer ein
-        // Ergebnis, das ohnehin nur der erste Treffer ist.
-        $pattern = $spaceTolerant
-            ? '/' . self::IBAN_SPACED_REGEX . '/'
-            : '/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/';
-
-        $offset = 0;
-        while (preg_match($pattern, $text, $match, PREG_OFFSET_CAPTURE, $offset) === 1) {
-            $candidate = self::ibanCandidate($match[0][0], $spaceTolerant);
-            if ($candidate !== null && self::validateIBAN($candidate, $strict)) {
-                return $candidate;
-            }
-            $offset = $match[0][1] + strlen($match[0][0]);
-        }
-
-        return null;
+        // Beim ersten gueltigen Treffer aufhoeren: alle Treffer zu sammeln und
+        // zu validieren kostete bei einem Plattformexport mit hunderttausend
+        // Gegen-IBANs Minuten fuer ein Ergebnis, das nur der erste Treffer ist.
+        return self::scanIBANs($text, $strict, $spaceTolerant, 1)[0] ?? null;
     }
 
     /**
-     * Kandidat aus einem Suchtreffer. Mit $spaceTolerant greift das Muster über
-     * die Gruppen hinaus in Folgetext („DE89 3704 0044 0532 0130 00 BIC COBA…“);
-     * endet die Länderlänge an einer Gruppengrenze, gilt nur dieser Teil als IBAN.
-     * Endet sie mitten in einer Gruppe („… 0130 001234“), bleibt der ganze Treffer
-     * und scheitert an der Validierung.
+     * Gemeinsame Suche für {@see extractIBANs()} und {@see extractIBAN()}.
+     *
+     * Ein Treffer wird erst an einem Wechsel der Schreibweise gekürzt
+     * ({@see sameCaseRun()}), dann zum Kandidaten ({@see ibanCandidate()}). Die
+     * Suche geht hinter dem verbrauchten Teil weiter: hinter der IBAN, wenn sie
+     * an einer Gruppengrenze endete, sonst hinter dem ganzen Treffer. Ohne
+     * gültigen Kandidaten sucht der leerzeichentolerante Modus ab dem nächsten
+     * Zeichen weiter, damit Folgetext („… 00 AB12 DE02 1203 …“) keine IBAN
+     * verdeckt.
+     *
+     * @return list<string>
      */
-    private static function ibanCandidate(string $match, bool $spaceTolerant): ?string {
+    private static function scanIBANs(?string $text, bool $strict, bool $spaceTolerant, ?int $limit): array {
+        if ($text === null || $text === '') {
+            return [];
+        }
+
+        $pattern = $spaceTolerant
+            ? '/' . self::IBAN_SPACED_REGEX . '/i'
+            : '/[A-Z]{2}\d{2}[A-Z0-9]{11,30}/i';
+
+        $result = [];
+        $offset = 0;
+        $length = strlen($text);
+        while ($offset < $length && preg_match($pattern, $text, $match, PREG_OFFSET_CAPTURE, $offset) === 1) {
+            $start = $match[0][1];
+            [$candidate, $consumed] = self::ibanCandidate(self::sameCaseRun($match[0][0]), $spaceTolerant);
+            $valid = $candidate !== null && self::validateIBAN($candidate, $strict);
+            if ($valid && !in_array($candidate, $result, true)) {
+                $result[] = $candidate;
+                if ($limit !== null && count($result) >= $limit) {
+                    break;
+                }
+            }
+            $offset = !$valid && $spaceTolerant ? $start + 1 : $start + $consumed;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Treffer bis zum ersten Buchstaben in der anderen Schreibweise als der
+     * Ländercode: „DE89…3000und“ endet vor „und“, „de89…3000UND“ vor „UND“ —
+     * wie bis 2.17.0, als das Muster nur Großbuchstaben kannte. Ein Ländercode
+     * in gemischter Schreibweise („De89“) lässt den Treffer ungekürzt.
+     */
+    private static function sameCaseRun(string $match): string {
+        $foreignCase = match (true) {
+            preg_match('/^[A-Z]{2}/', $match) === 1 => '/[a-z]/',
+            preg_match('/^[a-z]{2}/', $match) === 1 => '/[A-Z]/',
+            default => null,
+        };
+        if ($foreignCase !== null && preg_match($foreignCase, $match, $found, PREG_OFFSET_CAPTURE, 2) === 1) {
+            return rtrim(substr($match, 0, $found[0][1]), ' ');
+        }
+
+        return $match;
+    }
+
+    /**
+     * Kandidat aus einem Suchtreffer und die Länge des verbrauchten Teils.
+     * Mit $spaceTolerant greift das Muster über die Gruppen hinaus in Folgetext
+     * („DE89 3704 0044 0532 0130 00 BIC COBA…“); endet die Länderlänge an einer
+     * Gruppengrenze, gilt nur dieser Teil als IBAN. Endet sie mitten in einer
+     * Gruppe („… 0130 001234“), bleibt der ganze Treffer und scheitert an der
+     * Validierung.
+     *
+     * @return array{0: ?string, 1: int}
+     */
+    private static function ibanCandidate(string $match, bool $spaceTolerant): array {
         if (!$spaceTolerant) {
-            return self::sanitizeIBAN($match);
+            return [self::sanitizeIBAN($match), strlen($match)];
         }
 
         $compact = str_replace(' ', '', $match);
-        $expectedLength = CountryCode::tryFrom(substr($compact, 0, 2))?->getIBANLength();
+        $expectedLength = CountryCode::tryFrom(strtoupper(substr($compact, 0, 2)))?->getIBANLength();
         if ($expectedLength !== null && strlen($compact) > $expectedLength) {
             $taken = 0;
             $length = strlen($match);
             for ($i = 0; $i < $length; $i++) {
                 if ($match[$i] !== ' ' && ++$taken === $expectedLength) {
                     if ($i + 1 === $length || $match[$i + 1] === ' ') {
-                        return substr($compact, 0, $expectedLength);
+                        return [self::normalizeIBAN(substr($compact, 0, $expectedLength)), $i + 1];
                     }
                     break;
                 }
             }
         }
 
-        return self::sanitizeIBAN($compact);
+        return [self::sanitizeIBAN($compact), strlen($match)];
     }
 
     /**
