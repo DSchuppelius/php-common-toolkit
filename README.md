@@ -731,7 +731,7 @@ This project is licensed under the **MIT License**.
 
 ## Versions
 
-### 2.17.0 (Vorschlag, unveröffentlicht) — Girocode lesen, Outlook-Nachrichten lesen
+### 2.17.0 — Girocode lesen, Outlook-Nachrichten lesen
 
 - Neu: `Parsers\Payment\EpcQrParser::parse()` / `::tryParse()` mit Ergebnis `Entities\Payment\EpcQrPayment` und
   `Enums\Payment\EpcQrCharset` — Gegenstück zum `EpcQrBuilder`. Ungültige Nutzlast wirft
