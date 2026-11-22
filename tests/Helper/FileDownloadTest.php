@@ -138,6 +138,58 @@ class FileDownloadTest extends BaseTestCase {
         $this->assertSame(['result.txt'], $this->listDir(), 'Keine .tmp-Reste im Verzeichnis');
     }
 
+    public function test_failed_rename_returns_false_without_leftovers(): void {
+        // Ziel ist ein Verzeichnis: rename() einer Datei darauf scheitert.
+        $destination = $this->tmpDir . '/zielordner';
+        mkdir($destination);
+
+        InMemoryHttpStreamWrapper::$payload = "Inhalt\n";
+        InMemoryHttpStreamWrapper::$failAfter = null;
+
+        stream_wrapper_unregister('http');
+        stream_wrapper_register('http', InMemoryHttpStreamWrapper::class);
+        try {
+            $result = File::download('http://example.test/data', $destination);
+        } finally {
+            stream_wrapper_restore('http');
+        }
+
+        try {
+            $this->assertFalse($result, 'Gescheitertes Verschieben muss false liefern');
+            $this->assertDirectoryExists($destination, 'Ziel bleibt unangetastet');
+            $this->assertSame(['zielordner'], $this->listDir(), 'Keine .tmp-Reste im Verzeichnis');
+        } finally {
+            @rmdir($destination);
+        }
+    }
+
+    public function test_exception_from_progress_callback_propagates_without_leftovers(): void {
+        $destination = $this->tmpDir . '/result.txt';
+        $original = "GUELTIGER BESTAND\n";
+        file_put_contents($destination, $original);
+
+        InMemoryHttpStreamWrapper::$payload = str_repeat('Y', 50000);
+        InMemoryHttpStreamWrapper::$failAfter = null;
+
+        stream_wrapper_unregister('http');
+        stream_wrapper_register('http', InMemoryHttpStreamWrapper::class);
+        $caught = null;
+        try {
+            File::download('http://example.test/data', $destination, 8192, null, static function (): void {
+                throw new \RuntimeException('Abbruch durch den Aufrufer');
+            });
+        } catch (\RuntimeException $e) {
+            $caught = $e;
+        } finally {
+            stream_wrapper_restore('http');
+        }
+
+        $this->assertNotNull($caught, 'Die Ausnahme aus dem Callback muss beim Aufrufer ankommen');
+        $this->assertSame('Abbruch durch den Aufrufer', $caught->getMessage());
+        $this->assertSame($original, file_get_contents($destination), 'Bestehende Zieldatei muss UNVERÄNDERT bleiben');
+        $this->assertSame(['result.txt'], $this->listDir(), 'Keine .tmp-Reste im Verzeichnis');
+    }
+
     public function test_invalid_url_scheme_returns_false(): void {
         $destination = $this->tmpDir . '/result.txt';
         $this->assertFalse(File::download('file:///etc/hosts', $destination));
