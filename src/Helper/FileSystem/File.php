@@ -37,9 +37,6 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      */
     private const INCONCLUSIVE_MIME_TYPES = ['application/x-empty', 'application/octet-stream'];
 
-    /** Typen, die die Inhaltsheuristik aus finfo-"text/plain" noch herausliest. */
-    private const TEXT_REFINEMENTS = ['text/xml', 'application/json', 'text/html'];
-
     /** Zuschlag je MB auf die Zeitgrenze von chardet/uchardet, die die ganze Datei lesen. */
     private const CHARDET_SECONDS_PER_MEGABYTE = 30.0;
 
@@ -166,8 +163,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
      * Anhänge). Erkennung primär über finfo::buffer(); liefert finfo kein
      * belastbares Ergebnis (Extension fehlt oder meldet application/x-empty bzw.
      * application/octet-stream), greift die Magic-Bytes-Erkennung
-     * {@see mimeTypeFromMagicBytes()}; meldet finfo text/plain, verfeinert dieselbe
-     * Heuristik auf XML ohne Prolog, JSON und HTML.
+     * {@see mimeTypeFromMagicBytes()}; meldet finfo text/plain, gewinnt jeder
+     * bestimmte Typ, den dieselbe Erkennung findet: XML ohne Prolog, JSON, HTML und
+     * Binärsignaturen. Die libmagic von PHP 8.6 meldet etwa ein PNG-Signatur-Stück
+     * als text/plain (8.5: application/octet-stream).
      *
      * Bewusst ohne Cache: der Cache-Schlüssel wäre der komplette Inhalt.
      *
@@ -183,9 +182,10 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
             $finfo = new \finfo(FILEINFO_MIME_TYPE);
             $result = $finfo->buffer($bytes);
             if ($result === 'text/plain') {
-                // finfo kennt XML nur am Prolog; UBL/CII ohne Prolog wäre sonst Text.
+                // finfo kennt XML nur am Prolog (UBL/CII ohne Prolog wäre sonst Text),
+                // und eine eindeutige Binärsignatur ist stärker als finfos "Text".
                 $refined = self::mimeTypeFromMagicBytes($bytes);
-                if (in_array($refined, self::TEXT_REFINEMENTS, true)) {
+                if ($refined !== false && $refined !== 'text/plain' && !in_array($refined, self::INCONCLUSIVE_MIME_TYPES, true)) {
                     return self::logDebugAndReturn($refined, "MIME-Typ via Inhaltsheuristik verfeinert: text/plain -> $refined");
                 }
             }
@@ -925,24 +925,27 @@ class File extends ConfiguredHelperAbstract implements FileSystemInterface {
                 }
             }
             $success = true;
-            return self::logInfoAndReturn($bytesDownloaded, "Download abgeschlossen: $url -> $destination ($bytesDownloaded Bytes)");
         } finally {
             fclose($sourceHandle);
             fclose($destHandle);
 
-            if ($success) {
-                // Atomares Verschieben auf demselben Filesystem; ersetzt eine evtl. vorhandene Zieldatei.
-                if (!@rename($tempDestination, $destination)) {
-                    @unlink($tempDestination);
-                    // Zieldatei bleibt unverändert; Rückgabewert wird auf false korrigiert.
-                    $bytesDownloaded = self::logErrorAndReturn(false, "Fehler beim Verschieben der temporären Download-Datei nach $destination");
-                    return $bytesDownloaded;
-                }
-            } else {
-                // Bei jedem Fehler/Abbruch: Temp-Datei aufräumen, bestehende Zieldatei bleibt erhalten.
+            if (!$success) {
+                // Bei jedem Fehler/Abbruch (auch einer Ausnahme aus dem Fortschritts-
+                // Callback): Temp-Datei aufräumen, bestehende Zieldatei bleibt erhalten.
                 @unlink($tempDestination);
             }
         }
+
+        // Atomares Verschieben auf demselben Filesystem; ersetzt eine evtl. vorhandene
+        // Zieldatei. Bewusst nach dem finally-Block: ein return im finally ist ab
+        // PHP 8.6 deprecated und verschluckt Ausnahmen.
+        if (!@rename($tempDestination, $destination)) {
+            @unlink($tempDestination);
+            // Zieldatei bleibt unverändert.
+            return self::logErrorAndReturn(false, "Fehler beim Verschieben der temporären Download-Datei nach $destination");
+        }
+
+        return self::logInfoAndReturn($bytesDownloaded, "Download abgeschlossen: $url -> $destination ($bytesDownloaded Bytes)");
     }
 
     /**
