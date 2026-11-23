@@ -637,6 +637,13 @@ final class StringHelper extends BaseStringHelper {
      * `"a"  ;b`): Das Feldmodell ignoriert ihn ohnehin ("Whitespace außerhalb
      * der Quotes"), nur dieser Tokenizer warf bis v2.6.1 an solchen Zeilen.
      *
+     * Eine ungültige Zeile meldet die Ausnahme - ins Protokoll schreibt die
+     * Funktion nichts. Sie dient auch zum Ausprobieren: Wer eine Datei gegen
+     * viele Trennzeichen prüft oder physische Zeilen zu logischen fügt, fängt
+     * die Ausnahme und macht weiter. Bis v2.18.2 schrieb jeder solche Versuch
+     * eine Fehlerzeile (eine Formaterkennung: 293 Zeilen für eine Datei). Ob
+     * die Ablehnung ein Fehler ist, weiß nur der Aufrufer; er protokolliert.
+     *
      * @param string $line          Eingabezeile (z. B. aus einer CSV-Datei)
      * @param string $delimiter     Das Trennzeichen.
      * @param string $enclosure     Das Einschlusszeichen.
@@ -691,7 +698,7 @@ final class StringHelper extends BaseStringHelper {
                 // RFC4180-escaptes Quote bzw. doppelt-gewrappte Felder ("",""…) sowie
                 // Exporte, die einfach- und doppelt-gequotete Felder mischen (PayPal).
                 if ($inQuotes && $prev === $delimiter && $next !== $enclosure) {
-                    self::logErrorAndThrow(RuntimeException::class, 'Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
+                    throw new RuntimeException('Ungültige CSV-Zeile – Delimiter nach Quote-Ende ohne neues Feld');
                 }
             }
 
@@ -701,7 +708,7 @@ final class StringHelper extends BaseStringHelper {
                     $i,
                     substr($line, max(0, $i - 10), 20)
                 );
-                self::logErrorAndThrow(RuntimeException::class, $errormsg);
+                throw new RuntimeException($errormsg);
             }
 
             if ($char === $delimiter && !$inQuotes) {
@@ -712,7 +719,7 @@ final class StringHelper extends BaseStringHelper {
         }
 
         if ($inQuotes) {
-            self::logErrorAndThrow(RuntimeException::class, 'Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
+            throw new RuntimeException('Ungültige CSV-Zeile – Feld nicht geschlossen (fehlendes Enclosure am Ende)');
         }
 
         if ($current !== '' || str_ends_with($line, $delimiter)) {
